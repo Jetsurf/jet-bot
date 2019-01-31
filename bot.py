@@ -448,7 +448,7 @@ async def on_message(message):
 		await srParser(message, 1)
 	elif message.content.startswith('!us') or message.content.startswith('!eu') or message.content.startswith('!jp'):
 		await setCRole(message)
-	elif 'pizza' in message.content and 'pineapple' in message.content:
+	elif ('pizza' in message.content.lower() and 'pineapple' in message.content.lower()) or ('\U0001F355' in message.content and '\U0001F34D' in message.content):
 		await client.send_message(message.channel, 'Don\'t ever think pineapple and pizza go together ' + message.author.name + '!!!')
 	elif vclient is not None:
 		if message.content.startswith('!currentsong'):
