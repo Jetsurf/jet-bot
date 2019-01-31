@@ -393,6 +393,7 @@ async def on_message(message):
 		player = None
 		ytplayer = None
 		await client.close()
+		sys.stdout.flush()
 		quit(0)
 	elif message.content.startswith('!alive'):
 		text = "Hey " + message.author.name + ", I'm alive so shut the fuck up! :japanese_goblin:"
@@ -468,7 +469,6 @@ async def on_message(message):
 					print("Playing: " + theURL)
 
 					tempytplayer = await vclient.create_ytdl_player(theURL)
-					print ("Setting up searched YT vid: " + message.content[8:])
 					tempytplayer.after = playNext
 					ytQueue.put(tempytplayer)
 					play()
