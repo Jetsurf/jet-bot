@@ -61,7 +61,7 @@ async def spParser(message):
 	gear = data['merchandises']
 	theString = ''
 
-	theString = theString + 'Current SplatNet Gear:\n```'
+	theString = 'Current SplatNet Gear:\n```'
 
 	for i in gear:
 		skill = i['skill']
@@ -443,7 +443,6 @@ async def on_message(message):
 		elif message.content.startswith('!playyt'):
 			if 'https' in message.content:
 				tempytplayer = await vclient.create_ytdl_player(message.content[8:])
-				print("Setting up play next")
 				tempytplayer.after = playNext
 				ytQueue.put(tempytplayer)
 
@@ -469,7 +468,7 @@ async def on_message(message):
 					print("Playing: " + theURL)
 
 					tempytplayer = await vclient.create_ytdl_player(theURL)
-					print ("Setting up searched YT vid")
+					print ("Setting up searched YT vid: " + message.content[8:])
 					tempytplayer.after = playNext
 					ytQueue.put(tempytplayer)
 					play()
