@@ -1,0 +1,18 @@
+Here is how to control me! :
+!joinvoice CHANNELNAME : Join a Voice Channel, must be exact Upper/Lower case
+!playyt URL OR search : Play/Queue Up a Youtube Video to Play from URL or YT search
+!playRandom : Plays a random YT Video from my playlist
+!currentsong : Displays the currently playing Song/Video
+!play : Resume the current paused YT video
+!pause : Pause the currently playing YT video
+!stop : Stop a current playing video and play the next one
+!volume : Sets my global voice volume (Youtube defaults to 7%, caps at 50% vol)
+!sounds : List all possible sounds, prepend ! to play
+!restart : Restarts me if I get stuck
+!currentmaps : Displays the current Splatoon 2 Gamemodes/Maps
+!nextmaps : Displays the upcoming Splatoon 2 Gamemodes/Maps (!nextnextmaps displays 2 map rotations from now, etc)
+!currentsr : Displays the current Splatoon 2 Salmon Run Map/Weapons
+!nextsr : Displays the next Splatoon 2 Salmon Run Map/Weapons
+!splatnetgear : Gets all of the current gear for sale on SplatNet
+!us OR !eu OR !jp : Show what region you hail from (Americas, Europe, and Japan/Asia respectfully)
+If you want something added or want to bitch, tell jetsurf...
