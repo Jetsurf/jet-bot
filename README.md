@@ -32,9 +32,11 @@ Currently implemented commands are as follows:
    (!nextnextmaps displays 2 map rotations from ow, etc)
  - !currentsr : Displays the current Splatoon 2 Salmon Run Map/Weapons
  - !nextsr : Displays the next Splatoon 2 Salmon Run Map/Weapons
- - !splatnetgear : Gets all of the current gear for sale on SplatNet The 
-following command requires 3 roles to be in place. Americas - Europe - 
+ - !splatnetgear : Gets all of the current gear for sale on SplatNet
+
+The following command requires 3 roles to be in place. Americas - Europe - 
 Japan/Asia
+
  - !us OR !eu OR !jp : Show what region you hail from (Americas, Europe,
    and Japan/Asia respectfully)
 This command will be corrected to allow configuration of roles at a later date
