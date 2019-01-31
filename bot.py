@@ -373,14 +373,6 @@ async def on_message(message):
 		print(message.author.name + " " + message.author.id + " tried to summon me")
 
 		if message.author.name == 'jetsurf' and message.author.id == '161227359389745162':
-			if 'gay on' in message.content:
-				joshIsGay = 1
-				await client.send_message(message.channel, ':japanese_goblin:')
-			if 'gay off' in message.content:
-				joshIsGay = 0
-				await client.send_message(message.channel, 'Ok, I\'ll play nice')
-			if 'testdm' in message.content:
-				await client.send_message(memberJet, "Test DM!")
 			if 'add' in message.content:
 				playlist = open(playlist, 'a')
 
@@ -520,15 +512,8 @@ async def on_message(message):
 
 			await client.send_message(message.channel, "Setting Volume to " + str(vol) + "%")
 			ytplayer.volume = float(vol / 100)
-		elif message.content.startswith('!') and not message.content.startswith('!krillin'):
+		elif message.content.startswith('!'):
 			await playSound(command, message)
-		elif message.author.id == "108596967927492608" and message.content.startswith('!krillin'):
-			await playSound(command, message)
-	if message.author.id == "228709566936907776" and joshIsGay == 1:
-		await client.add_reaction(message, '🍆')
-	if 'gay' in message.content and joshIsGay == 0 and message.server.id == '294360697003835392':
-		await client.add_reaction(message, '🍆')
-
 	sys.stdout.flush()
 
 #Setup
