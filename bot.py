@@ -518,13 +518,14 @@ async def on_message(message):
 	sys.stdout.flush()
 
 #Setup
+sys.stdout = open('../discordbot.log', 'a')
+
 try:
-	with open('/home/admin/discordbot/discordbot.json.secret', 'r') as json_config:
+	with open('./discordbot.json.secret', 'r') as json_config:
 		configData = json.load(json_config)
 
 	email = configData['email']
 	password = configData['password']
-	log = configData['log']
 	soundsDir = configData['soundsdir']
 	playlist = configData['playlist']
 	commands = configData['commands']
@@ -535,7 +536,6 @@ except:
 	print('Failed to load config, exiting...')
 	quit(1)
 
-sys.stdout = open(log, 'a')
 print('**********NEW SESSION**********')
 print('Logging into discord')
 
