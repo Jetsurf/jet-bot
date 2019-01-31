@@ -32,6 +32,7 @@ adminID = ''
 configData = None
 
 def loadConfig(firstRun=0):
+	global email, password, adminID, soundsDir, playlist, commands
 	try:
 		with open('./discordbot.json.secret', 'r') as json_config:
 			configData = json.load(json_config)
@@ -44,7 +45,7 @@ def loadConfig(firstRun=0):
 		soundsDir = configData['soundsdir']
 		playlist = configData['playlist']
 		commands = configData['commands']
-	
+		
 		print('Config Loaded')
 		if firstRun == 0:
 			return 0
@@ -253,9 +254,7 @@ async def joinVoiceChannel(channelName, message):
 
 @asyncio.coroutine
 async def playRandom(message, numToQueue):
-	global vclient
-	global ytplayer
-	global ytQueue
+	global vclient, ytplayer, ytQueue
 	x = []
 	toPlay = []
 	tempytplayer = None
@@ -314,8 +313,7 @@ async def on_ready():
 	sys.stdout.flush()
 
 def playNext():
-	global ytQueue
-	global ytplayer
+	global ytQueue, ytplayer
 
 	if ytQueue.empty():
 		print("Done playing")
@@ -339,8 +337,7 @@ def play():
 		print("Currently playing, waiting to play")
 
 async def playSound(command, message):
-	global player
-	global ytplayer
+	global player, ytplayer
 
 	if ytplayer == None:
 		if player != None:
@@ -371,11 +368,7 @@ async def on_member_remove(member):
 
 @client.event
 async def on_message(message):
-	global vclient
-	global ytplayer
-	global ytQueue
-	global player
-	global adminObj
+	global vclient, ytplayer, ytQueue, player, adminObj
 
 	command = message.content
 
