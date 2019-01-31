@@ -340,7 +340,8 @@ async def on_member_remove(member):
 	if adminObj == None:
 		return
 	else:
-		await client.send_message(adminObj, member.nick + " left a server")
+		await client.send_message(adminObj, "Someone left a server, seeing if this works!")
+		await client.send_message(adminObj, member.nick + " server " + member.server.name)
 		print(member.nick + " left a server")
 		sys.stdout.flush()
 
@@ -381,6 +382,7 @@ async def on_message(message):
 			await client.send_message(message.channel, message.author.name + " you are not my master... :cop:")
 	elif '!restart' in message.content:
 		await client.send_message(message.channel, 'Attempting to restart if I can, give me a second')
+		print("Going for restart")
 
 		if ytplayer != None:
 			ytplayer.stop()
