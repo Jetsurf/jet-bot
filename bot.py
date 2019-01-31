@@ -45,11 +45,15 @@ def loadConfig(firstRun=0):
 		playlist = configData['playlist']
 		commands = configData['commands']
 	
-	print('Config Loaded')
+		print('Config Loaded')
+		if firstRun == 0:
+			return 0
 	except:
 		print('Failed to load config')
 		if firstRun == 1:
 			quit(1)
+		else:
+			return 1
 
 async def setCRole(message):
 	us = discord.utils.get(message.server.roles, name='Americas')
@@ -399,7 +403,11 @@ async def on_message(message):
 			if 'tts' in message.content:
 				await client.send_message(message.channel, message.content[11:], tts=True)
 			if 'reload' in message.content:
-				loadConfig()
+				stat = loadConfig()
+				if stat == 0:
+					await client.send_message(message.channel, "Successfully reloaded config")
+				else:
+					await client.send_message(message.channel, "Failed to reload config")
 		else:
 			await client.send_message(message.channel, message.author.name + " you are not my master... :cop:")
 	elif '!restart' in message.content:
@@ -529,3 +537,4 @@ print('Logging into discord')
 
 sys.stdout.flush()
 client.run(email, password)
+
