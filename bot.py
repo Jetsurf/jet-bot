@@ -9,7 +9,6 @@ import urllib.request
 import subprocess
 import json
 import time
-import signal
 import json
 import datetime
 import calendar
@@ -22,16 +21,14 @@ vclient = None
 ytQueue = queue.Queue()
 ytplayer = None
 player = None
-joshIsGay = 0
-doingRestart = 0
-myAdmin = None
+adminObj = None
 email = ''
 password = ''
 log = ''
 soundsDir = ''
 playlist = ''
 commands = ''
-admin = ''
+adminID = ''
 configData = None
 
 async def setCRole(message):
@@ -208,30 +205,30 @@ async def srParser(message, getNext=0):
 
 async def joinVoiceChannel(channelName, message):
 	global vclient
+	id = 0
 
 	if vclient != None:
 		print("Disconnecting from Voice")
 		await vclient.disconnect()
 
-	id = 0
 	print ("Trying to join voice  channel: " + str(channelName))
 
 	server = message.server
 	for channel in server.channels:
-		#print (channel.id + " " + channel.name)
 		if channel.name == channelName:
 			id = channel.id
+			break
 
 	if id != 0:
-		print("Joining Voice Channel: " + id)
+		print("Joining Voice Channel: " + channelName)
 		vclient = await client.join_voice_channel(client.get_channel(id))
 		return vclient
 	else:
-		print ("Fail?")
+		print ("Fail to join channel " + channelName)
 		await client.send_message(message.channel, "I could not join channel " + str(channelName))
 
 @asyncio.coroutine
-async def playRandom(message, queue, debug=0):
+async def playRandom(message, numToQueue):
 	global vclient
 	global ytplayer
 	global ytQueue
@@ -243,27 +240,21 @@ async def playRandom(message, queue, debug=0):
 		for line in f:
 			x.append(line)
 
-	queue = min(queue, len(x))
-	for y in range(queue):
-		if debug == 0:
-			while 1:
-				numToPlay = randint(1, len(x))
-				if numToPlay in toPlay:
-					continue
-				else:
-					toPlay.append(numToPlay)
-					print("Num to play: " + str(numToPlay))
-					print("I am going to play track " + str(numToPlay) + " " + x[numToPlay - 1])
-					break
-		else:
-		
-			numToPlay = debug
-			print("Num to play: " + str(debug))
+	numToQueue = min(numToQueue, len(x))
+	for y in range(numToQueue):
+		while 1:
+			numToPlay = randint(1, len(x))
+			if numToPlay in toPlay:
+				continue
+			else:
+				toPlay.append(numToPlay)
+				print("Num to play: " + str(numToPlay))
+				print("I am going to play track " + str(numToPlay) + " " + x[numToPlay - 1])
+				break
 
 		tempytplayer = await vclient.create_ytdl_player(x[numToPlay - 1])
 		tempytplayer.after = playNext
 		ytQueue.put(tempytplayer)
-
 
 		if ytplayer == None and vclient != None:
 			await client.send_message(message.channel, "Playing : " + x[toPlay[0] - 1])
@@ -272,13 +263,12 @@ async def playRandom(message, queue, debug=0):
 			print("I am queueing song " + str(numToPlay) + " " + x[numToPlay - 1])
 		play()
 
-	if queue > 1:
-		await client.send_message(message.channel, "Also queued " + str(queue - 1) + " more song(s) from my playlist")
-
+	if numToQueue > 1:
+		await client.send_message(message.channel, "Also queued " + str(numToQueue - 1) + " more song(s) from my playlist")
 
 @client.event
 async def on_ready():
-	global memberJet
+	global adminObj
 	gotAdmin = 0
 
 	print('Logged in as,', client.user.name, client.user.id)
@@ -290,13 +280,13 @@ async def on_ready():
 			break
 
 		for mem in server.members:
-			if mem.id == admin:
+			if mem.id == adminID:
 				print('Found my admin, all good for DM\'s')
-				myAdmin = mem
+				adminObj = mem
 				gotAdmin = 1
 				break
-	if myAdmin == None:
-		print('Failed to find admin for some reason, logging will be borked')
+	if adminObj == None:
+		print('Failed to find admin for some reason, some logging will be borked')
 	sys.stdout.flush()
 
 def playNext():
@@ -345,12 +335,12 @@ async def playSound(command, message):
 
 @client.event
 async def on_member_remove(member):
-	global myAdmin
+	global adminObj
 
-	if myAdmin == None:
+	if adminObj == None:
 		return
 	else:
-		await client.send_message(myAdmin, member.nick + " left a server")
+		await client.send_message(adminObj, member.nick + " left a server")
 		print(member.nick + " left a server")
 		sys.stdout.flush()
 
@@ -360,20 +350,18 @@ async def on_message(message):
 	global ytplayer
 	global ytQueue
 	global player
-	global joshIsGay
-	global doingRestart
-	global myAdmin
+	global adminObj
 
 	command = message.content
 
-	if message.server == None and message.author.id != myAdmin:
+	if message.server == None and message.author.id != adminObj:
 		return
 	if message.author.name == client.user.name:
 		return
-	if message.content.startswith("!debug"):
-		print(message.author.name + " " + message.author.id + " tried to summon me")
+	if message.content.startswith("!admin"):
+		print(message.author.name + " " + message.author.id + " tried to run an admin command")
 
-		if message.author.id == admin:
+		if message.author.id == adminID:
 			if 'add' in message.content:
 				playlist = open(playlist, 'a')
 
@@ -392,13 +380,7 @@ async def on_message(message):
 		else:
 			await client.send_message(message.channel, message.author.name + " you are not my master... :cop:")
 	elif '!restart' in message.content:
-		if doingRestart == 1:
-			await client.send_message(message.channel, 'Im already restarting, staph!!!')
-			return
-		else:
-			doingRestart = 1
-
-		await client.send_message(message.channel, 'Attempting to restart if I can, give me a while')
+		await client.send_message(message.channel, 'Attempting to restart if I can, give me a second')
 
 		if ytplayer != None:
 			ytplayer.stop()
@@ -412,7 +394,6 @@ async def on_message(message):
 		ytplayer = None
 		await client.close()
 		quit(0)
-
 	elif message.content.startswith('!alive'):
 		text = "Hey " + message.author.name + ", I'm alive so shut the fuck up! :japanese_goblin:"
 		await client.send_message(message.channel, text)
@@ -425,14 +406,12 @@ async def on_message(message):
 				theString = theString + line
 
 		await client.send_message(message.channel, theString)
-
 	elif message.content.startswith('!sounds'):
 		theSounds = subprocess.check_output(["ls", soundsDir])
 		theSounds = theSounds.decode("utf-8")
 		theSounds = theSounds.replace('.mp3', '')
 		theSounds = theSounds.replace('\n', ', ')
 		await client.send_message(message.channel, "Current Sounds:\n```" + theSounds + "```")
-
 	elif message.content.startswith('!joinvoice'):
 		vclient = await joinVoiceChannel(message.content[11:], message)
 	elif message.content.startswith('!currentmaps'):
@@ -442,7 +421,7 @@ async def on_message(message):
 	elif message.content.startswith('!currentsr'):
 		await srParser(message)
 	elif message.content.startswith('!splatnetgear'):
-		await spParser(message)
+		await gearParser(message)
 	elif message.content.startswith('!nextsr'):
 		await srParser(message, 1)
 	elif message.content.startswith('!us') or message.content.startswith('!eu') or message.content.startswith('!jp'):
@@ -496,7 +475,6 @@ async def on_message(message):
 					play()
 				except:
 					await client.send_message(message.channel, "Sorry, I can't play that")
-
 		elif message.content.startswith('!stop') or message.content.startswith('!pause') or message.content.startswith('!play'):
 			if ytplayer != None:
 				if message.content.startswith('!stop'):
@@ -519,7 +497,7 @@ async def on_message(message):
 	sys.stdout.flush()
 
 #Setup
-sys.stdout = open('../discordbot.log', 'a')
+sys.stdout = open('./discordbot.log', 'a')
 
 try:
 	with open('./discordbot.json.secret', 'r') as json_config:
@@ -530,7 +508,7 @@ try:
 	soundsDir = configData['soundsdir']
 	playlist = configData['playlist']
 	commands = configData['commands']
-	admin = configData['admin']
+	adminID = configData['admin']
 	
 	print('Config Loaded')
 except:
