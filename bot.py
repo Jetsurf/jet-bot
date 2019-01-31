@@ -274,13 +274,13 @@ async def playRandom(message, queue, debug=0):
 
 	if queue > 1:
 		await client.send_message(message.channel, "Also queued " + str(queue - 1) + " more song(s) from my playlist")
-	
+
 
 @client.event
 async def on_ready():
 	global memberJet
 	gotAdmin = 0
-	
+
 	print('Logged in as,', client.user.name, client.user.id)
 	print('------')
 	await client.change_presence(game=discord.Game(name="Use !help for directions!", type=0))
@@ -353,7 +353,7 @@ async def on_member_remove(member):
 		await client.send_message(myAdmin, member.nick + " left a server")
 		print(member.nick + " left a server")
 		sys.stdout.flush()
-	
+
 @client.event
 async def on_message(message):
 	global vclient
@@ -388,7 +388,7 @@ async def on_message(message):
 				player.volume = .5
 				player.start()
 			if 'tts' in message.content:
-				await client.send_message(message.channel, message.content[11:], tts=True)				
+				await client.send_message(message.channel, message.content[11:], tts=True)
 		else:
 			await client.send_message(message.channel, message.author.name + " you are not my master... :cop:")
 	elif '!restart' in message.content:
@@ -417,7 +417,7 @@ async def on_message(message):
 		text = "Hey " + message.author.name + ", I'm alive so shut the fuck up! :japanese_goblin:"
 		await client.send_message(message.channel, text)
 	elif message.content.startswith('!github'):
-		await client.send_message(message.channel, 'Here is my github page! : https://github.com/Jetsurf/jet-bot"')
+		await client.send_message(message.channel, 'Here is my github page! : https://github.com/Jetsurf/jet-bot')
 	elif message.content.startswith('!commands') or message.content.startswith('!help'):
 		theString = ''
 		with open(commands, 'r') as f:
@@ -482,17 +482,17 @@ async def on_message(message):
 					vid =  soup.find(attrs={'class':'yt-uix-tile-link'})
 					theURL = "https://youtube.com" + vid['href']
 
-					if ytQueue.empty():
+					if ytQueue.empty() and ytPlayer == None:
 						await client.send_message(message.channel, "Playing : " + theURL)
 					else:
 						await client.send_message(message.channel, "Queued : " + theURL)
 
 					print("Playing: " + theURL)
+
 					tempytplayer = await vclient.create_ytdl_player(theURL)
 					print ("Setting up searched YT vid")
 					tempytplayer.after = playNext
 					ytQueue.put(tempytplayer)
-					
 					play()
 				except:
 					await client.send_message(message.channel, "Sorry, I can't play that")

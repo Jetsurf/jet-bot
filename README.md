@@ -29,7 +29,7 @@ Currently implemented commands are as follows:
  - !restart : Restarts me if I get stuck
  - !currentmaps : Displays the current Splatoon 2 Gamemodes/Maps
  - !nextmaps : Displays the upcoming Splatoon 2 Gamemodes/Maps
-   (!nextnextmaps displays 2 map rotations from ow, etc)
+   (!nextnextmaps displays 2 map rotations from now, etc)
  - !currentsr : Displays the current Splatoon 2 Salmon Run Map/Weapons
  - !nextsr : Displays the next Splatoon 2 Salmon Run Map/Weapons
  - !splatnetgear : Gets all of the current gear for sale on SplatNet
@@ -39,4 +39,5 @@ Japan/Asia
 
  - !us OR !eu OR !jp : Show what region you hail from (Americas, Europe,
    and Japan/Asia respectfully)
+
 This command will be corrected to allow configuration of roles at a later date
