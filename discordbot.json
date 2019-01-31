@@ -4,5 +4,6 @@
 	"log"		: "",
 	"soundsdir"	: "",
 	"playlist"	: "",
-	"commands"	: ""
+	"commands"	: "",
+	"admin"		: ""
 }

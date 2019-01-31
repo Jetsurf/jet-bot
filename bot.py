@@ -31,6 +31,7 @@ log = ''
 soundsDir = ''
 playlist = ''
 commands = ''
+admin = ''
 configData = None
 
 async def setCRole(message):
@@ -289,13 +290,13 @@ async def on_ready():
 			break
 
 		for mem in server.members:
-			if mem.id == '161227359389745162':
-				print('Found Jetsurf, all good for DM\'s')
+			if mem.id == admin:
+				print('Found my admin, all good for DM\'s')
 				memberJet = mem
 				gotJet = 1
 				break
 	if memberJet == None:
-		print('Failed to find Jetsurf for some reason, logging will be borked')
+		print('Failed to find admin for some reason, logging will be borked')
 	sys.stdout.flush()
 
 def playNext():
@@ -344,12 +345,12 @@ async def playSound(command, message):
 
 @client.event
 async def on_member_remove(member):
-	global memberJet
+	global myAdmin
 
-	if memberJet == None:
+	if myAdmin == None:
 		return
 	else:
-		await client.send_message(memberJet, member.nick + " left a server")
+		await client.send_message(myAdmin, member.nick + " left a server")
 		print(member.nick + " left a server")
 		sys.stdout.flush()
 	
@@ -361,18 +362,18 @@ async def on_message(message):
 	global player
 	global joshIsGay
 	global doingRestart
-	global memberJet
+	global myAdmin
 
 	command = message.content
 
-	if message.server == None and message.author.id != '161227359389745162':
+	if message.server == None and message.author.id != myAdmin:
 		return
 	if message.author.name == client.user.name:
 		return
 	if message.content.startswith("!debug"):
 		print(message.author.name + " " + message.author.id + " tried to summon me")
 
-		if message.author.name == 'jetsurf' and message.author.id == '161227359389745162':
+		if message.author.id == myAdmin:
 			if 'add' in message.content:
 				playlist = open(playlist, 'a')
 
@@ -518,7 +519,7 @@ async def on_message(message):
 
 #Setup
 try:
-	with open('/home/admin/discordbot.json.secret', 'r') as json_config:
+	with open('/home/admin/discordbot/discordbot.json.secret', 'r') as json_config:
 		configData = json.load(json_config)
 
 	email = configData['email']
@@ -527,6 +528,7 @@ try:
 	soundsDir = configData['soundsdir']
 	playlist = configData['playlist']
 	commands = configData['commands']
+	admin = configData['admin']
 	
 	print('Config Loaded')
 except:
