@@ -243,7 +243,6 @@ async def joinVoiceChannel(channelName, message):
 		if channel.name == channelName:
 			id = channel.id
 			break
-
 	if id != 0:
 		print("Joining Voice Channel: " + channelName)
 		vclient = await client.join_voice_channel(client.get_channel(id))
@@ -285,7 +284,6 @@ async def playRandom(message, numToQueue):
 		if y == 1:
 			print("I am queueing song " + str(numToPlay) + " " + x[numToPlay - 1])
 		play()
-
 	if numToQueue > 1:
 		await client.send_message(message.channel, "Also queued " + str(numToQueue - 1) + " more song(s) from my playlist")
 
@@ -301,7 +299,6 @@ async def on_ready():
 	for server in client.servers:
 		if gotAdmin == 1:
 			break
-
 		for mem in server.members:
 			if mem.id == adminID:
 				print('Found my admin, all good for DM\'s')
@@ -430,7 +427,6 @@ async def on_message(message):
 		with open(commands, 'r') as f:
 			for line in f:
 				theString = theString + line
-
 		await client.send_message(message.channel, theString)
 	elif message.content.startswith('!sounds'):
 		theSounds = subprocess.check_output(["ls", soundsDir])
@@ -486,7 +482,7 @@ async def on_message(message):
 					vid =  soup.find(attrs={'class':'yt-uix-tile-link'})
 					theURL = "https://youtube.com" + vid['href']
 
-					if ytQueue.empty() and ytPlayer == None:
+					if ytQueue.empty() and ytplayer == None:
 						await client.send_message(message.channel, "Playing : " + theURL)
 					else:
 						await client.send_message(message.channel, "Queued : " + theURL)
@@ -497,7 +493,8 @@ async def on_message(message):
 					tempytplayer.after = playNext
 					ytQueue.put(tempytplayer)
 					play()
-				except:
+				except Exception as e:
+					print(str(e))
 					await client.send_message(message.channel, "Sorry, I can't play that")
 		elif message.content.startswith('!stop') or message.content.startswith('!pause') or message.content.startswith('!play'):
 			if ytplayer != None:
@@ -523,9 +520,8 @@ async def on_message(message):
 #Setup
 sys.stdout = open('./discordbot.log', 'a')
 
-loadConfig(firstRun=1)
-
 print('**********NEW SESSION**********')
+loadConfig(firstRun=1)
 print('Logging into discord')
 
 sys.stdout.flush()
