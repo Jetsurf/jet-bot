@@ -417,7 +417,7 @@ async def on_message(message):
 		text = "Hey " + message.author.name + ", I'm alive so shut the fuck up! :japanese_goblin:"
 		await client.send_message(message.channel, text)
 	elif message.content.startswith('!github'):
-		await client.send_message(message.channel, 'Here is my github page! : https://github.com/Jetsurf/jet-bot/blob/master/bot.py"')
+		await client.send_message(message.channel, 'Here is my github page! : https://github.com/Jetsurf/jet-bot"')
 	elif message.content.startswith('!commands') or message.content.startswith('!help'):
 		theString = ''
 		with open(commands, 'r') as f:
