@@ -31,6 +31,26 @@ commands = ''
 adminID = ''
 configData = None
 
+def loadConfig(firstRun=0):
+	try:
+		with open('./discordbot.json.secret', 'r') as json_config:
+			configData = json.load(json_config)
+
+		if firstRun == 1:
+			email = configData['email']
+			password = configData['password']
+			adminID = configData['admin']
+
+		soundsDir = configData['soundsdir']
+		playlist = configData['playlist']
+		commands = configData['commands']
+	
+	print('Config Loaded')
+	except:
+		print('Failed to load config')
+		if firstRun == 1:
+			quit(1)
+
 async def setCRole(message):
 	us = discord.utils.get(message.server.roles, name='Americas')
 	eu = discord.utils.get(message.server.roles, name='Europe')
@@ -378,6 +398,8 @@ async def on_message(message):
 				player.start()
 			if 'tts' in message.content:
 				await client.send_message(message.channel, message.content[11:], tts=True)
+			if 'reload' in message.content:
+				loadConfig()
 		else:
 			await client.send_message(message.channel, message.author.name + " you are not my master... :cop:")
 	elif '!restart' in message.content:
@@ -500,21 +522,7 @@ async def on_message(message):
 #Setup
 sys.stdout = open('./discordbot.log', 'a')
 
-try:
-	with open('./discordbot.json.secret', 'r') as json_config:
-		configData = json.load(json_config)
-
-	email = configData['email']
-	password = configData['password']
-	soundsDir = configData['soundsdir']
-	playlist = configData['playlist']
-	commands = configData['commands']
-	adminID = configData['admin']
-	
-	print('Config Loaded')
-except:
-	print('Failed to load config, exiting...')
-	quit(1)
+loadConfig(firstRun=1)
 
 print('**********NEW SESSION**********')
 print('Logging into discord')
