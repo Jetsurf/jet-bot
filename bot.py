@@ -24,7 +24,7 @@ ytplayer = None
 player = None
 joshIsGay = 0
 doingRestart = 0
-memberJet = None
+myAdmin = None
 email = ''
 password = ''
 log = ''
@@ -279,23 +279,23 @@ async def playRandom(message, queue, debug=0):
 @client.event
 async def on_ready():
 	global memberJet
-	gotJet = 0
+	gotAdmin = 0
 	
 	print('Logged in as,', client.user.name, client.user.id)
 	print('------')
 	await client.change_presence(game=discord.Game(name="Use !help for directions!", type=0))
 
 	for server in client.servers:
-		if gotJet == 1:
+		if gotAdmin == 1:
 			break
 
 		for mem in server.members:
 			if mem.id == admin:
 				print('Found my admin, all good for DM\'s')
-				memberJet = mem
-				gotJet = 1
+				myAdmin = mem
+				gotAdmin = 1
 				break
-	if memberJet == None:
+	if myAdmin == None:
 		print('Failed to find admin for some reason, logging will be borked')
 	sys.stdout.flush()
 
@@ -373,7 +373,7 @@ async def on_message(message):
 	if message.content.startswith("!debug"):
 		print(message.author.name + " " + message.author.id + " tried to summon me")
 
-		if message.author.id == myAdmin:
+		if message.author.id == admin:
 			if 'add' in message.content:
 				playlist = open(playlist, 'a')
 
