@@ -428,15 +428,17 @@ async def on_message(message):
 			for line in f:
 				theString = theString + line
 		await client.send_message(message.channel, theString)
-	elif message.content.startswith('!sounds'):
+	elif message.content.startswith('!sounds').lower():
 		theSounds = subprocess.check_output(["ls", soundsDir])
 		theSounds = theSounds.decode("utf-8")
 		theSounds = theSounds.replace('.mp3', '')
 		theSounds = theSounds.replace('\n', ', ')
 		await client.send_message(message.channel, "Current Sounds:\n```" + theSounds + "```")
-	elif message.content.startswith('!joinvoice'):
+	elif message.content.lower().startswith('!joinvoice'):
 		vclient = await joinVoiceChannel(message.content[11:], message)
-	elif message.content.startswith('!currentmaps'):
+	elif message.content.lower().startswith('!join'):
+		vclient = await joinVoiceChannel(message.content[6:], message)
+	elif message.content.lower().startswith('!currentmaps'):
 		await maps(message)
 	elif 'nextmaps' in message.content and '!' in message.content:
 		await maps(message, offset=min(11, message.content.count('next')))
@@ -459,7 +461,7 @@ async def on_message(message):
 		elif message.content.startswith('!leavevoice'):
 			await vclient.disconnect()
 			vclient = None
-		elif message.content.startswith('!playRandom'):
+		elif message.content.lower().startswith('!playrandom'):
 			if len(message.content) > 11:
 				await playRandom(message, int(message.content[12:]))
 			else:
