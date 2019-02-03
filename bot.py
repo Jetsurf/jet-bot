@@ -29,10 +29,11 @@ soundsDir = ''
 playlist = ''
 commands = ''
 adminID = ''
+blacklist = ''
 configData = None
 
 def loadConfig(firstRun=0):
-	global email, password, adminID, soundsDir, playlist, commands
+	global email, password, adminID, soundsDir, playlist, commands, blacklist
 	try:
 		with open('./discordbot.json.secret', 'r') as json_config:
 			configData = json.load(json_config)
@@ -45,6 +46,7 @@ def loadConfig(firstRun=0):
 		soundsDir = configData['soundsdir']
 		playlist = configData['playlist']
 		commands = configData['commands']
+		blacklist = configData['blacklist']
 		
 		print('Config Loaded')
 		if firstRun == 0:
@@ -359,13 +361,26 @@ async def on_member_remove(member):
 		return
 	else:
 		await client.send_message(adminObj, "Someone left a server, seeing if this works!")
-		await client.send_message(adminObj, member.nick + " server " + member.server.name)
 		print(member.nick + " left a server")
+		await client.send_message(adminObj, member.nick)
 		sys.stdout.flush()
+
+def blacklistCheck(message, theURL):
+	global blacklist
+	flag = False
+
+	with open(blacklist, 'r') as f:
+		for line in f:
+			if theURL in line:
+				print(message.author.name + ' tried to play blacklisted song ' + theURL)
+				flag = True
+				break
+	f.close()
+	return flag
 
 @client.event
 async def on_message(message):
-	global vclient, ytplayer, ytQueue, player, adminObj
+	global vclient, ytplayer, ytQueue, player, adminObj, playlist, blacklist
 
 	command = message.content
 
@@ -378,12 +393,19 @@ async def on_message(message):
 
 		if message.author.id == adminID:
 			if 'add' in message.content:
-				playlist = open(playlist, 'a')
+				list = open(playlist, 'a')
 
 				await client.send_message(message.channel, 'I am adding ' + ytplayer.title + ' to the random playlist')
-				playlist.write('\n' + ytplayer.url)
-				playlist.flush()
-				playlist.close()
+				list.write('\n' + ytplayer.url)
+				list.flush()
+				list.close()
+			if 'blacklist' in message.content:
+				list = open(blacklist, 'a')
+				
+				await client.send_message(message.channel, 'I am blacklisting ' + ytplayer.title + ' from being played')
+				list.write('\n' + ytplayer.url)
+				list.flush()
+				list.close
 			if 'wtfboom' in message.content:
 				if player != None:
 					player.stop()
@@ -468,6 +490,10 @@ async def on_message(message):
 				await playRandom(message, 1)
 		elif message.content.startswith('!playyt'):
 			if 'https' in message.content:
+				if blacklistCheck(message, message.content[8:]):
+					await client.send_message(message.channel, "Sorry, I can't play that")
+					return
+
 				tempytplayer = await vclient.create_ytdl_player(message.content[8:])
 				tempytplayer.after = playNext
 				ytQueue.put(tempytplayer)
@@ -485,6 +511,10 @@ async def on_message(message):
 
 					vid =  soup.find(attrs={'class':'yt-uix-tile-link'})
 					theURL = "https://youtube.com" + vid['href']
+
+					if blacklistCheck(message, theURL):
+						await client.send_message(message.channel, "Sorry, I can't play that")
+						return
 
 					if ytQueue.empty() and ytplayer == None:
 						await client.send_message(message.channel, "Playing : " + theURL)
