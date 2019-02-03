@@ -382,6 +382,33 @@ def blacklistCheck(message, theURL):
 	f.close()
 	return flag
 
+def listDupeCheck(theFile, message):
+	toAdd = ''
+	if 'https' in message.content:
+		toAdd = message.content[16:]
+	else:
+		toAdd = ytplayer.url
+	
+	check = open(theFile, 'r')
+	for line in check:
+		if toAdd in line:
+			sys.stdout.flush()
+			return True
+	check.close()
+	return False
+
+def listAdd(theFile, message):
+	toAdd = ''
+	if 'https' in message.content:
+		toAdd = message.content[16:]
+	else:
+		toAdd = ytplayer.url
+
+	list = open(theFile, 'a')
+	list.write('\n' + toAdd)
+	list.flush()
+	list.close()
+
 @client.event
 async def on_message(message):
 	global vclient, ytplayer, ytQueue, player, adminObjs, playlist, blacklist
@@ -397,20 +424,17 @@ async def on_message(message):
 
 		if message.author in adminObjs:
 			if 'playlist' in message.content:
-				list = open(playlist, 'a')
-
-				await client.send_message(message.channel, 'I am adding ' + ytplayer.title + ' to the random playlist')
-				list.write('\n' + ytplayer.url)
-				list.flush()
-				list.close()
+				if not listDupeCheck(playlist, message):
+					listAdd(playlist, message)
+					await client.add_reaction(message, '👍')
+				else:
+					await client.send_message(message.channel, 'That video is already in my playlist!')
 			if 'blacklist' in message.content:
-				list = open(blacklist, 'a')
-				
-				await client.send_message(message.channel, 'I am blacklisting ' + ytplayer.title + ' from being played')
-				list.write('\n' + ytplayer.url)
-				list.flush()
-				list.close
-				ytplayer.stop()
+				if not listDupeCheck(blacklist, message):
+					listAdd(blacklist, message)
+					await client.add_reaction(message, '👍')
+				else:
+					await client.send_message(message.channel, 'That video is already in my blacklist!')
 			if 'wtfboom' in message.content:
 				if ytplayer == None:
 					if player != None:
@@ -495,6 +519,8 @@ async def on_message(message):
 			else:
 				await playRandom(message, 1)
 		elif message.content.startswith('!playyt'):
+			if player != None:
+				player.stop()
 			if 'https' in message.content:
 				if blacklistCheck(message, message.content[8:]):
 					await client.send_message(message.channel, "Sorry, I can't play that")

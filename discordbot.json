@@ -3,6 +3,8 @@
 	"password"	: "",
 	"soundsdir"	: "",
 	"playlist"	: "",
+	"blacklist"	: "",
 	"commands"	: "",
-	"admin"		: ""
+	"admins"	: [     "",
+				"" ]
 }
