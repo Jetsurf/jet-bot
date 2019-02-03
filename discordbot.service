@@ -1,0 +1,13 @@
+[Unit]
+Description=Discord Python Bot
+After=multi-user.target
+
+[Service]
+Type=simple
+ExecStart=/home/discordbot/discordbot/bot.py
+Restart=always
+WorkingDirectory=/home/discordbot/discordbot
+User=discordbot
+
+[Install]
+WantedBy=multi-user.target

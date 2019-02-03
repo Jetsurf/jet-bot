@@ -11,13 +11,19 @@ resolved, but the !us/jp/eu role commands are not.
 ## Installation
 Requires https://github.com/Rapptz/discord.py discord python library to 
 function.
+
 Requires youtube-dl and ffmpeg for online video/music playback.
+
 Soundclips are to be placed in a directory defined by discordbot.json.
+
 Likely more dependencies needed to be listed later.
 
 ## Configuration
 An example configuration file is given at discordbot.json.example.
 This file needs to be completed and moved to discordbot.json.
+
+Also, discordbot.service will need to be played in
+/etc/systemd/system/multi-user.target.wants/ for !restart to work.
 
 Playlist/Blacklist files are simple .txt files. They are simply a
 file containing the links to videos/songs to play with !playrandom
