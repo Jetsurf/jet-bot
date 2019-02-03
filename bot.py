@@ -21,19 +21,19 @@ vclient = None
 ytQueue = queue.Queue()
 ytplayer = None
 player = None
-adminObj = None
+adminObjs = []
+adminIDs = ''
 email = ''
 password = ''
 log = ''
 soundsDir = ''
 playlist = ''
 commands = ''
-adminID = ''
 blacklist = ''
 configData = None
 
 def loadConfig(firstRun=0):
-	global email, password, adminID, soundsDir, playlist, commands, blacklist
+	global email, password, adminIDs, soundsDir, playlist, commands, blacklist
 	try:
 		with open('./discordbot.json.secret', 'r') as json_config:
 			configData = json.load(json_config)
@@ -41,7 +41,7 @@ def loadConfig(firstRun=0):
 		if firstRun == 1:
 			email = configData['email']
 			password = configData['password']
-			adminID = configData['admin']
+			adminIDs = configData['admins']
 
 		soundsDir = configData['soundsdir']
 		playlist = configData['playlist']
@@ -50,13 +50,13 @@ def loadConfig(firstRun=0):
 		
 		print('Config Loaded')
 		if firstRun == 0:
-			return 0
+			return True
 	except:
 		print('Failed to load config')
 		if firstRun == 1:
 			quit(1)
 		else:
-			return 1
+			return False
 
 async def setCRole(message):
 	us = discord.utils.get(message.server.roles, name='Americas')
@@ -289,28 +289,31 @@ async def playRandom(message, numToQueue):
 	if numToQueue > 1:
 		await client.send_message(message.channel, "Also queued " + str(numToQueue - 1) + " more song(s) from my playlist")
 
-@client.event
-async def on_ready():
-	global adminObj
-	gotAdmin = 0
+def scanAdmins(firstRun=0):
+	global adminObjs, adminIDs
 
-	print('Logged in as,', client.user.name, client.user.id)
-	print('------')
-	await client.change_presence(game=discord.Game(name="Use !help for directions!", type=0))
+	if firstRun:
+		print("Searching for admins: " + str(adminIDs))
+	else:
+		print("Rescanning for admins")
 
 	for server in client.servers:
-		if gotAdmin == 1:
-			break
 		for mem in server.members:
-			if mem.id == adminID:
-				print('Found my admin, all good for DM\'s')
-				adminObj = mem
-				gotAdmin = 1
-				break
-	if adminObj == None:
+			if mem.id in adminIDs and mem not in adminObjs:
+				print('Found admin ' + mem.name)
+				adminObjs.append(mem)
+				
+	if len(adminObjs) == 0:
 		print('Failed to find admin for some reason, some logging will be borked')
 	sys.stdout.flush()
 
+@client.event
+async def on_ready():
+	print('Logged in as,', client.user.name, client.user.id)
+	print('------')
+	await client.change_presence(game=discord.Game(name="Use !help for directions!", type=0))
+	scanAdmins(1)
+	
 def playNext():
 	global ytQueue, ytplayer
 
@@ -355,15 +358,16 @@ async def playSound(command, message):
 
 @client.event
 async def on_member_remove(member):
-	global adminObj
+	global adminObjs
 
-	if adminObj == None:
+	if len(adminObjs) == 0:
 		return
 	else:
-		await client.send_message(adminObj, "Someone left a server, seeing if this works!")
-		print(member.nick + " left a server")
-		await client.send_message(adminObj, member.nick)
-		sys.stdout.flush()
+		for mem in adminOjbs:
+			await client.send_message(adminObj, "Someone left a server, seeing if this works!")
+			print(member.nick + " left a server")
+			await client.send_message(adminObj, member.nick)
+			sys.stdout.flush()
 
 def blacklistCheck(message, theURL):
 	global blacklist
@@ -380,19 +384,19 @@ def blacklistCheck(message, theURL):
 
 @client.event
 async def on_message(message):
-	global vclient, ytplayer, ytQueue, player, adminObj, playlist, blacklist
+	global vclient, ytplayer, ytQueue, player, adminObjs, playlist, blacklist
 
 	command = message.content
 
-	if message.server == None and message.author.id != adminObj:
+	if message.server == None and message.author not in adminObjs:
 		return
 	if message.author.name == client.user.name:
 		return
 	if message.content.startswith("!admin"):
 		print(message.author.name + " " + message.author.id + " tried to run an admin command")
 
-		if message.author.id == adminID:
-			if 'add' in message.content:
+		if message.author in adminObjs:
+			if 'playlist' in message.content:
 				list = open(playlist, 'a')
 
 				await client.send_message(message.channel, 'I am adding ' + ytplayer.title + ' to the random playlist')
@@ -406,18 +410,20 @@ async def on_message(message):
 				list.write('\n' + ytplayer.url)
 				list.flush()
 				list.close
+				ytplayer.stop()
 			if 'wtfboom' in message.content:
-				if player != None:
-					player.stop()
-				player = vclient.create_ffmpeg_player(soundsDir + '/wtfboom.mp3')
-				player.volume = .5
-				player.start()
+				if ytplayer == None:
+					if player != None:
+						player.stop()
+					player = vclient.create_ffmpeg_player(soundsDir + '/wtfboom.mp3')
+					player.volume = .5
+					player.start()
 			if 'tts' in message.content:
 				await client.send_message(message.channel, message.content[11:], tts=True)
 			if 'reload' in message.content:
-				stat = loadConfig()
-				if stat == 0:
-					await client.send_message(message.channel, "Successfully reloaded config")
+				if loadConfig():
+					await client.send_message(message.channel, "Successfully reloaded config, rescanning admin users")
+					scanAdmins()
 				else:
 					await client.send_message(message.channel, "Failed to reload config")
 		else:
