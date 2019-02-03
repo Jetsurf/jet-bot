@@ -35,7 +35,7 @@ configData = None
 def loadConfig(firstRun=0):
 	global email, password, adminIDs, soundsDir, playlist, commands, blacklist
 	try:
-		with open('./discordbot.json.secret', 'r') as json_config:
+		with open('./discordbot.json', 'r') as json_config:
 			configData = json.load(json_config)
 
 		if firstRun == 1:
@@ -363,12 +363,11 @@ async def on_member_remove(member):
 	if len(adminObjs) == 0:
 		return
 	else:
+		print(member.name + " left the server")
+		sys.stdout.flush()
 		for mem in adminOjbs:
-			await client.send_message(adminObj, "Someone left a server, seeing if this works!")
-			print(member.nick + " left a server")
-			await client.send_message(adminObj, member.nick)
-			sys.stdout.flush()
-
+			await client.send_message(adminObj, member.name + " left the server")
+			
 def listCheck(theFile, theURL):
 	global blacklist
 	flag = False
@@ -381,13 +380,7 @@ def listCheck(theFile, theURL):
 	f.close()
 	return flag
 
-def listAdd(theFile, message):
-	toAdd = ''
-	if 'https' in message.content:
-		toAdd = message.content[16:]
-	else:
-		toAdd = ytplayer.url
-
+def listAdd(theFile, toAdd):
 	list = open(theFile, 'a')
 	list.write('\n' + toAdd)
 	list.flush()
@@ -450,7 +443,7 @@ async def on_message(message):
 			await client.send_message(message.channel, message.author.name + " you are not my master... :cop:")
 	elif '!restart' in message.content:
 		await client.send_message(message.channel, 'Attempting to restart if I can, give me a second')
-		print("Going for restart")
+		print("Starting restart")
 
 		if ytplayer != None:
 			ytplayer.stop()
@@ -463,6 +456,7 @@ async def on_message(message):
 		player = None
 		ytplayer = None
 		await client.close()
+		print("Disconnected from discord, exiting")
 		sys.stdout.flush()
 		quit(0)
 	elif message.content.startswith('!alive'):
@@ -482,10 +476,8 @@ async def on_message(message):
 		theSounds = theSounds.replace('.mp3', '')
 		theSounds = theSounds.replace('\n', ', ')
 		await client.send_message(message.channel, "Current Sounds:\n```" + theSounds + "```")
-	elif message.content.startswith('!joinvoice'):
-		vclient = await joinVoiceChannel(message.content[11:], message)
-	elif message.content.startswith('!join'):
-		vclient = await joinVoiceChannel(message.content[6:], message)
+	elif message.content.startswith('!joinvoice') or message.content.startswith('!join'):
+		vclient = await joinVoiceChannel(message.content.split(' ')[1], message)
 	elif message.content.startswith('!currentmaps'):
 		await maps(message)
 	elif 'nextmaps' in message.content and '!' in message.content:
@@ -509,30 +501,33 @@ async def on_message(message):
 		elif message.content.startswith('!leavevoice'):
 			await vclient.disconnect()
 			vclient = None
-		elif message.content.startswith('!playRandom'):
+		elif message.content.startswith('!playrandom'):
 			if len(message.content) > 11:
-				await playRandom(message, int(message.content[12:]))
+				await playRandom(message, int(essage.content.split(' ')[1]))
 			else:
 				await playRandom(message, 1)
-		elif message.content.startswith('!playyt'):
+		elif message.content.startswith('!play'):
 			if player != None:
 				player.stop()
 			if 'https' in message.content:
-				if listCheck(blacklist, message.content[8:]):
+				if listCheck(blacklist, message.content.split(' ')[1]):
 					print(message.author.name + " tried to play a blacklisted video")
 					await client.send_message(message.channel, "Sorry, I can't play that")
 					return
+				try:
+					tempytplayer = await vclient.create_ytdl_player(message.content.split(' ')[1])
+					tempytplayer.after = playNext
+					ytQueue.put(tempytplayer)
 
-				tempytplayer = await vclient.create_ytdl_player(message.content[8:])
-				tempytplayer.after = playNext
-				ytQueue.put(tempytplayer)
-
-				play()
-				await client.add_reaction(message, '👍')
+					play()
+					await client.add_reaction(message, '👍')
+				except Exception as e:
+					print(str(e))
+					await client.send_message(message.channel, "Sorry, I can't play that, give this info to jetsurf: " + str(e))
 			else:
 				try:
-					print ("Searching : " + message.content[8:])
-					query = urllib.request.pathname2url(message.content[8:])
+					print("Searching : " + essage.content.split(' ')[1])
+					query = urllib.request.pathname2url(message.content.split(' ')[1])
 					url = "https://youtube.com/results?search_query=" + query
 					response = urllib.request.urlopen(url)
 					html = response.read()
@@ -559,19 +554,14 @@ async def on_message(message):
 					play()
 				except Exception as e:
 					print(str(e))
-					await client.send_message(message.channel, "Sorry, I can't play that")
-		elif message.content.startswith('!stop') or message.content.startswith('!pause') or message.content.startswith('!play'):
+					await client.send_message(message.channel, "Sorry, I can't play that, give this info to jetsurf: " + str(e))
+		elif message.content.startswith('!stop'):
 			if ytplayer != None:
-				if message.content.startswith('!stop'):
-					ytplayer.stop()
-				if message.content.startswith('!pause') and ytplayer.is_playing():
-					ytplayer.pause()
-				if message.content.startswith('!play') and ytplayer.is_playing() == False:
-					ytplayer.resume()
+				ytplayer.stop()
 			else: 
 				await client.send_message(message.channel, "I'm not playing anything right now")
 		elif message.content.startswith('!volume'):
-			vol = int(message.content[8:])
+			vol = int(message.content.split(' ')[1])
 			if vol > 50:
 				vol = 50
 

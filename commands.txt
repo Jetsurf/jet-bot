@@ -1,10 +1,8 @@
 Here is how to control me! :
 !joinvoice CHANNELNAME : Join a Voice Channel, must be exact Upper/Lower case
-!playyt URL OR search : Play/Queue Up a Youtube Video to Play from URL or YT search
-!playRandom : Plays a random YT Video from my playlist
+!play URL OR search : Play/Queue Up a Youtube Video to Play from URL or YT search
+!playrandom # : Plays a random YT Video from my playlist, optional #, queues # videos
 !currentsong : Displays the currently playing Song/Video
-!play : Resume the current paused YT video
-!pause : Pause the currently playing YT video
 !stop : Stop a current playing video and play the next one
 !volume : Sets my global voice volume (Youtube defaults to 7%, caps at 50% vol)
 !sounds : List all possible sounds, prepend ! to play

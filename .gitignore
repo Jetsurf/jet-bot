@@ -1,3 +1,4 @@
-*.secret
+discordbot.json
 *.log
 playlist.txt
+blacklist.txt
