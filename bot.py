@@ -369,33 +369,17 @@ async def on_member_remove(member):
 			await client.send_message(adminObj, member.nick)
 			sys.stdout.flush()
 
-def blacklistCheck(message, theURL):
+def listCheck(theFile, theURL):
 	global blacklist
 	flag = False
 
-	with open(blacklist, 'r') as f:
+	with open(theFile, 'r') as f:
 		for line in f:
 			if theURL in line:
-				print(message.author.name + ' tried to play blacklisted song ' + theURL)
 				flag = True
 				break
 	f.close()
 	return flag
-
-def listDupeCheck(theFile, message):
-	toAdd = ''
-	if 'https' in message.content:
-		toAdd = message.content[16:]
-	else:
-		toAdd = ytplayer.url
-	
-	check = open(theFile, 'r')
-	for line in check:
-		if toAdd in line:
-			sys.stdout.flush()
-			return True
-	check.close()
-	return False
 
 def listAdd(theFile, message):
 	toAdd = ''
@@ -424,14 +408,26 @@ async def on_message(message):
 
 		if message.author in adminObjs:
 			if 'playlist' in message.content:
-				if not listDupeCheck(playlist, message):
-					listAdd(playlist, message)
+				toAdd = ''
+				if 'https' in message.content:
+					toAdd = message.content[16:]
+				else:
+					toAdd = ytplayer.url
+
+				if not listCheck(playlist, toAdd):
+					listAdd(playlist, toAdd)
 					await client.add_reaction(message, '👍')
 				else:
 					await client.send_message(message.channel, 'That video is already in my playlist!')
 			if 'blacklist' in message.content:
-				if not listDupeCheck(blacklist, message):
-					listAdd(blacklist, message)
+				toAdd = ''
+				if 'https' in message.content:
+					toAdd = message.content[16:]
+				else:
+					toAdd = ytplayer.url
+
+				if not listCheck(blacklist, toAdd):
+					listAdd(blacklist, toAdd)
 					await client.add_reaction(message, '👍')
 				else:
 					await client.send_message(message.channel, 'That video is already in my blacklist!')
@@ -522,7 +518,8 @@ async def on_message(message):
 			if player != None:
 				player.stop()
 			if 'https' in message.content:
-				if blacklistCheck(message, message.content[8:]):
+				if listCheck(blacklist, message.content[8:]):
+					print(message.author.name + " tried to play a blacklisted video")
 					await client.send_message(message.channel, "Sorry, I can't play that")
 					return
 
@@ -544,7 +541,8 @@ async def on_message(message):
 					vid =  soup.find(attrs={'class':'yt-uix-tile-link'})
 					theURL = "https://youtube.com" + vid['href']
 
-					if blacklistCheck(message, theURL):
+					if listCheck(blacklist, theURL):
+						print(message.author.name + " tried to play a blacklisted video")
 						await client.send_message(message.channel, "Sorry, I can't play that")
 						return
 
