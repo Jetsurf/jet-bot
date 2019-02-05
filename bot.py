@@ -9,7 +9,6 @@ import urllib.request
 import subprocess
 import json
 import time
-import json
 import datetime
 import calendar
 from bs4 import BeautifulSoup
@@ -41,8 +40,8 @@ def loadConfig(firstRun=0):
 		if firstRun == 1:
 			email = configData['email']
 			password = configData['password']
-			adminIDs = configData['admins']
 
+		adminIDs = configData['admins']
 		soundsDir = configData['soundsdir']
 		playlist = configData['playlist']
 		commands = configData['commands']
@@ -272,7 +271,6 @@ async def playRandom(message, numToQueue):
 				continue
 			else:
 				toPlay.append(numToPlay)
-				print("Num to play: " + str(numToPlay))
 				print("I am going to play track " + str(numToPlay) + " " + x[numToPlay - 1])
 				break
 
@@ -282,7 +280,6 @@ async def playRandom(message, numToQueue):
 
 		if ytplayer == None and vclient != None:
 			await client.send_message(message.channel, "Playing : " + x[toPlay[0] - 1])
-			print("Queued up!")
 		if y == 1:
 			print("I am queueing song " + str(numToPlay) + " " + x[numToPlay - 1])
 		play()
@@ -304,7 +301,7 @@ def scanAdmins(firstRun=0):
 				adminObjs.append(mem)
 				
 	if len(adminObjs) == 0:
-		print('Failed to find admin for some reason, some logging will be borked')
+		print('Failed to find any admins, check the IDs in the config')
 	sys.stdout.flush()
 
 @client.event
@@ -366,7 +363,7 @@ async def on_member_remove(member):
 		print(member.name + " left the server")
 		sys.stdout.flush()
 		for mem in adminOjbs:
-			await client.send_message(adminObj, member.name + " left the server")
+			await client.send_message(mem, member.name + " left the server")
 			
 def listCheck(theFile, theURL):
 	global blacklist
@@ -411,7 +408,7 @@ async def on_message(message):
 					listAdd(playlist, toAdd)
 					await client.add_reaction(message, '👍')
 				else:
-					await client.send_message(message.channel, 'That video is already in my playlist!')
+					await client.send_message(message.channel, 'That is already in my playlist!')
 			if 'blacklist' in message.content:
 				toAdd = ''
 				if 'https' in message.content:
@@ -423,7 +420,7 @@ async def on_message(message):
 					listAdd(blacklist, toAdd)
 					await client.add_reaction(message, '👍')
 				else:
-					await client.send_message(message.channel, 'That video is already in my blacklist!')
+					await client.send_message(message.channel, 'That is already in my blacklist!')
 			if 'wtfboom' in message.content:
 				if ytplayer == None:
 					if player != None:

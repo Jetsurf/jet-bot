@@ -1,5 +1,5 @@
 Here is how to control me! :
-!joinvoice CHANNELNAME : Join a Voice Channel, must be exact Upper/Lower case
+!joinvoice or !join CHANNELNAME : Join a Voice Channel, must be exact Upper/Lower case
 !play URL OR search : Play/Queue Up a Youtube Video to Play from URL or YT search
 !playrandom # : Plays a random YT Video from my playlist, optional #, queues # videos
 !currentsong : Displays the currently playing Song/Video
