@@ -22,8 +22,7 @@ ytplayer = None
 player = None
 adminObjs = []
 adminIDs = ''
-email = ''
-password = ''
+token = ''
 log = ''
 soundsDir = ''
 playlist = ''
@@ -32,15 +31,14 @@ blacklist = ''
 configData = None
 
 def loadConfig(firstRun=0):
-	global email, password, adminIDs, soundsDir, playlist, commands, blacklist
+	global token, adminIDs, soundsDir, playlist, commands, blacklist
 	try:
 		with open('./discordbot.json', 'r') as json_config:
 			configData = json.load(json_config)
 
 		if firstRun == 1:
-			email = configData['email']
-			password = configData['password']
-
+			token = configData['token']
+			
 		adminIDs = configData['admins']
 		soundsDir = configData['soundsdir']
 		playlist = configData['playlist']
@@ -394,8 +392,6 @@ async def on_message(message):
 	if message.author.name == client.user.name:
 		return
 	if message.content.startswith("!admin"):
-		print(message.author.name + " " + message.author.id + " tried to run an admin command")
-
 		if message.author in adminObjs:
 			if 'playlist' in message.content:
 				toAdd = ''
@@ -437,7 +433,8 @@ async def on_message(message):
 				else:
 					await client.send_message(message.channel, "Failed to reload config")
 		else:
-			await client.send_message(message.channel, message.author.name + " you are not my master... :cop:")
+			print(message.author.name + " " + message.author.id + " tried to run an admin command")
+			await client.send_message(message.channel, message.author.name + " you are not an admin... :cop:")
 	elif '!restart' in message.content:
 		await client.send_message(message.channel, 'Attempting to restart if I can, give me a second')
 		print("Starting restart")
@@ -506,7 +503,7 @@ async def on_message(message):
 		elif message.content.startswith('!play'):
 			if player != None:
 				player.stop()
-			if 'https' in message.content:
+			if 'https://' in message.content:
 				if listCheck(blacklist, message.content.split(' ')[1]):
 					print(message.author.name + " tried to play a blacklisted video")
 					await client.send_message(message.channel, "Sorry, I can't play that")
@@ -523,15 +520,27 @@ async def on_message(message):
 					await client.send_message(message.channel, "Sorry, I can't play that, give this info to jetsurf: " + str(e))
 			else:
 				try:
-					print("Searching : " + essage.content.split(' ')[1])
-					query = urllib.request.pathname2url(message.content.split(' ')[1])
-					url = "https://youtube.com/results?search_query=" + query
-					response = urllib.request.urlopen(url)
-					html = response.read()
-					soup = BeautifulSoup(html, "lxml")
+					print("Searching : " + ''.join(message.content.split(' ')[2:]))
+					if 'youtube' in message.content:
+						query = urllib.request.pathname2url(''.join(message.content.split(' ')[2:]))
+						url = "https://youtube.com/results?search_query=" + query
+						response = urllib.request.urlopen(url)
+						html = response.read()
+						soup = BeautifulSoup(html, "lxml")
 
-					vid =  soup.find(attrs={'class':'yt-uix-tile-link'})
-					theURL = "https://youtube.com" + vid['href']
+						vid =  soup.find(attrs={'class':'yt-uix-tile-link'})
+						theURL = "https://youtube.com" + vid['href']
+					elif 'soundcloud' in message.content:
+						query = urllib.request.pathname2url(message.content.split(' ')[2:])
+						url = "https://soundcloud.com/search?q=" + query
+						response = urllib.request.urlopen(url)
+						html = response.read()
+						soup = BeautifulSoup(html, "lxml")
+
+						vid =  soup.find("a", {"class":"trackItem__trackTitle sc-link-dark sc-font-light"})
+						theURL = "https://soundcloud.com" + vid['href']
+						await client.send_message(message.channel, 'DEBUG: Searching SC for: ' + theURL)
+						return
 
 					if listCheck(blacklist, theURL):
 						print(message.author.name + " tried to play a blacklisted video")
@@ -559,8 +568,8 @@ async def on_message(message):
 				await client.send_message(message.channel, "I'm not playing anything right now")
 		elif message.content.startswith('!volume'):
 			vol = int(message.content.split(' ')[1])
-			if vol > 50:
-				vol = 50
+			if vol > 60:
+				vol = 60
 
 			await client.send_message(message.channel, "Setting Volume to " + str(vol) + "%")
 			ytplayer.volume = float(vol / 100)
@@ -576,5 +585,5 @@ loadConfig(firstRun=1)
 print('Logging into discord')
 
 sys.stdout.flush()
-client.run(email, password)
+client.run(token)
 
