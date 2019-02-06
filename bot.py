@@ -3,6 +3,7 @@
 import discord
 import asyncio
 import queue
+import requests
 import sys
 import urllib
 import urllib.request
@@ -11,11 +12,13 @@ import json
 import time
 import datetime
 import calendar
+import soundcloud
 from bs4 import BeautifulSoup
 from subprocess import call
 from random import randint
 
 client = discord.Client()
+scclient = None
 vclient = None
 ytQueue = queue.Queue()
 ytplayer = None
@@ -31,7 +34,7 @@ blacklist = ''
 configData = None
 
 def loadConfig(firstRun=0):
-	global token, adminIDs, soundsDir, playlist, commands, blacklist
+	global token, adminIDs, soundsDir, playlist, commands, blacklist, scuser, scpass
 	try:
 		with open('./discordbot.json', 'r') as json_config:
 			configData = json.load(json_config)
@@ -519,27 +522,26 @@ async def on_message(message):
 					print(str(e))
 					await client.send_message(message.channel, "Sorry, I can't play that, give this info to jetsurf: " + str(e))
 			else:
+
 				try:
-					print("Searching : " + ''.join(message.content.split(' ')[2:]))
 					if 'youtube' in message.content:
 						query = urllib.request.pathname2url(''.join(message.content.split(' ')[2:]))
 						url = "https://youtube.com/results?search_query=" + query
 						response = urllib.request.urlopen(url)
 						html = response.read()
 						soup = BeautifulSoup(html, "lxml")
-
 						vid =  soup.find(attrs={'class':'yt-uix-tile-link'})
 						theURL = "https://youtube.com" + vid['href']
 					elif 'soundcloud' in message.content:
-						query = urllib.request.pathname2url(message.content.split(' ')[2:])
-						url = "https://soundcloud.com/search?q=" + query
-						response = urllib.request.urlopen(url)
-						html = response.read()
-						soup = BeautifulSoup(html, "lxml")
-
-						vid =  soup.find("a", {"class":"trackItem__trackTitle sc-link-dark sc-font-light"})
-						theURL = "https://soundcloud.com" + vid['href']
-						await client.send_message(message.channel, 'DEBUG: Searching SC for: ' + theURL)
+						query = message.content[17:]
+						url = "https://soundcloud.com/search/sounds?q=" + query
+						response = requests.get(url)
+						soup = BeautifulSoup(response.text, "lxml")
+						song = soup.find("h2")
+						song = song.a.get("href")
+						theURL = "https://soundcloud.com" + song
+					else:
+						await client.send_message(message.channel, "Don't know where to search, try !play youtube SEARCH or !play soundcloud SEARCH")
 						return
 
 					if listCheck(blacklist, theURL):
@@ -582,6 +584,7 @@ sys.stdout = open('./discordbot.log', 'a')
 
 print('**********NEW SESSION**********')
 loadConfig(firstRun=1)
+
 print('Logging into discord')
 
 sys.stdout.flush()
