@@ -12,7 +12,6 @@ import json
 import time
 import datetime
 import calendar
-import soundcloud
 from bs4 import BeautifulSoup
 from subprocess import call
 from random import randint

@@ -5,7 +5,7 @@ maps/splatnet to help discord servers to access this information
 quickly.
 
 # NOTE
-This bot is still hardcoded with a few things in place, most have been
+This bot still has some hardcoded things in place, most have been
 resolved, but the !us/jp/eu role commands are not.
 
 ## Installation
@@ -27,7 +27,7 @@ Also, discordbot.service will need to be played in
 
 Playlist/Blacklist files are simple .txt files. They are simply a
 file containing the links to videos/songs to play with !playrandom
-or to be blacklisted from being played. To start a file, create
+or to be blacklisted from being played at all. To start a file, create
 a new file, paste one link in, and do not add a newline to the end of
 the link.
 
@@ -40,14 +40,15 @@ Complete the discordbot.json config file with the necessary fields.
 Currently implemented commands are as follows:
  - !joinvoice CHANNELNAME : Join a Voice Channel, must be exact
    Upper/Lower case
- - !play URL OR search : Play/Queue Up a video/song to Play from
-   URL or YT search
- - !playrandom # : Plays a random YT Video from my playlist, optional #,
+ - !play URL : Play/Queue Up a website to Play from URL
+ - !play SOURCE SEARCH : Searches SOURCE for SEARCH to play (Supports
+   Youtube/Soundcloud)
+ - !playrandom # : Plays a random url from my playlist. Optional #,
    queues # videos to play
  - !currentsong : Displays the currently playing Song/Video
  - !stop : Stop a current playing video and play the next one
  - !volume : Sets my global voice volume (Youtube defaults to 7%, caps
-   at 50% vol)
+   at 60% vol)
  - !sounds : List all possible sounds, prepend ! to play
  - !restart : Restarts me if I get stuck
  - !currentmaps : Displays the current Splatoon 2 Gamemodes/Maps
