@@ -17,7 +17,6 @@ from subprocess import call
 from random import randint
 
 client = discord.Client()
-scclient = None
 vclient = None
 ytQueue = queue.Queue()
 ytplayer = None
@@ -33,7 +32,7 @@ blacklist = ''
 configData = None
 
 def loadConfig(firstRun=0):
-	global token, adminIDs, soundsDir, playlist, commands, blacklist, scuser, scpass
+	global token, adminIDs, soundsDir, playlist, commands, blacklist
 	try:
 		with open('./discordbot.json', 'r') as json_config:
 			configData = json.load(json_config)
@@ -81,7 +80,7 @@ def getJSON(url):
 	data = json.loads(response.read().decode())
 	return data
 
-async def spParser(message):
+async def gearParser(message):
 	theTime = int(time.mktime(time.gmtime()))
 	data = getJSON("https://splatoon2.ink/data/merchandises.json")
 	gear = data['merchandises']
