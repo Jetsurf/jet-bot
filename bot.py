@@ -472,7 +472,7 @@ async def on_message(message):
 		theSounds = theSounds.replace('\n', ', ')
 		await client.send_message(message.channel, "Current Sounds:\n```" + theSounds + "```")
 	elif message.content.startswith('!joinvoice') or message.content.startswith('!join'):
-		vclient = await joinVoiceChannel(message.content.split(' ')[1], message)
+		vclient = await joinVoiceChannel(' '.join(message.content.split()[1:]), message)
 	elif message.content.startswith('!currentmaps'):
 		await maps(message)
 	elif 'nextmaps' in message.content and '!' in message.content:
@@ -523,7 +523,7 @@ async def on_message(message):
 
 				try:
 					if 'youtube' in message.content:
-						query = urllib.request.pathname2url(''.join(message.content.split(' ')[2:]))
+						query = urllib.request.pathname2url(' '.join(message.content.split()[2:]))
 						url = "https://youtube.com/results?search_query=" + query
 						response = urllib.request.urlopen(url)
 						html = response.read()
@@ -531,7 +531,7 @@ async def on_message(message):
 						vid =  soup.find(attrs={'class':'yt-uix-tile-link'})
 						theURL = "https://youtube.com" + vid['href']
 					elif 'soundcloud' in message.content:
-						query = message.content[17:]
+						query = ' '.join(message.content.split()[2:])
 						url = "https://soundcloud.com/search/sounds?q=" + query
 						response = requests.get(url)
 						soup = BeautifulSoup(response.text, "lxml")
