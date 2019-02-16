@@ -19,9 +19,9 @@ class voiceServer():
 		self.soundsDir = soundsDir
 		self.blacklist = lists + '/' + str(id) + '-blacklist.txt'
 		self.playlist = lists + '/' + str(id) + '-playlist.txt'
-		f = open(self.blacklist, 'w+')
+		f = open(self.blacklist, 'a+')
 		f.close()
-		f = open(self.playlist, 'w+')
+		f = open(self.playlist, 'a+')
 		f.close()
 
 	async def joinVoiceChannel(self, channelName, message):
@@ -110,8 +110,11 @@ class voiceServer():
 					response = urllib.request.urlopen(url)
 					html = response.read()
 					soup = BeautifulSoup(html, "lxml")
-					vid =  soup.find(attrs={'class':'yt-uix-tile-link'})
-					theURL = "https://youtube.com" + vid['href']
+					vid =  soup.find_all(attrs={'class':'yt-uix-tile-link'})
+					if 'googleadservices' in vid[0]['href']:
+						theURL = 'https://youtube.com' + vid[1]['href']
+					else:	
+						theURL = "https://youtube.com" + vid[0]['href']
 				elif 'soundcloud' in message.content:
 					query = ' '.join(message.content.split()[2:])
 					url = "https://soundcloud.com/search/sounds?q=" + query
@@ -123,11 +126,10 @@ class voiceServer():
 				else:
 					await self.client.send_message(message.channel, "Don't know where to search, try !play youtube SEARCH or !play soundcloud SEARCH")
 					return
-
-					if listCheck(self.blacklist, theURL):
-						print(message.author.name + " tried to play a blacklisted video")
-						await self.client.send_message(message.channel, "Sorry, I can't play that")
-						return
+				if self.listCheck(self.blacklist, theURL):
+					print(message.author.name + " tried to play a blacklisted video")
+					await self.client.send_message(message.channel, "Sorry, I can't play that")
+					return
 
 				if self.ytQueue.empty() and self.ytPlayer == None:
 					await self.client.send_message(message.channel, "Playing : " + theURL)

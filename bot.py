@@ -7,6 +7,8 @@ import subprocess
 import json
 import time
 import vserver
+import urllib
+import urllib.request
 from subprocess import call
 
 client = discord.Client()
@@ -292,13 +294,6 @@ async def on_message(message):
 		else:
 			print(message.author.name + " " + message.author.id + " tried to run an admin command")
 			await client.send_message(message.channel, message.author.name + " you are not an admin... :cop:")
-	elif '!restart' in message.content:
-		await client.send_message(message.channel, 'Attempting to restart if I can, give me a second')
-		print("Starting restart")
-		await client.close()
-		print("Disconnected from discord, exiting")
-		sys.stdout.flush()
-		quit(0)
 	elif message.content.startswith('!alive'):
 		text = "Hey " + message.author.name + ", I'm alive so shut the fuck up! :japanese_goblin:"
 		await client.send_message(message.channel, text)
@@ -355,7 +350,7 @@ async def on_message(message):
 				vol = 60
 
 			await client.send_message(message.channel, "Setting Volume to " + str(vol) + "%")
-			serverVoices[theServer].ytplayer.volume = float(vol / 100)
+			serverVoices[theServer].ytPlayer.volume = float(vol / 100)
 		elif message.content.startswith('!'):
 			await serverVoices[theServer].playSound(command, message)
 	sys.stdout.flush()
