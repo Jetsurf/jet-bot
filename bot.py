@@ -3,7 +3,6 @@
 import discord
 import asyncio
 import queue
-import requests
 import sys
 import urllib
 import urllib.request
@@ -12,15 +11,11 @@ import json
 import time
 import datetime
 import calendar
-from bs4 import BeautifulSoup
+import vserver
 from subprocess import call
-from random import randint
 
 client = discord.Client()
-vclient = None
-ytQueue = queue.Queue()
-ytplayer = None
-player = None
+serverVoices = {}
 adminObjs = []
 adminIDs = ''
 token = ''
@@ -39,13 +34,13 @@ def loadConfig(firstRun=0):
 
 		if firstRun == 1:
 			token = configData['token']
-			
+
 		adminIDs = configData['admins']
 		soundsDir = configData['soundsdir']
 		playlist = configData['playlist']
 		commands = configData['commands']
 		blacklist = configData['blacklist']
-		
+
 		print('Config Loaded')
 		if firstRun == 0:
 			return True
@@ -228,62 +223,16 @@ async def srParser(message, getNext=0):
 
 	await client.send_message(message.channel, theString)
 
-async def joinVoiceChannel(channelName, message):
-	global vclient
-	id = 0
-
-	if vclient != None:
-		print("Disconnecting from Voice")
-		await vclient.disconnect()
-
-	print ("Trying to join voice  channel: " + str(channelName))
-
-	server = message.server
-	for channel in server.channels:
-		if channel.name == channelName:
-			id = channel.id
-			break
-	if id != 0:
-		print("Joining Voice Channel: " + channelName)
-		vclient = await client.join_voice_channel(client.get_channel(id))
-		return vclient
-	else:
-		print ("Fail to join channel " + channelName)
-		await client.send_message(message.channel, "I could not join channel " + str(channelName))
-
 @asyncio.coroutine
-async def playRandom(message, numToQueue):
-	global vclient, ytplayer, ytQueue
-	x = []
-	toPlay = []
-	tempytplayer = None
+async def joinVoiceChannel(channelName, message):
+	global client, soundsDir, playlist, blacklist
+	theServer = message.server.id
 
-	with open(playlist, 'r') as f:
-		for line in f:
-			x.append(line)
-
-	numToQueue = min(numToQueue, len(x))
-	for y in range(numToQueue):
-		while 1:
-			numToPlay = randint(1, len(x))
-			if numToPlay in toPlay:
-				continue
-			else:
-				toPlay.append(numToPlay)
-				print("I am going to play track " + str(numToPlay) + " " + x[numToPlay - 1])
-				break
-
-		tempytplayer = await vclient.create_ytdl_player(x[numToPlay - 1])
-		tempytplayer.after = playNext
-		ytQueue.put(tempytplayer)
-
-		if ytplayer == None and vclient != None:
-			await client.send_message(message.channel, "Playing : " + x[toPlay[0] - 1])
-		if y == 1:
-			print("I am queueing song " + str(numToPlay) + " " + x[numToPlay - 1])
-		play()
-	if numToQueue > 1:
-		await client.send_message(message.channel, "Also queued " + str(numToQueue - 1) + " more song(s) from my playlist")
+	if theServer not in serverVoices:
+		serverVoices[theServer] = vserver.voiceServer(client, theServer, soundsDir, playlist, blacklist)
+	
+	await serverVoices[theServer].joinVoiceChannel(channelName, message)
+	sys.stdout.flush()
 
 def scanAdmins(firstRun=0):
 	global adminObjs, adminIDs
@@ -310,47 +259,6 @@ async def on_ready():
 	await client.change_presence(game=discord.Game(name="Use !help for directions!", type=0))
 	scanAdmins(1)
 	
-def playNext():
-	global ytQueue, ytplayer
-
-	if ytQueue.empty():
-		print("Done playing")
-		ytplayer = None
-	else:
-		print("Playing next video")
-		ytplayer = ytQueue.get()
-		ytplayer.volume = .07
-		ytplayer.start()
-
-def play():
-	global ytplayer
-	global ytQueue
-
-	if ytplayer == None and ytQueue.qsize() == 1:
-		ytplayer = ytQueue.get()
-		print("Starting playing...")
-		ytplayer.volume = .07
-		ytplayer.start()
-	else:
-		print("Currently playing, waiting to play")
-
-async def playSound(command, message):
-	global player, ytplayer
-
-	if ytplayer == None:
-		if player != None:
-			player.stop()
-
-		player = vclient.create_ffmpeg_player(soundsDir + '/' + command[1:] + '.mp3')
-
-		if '!wtfboom' in command or '!johncena' in command or '!ohmygod' in command or "!leeroy" in command:
-			player.volume = .1
-		elif '!whosaidthat' in command or '!chrishansen' in command:
-			player.volume = .4
-		else:
-			player.volume = .25
-
-		player.start()
 
 @client.event
 async def on_member_remove(member):
@@ -364,29 +272,13 @@ async def on_member_remove(member):
 		for mem in adminOjbs:
 			await client.send_message(mem, member.name + " left the server")
 			
-def listCheck(theFile, theURL):
-	global blacklist
-	flag = False
-
-	with open(theFile, 'r') as f:
-		for line in f:
-			if theURL in line:
-				flag = True
-				break
-	f.close()
-	return flag
-
-def listAdd(theFile, toAdd):
-	list = open(theFile, 'a')
-	list.write('\n' + toAdd)
-	list.flush()
-	list.close()
 
 @client.event
 async def on_message(message):
-	global vclient, ytplayer, ytQueue, player, adminObjs, playlist, blacklist
+	global serverVoices, ytplayer, ytQueue, player, adminObjs, playlist, blacklist
 
 	command = message.content
+	theServer = message.server.id
 
 	if message.server == None and message.author not in adminObjs:
 		return
@@ -472,7 +364,7 @@ async def on_message(message):
 		theSounds = theSounds.replace('\n', ', ')
 		await client.send_message(message.channel, "Current Sounds:\n```" + theSounds + "```")
 	elif message.content.startswith('!joinvoice') or message.content.startswith('!join'):
-		vclient = await joinVoiceChannel(' '.join(message.content.split()[1:]), message)
+		vclient = await joinVoiceChannel(message.content.split(" ", 1)[1], message)
 	elif message.content.startswith('!currentmaps'):
 		await maps(message)
 	elif 'nextmaps' in message.content and '!' in message.content:
@@ -487,94 +379,32 @@ async def on_message(message):
 		await setCRole(message)
 	elif ('pizza' in message.content.lower() and 'pineapple' in message.content.lower()) or ('\U0001F355' in message.content and '\U0001F34D' in message.content):
 		await client.send_message(message.channel, 'Don\'t ever think pineapple and pizza go together ' + message.author.name + '!!!')
-	elif vclient is not None:
+	elif theServer in serverVoices:
 		if message.content.startswith('!currentsong'):
-			if ytplayer != None:
-				await client.send_message(message.channel, 'Currently Playing Video: ' + ytplayer.url)
+			if serverVoices[theServer].ytPlayer != None:
+				await client.send_message(message.channel, 'Currently Playing Video: ' + serverVoices[theServer].ytPlayer.url)
 			else:
 				await client.send_message(message.channel, 'I\'m not playing anything.')
 		elif message.content.startswith('!leavevoice'):
-			await vclient.disconnect()
-			vclient = None
+			await serverVoices[theServer].vclient.disconnect()
 		elif message.content.startswith('!playrandom'):
 			if len(message.content) > 11:
-				await playRandom(message, int(essage.content.split(' ')[1]))
+				await serverVoices[theServer].playRandom(message, int(message.content.split(' ')[1]))
 			else:
-				await playRandom(message, 1)
+				await serverVoices[theServer].playRandom(message, 1)
 		elif message.content.startswith('!play'):
-			if player != None:
-				player.stop()
-			if 'https://' in message.content:
-				if listCheck(blacklist, message.content.split(' ')[1]):
-					print(message.author.name + " tried to play a blacklisted video")
-					await client.send_message(message.channel, "Sorry, I can't play that")
-					return
-				try:
-					tempytplayer = await vclient.create_ytdl_player(message.content.split(' ')[1])
-					tempytplayer.after = playNext
-					ytQueue.put(tempytplayer)
-
-					play()
-					await client.add_reaction(message, '👍')
-				except Exception as e:
-					print(str(e))
-					await client.send_message(message.channel, "Sorry, I can't play that, give this info to jetsurf: " + str(e))
-			else:
-
-				try:
-					if 'youtube' in message.content:
-						query = urllib.request.pathname2url(' '.join(message.content.split()[2:]))
-						url = "https://youtube.com/results?search_query=" + query
-						response = urllib.request.urlopen(url)
-						html = response.read()
-						soup = BeautifulSoup(html, "lxml")
-						vid =  soup.find(attrs={'class':'yt-uix-tile-link'})
-						theURL = "https://youtube.com" + vid['href']
-					elif 'soundcloud' in message.content:
-						query = ' '.join(message.content.split()[2:])
-						url = "https://soundcloud.com/search/sounds?q=" + query
-						response = requests.get(url)
-						soup = BeautifulSoup(response.text, "lxml")
-						song = soup.find("h2")
-						song = song.a.get("href")
-						theURL = "https://soundcloud.com" + song
-					else:
-						await client.send_message(message.channel, "Don't know where to search, try !play youtube SEARCH or !play soundcloud SEARCH")
-						return
-
-					if listCheck(blacklist, theURL):
-						print(message.author.name + " tried to play a blacklisted video")
-						await client.send_message(message.channel, "Sorry, I can't play that")
-						return
-
-					if ytQueue.empty() and ytplayer == None:
-						await client.send_message(message.channel, "Playing : " + theURL)
-					else:
-						await client.send_message(message.channel, "Queued : " + theURL)
-
-					print("Playing: " + theURL)
-
-					tempytplayer = await vclient.create_ytdl_player(theURL)
-					tempytplayer.after = playNext
-					ytQueue.put(tempytplayer)
-					play()
-				except Exception as e:
-					print(str(e))
-					await client.send_message(message.channel, "Sorry, I can't play that, give this info to jetsurf: " + str(e))
+			await serverVoices[theServer].setupPlay(message)
 		elif message.content.startswith('!stop'):
-			if ytplayer != None:
-				ytplayer.stop()
-			else: 
-				await client.send_message(message.channel, "I'm not playing anything right now")
+			await serverVoices[theServer].stop(message)
 		elif message.content.startswith('!volume'):
 			vol = int(message.content.split(' ')[1])
 			if vol > 60:
 				vol = 60
 
 			await client.send_message(message.channel, "Setting Volume to " + str(vol) + "%")
-			ytplayer.volume = float(vol / 100)
+			serverVoices[theServer].ytplayer.volume = float(vol / 100)
 		elif message.content.startswith('!'):
-			await playSound(command, message)
+			await serverVoices[theServer].playSound(command, message)
 	sys.stdout.flush()
 
 #Setup
