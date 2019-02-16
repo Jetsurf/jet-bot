@@ -254,15 +254,12 @@ async def on_ready():
 	
 @client.event
 async def on_member_remove(member):
-	global adminObjs
+	global serverAdmins
 
-	if len(adminObjs) == 0:
-		return
-	else:
-		print(member.name + " left the server")
-		sys.stdout.flush()
-		for mem in adminOjbs:
-			await client.send_message(mem, member.name + " left the server")
+	theServer = member.server.id
+	for mem in serverAdmins[theServer]:
+		if mem.id != client.user.id:
+			await client.send_message(mem, member.name + " left " + member.server.name)
 			
 @client.event
 async def on_server_join(server):
@@ -273,7 +270,10 @@ async def on_message(message):
 	global serverVoices, serverAdmins, soundsDir
 
 	command = message.content
-	theServer = message.server.id
+	try:
+		theServer = message.server.id
+	except:
+		return #why is this being called when a member is removed??
 
 	if message.server == None and message.author not in serverAdmins[theServer]:
 		return
