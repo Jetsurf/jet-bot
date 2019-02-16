@@ -11,18 +11,16 @@ from subprocess import call
 
 client = discord.Client()
 serverVoices = {}
-adminObjs = []
-adminIDs = ''
+serverAdmins = {}
 token = ''
 log = ''
 soundsDir = ''
-playlist = ''
+lists = ''
 commands = ''
-blacklist = ''
 configData = None
 
 def loadConfig(firstRun=0):
-	global token, adminIDs, soundsDir, playlist, commands, blacklist
+	global token, adminIDs, soundsDir, lists, commands
 	try:
 		with open('./discordbot.json', 'r') as json_config:
 			configData = json.load(json_config)
@@ -30,11 +28,9 @@ def loadConfig(firstRun=0):
 		if firstRun == 1:
 			token = configData['token']
 
-		adminIDs = configData['admins']
 		soundsDir = configData['soundsdir']
-		playlist = configData['playlist']
+		lists = configData['lists']
 		commands = configData['commands']
-		blacklist = configData['blacklist']
 
 		print('Config Loaded')
 		if firstRun == 0:
@@ -220,39 +216,41 @@ async def srParser(message, getNext=0):
 
 @asyncio.coroutine
 async def joinVoiceChannel(channelName, message):
-	global client, soundsDir, playlist, blacklist
+	global client, soundsDir
 	theServer = message.server.id
-
-	if theServer not in serverVoices:
-		serverVoices[theServer] = vserver.voiceServer(client, theServer, soundsDir, playlist, blacklist)
 	
 	await serverVoices[theServer].joinVoiceChannel(channelName, message)
 	sys.stdout.flush()
 
-def scanAdmins(firstRun=0):
-	global adminObjs, adminIDs
-
-	if firstRun:
-		print("Searching for admins: " + str(adminIDs))
-	else:
-		print("Rescanning for admins")
+def scanAdmins():
+	global serverAdmins
 
 	for server in client.servers:
+		serverAdmins[server.id] = []
+		print(server.id)
 		for mem in server.members:
-			if mem.id in adminIDs and mem not in adminObjs:
-				print('Found admin ' + mem.name)
-				adminObjs.append(mem)
+			if mem.server_permissions.administrator and mem not in serverAdmins[server.id]:
+				serverAdmins[server.id].append(mem)
 				
-	if len(adminObjs) == 0:
-		print('Failed to find any admins, check the IDs in the config')
-	sys.stdout.flush()
+@client.event
+async def on_member_update(before, after):
+	scanAdmins()
+
+@client.event
+async def on_role_update(before, after):
+	scanAdmins()
 
 @client.event
 async def on_ready():
+	global client
+
 	print('Logged in as,', client.user.name, client.user.id)
 	print('------')
 	await client.change_presence(game=discord.Game(name="Use !help for directions!", type=0))
-	scanAdmins(1)
+	for server in client.servers:
+		serverVoices[server.id] = vserver.voiceServer(client, server.id, soundsDir, lists)
+
+	scanAdmins()
 	
 @client.event
 async def on_member_remove(member):
@@ -267,74 +265,36 @@ async def on_member_remove(member):
 			await client.send_message(mem, member.name + " left the server")
 			
 @client.event
+async def on_server_join(server):
+	serverVoices[server.id] = vserver.voiceServer(client, server.id, soundsDir, lists)
+
+@client.event
 async def on_message(message):
-	global serverVoices, ytplayer, ytQueue, player, adminObjs, playlist, blacklist
+	global serverVoices, serverAdmins, soundsDir
 
 	command = message.content
 	theServer = message.server.id
 
-	if message.server == None and message.author not in adminObjs:
+	if message.server == None and message.author not in serverAdmins[theServer]:
 		return
 	if message.author.name == client.user.name:
 		return
 	if message.content.startswith("!admin"):
-		if message.author in adminObjs:
+		if message.author in serverAdmins[theServer]:
 			if 'playlist' in message.content:
-				toAdd = ''
-				if 'https' in message.content:
-					toAdd = message.content[16:]
-				else:
-					toAdd = ytplayer.url
-
-				if not listCheck(playlist, toAdd):
-					listAdd(playlist, toAdd)
-					await client.add_reaction(message, '👍')
-				else:
-					await client.send_message(message.channel, 'That is already in my playlist!')
+				await serverVoices[theServer].addPlaylist(message)
 			if 'blacklist' in message.content:
-				toAdd = ''
-				if 'https' in message.content:
-					toAdd = message.content[16:]
-				else:
-					toAdd = ytplayer.url
-
-				if not listCheck(blacklist, toAdd):
-					listAdd(blacklist, toAdd)
-					await client.add_reaction(message, '👍')
-				else:
-					await client.send_message(message.channel, 'That is already in my blacklist!')
+				await serverVoices[theServer].addBlacklist(message)
 			if 'wtfboom' in message.content:
-				if ytplayer == None:
-					if player != None:
-						player.stop()
-					player = vclient.create_ffmpeg_player(soundsDir + '/wtfboom.mp3')
-					player.volume = .5
-					player.start()
+				await serverVoices[theServer].playWTF(message)
 			if 'tts' in message.content:
 				await client.send_message(message.channel, message.content[11:], tts=True)
-			if 'reload' in message.content:
-				if loadConfig():
-					await client.send_message(message.channel, "Successfully reloaded config, rescanning admin users")
-					scanAdmins()
-				else:
-					await client.send_message(message.channel, "Failed to reload config")
 		else:
 			print(message.author.name + " " + message.author.id + " tried to run an admin command")
 			await client.send_message(message.channel, message.author.name + " you are not an admin... :cop:")
 	elif '!restart' in message.content:
 		await client.send_message(message.channel, 'Attempting to restart if I can, give me a second')
 		print("Starting restart")
-
-		if ytplayer != None:
-			ytplayer.stop()
-		if player != None:
-			player.stop()
-		if vclient != None:
-			await vclient.disconnect()
-
-		vclient = None
-		player = None
-		ytplayer = None
 		await client.close()
 		print("Disconnected from discord, exiting")
 		sys.stdout.flush()

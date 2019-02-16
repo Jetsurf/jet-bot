@@ -1,9 +1,6 @@
 {
 	"token"		: "",
 	"soundsdir"	: "",
-	"playlist"	: "",
-	"blacklist"	: "",
+	"lists"		: "",
 	"commands"	: "",
-	"admins"	: [     "",
-				"" ]
 }

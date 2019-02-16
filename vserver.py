@@ -9,12 +9,7 @@ from bs4 import BeautifulSoup
 from random import randint
 
 class voiceServer():
-
-	#soundsDir
-	#playlist
-	#blacklist
-
-	def __init__(self, client, id, soundsDir, playlist, blacklist):
+	def __init__(self, client, id, soundsDir, lists):
 		self.client = client
 		self.ID = id
 		self.vclient = None
@@ -22,12 +17,16 @@ class voiceServer():
 		self.ytPlayer = None
 		self.player = None
 		self.soundsDir = soundsDir
-		self.blacklist = blacklist
-		self.playlist = playlist
+		self.blacklist = lists + '/' + str(id) + '-blacklist.txt'
+		self.playlist = lists + '/' + str(id) + '-playlist.txt'
+		f = open(self.blacklist, 'w+')
+		f.close()
+		f = open(self.playlist, 'w+')
+		f.close()
 
 	async def joinVoiceChannel(self, channelName, message):
 		id = 0
-		
+
 		if self.vclient != None:
 			await self.vclient.disconnect()
 
@@ -40,6 +39,15 @@ class voiceServer():
 			self.vclient = await self.client.join_voice_channel(self.client.get_channel(id))
 		else:
 			await self.client.send_message(message.channel, "I could not join channel " + str(channelName))
+
+	async def playWTF(self, message):
+		if self.vclient != None and self.ytPlayer == None:
+			if self.player != None:
+				self.player.stop()
+			
+			self.player = self.vclient.create_ffmpeg_player(self.soundsDir + '/wtfboom.mp3')
+			self.player.volume = .5
+			self.player.start()
 
 	async def playSound(self, command, message):
 		if self.ytPlayer == None:
@@ -145,9 +153,9 @@ class voiceServer():
 		f.close()
 		return flag
 
-	def listAdd(theFile, toAdd):
+	def listAdd(self, theFile, toAdd):
 		list = open(theFile, 'a')
-		list.write('\n' + toAdd)
+		list.write(toAdd + '\n')
 		list.flush()
 		list.close()
 
@@ -182,3 +190,33 @@ class voiceServer():
 			self.play()
 		if numToQueue > 1:
 			await self.client.send_message(message.channel, "Also queued " + str(numToQueue - 1) + " more song(s) from my playlist")
+
+	async def addPlaylist(self, message):
+		toAdd = ''
+		if 'https' in message.content:
+			toAdd = message.content[16:]
+		elif self.ytPlayer != None:
+			toAdd = self.ytPlayer.url
+		else:
+			await self.client.send_message(message.channel, 'Im not playing anything, pass me a url to add to the playlist')
+		
+		if not self.listCheck(self.playlist, toAdd):
+			self.listAdd(self.playlist, toAdd)
+			await self.client.add_reaction(message, '👍')
+		else:
+			await self.client.send_message(message.channel, 'That is already in my playlist!')
+
+	async def addBlacklist(self, message):
+		toAdd = ''
+		if 'https' in message.content:
+			toAdd = message.content[16:]
+		elif self.ytPlayer != None:
+			toAdd = self.ytplayer.url
+		else:
+			await self.client.send_message(message.channel, 'Im not playing anything, pass me a url to add to the playlist')
+		
+		if not self.listCheck(self.blacklist, toAdd):
+			self.listAdd(self.blacklist, toAdd)
+			await self.client.add_reaction(message, '👍')
+		else:
+			await self.client.send_message(message.channel, 'That is already in my blacklist!')
