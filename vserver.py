@@ -26,19 +26,30 @@ class voiceServer():
 
 	async def joinVoiceChannel(self, channelName, message):
 		id = 0
+		channel = None
+
+		sys.stdout.flush()
+		if message.author.voice.voice_channel is not None:
+			channel = message.author.voice.voice_channel
 
 		if self.vclient != None:
 			await self.vclient.disconnect()
 
-		server = message.server
-		for channel in server.channels:
-			if channel.name == channelName:
-				id = channel.id
-				break
-		if id != 0:
-			self.vclient = await self.client.join_voice_channel(self.client.get_channel(id))
+		if channel is None and len(message.content) > 5:
+			server = message.server
+			for channel in server.channels:
+				if channel.name == channelName:
+					id = channel.id
+					break
+			if id != 0:
+				self.vclient = await self.client.join_voice_channel(self.client.get_channel(id))
+			else:
+				await self.client.send_message(message.channel, "I could not join channel " + str(channelName))
+		elif channel is not None:
+			self.vclient = await self.client.join_voice_channel(channel)
 		else:
-			await self.client.send_message(message.channel, "I could not join channel " + str(channelName))
+			self.client.send_message(message.channel, "Cannot join a channel, either be in a channel or specify which channel to join")	
+
 
 	async def playWTF(self, message):
 		if self.vclient != None and self.ytPlayer == None:
@@ -94,7 +105,7 @@ class voiceServer():
 				await self.client.send_message(message.channel, "Sorry, I can't play that")
 				return
 			try:
-				tempytplayer = await self.vclient.create_ytdl_player(message.content.split(' ')[1], after=self.playNext)
+				tempytplayer = await self.vclient.create_ytdl_player(message.content.split(' ')[1], ytdl_options={ "playlistend" : 5 })
 				tempytplayer.after = self.playNext
 				self.ytQueue.put(tempytplayer)
 				self.play()
@@ -136,7 +147,7 @@ class voiceServer():
 				else:
 					await self.client.send_message(message.channel, "Queued : " + theURL)
 				print("Playing: " + theURL)
-				tempytplayer = await self.vclient.create_ytdl_player(theURL)
+				tempytplayer = await self.vclient.create_ytdl_player(theURL, ytdl_options={ "playlistend" : 5 })
 				tempytplayer.after = self.playNext
 				self.ytQueue.put(tempytplayer)
 				self.play()

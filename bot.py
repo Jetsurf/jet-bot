@@ -272,13 +272,12 @@ async def on_message(message):
 	global serverVoices, serverAdmins, soundsDir
 
 	command = message.content
-	try:
-		theServer = message.server.id
-	except:
-		return #why is this being called when a member is removed??
-
-	if message.server == None and message.author not in serverAdmins[theServer]:
+	
+	if message.server == None:
 		return
+	else:
+		theServer = message.server.id
+
 	if message.author.name == client.user.name:
 		return
 	if message.content.startswith("!admin"):
@@ -311,8 +310,11 @@ async def on_message(message):
 		theSounds = theSounds.replace('.mp3', '')
 		theSounds = theSounds.replace('\n', ', ')
 		await client.send_message(message.channel, "Current Sounds:\n```" + theSounds + "```")
-	elif message.content.startswith('!joinvoice') or message.content.startswith('!join'):
-		vclient = await joinVoiceChannel(message.content.split(" ", 1)[1], message)
+	elif message.content.startswith('!join'):
+		if len(message.content) > 6:
+			await joinVoiceChannel(message.content.split(" ", 1)[1], message)
+		else:
+			await joinVoiceChannel(message.content, message)
 	elif message.content.startswith('!currentmaps'):
 		await maps(message)
 	elif 'nextmaps' in message.content and '!' in message.content:
