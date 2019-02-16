@@ -2,15 +2,10 @@
 
 import discord
 import asyncio
-import queue
 import sys
-import urllib
-import urllib.request
 import subprocess
 import json
 import time
-import datetime
-import calendar
 import vserver
 from subprocess import call
 
@@ -259,7 +254,6 @@ async def on_ready():
 	await client.change_presence(game=discord.Game(name="Use !help for directions!", type=0))
 	scanAdmins(1)
 	
-
 @client.event
 async def on_member_remove(member):
 	global adminObjs
@@ -272,7 +266,6 @@ async def on_member_remove(member):
 		for mem in adminOjbs:
 			await client.send_message(mem, member.name + " left the server")
 			
-
 @client.event
 async def on_message(message):
 	global serverVoices, ytplayer, ytQueue, player, adminObjs, playlist, blacklist
@@ -417,4 +410,3 @@ print('Logging into discord')
 
 sys.stdout.flush()
 client.run(token)
-

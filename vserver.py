@@ -3,6 +3,8 @@ import queue
 import asyncio
 import sys
 import requests
+import urllib
+import urllib.request
 from bs4 import BeautifulSoup
 from random import randint
 
@@ -25,8 +27,7 @@ class voiceServer():
 
 	async def joinVoiceChannel(self, channelName, message):
 		id = 0
-
-		print(self.vclient)
+		
 		if self.vclient != None:
 			await self.vclient.disconnect()
 
