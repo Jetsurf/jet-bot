@@ -81,6 +81,11 @@ class voiceServer():
 		else:
 			await self.client.send_message(message.channel, "I'm not playing anything right now")
 
+	def end(self):
+		self.ytQueue = queue.Queue()
+		self.ytPlayer.stop()
+		self.ytPlayer = None
+
 	def play(self):
 		if self.ytPlayer == None and self.ytQueue.qsize() == 1:
 			self.ytPlayer = self.ytQueue.get()

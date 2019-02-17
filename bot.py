@@ -340,8 +340,10 @@ async def on_message(message):
 				await serverVoices[theServer].playRandom(message, 1)
 		elif command.startswith('!play'):
 			await serverVoices[theServer].setupPlay(message)
-		elif command.startswith('!stop') or command.startswith('!skip'):
+		elif command.startswith('!skip'):
 			await serverVoices[theServer].stop(message)
+		elif command.startswith('!end') or command.startswith('!stop'):
+			serverVoices[theServer].end()
 		elif command.startswith('!volume'):
 			vol = int(command.split(' ')[1])
 			if vol > 60:
