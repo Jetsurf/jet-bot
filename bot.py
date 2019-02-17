@@ -239,7 +239,7 @@ async def on_role_update(before, after):
 
 @client.event
 async def on_ready():
-	global client
+	global client, soundsDir, lists
 
 	print('Logged in as,', client.user.name, client.user.id)
 	print('------')
@@ -340,7 +340,7 @@ async def on_message(message):
 				await serverVoices[theServer].playRandom(message, 1)
 		elif command.startswith('!play'):
 			await serverVoices[theServer].setupPlay(message)
-		elif command.startswith('!stop') or message.content.startswith('!skip'):
+		elif command.startswith('!stop') or command.startswith('!skip'):
 			await serverVoices[theServer].stop(message)
 		elif command.startswith('!volume'):
 			vol = int(command.split(' ')[1])

@@ -27,13 +27,9 @@ class voiceServer():
 	async def joinVoiceChannel(self, channelName, message):
 		id = 0
 		channel = None
-
-		sys.stdout.flush()
-		if message.author.voice.voice_channel is not None:
+		
+		if message.author.voice_channel != None:
 			channel = message.author.voice.voice_channel
-
-		if self.vclient != None:
-			await self.vclient.disconnect()
 
 		if len(message.content) > 6:
 			server = message.server
@@ -41,15 +37,18 @@ class voiceServer():
 				if channel.name == channelName:
 					id = channel.id
 					break
-			if id != 0:
+			if id is not 0:
+				if self.vclient != None:
+					await self.vclient.disconnect()
 				self.vclient = await self.client.join_voice_channel(self.client.get_channel(id))
 			else:
 				await self.client.send_message(message.channel, "I could not join channel " + str(channelName))
-		elif channel is not None:
+		elif channel != None:
+			if self.vclient != None:
+				await self.vclient.disconnect()
 			self.vclient = await self.client.join_voice_channel(channel)
 		else:
-			self.client.send_message(message.channel, "Cannot join a channel, either be in a channel or specify which channel to join")	
-
+			await self.client.send_message(message.channel, "Cannot join a channel, either be in a channel or specify which channel to join")
 
 	async def playWTF(self, message):
 		if self.vclient != None and self.ytPlayer == None:
