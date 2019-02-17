@@ -218,18 +218,13 @@ async def srParser(message, getNext=0):
 
 @asyncio.coroutine
 async def joinVoiceChannel(channelName, message):
-	global client, soundsDir
-	theServer = message.server.id
-	
-	await serverVoices[theServer].joinVoiceChannel(channelName, message)
-	sys.stdout.flush()
+	await serverVoices[message.server.id].joinVoiceChannel(channelName, message)
 
 def scanAdmins():
 	global serverAdmins
 
 	for server in client.servers:
 		serverAdmins[server.id] = []
-		print(server.id)
 		for mem in server.members:
 			if mem.server_permissions.administrator and mem not in serverAdmins[server.id]:
 				serverAdmins[server.id].append(mem)
@@ -265,13 +260,14 @@ async def on_member_remove(member):
 			
 @client.event
 async def on_server_join(server):
+	global client, soundsDir, lists
 	serverVoices[server.id] = vserver.voiceServer(client, server.id, soundsDir, lists)
 
 @client.event
 async def on_message(message):
 	global serverVoices, serverAdmins, soundsDir
 
-	command = message.content
+	command = message.content.lower()
 	
 	if message.server == None:
 		return
@@ -280,7 +276,7 @@ async def on_message(message):
 
 	if message.author.name == client.user.name:
 		return
-	if message.content.startswith("!admin"):
+	if command.startswith("!admin"):
 		if message.author in serverAdmins[theServer]:
 			if 'playlist' in message.content:
 				await serverVoices[theServer].addPlaylist(message)
@@ -293,67 +289,67 @@ async def on_message(message):
 		else:
 			print(message.author.name + " " + message.author.id + " tried to run an admin command")
 			await client.send_message(message.channel, message.author.name + " you are not an admin... :cop:")
-	elif message.content.startswith('!alive'):
+	elif command.startswith('!alive'):
 		text = "Hey " + message.author.name + ", I'm alive so shut the fuck up! :japanese_goblin:"
 		await client.send_message(message.channel, text)
-	elif message.content.startswith('!github'):
+	elif command.startswith('!github'):
 		await client.send_message(message.channel, 'Here is my github page! : https://github.com/Jetsurf/jet-bot')
-	elif message.content.startswith('!commands') or message.content.startswith('!help'):
+	elif command.startswith('!commands') or command.startswith('!help'):
 		theString = ''
 		with open(commands, 'r') as f:
 			for line in f:
 				theString = theString + line
 		await client.send_message(message.channel, theString)
-	elif message.content.startswith('!sounds'):
+	elif command.startswith('!sounds'):
 		theSounds = subprocess.check_output(["ls", soundsDir])
 		theSounds = theSounds.decode("utf-8")
 		theSounds = theSounds.replace('.mp3', '')
 		theSounds = theSounds.replace('\n', ', ')
 		await client.send_message(message.channel, "Current Sounds:\n```" + theSounds + "```")
-	elif message.content.startswith('!join'):
+	elif command.startswith('!join'):
 		if len(message.content) > 6:
 			await joinVoiceChannel(message.content.split(" ", 1)[1], message)
 		else:
-			await joinVoiceChannel(message.content, message)
-	elif message.content.startswith('!currentmaps'):
+			await joinVoiceChannel(command, message)
+	elif command.startswith('!currentmaps'):
 		await maps(message)
-	elif 'nextmaps' in message.content and '!' in message.content:
+	elif 'nextmaps' in command and '!' in command:
 		await maps(message, offset=min(11, message.content.count('next')))
-	elif message.content.startswith('!currentsr'):
+	elif command.startswith('!currentsr'):
 		await srParser(message)
-	elif message.content.startswith('!splatnetgear'):
+	elif command.startswith('!splatnetgear'):
 		await gearParser(message)
-	elif message.content.startswith('!nextsr'):
+	elif command.startswith('!nextsr'):
 		await srParser(message, 1)
-	elif message.content.startswith('!us') or message.content.startswith('!eu') or message.content.startswith('!jp'):
+	elif command.startswith('!us') or message.content.startswith('!eu') or message.content.startswith('!jp'):
 		await setCRole(message)
-	elif ('pizza' in message.content.lower() and 'pineapple' in message.content.lower()) or ('\U0001F355' in message.content and '\U0001F34D' in message.content):
+	elif ('pizza' in command and 'pineapple' in command) or ('\U0001F355' in message.content and '\U0001F34D' in message.content):
 		await client.send_message(message.channel, 'Don\'t ever think pineapple and pizza go together ' + message.author.name + '!!!')
-	elif theServer in serverVoices:
-		if message.content.startswith('!currentsong'):
-			if serverVoices[theServer].ytPlayer != None:
+	elif serverVoices[theServer].vclient is not None:
+		if command.startswith('!currentsong'):
+			if serverVoices[theServer].ytPlayer is not None:
 				await client.send_message(message.channel, 'Currently Playing Video: ' + serverVoices[theServer].ytPlayer.url)
 			else:
 				await client.send_message(message.channel, 'I\'m not playing anything.')
-		elif message.content.startswith('!leavevoice'):
+		elif command.startswith('!leavevoice'):
 			await serverVoices[theServer].vclient.disconnect()
-		elif message.content.startswith('!playrandom'):
-			if len(message.content) > 11:
+		elif command.startswith('!playrandom'):
+			if len(command) > 11:
 				await serverVoices[theServer].playRandom(message, int(message.content.split(' ')[1]))
 			else:
 				await serverVoices[theServer].playRandom(message, 1)
-		elif message.content.startswith('!play'):
+		elif command.startswith('!play'):
 			await serverVoices[theServer].setupPlay(message)
-		elif message.content.startswith('!stop'):
+		elif command.startswith('!stop') or message.content.startswith('!skip'):
 			await serverVoices[theServer].stop(message)
-		elif message.content.startswith('!volume'):
-			vol = int(message.content.split(' ')[1])
+		elif command.startswith('!volume'):
+			vol = int(command.split(' ')[1])
 			if vol > 60:
 				vol = 60
 
 			await client.send_message(message.channel, "Setting Volume to " + str(vol) + "%")
 			serverVoices[theServer].ytPlayer.volume = float(vol / 100)
-		elif message.content.startswith('!'):
+		elif command.startswith('!'):
 			await serverVoices[theServer].playSound(command, message)
 	sys.stdout.flush()
 

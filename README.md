@@ -22,35 +22,33 @@ Likely more dependencies needed to be listed later.
 An example configuration file is given at discordbot.json.example.
 This file needs to be completed and moved to discordbot.json.
 
-Also, discordbot.service will need to be played in
-/etc/systemd/system/multi-user.target.wants/ for !restart to work.
+Soundsdir is a directory to place soundclips to play with the !file
+command.
 
-Playlist/Blacklist files are simple .txt files. They are simply a
-file containing the links to videos/songs to play with !playrandom
-or to be blacklisted from being played at all. To start a file, create
-a new file, paste one link in, and do not add a newline to the end of
-the link.
+There are two admin commands to configure the bot:
+ - !admin playlist URL
+ - !admin blacklist URL
 
-Admins are contained in a JSON array and should have the discord ID of
-all the users that you want to allow access to the admin commands.
-(List of commands coming soon)
+To run these commands, you need the administrator role in your discord
+server. Run the command with a URL to either add it to the !playrandom
+playlist or prevent the video at the URL from ever being played.
 
 ## Use
 Complete the discordbot.json config file with the necessary fields. 
 Currently implemented commands are as follows:
- - !joinvoice CHANNELNAME : Join a Voice Channel, must be exact
-   Upper/Lower case
+ - !joinvoice OR !join CHANNELNAME : Join a Voice Channel, must be exact
+   Upper/Lower case or if no name is provided, join the voice chat you
+   are currently connected to.
  - !play URL : Play/Queue Up a website to Play from URL
  - !play SOURCE SEARCH : Searches SOURCE for SEARCH to play (Supports
    Youtube/Soundcloud)
  - !playrandom # : Plays a random url from my playlist. Optional #,
    queues # videos to play
  - !currentsong : Displays the currently playing Song/Video
- - !stop : Stop a current playing video and play the next one
+ - !stop OR !skip : Stop a current playing video and play the next one
  - !volume : Sets my global voice volume (Youtube defaults to 7%, caps
    at 60% vol)
  - !sounds : List all possible sounds, prepend ! to play
- - !restart : Restarts me if I get stuck
  - !currentmaps : Displays the current Splatoon 2 Gamemodes/Maps
  - !nextmaps : Displays the upcoming Splatoon 2 Gamemodes/Maps
    (!nextnextmaps displays 2 map rotations from now, etc)
