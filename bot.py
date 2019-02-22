@@ -111,11 +111,14 @@ async def maps(message, offset=0):
 	ranked = data['gachi']
 	league = data['league']
 	theString = ''
+	embed = discord.Embed(colour=0xFF0000)
 
 	if offset == 0:
 		theString = "Current Splatoon 2 Maps"
+		embed.title = "Current Splatoon 2 Maps"
 	elif offset == 1:
 		theString = "Upcoming Splatoon 2 Maps"
+		embed.title = "Upcoming Splatoon 2 Maps"
 
 	theString = theString + "```Turf War:\n"
 
@@ -123,6 +126,8 @@ async def maps(message, offset=0):
 	mapB = trfWar[offset]['stage_b']
 	end = trfWar[offset]['end_time']
 	theString = theString + '{:22}'.format(mapA['name']) + '\t' + mapB['name'] + '\n'
+
+	embed.add_field("Turf War", mapA['name'] + " & " + mapB['name'])
 
 	theString = theString + "\nRanked: "
 
@@ -132,12 +137,16 @@ async def maps(message, offset=0):
 
 	theString = theString + game['name'] + '\n' + '{:22}'.format(mapA['name']) + '\t' + mapB['name'] + '\n'
 
+	embed.add_field("Ranked: " + game['name'], mapA['name'] + " & " + mapB['name'])
+
 	theString = theString + '\nLeague: '
 	mapA = league[offset]['stage_a']
 	mapB = league[offset]['stage_b']
 	game = league[offset]['rule']
 
 	theString = theString + game['name'] + '\n' +  '{:22}'.format(mapA['name']) + '\t' + mapB['name'] + '\n```\n'
+
+	embed.add_field("League: " + game['name'], mapA['name'] + " & " + mapB['name'])
 
 	timeRemaining = end - theTime
 	timeRemaining = timeRemaining % 86400
@@ -146,14 +155,16 @@ async def maps(message, offset=0):
 	minutes = int(timeRemaining / 60)
 
 	if offset == 0:
-		theString = theString + 'Time Remaining: '	
+		theString = theString + 'Time Remaining: '
+		embed.add_field("Time Remaining:", str(hours) + ' Hours, and ' + str(minutes) + ' minutes')
 	elif offset >= 1:
 		hours = hours - 2
 		theString = theString + 'Time Until Map Rotation: '
+		embed.add_field("Time Until Map Rotation:", str(hours) + ' Hours, and ' + str(minutes) + ' minutes')
 
 	theString = theString + str(hours) + ' Hours, and ' + str(minutes) + ' minutes'
 
-	await client.send_message(message.channel, str(theString))
+	await client.send_message(message.channel, None, False, embed)
 
 async def srParser(message, getNext=0):
 	theTime = int(time.mktime(time.gmtime()))
