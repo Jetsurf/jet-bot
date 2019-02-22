@@ -110,34 +110,30 @@ async def maps(message, offset=0):
 	trfWar = data['regular']
 	ranked = data['gachi']
 	league = data['league']
-	theString = ''
+	embed = discord.Embed(colour=0xFF0000)
 
 	if offset == 0:
-		theString = "Current Splatoon 2 Maps"
+		embed.title = "Current Splatoon 2 Maps"
 	elif offset == 1:
-		theString = "Upcoming Splatoon 2 Maps"
-
-	theString = theString + "```Turf War:\n"
+		embed.title = "Upcoming Splatoon 2 Maps"
 
 	mapA = trfWar[offset]['stage_a']
 	mapB = trfWar[offset]['stage_b']
 	end = trfWar[offset]['end_time']
-	theString = theString + '{:22}'.format(mapA['name']) + '\t' + mapB['name'] + '\n'
 
-	theString = theString + "\nRanked: "
+	embed.add_field(name="Turf War", value=mapA['name'] + "\t" + mapB['name'], inline=False)
 
 	mapA = ranked[offset]['stage_a']
 	mapB = ranked[offset]['stage_b']
 	game = ranked[offset]['rule']
 
-	theString = theString + game['name'] + '\n' + '{:22}'.format(mapA['name']) + '\t' + mapB['name'] + '\n'
+	embed.add_field(name="Ranked: " + game['name'], value=mapA['name'] + "\t" + mapB['name'], inline=False)
 
-	theString = theString + '\nLeague: '
 	mapA = league[offset]['stage_a']
 	mapB = league[offset]['stage_b']
 	game = league[offset]['rule']
 
-	theString = theString + game['name'] + '\n' +  '{:22}'.format(mapA['name']) + '\t' + mapB['name'] + '\n```\n'
+	embed.add_field(name="League: " + game['name'], value=mapA['name'] + "\t" + mapB['name'], inline=False)
 
 	timeRemaining = end - theTime
 	timeRemaining = timeRemaining % 86400
@@ -146,14 +142,12 @@ async def maps(message, offset=0):
 	minutes = int(timeRemaining / 60)
 
 	if offset == 0:
-		theString = theString + 'Time Remaining: '	
+		embed.add_field(name="Time Remaining:", value=str(hours) + ' Hours, and ' + str(minutes) + ' minutes', inline=False)
 	elif offset >= 1:
 		hours = hours - 2
-		theString = theString + 'Time Until Map Rotation: '
+		embed.add_field(name="Time Until Map Rotation:", value=str(hours) + ' Hours, and ' + str(minutes) + ' minutes', inline=False)
 
-	theString = theString + str(hours) + ' Hours, and ' + str(minutes) + ' minutes'
-
-	await client.send_message(message.channel, str(theString))
+	await client.send_message(message.channel, embed=embed)
 
 async def srParser(message, getNext=0):
 	theTime = int(time.mktime(time.gmtime()))
