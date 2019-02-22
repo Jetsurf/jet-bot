@@ -127,7 +127,7 @@ async def maps(message, offset=0):
 	end = trfWar[offset]['end_time']
 	theString = theString + '{:22}'.format(mapA['name']) + '\t' + mapB['name'] + '\n'
 
-	embed.add_field("Turf War", mapA['name'] + " & " + mapB['name'])
+	embed.add_field(name="Turf War", value=mapA['name'] + " & " + mapB['name'], inline=False)
 
 	theString = theString + "\nRanked: "
 
@@ -137,7 +137,7 @@ async def maps(message, offset=0):
 
 	theString = theString + game['name'] + '\n' + '{:22}'.format(mapA['name']) + '\t' + mapB['name'] + '\n'
 
-	embed.add_field("Ranked: " + game['name'], mapA['name'] + " & " + mapB['name'])
+	embed.add_field(name="Ranked: " + game['name'], value=mapA['name'] + " & " + mapB['name'], inline=False)
 
 	theString = theString + '\nLeague: '
 	mapA = league[offset]['stage_a']
@@ -146,7 +146,7 @@ async def maps(message, offset=0):
 
 	theString = theString + game['name'] + '\n' +  '{:22}'.format(mapA['name']) + '\t' + mapB['name'] + '\n```\n'
 
-	embed.add_field("League: " + game['name'], mapA['name'] + " & " + mapB['name'])
+	embed.add_field(name="League: " + game['name'], value=mapA['name'] + " & " + mapB['name'], inline=False)
 
 	timeRemaining = end - theTime
 	timeRemaining = timeRemaining % 86400
@@ -156,11 +156,11 @@ async def maps(message, offset=0):
 
 	if offset == 0:
 		theString = theString + 'Time Remaining: '
-		embed.add_field("Time Remaining:", str(hours) + ' Hours, and ' + str(minutes) + ' minutes')
+		embed.add_field(name="Time Remaining:", value=str(hours) + ' Hours, and ' + str(minutes) + ' minutes', inline=False)
 	elif offset >= 1:
 		hours = hours - 2
 		theString = theString + 'Time Until Map Rotation: '
-		embed.add_field("Time Until Map Rotation:", str(hours) + ' Hours, and ' + str(minutes) + ' minutes')
+		embed.add_field(name="Time Until Map Rotation:", value=str(hours) + ' Hours, and ' + str(minutes) + ' minutes', inline=False)
 
 	theString = theString + str(hours) + ' Hours, and ' + str(minutes) + ' minutes'
 
