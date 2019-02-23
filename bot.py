@@ -110,7 +110,7 @@ async def maps(message, offset=0):
 	trfWar = data['regular']
 	ranked = data['gachi']
 	league = data['league']
-	embed = discord.Embed(colour=0xFF0000)
+	embed = discord.Embed(colour=0x3FFF33)
 
 	if offset == 0:
 		embed.title = "Current Splatoon 2 Maps"
@@ -121,19 +121,19 @@ async def maps(message, offset=0):
 	mapB = trfWar[offset]['stage_b']
 	end = trfWar[offset]['end_time']
 
-	embed.add_field(name="Turf War", value=mapA['name'] + "\t" + mapB['name'], inline=False)
+	embed.add_field(name="Turf War", value=mapA['name'] + "\n" + mapB['name'], inline=True)
 
 	mapA = ranked[offset]['stage_a']
 	mapB = ranked[offset]['stage_b']
 	game = ranked[offset]['rule']
 
-	embed.add_field(name="Ranked: " + game['name'], value=mapA['name'] + "\t" + mapB['name'], inline=False)
+	embed.add_field(name="Ranked: " + game['name'], value=mapA['name'] + "\n" + mapB['name'], inline=True)
 
 	mapA = league[offset]['stage_a']
 	mapB = league[offset]['stage_b']
 	game = league[offset]['rule']
 
-	embed.add_field(name="League: " + game['name'], value=mapA['name'] + "\t" + mapB['name'], inline=False)
+	embed.add_field(name="League: " + game['name'], value=mapA['name'] + "\n" + mapB['name'], inline=True)
 
 	timeRemaining = end - theTime
 	timeRemaining = timeRemaining % 86400
@@ -142,10 +142,10 @@ async def maps(message, offset=0):
 	minutes = int(timeRemaining / 60)
 
 	if offset == 0:
-		embed.add_field(name="Time Remaining:", value=str(hours) + ' Hours, and ' + str(minutes) + ' minutes', inline=False)
+		embed.add_field(name="Time Remaining", value=str(hours) + ' Hours, and ' + str(minutes) + ' minutes', inline=False)
 	elif offset >= 1:
 		hours = hours - 2
-		embed.add_field(name="Time Until Map Rotation:", value=str(hours) + ' Hours, and ' + str(minutes) + ' minutes', inline=False)
+		embed.add_field(name="Time Until Map Rotation", value=str(hours) + ' Hours, and ' + str(minutes) + ' minutes', inline=False)
 
 	await client.send_message(message.channel, embed=embed)
 
@@ -156,12 +156,13 @@ async def srParser(message, getNext=0):
 	gotData = 0
 	start = 0
 	end = 0
-	theString = ""	
+	embed = discord.Embed(colour=0xFF8633)
+	theString = ''	
 
 	if getNext == 0:
-		theString = theString + "Current Salmon Run:\n```"
+		embed.title = "Current Salmon Run"
 	else:
-		theString = theString + "Upcoming Salmon Run:\n```"
+		embed.title = "Upcoming Salmon Run"
 
 	for i in currentSR:
 		gotData = 0
@@ -174,31 +175,29 @@ async def srParser(message, getNext=0):
 			gotData = 1
 
 		if (gotData == 1 and getNext == 0) or (gotData == 0 and getNext == 1):
-			theString = theString + "Map: " + map['name'] + '\nWeapons:\n'
+			embed.set_thumbnail(url='https://splatoon2.ink/assets/splatnet' + map['image'])
+			embed.add_field(name='Map', value=map['name'], inline=False)
 			for j in i['weapons']:
 				try:
 					weap = j['weapon']
 				except:
 					weap = j['coop_special_weapon']
-				theString = theString + '\t' + weap['name'] + '\n'
+				theString = theString + weap['name'] + '\n'
 			break
 
 		elif gotData == 1 and getNext == 1:
 			gotData = 0
 			continue
 
-	theString = theString + '\n'
+	embed.add_field(name='Weapons', value=theString, inline=False)
 
 	if gotData == 0 and getNext == 0:
-		theString = theString + 'No SR currently running```'
-		await client.send_message(message.channel, theString)
+		await client.send_message(message.channel, 'No SR Currently Running')
 		return
 	elif getNext == 1:
 		timeRemaining = start - theTime
-		theString = theString + '```Time Until This Rotation : '
 	else:
 		timeRemaining = end - theTime
-		theString = theString + '```Time remaining : '
 
 	days = int(timeRemaining / 86400)
 	timeRemaining = timeRemaining % 86400
@@ -206,9 +205,12 @@ async def srParser(message, getNext=0):
 	timeRemaining = timeRemaining % 3600
 	minutes = int(timeRemaining / 60)
 
-	theString = theString + str(days) + ' Days, ' + str(hours) + ' Hours, and ' + str(minutes) + ' minutes'
+	if getNext == 1:
+		embed.add_field(name='Time Until Rotation', value=str(days) + ' Days, ' + str(hours) + ' Hours, and ' + str(minutes) + ' Minutes')
+	else:
+		embed.add_field(name="Time Remaining ", value=str(days) + ' Days, ' + str(hours) + ' Hours, and ' + str(minutes) + ' Minutes')
 
-	await client.send_message(message.channel, theString)
+	await client.send_message(message.channel, embed=embed)
 
 @asyncio.coroutine
 async def joinVoiceChannel(channelName, message):
