@@ -11,15 +11,18 @@ class Punish():
 		self.server = id
 		self.cursor = self.theDB.cursor(cursor_class=MySQLCursorPrepared)
 
-	async def getCurrentSquelches(self, message):
-		stmt = 'SELECT * FROM squelch WHERE serverid = %s AND expireddate > NOW()'
+	async def getCurrentSquelches(self, message, all=0):
+		stmt = 'SELECT * FROM squelch WHERE serverid = %s'
+
+		if all == 0:
+			stmt = stmt + ' AND expireddate > NOW()'
+
 		self.cursor.execute(stmt, (self.server,))
 		records = self.cursor.fetchall()
 
 		for row in records:
 			user = discord.utils.find(lambda m : m.id == str(row[1]), message.channel.server.members)
 			admin = discord.utils.find(lambda m : m.id == str(row[2]), message.channel.server.members)
-			print("User " + str(user) + " admin " + str(admin))
 
 			await self.client.send_message(message.channel, "User: " + user.name + " squelched by " + admin.name + " on " + str(row[3]) + " expiring " + str(row[4]))
 
@@ -29,6 +32,10 @@ class Punish():
 	async def doSquelch(self, message):
 		try:
 			theUser = message.mentions[0]
+			if theUser.server_permissions.administrator:
+				await self.client.send_message(message.channel, "Cannot squelch " + theUser.name + " as they are an admin!")
+				return
+
 			if self.checkSquelch(theUser):
 				await self.client.send_message(message.channel, theUser.name + " is already squelched!")
 			else:	
