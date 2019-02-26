@@ -7,13 +7,17 @@ import subprocess
 import json
 import time
 import vserver
+import mysqlinfo
+import punish
 import urllib
 import urllib.request
 from subprocess import call
 
 client = discord.Client()
+mysqlConnect = None
 serverVoices = {}
 serverAdmins = {}
+serverPunish = {}
 token = ''
 log = ''
 soundsDir = ''
@@ -22,7 +26,8 @@ commands = ''
 configData = None
 
 def loadConfig(firstRun=0):
-	global token, adminIDs, soundsDir, lists, commands
+	global token, adminIDs, soundsDir, lists, commands, mysqlConnect
+
 	try:
 		with open('./discordbot.json', 'r') as json_config:
 			configData = json.load(json_config)
@@ -33,12 +38,13 @@ def loadConfig(firstRun=0):
 		soundsDir = configData['soundsdir']
 		lists = configData['lists']
 		commands = configData['commands']
+		mysqlConnect = mysqlinfo.mysqlInfo(configData['mysql_host'], configData['mysql_user'], configData['mysql_pw'], configData['mysql_db'])
 
 		print('Config Loaded')
 		if firstRun == 0:
 			return True
-	except:
-		print('Failed to load config')
+	except Exception as e:
+		print('Failed to load config: ' + str(e))
 		if firstRun == 1:
 			quit(1)
 		else:
@@ -235,13 +241,14 @@ async def on_role_update(before, after):
 
 @client.event
 async def on_ready():
-	global client, soundsDir, lists
+	global client, soundsDir, lists, mysqlConnect, serverPunish
 
 	print('Logged in as,', client.user.name, client.user.id)
 	print('------')
 	await client.change_presence(game=discord.Game(name="Use !help for directions!", type=0))
 	for server in client.servers:
-		serverVoices[server.id] = vserver.voiceServer(client, server.id, soundsDir, lists)
+		serverVoices[server.id] = vserver.voiceServer(client, mysqlConnect, server.id, soundsDir)
+		serverPunish[server.id] = punish.Punish(client, server.id, mysqlConnect)
 
 	scanAdmins()
 	
@@ -257,11 +264,11 @@ async def on_member_remove(member):
 @client.event
 async def on_server_join(server):
 	global client, soundsDir, lists
-	serverVoices[server.id] = vserver.voiceServer(client, server.id, soundsDir, lists)
+	serverVoices[server.id] = vserver.voiceServer(client, mysqlConnect, server.id, soundsDir)
 
 @client.event
 async def on_message(message):
-	global serverVoices, serverAdmins, soundsDir
+	global serverVoices, serverAdmins, soundsDir, serverPunish
 
 	command = message.content.lower()
 	
@@ -270,24 +277,35 @@ async def on_message(message):
 	else:
 		theServer = message.server.id
 
+	if serverPunish[theServer].checkSquelch(message.author):
+		await client.delete_message(message)
+		return	
+
 	if message.author.name == client.user.name:
 		return
 	if command.startswith("!admin"):
 		if message.author in serverAdmins[theServer]:
 			if 'playlist' in message.content:
 				await serverVoices[theServer].addPlaylist(message)
-			if 'blacklist' in message.content:
+			elif 'blacklist' in message.content:
 				await serverVoices[theServer].addBlacklist(message)
-			if 'wtfboom' in message.content:
+			elif 'wtfboom' in message.content:
 				await serverVoices[theServer].playWTF(message)
-			if 'tts' in message.content:
+			elif 'tts' in message.content:
 				await client.send_message(message.channel, message.content[11:], tts=True)
+			elif 'squelch current' in message.content:
+				await serverPunish[theServer].getSquelches(message)
+			elif 'squelch log' in message.content:
+				await serverPunish[theServer].getSquelches(message, all=1)
+			elif 'unsquelch' in message.content:
+				await serverPunish[theServer].removeSquelch(message)
+			elif 'squelch' in message.content:
+				await serverPunish[theServer].doSquelch(message)
 		else:
 			print(message.author.name + " " + message.author.id + " tried to run an admin command")
 			await client.send_message(message.channel, message.author.name + " you are not an admin... :cop:")
 	elif command.startswith('!alive'):
-		text = "Hey " + message.author.name + ", I'm alive so shut the fuck up! :japanese_goblin:"
-		await client.send_message(message.channel, text)
+		await client.send_message(message.channel, "Hey " + message.author.name + ", I'm alive so shut up! :japanese_goblin:")
 	elif command.startswith('!github'):
 		await client.send_message(message.channel, 'Here is my github page! : https://github.com/Jetsurf/jet-bot')
 	elif command.startswith('!commands') or command.startswith('!help'):
@@ -352,7 +370,7 @@ async def on_message(message):
 	sys.stdout.flush()
 
 #Setup
-sys.stdout = open('./discordbot.log', 'a')
+#sys.stdout = open('./discordbot.log', 'a')
 
 print('**********NEW SESSION**********')
 loadConfig(firstRun=1)
