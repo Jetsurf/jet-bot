@@ -11,9 +11,9 @@ class Punish():
 		self.server = id
 		self.cursor = self.theDB.cursor(cursor_class=MySQLCursorPrepared)
 
-	async def getCurrentSquelches(self, message, all=0):
+	async def getSquelches(self, message, all=0):
 		stmt = 'SELECT * FROM squelch WHERE serverid = %s'
-
+		theString = ''
 		if all == 0:
 			stmt = stmt + ' AND expireddate > NOW()'
 
@@ -23,8 +23,9 @@ class Punish():
 		for row in records:
 			user = discord.utils.find(lambda m : m.id == str(row[1]), message.channel.server.members)
 			admin = discord.utils.find(lambda m : m.id == str(row[2]), message.channel.server.members)
-
-			await self.client.send_message(message.channel, "User: " + user.name + " squelched by " + admin.name + " on " + str(row[3]) + " expiring " + str(row[4]))
+			theString = theString + "User: " + user.name + " squelched by " + admin.name + " on " + str(row[3]) + " expiring " + str(row[4]) + '\n'
+			
+		await self.client.send_message(message.channel, theString)
 
 	def getMutes(self):
 		print("TBD")
@@ -44,7 +45,7 @@ class Punish():
 				self.cursor.execute(stmt, input)
 				if self.cursor.lastrowid != None:
 					self.theDB.commit()
-					await self.client.send_message(message.channel, str(input))
+					await self.client.send_message(message.channel, theUser.name + " has been squelched for " + message.content.split(' ')[3] + " hours")
 				else:
 					await self.client.send_message(message.channel, "Something went wrong!")
 		except Exception as e:

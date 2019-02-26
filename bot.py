@@ -287,24 +287,25 @@ async def on_message(message):
 		if message.author in serverAdmins[theServer]:
 			if 'playlist' in message.content:
 				await serverVoices[theServer].addPlaylist(message)
-			if 'blacklist' in message.content:
+			elif 'blacklist' in message.content:
 				await serverVoices[theServer].addBlacklist(message)
-			if 'wtfboom' in message.content:
+			elif 'wtfboom' in message.content:
 				await serverVoices[theServer].playWTF(message)
-			if 'tts' in message.content:
+			elif 'tts' in message.content:
 				await client.send_message(message.channel, message.content[11:], tts=True)
-			if 'squelch current' in message.content:
-				await serverPunish[theServer].getCurrentSquelches(message)
-			if 'squelch' in message.content and 'unsquelch' not in message.content and 'current' not in message.content:
-				await serverPunish[theServer].doSquelch(message)
-			if 'unsquelch' in message.content:
+			elif 'squelch current' in message.content:
+				await serverPunish[theServer].getSquelches(message)
+			elif 'squelch log' in message.content:
+				await serverPunish[theServer].getSquelches(message, all=1)
+			elif 'unsquelch' in message.content:
 				await serverPunish[theServer].removeSquelch(message)
+			elif 'squelch' in message.content:
+				await serverPunish[theServer].doSquelch(message)
 		else:
 			print(message.author.name + " " + message.author.id + " tried to run an admin command")
 			await client.send_message(message.channel, message.author.name + " you are not an admin... :cop:")
 	elif command.startswith('!alive'):
-		text = "Hey " + message.author.name + ", I'm alive so shut the fuck up! :japanese_goblin:"
-		await client.send_message(message.channel, text)
+		await client.send_message(message.channel, "Hey " + message.author.name + ", I'm alive so shut up! :japanese_goblin:")
 	elif command.startswith('!github'):
 		await client.send_message(message.channel, 'Here is my github page! : https://github.com/Jetsurf/jet-bot')
 	elif command.startswith('!commands') or command.startswith('!help'):
