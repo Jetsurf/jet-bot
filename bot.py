@@ -282,6 +282,8 @@ async def on_message(message):
 		await client.delete_message(message)
 		return	
 
+	if message.author.bot:
+		return
 	if message.author.name == client.user.name:
 		return
 	if command.startswith("!admin"):
@@ -364,6 +366,8 @@ async def on_message(message):
 				vol = 60
 			await client.send_message(message.channel, "Setting Volume to " + str(vol) + "%")
 			serverVoices[theServer].ytPlayer.volume = float(vol / 100)
+		elif command.startswith('!queue'):
+			await serverVoices[theServer].printQueue(message)
 		elif command.startswith('!'):
 			await serverVoices[theServer].playSound(command, message)
 	sys.stdout.flush()

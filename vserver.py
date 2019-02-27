@@ -6,6 +6,7 @@ import requests
 import urllib
 import urllib.request
 import mysql.connector
+import copy
 from mysql.connector.cursor import MySQLCursorPrepared
 from bs4 import BeautifulSoup
 from random import randint
@@ -66,7 +67,7 @@ class voiceServer():
 
 			if '!wtfboom' in command or '!johncena' in command or '!ohmygod' in command or "!leeroy" in command:
 				self.player.volume = .1
-			elif '!whosaidthat' in command or '!chrishansen' in command:
+			elif '!whosaidthat' in command or '!chrishansen' in command or '!sotasty' in command:
 				self.player.volume = .4
 			else:
 				self.player.volume = .25
@@ -78,6 +79,25 @@ class voiceServer():
 			self.ytPlayer.stop()
 		else:
 			await self.client.send_message(message.channel, "I'm not playing anything right now")
+
+	async def printQueue(self, message):
+		theQueue = self.ytQueue.queue
+		embed = discord.Embed(colour=0xFF0F00)
+		embed.title = "Current Queue"
+
+		if not theQueue:
+			embed.add_field(name='Queue is empty', value='🤷', inline=False)
+
+		for i in range(len(theQueue)):
+			song = theQueue[i]
+			name = song.title
+			url = song.url
+			duration = song.duration
+			minutes = int(duration / 60)
+			seconds = duration % 60
+			embed.add_field(name=name, value="Duration - " + str(minutes) + " Minutes " + str(seconds) + " Seconds\nURL - " + str(url), inline=False)
+
+		await self.client.send_message(message.channel, embed=embed)
 
 	def end(self):
 		self.ytQueue = queue.Queue()
