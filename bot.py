@@ -21,7 +21,6 @@ serverPunish = {}
 token = ''
 log = ''
 soundsDir = ''
-lists = ''
 commands = ''
 configData = None
 
@@ -262,8 +261,11 @@ async def on_member_remove(member):
 			
 @client.event
 async def on_server_join(server):
-	global client, soundsDir, lists
+	global client, soundsDir, serverVoices, serverPunish
+	print("I joined server: " + server.name)
+	sys.stdout.flush()
 	serverVoices[server.id] = vserver.voiceServer(client, mysqlConnect, server.id, soundsDir)
+	serverPunish[server.id] = punish.Punish(client, server.id, mysqlConnect)
 
 @client.event
 async def on_message(message):
@@ -301,7 +303,6 @@ async def on_message(message):
 			elif 'squelch' in message.content:
 				await serverPunish[theServer].doSquelch(message)
 		else:
-			print(message.author.name + " " + message.author.id + " tried to run an admin command")
 			await client.send_message(message.channel, message.author.name + " you are not an admin... :cop:")
 	elif command.startswith('!alive'):
 		await client.send_message(message.channel, "Hey " + message.author.name + ", I'm alive so shut up! :japanese_goblin:")
@@ -361,7 +362,6 @@ async def on_message(message):
 			vol = int(command.split(' ')[1])
 			if vol > 60:
 				vol = 60
-
 			await client.send_message(message.channel, "Setting Volume to " + str(vol) + "%")
 			serverVoices[theServer].ytPlayer.volume = float(vol / 100)
 		elif command.startswith('!'):
@@ -369,7 +369,7 @@ async def on_message(message):
 	sys.stdout.flush()
 
 #Setup
-#sys.stdout = open('./discordbot.log', 'a')
+sys.stdout = open('./discordbot.log', 'a')
 
 print('**********NEW SESSION**********')
 loadConfig(firstRun=1)
