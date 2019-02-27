@@ -1,7 +1,6 @@
 {
 	"token"		: "",
 	"soundsdir"	: "",
-	"lists"		: "",
 	"commands"	: "",
 	"mysql_host"	: "",
 	"mysql_user"	: "",
