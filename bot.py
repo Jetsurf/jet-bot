@@ -36,7 +36,6 @@ def loadConfig(firstRun=0):
 			token = configData['token']
 
 		soundsDir = configData['soundsdir']
-		lists = configData['lists']
 		commands = configData['commands']
 		mysqlConnect = mysqlinfo.mysqlInfo(configData['mysql_host'], configData['mysql_user'], configData['mysql_pw'], configData['mysql_db'])
 
@@ -127,19 +126,19 @@ async def maps(message, offset=0):
 	mapB = trfWar[offset]['stage_b']
 	end = trfWar[offset]['end_time']
 
-	embed.add_field(name="Turf War", value=mapA['name'] + "\n" + mapB['name'], inline=True)
+	embed.add_field(name="<:turfwar:550103899084816395> Turf War", value=mapA['name'] + "\n" + mapB['name'], inline=True)
 
 	mapA = ranked[offset]['stage_a']
 	mapB = ranked[offset]['stage_b']
 	game = ranked[offset]['rule']
 
-	embed.add_field(name="Ranked: " + game['name'], value=mapA['name'] + "\n" + mapB['name'], inline=True)
+	embed.add_field(name="<:ranked:550104072456372245> Ranked: " + game['name'], value=mapA['name'] + "\n" + mapB['name'], inline=True)
 
 	mapA = league[offset]['stage_a']
 	mapB = league[offset]['stage_b']
 	game = league[offset]['rule']
 
-	embed.add_field(name="League: " + game['name'], value=mapA['name'] + "\n" + mapB['name'], inline=True)
+	embed.add_field(name="<:league:550104147463110656> League: " + game['name'], value=mapA['name'] + "\n" + mapB['name'], inline=True)
 
 	timeRemaining = end - theTime
 	timeRemaining = timeRemaining % 86400
