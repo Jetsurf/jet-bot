@@ -36,7 +36,7 @@ class nsoHandler():
 			return False
 
 	async def addToken(self, message):
-		if self.checkDuplicate():
+		if self.checkDuplicate(message.author.id):
 			stmt = "UPDATE tokens SET token = %s WHERE clientid = %s"
 			input = (' '.join(message.content.split()[1:]), message.author.id,)
 		else:
@@ -108,7 +108,6 @@ class nsoHandler():
 		embed.add_field(name='Favorite Weapon', value=topweap['weapon']['name'] + " with " + str(topink) + " turf inked total", inline=True)
 
 		await self.client.send_message(message.channel, embed=embed)
-
 
 	async def getRanks(self, message):
 		if not self.checkDuplicate(message.author.id):
