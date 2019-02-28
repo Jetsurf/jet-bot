@@ -28,10 +28,24 @@ command.
 There are two admin commands to configure the bot:
  - !admin playlist URL
  - !admin blacklist URL
+ - !admin dm add
+ - !admin dm remove
 
-To run these commands, you need the administrator role in your discord
-server. Run the command with a URL to either add it to the !playrandom
-playlist or prevent the video at the URL from ever being played.
+Run the command with a URL to either add it to the !playrandom playlist or prevent the video at the URL from ever being played.
+
+To subscribe to direct DM's on users leaving, run !admin dm add. To unsubscribe to this, run !admin dm remove.
+
+The following admin commands are used for chat squelching (voice mute to come soon)
+
+ - !admin squelch @user hours reason
+ - !admin unsquelch @user
+ - !admin squelch current
+ - !admin squelch log
+ 
+The squelch current command gives a list of all users currently squelched by the bot, squelch log provides a detailed log
+of what users are actively or ever were squeleched.
+
+To run these commands, you need the administrator role in your discord server.
 
 ## Use
 Complete the discordbot.json config file with the necessary fields. 
@@ -45,6 +59,7 @@ Currently implemented commands are as follows:
  - !playrandom # : Plays a random url from my playlist. Optional #,
    queues # videos to play
  - !currentsong : Displays the currently playing Song/Video
+ - !queue : Displays my current queue of songs to play
  - !stop OR !skip : Stop a current playing video and play the next one
  - !volume : Sets my global voice volume (Youtube defaults to 7%, caps
    at 60% vol)

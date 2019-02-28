@@ -68,6 +68,40 @@ class Punish():
 		except Exception as e:
 			await self.client.send_message(message.channel, "You didn't do something right, proper command is !admin unsquelch @user: Error is " + str(e))	
 
+	def checkDM(self, clientid):
+		stmt = "SELECT COUNT(*) FROM dms WHERE serverid = %s AND clientid = %s"
+		self.cursor.execute(stmt, (self.server, clientid,))
+		count = self.cursor.fetchone()
+
+		if count[0] > 0:
+			return True
+		else:
+			return False
+
+	async def addDM(self, message):
+		if self.checkDM(message.author.id):
+			await self.client.send_message(message.channel, "You are already in my list of people to DM")
+			return
+		stmt = "INSERT INTO dms(serverid, clientid) values(%s, %s)"
+		self.cursor.execute(stmt, (self.server, message.author.id,))
+		if self.cursor.lastrowid != None:
+			self.theDB.commit()
+			await self.client.send_message(message.channel, "Added " + message.author.name + " to my DM list!")
+		else:
+			await self.client.send_message(message.channel, "Something went wrong!")
+
+	async def removeDM(self, message):
+		if not self.checkDM(message.author.id):
+			await self.client.send_message(message.channel, "You aren't in my list of people to DM")
+			return
+		stmt = "DELETE FROM dms WHERE serverid = %s AND clientid = %s"
+		self.cursor.execute(stmt, (self.server, message.author.id,))
+		if self.cursor.lastrowid != None:
+			self.theDB.commit()
+			await self.client.send_message(message.channel, "Removed " + message.author.name + " from my DM list!")
+		else:
+			await self.client.send_message(message.channel, "Something went wrong!")
+
 	def doMute(self):
 		print("TBD")
 
