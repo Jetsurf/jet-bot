@@ -35,13 +35,13 @@ class nsoHandler():
 		else:
 			return False
 
-	async def addToken(self, message):
+	async def addToken(self, message, token):
 		if self.checkDuplicate(message.author.id):
 			stmt = "UPDATE tokens SET token = %s WHERE clientid = %s"
-			input = (' '.join(message.content.split()[1:]), message.author.id,)
+			input = (token, message.author.id,)
 		else:
 			stmt = "INSERT INTO tokens (clientid, token) VALUES(%s, %s)"
-			input = (message.author.id, ' '.join(message.content.split()[1:]),)
+			input = (message.author.id, token,)
 
 		self.cursor.execute(stmt, input)
 		if self.cursor.lastrowid != None:
@@ -131,7 +131,7 @@ class nsoHandler():
 		except:
 			await self.client.send_message(message.channel, message.author.name + " there is a problem with your token")
 			return
-			
+
 		szrank = thejson['records']['player']['udemae_zones']['name']
 		rmrank = thejson['records']['player']['udemae_rainmaker']['name']
 		tcrank = thejson['records']['player']['udemae_tower']['name']
