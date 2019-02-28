@@ -29,9 +29,19 @@ There are two admin commands to configure the bot:
  - !admin playlist URL
  - !admin blacklist URL
 
-To run these commands, you need the administrator role in your discord
-server. Run the command with a URL to either add it to the !playrandom
-playlist or prevent the video at the URL from ever being played.
+Run the command with a URL to either add it to the !playrandom playlist or prevent the video at the URL from ever being played.
+
+The following admin commands are used for chat squelching (voice mute to come soon)
+
+ - !admin squelch @user hours reason
+ - !admin unsquelch @user
+ - !admin squelch current
+ - !admin squelch log
+ 
+The squelch current command gives a list of all users currently squelched by the bot, squelch log provides a detailed log
+of what users are actively or ever were squeleched.
+
+To run these commands, you need the administrator role in your discord server.
 
 ## Use
 Complete the discordbot.json config file with the necessary fields. 
