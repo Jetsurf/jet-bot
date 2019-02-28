@@ -255,11 +255,11 @@ async def on_ready():
 	
 @client.event
 async def on_member_remove(member):
-	global serverAdmins
+	global serverAdmins, serverPunish
 
 	theServer = member.server.id
 	for mem in serverAdmins[theServer]:
-		if mem.id != client.user.id:
+		if mem.id != client.user.id and serverPunish[theServer].checkDM(mem.id):
 			await client.send_message(mem, member.name + " left " + member.server.name)
 			
 @client.event
@@ -309,6 +309,10 @@ async def on_message(message):
 				await serverPunish[theServer].removeSquelch(message)
 			elif 'squelch' in message.content:
 				await serverPunish[theServer].doSquelch(message)
+			elif 'dm add' in message.content:
+				await serverPunish[theServer].addDM(message)
+			elif 'dm remove' in message.content:
+				await serverPunish[theServer].removeDM(message)
 		else:
 			await client.send_message(message.channel, message.author.name + " you are not an admin... :cop:")
 	elif command.startswith('!alive'):

@@ -25,11 +25,15 @@ This file needs to be completed and moved to discordbot.json.
 Soundsdir is a directory to place soundclips to play with the !file
 command.
 
-There are two admin commands to configure the bot:
+There are a few admin commands to configure the bot:
  - !admin playlist URL
  - !admin blacklist URL
+ - !admin dm add
+ - !admin dm remove
 
 Run the command with a URL to either add it to the !playrandom playlist or prevent the video at the URL from ever being played.
+
+To subscribe to direct DM's on users leaving, run !admin dm add. To unsubscribe to this, run !admin dm remove.
 
 The following admin commands are used for chat squelching (voice mute to come soon)
 
@@ -55,6 +59,7 @@ Currently implemented commands are as follows:
  - !playrandom # : Plays a random url from my playlist. Optional #,
    queues # videos to play
  - !currentsong : Displays the currently playing Song/Video
+ - !queue : Displays my current queue of songs to play
  - !stop OR !skip : Stop a current playing video and play the next one
  - !volume : Sets my global voice volume (Youtube defaults to 7%, caps
    at 60% vol)
