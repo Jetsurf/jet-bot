@@ -9,12 +9,14 @@ import time
 import vserver
 import mysqlinfo
 import punish
+import nsohandler
 import urllib
 import urllib.request
 from subprocess import call
 
 client = discord.Client()
 mysqlConnect = None
+nsoHandler = None
 serverVoices = {}
 serverAdmins = {}
 serverPunish = {}
@@ -239,7 +241,7 @@ async def on_role_update(before, after):
 
 @client.event
 async def on_ready():
-	global client, soundsDir, lists, mysqlConnect, serverPunish
+	global client, soundsDir, lists, mysqlConnect, serverPunish, nsohandler
 
 	print('Logged in as,', client.user.name, client.user.id)
 	print('------')
@@ -248,6 +250,7 @@ async def on_ready():
 		serverVoices[server.id] = vserver.voiceServer(client, mysqlConnect, server.id, soundsDir)
 		serverPunish[server.id] = punish.Punish(client, server.id, mysqlConnect)
 
+	nsohandler = nsohandler.nsoHandler(client, mysqlConnect)
 	scanAdmins()
 	
 @client.event
@@ -269,11 +272,13 @@ async def on_server_join(server):
 
 @client.event
 async def on_message(message):
-	global serverVoices, serverAdmins, soundsDir, serverPunish
+	global serverVoices, serverAdmins, soundsDir, serverPunish, nsohandler
 
 	command = message.content.lower()
 	
 	if message.server == None:
+		if '!token' in command:
+			await nsohandler.addToken(message)
 		return
 	else:
 		theServer = message.server.id
@@ -308,6 +313,10 @@ async def on_message(message):
 			await client.send_message(message.channel, message.author.name + " you are not an admin... :cop:")
 	elif command.startswith('!alive'):
 		await client.send_message(message.channel, "Hey " + message.author.name + ", I'm alive so shut up! :japanese_goblin:")
+	elif command.startswith('!rank'):
+		await nsohandler.getRanks(message)
+	elif command.startswith('!stats'):
+		await nsohandler.getStats(message)
 	elif command.startswith('!github'):
 		await client.send_message(message.channel, 'Here is my github page! : https://github.com/Jetsurf/jet-bot')
 	elif command.startswith('!commands') or command.startswith('!help'):
