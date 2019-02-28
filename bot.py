@@ -12,11 +12,13 @@ import punish
 import nsohandler
 import urllib
 import urllib.request
+import nsotoken
 from subprocess import call
 
 client = discord.Client()
 mysqlConnect = None
 nsoHandler = None
+nsoTokens = None
 serverVoices = {}
 serverAdmins = {}
 serverPunish = {}
@@ -241,7 +243,7 @@ async def on_role_update(before, after):
 
 @client.event
 async def on_ready():
-	global client, soundsDir, lists, mysqlConnect, serverPunish, nsohandler
+	global client, soundsDir, lists, mysqlConnect, serverPunish, nsohandler, nsoTokens
 
 	print('Logged in as,', client.user.name, client.user.id)
 	print('------')
@@ -251,6 +253,7 @@ async def on_ready():
 		serverPunish[server.id] = punish.Punish(client, server.id, mysqlConnect)
 
 	nsohandler = nsohandler.nsoHandler(client, mysqlConnect)
+	nsoTokens = nsotoken.Nsotoken(client, nsohandler)
 	scanAdmins()
 	
 @client.event
@@ -278,7 +281,8 @@ async def on_message(message):
 	
 	if message.server == None:
 		if '!token' in command:
-			await nsohandler.addToken(message)
+			#await nsohandler.addToken(message)
+			await nsoTokens.login(message)
 		return
 	else:
 		theServer = message.server.id
@@ -386,7 +390,7 @@ async def on_message(message):
 	sys.stdout.flush()
 
 #Setup
-sys.stdout = open('./discordbot.log', 'a')
+#sys.stdout = open('./discordbot.log', 'a')
 
 print('**********NEW SESSION**********')
 loadConfig(firstRun=1)
