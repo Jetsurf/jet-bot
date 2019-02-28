@@ -214,12 +214,16 @@ class Nsotoken():
 		return r.cookies["iksm_session"]
 
 	def get_f_from_flapg_api(self, id_token, guid, timestamp):
-		api_app_head = {
-			'x-token': id_token,
-			'x-time': str(timestamp),
-			'x-guid': guid,
-			'x-hash': get_hash_from_s2s_api(id_token, timestamp)
-		}
-		api_response = requests.get("https://flapg.com/ika2/api/login", headers=api_app_head)
-		f = json.loads(api_response.text)['f']
-		return f
+		try:
+			api_app_head = {
+				'x-token': id_token,
+				'x-time': str(timestamp),
+				'x-guid': guid,
+				'x-hash': get_hash_from_s2s_api(id_token, timestamp)
+			}
+			api_response = requests.get("https://flapg.com/ika2/api/login", headers=api_app_head)
+			f = json.loads(api_response.text)['f']
+			return f
+		except:
+				pass
+			
