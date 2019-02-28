@@ -390,7 +390,7 @@ async def on_message(message):
 	sys.stdout.flush()
 
 #Setup
-#sys.stdout = open('./discordbot.log', 'a')
+sys.stdout = open('./discordbot.log', 'a')
 
 print('**********NEW SESSION**********')
 loadConfig(firstRun=1)
