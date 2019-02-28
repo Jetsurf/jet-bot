@@ -55,7 +55,7 @@ class nsoHandler():
 
 	async def getStats(self, message):
 		if not self.checkDuplicate(message.author.id):
-			await client.send_message(message.channel, "You don't have a token sent to me! Please DM me your iksm_session token with !token your_token")
+			await self.client.send_message(message.channel, "You don't have a token sent to me! Please DM me your iksm_session token with !token your_token")
 			return
 
 		stmt = 'SELECT token FROM tokens WHERE clientid = %s'
@@ -65,7 +65,12 @@ class nsoHandler():
 		results_list = requests.get(url, headers=self.app_head, cookies=dict(iksm_session=Session_token))
 		thejson = json.loads(results_list.text)
 		embed = discord.Embed(colour=0x0004FF)
-		name = thejson['records']['player']['nickname']
+		try:
+			name = thejson['records']['player']['nickname']
+		except:
+			await self.client.send_message(message.channel, message.author.name + " there is a problem with your token")
+			return
+
 		turfinked = thejson['challenges']['total_paint_point_octa'] + thejson['challenges']['total_paint_point']
 		turfsquid = thejson['challenges']['total_paint_point']
 		turfocto = thejson['challenges']['total_paint_point_octa']
@@ -111,7 +116,7 @@ class nsoHandler():
 
 	async def getRanks(self, message):
 		if not self.checkDuplicate(message.author.id):
-			await client.send_message(message.channel, "You don't have a token sent to me! Please DM me your iksm_session token with !token your_token")
+			await self.client.send_message(message.channel, "You don't have a token sent to me! Please DM me your iksm_session token with !token your_token")
 			return
 
 		stmt = 'SELECT token FROM tokens WHERE clientid = %s'
@@ -120,7 +125,13 @@ class nsoHandler():
 		url = "https://app.splatoon2.nintendo.net/api/records"
 		results_list = requests.get(url, headers=self.app_head, cookies=dict(iksm_session=Session_token))
 		thejson = json.loads(results_list.text)
-		name = thejson['records']['player']['nickname'].decode('utf-8')
+
+		try:
+			name = thejson['records']['player']['nickname']
+		except:
+			await self.client.send_message(message.channel, message.author.name + " there is a problem with your token")
+			return
+			
 		szrank = thejson['records']['player']['udemae_zones']['name']
 		rmrank = thejson['records']['player']['udemae_rainmaker']['name']
 		tcrank = thejson['records']['player']['udemae_tower']['name']
