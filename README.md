@@ -25,7 +25,7 @@ This file needs to be completed and moved to discordbot.json.
 Soundsdir is a directory to place soundclips to play with the !file
 command.
 
-There are two admin commands to configure the bot:
+There are a few admin commands to configure the bot:
  - !admin playlist URL
  - !admin blacklist URL
  - !admin dm add
