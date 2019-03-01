@@ -72,6 +72,15 @@ Currently implemented commands are as follows:
  - !splatnetgear : Gets all of the current gear for sale on SplatNet
  - !github : Displays my github link
 
+Splatoon 2 Splatnet Commands
+
+The following commands require you to DM the bot with !token and follow the instructions
+
+ - !rank : Shows your ranks in the ranked gamemodes
+ - !stats : Shows various stats from your gameplay
+ - !order ID : The !splatnetgear command gives you 'ID to buy' run this with that ID to
+   place an order in the splatnet store
+
 The following command requires 3 roles to be in place. Americas - Europe - 
 Japan/Asia
 
