@@ -70,156 +70,6 @@ async def setCRole(message):
 
 	await client.add_reaction(message, '👍')
 
-def getJSON(url):
-	req = urllib.request.Request(url, headers={ 'User-Agent' : 'Magic!' })
-	response = urllib.request.urlopen(req)
-	data = json.loads(response.read().decode())
-	return data
-
-async def gearParser(message):
-	theTime = int(time.mktime(time.gmtime()))
-	data = getJSON("https://splatoon2.ink/data/merchandises.json")
-	gear = data['merchandises']
-	theString = ''
-
-	theString = 'Current SplatNet Gear:\n```'
-
-	for i in gear:
-		skill = i['skill']
-		equip = i['gear']
-		price = i['price']
-		end = i['end_time']
-		eqName = equip['name']
-		eqBrand = equip['brand']['name']
-		commonSub = equip['brand']['frequent_skill']['name']
-		eqKind = equip['kind']
-		slots = equip['rarity'] + 1
-
-		timeRemaining = end - theTime
-		timeRemaining = timeRemaining % 86400
-		hours = int(timeRemaining / 3600)
-		timeRemaining = timeRemaining % 3600
-		minutes = int(timeRemaining / 60)
-
-		theString = theString + eqName + ' : ' + eqBrand + '\n'
-		theString = theString + '    Skill      : ' + str(skill['name']) + '\n'
-		theString = theString + '    Common Sub : ' + str(commonSub) + '\n'
-		theString = theString + '    Subs       : ' + str(slots) + '\n'
-		theString = theString + '    Type       : ' + eqKind + '\n'
-		theString = theString + '    Price      : ' + str(price) + '\n'
-		theString = theString + '    Time Left  : ' + str(hours) + ' Hours and ' + str(minutes) + ' minutes\n\n'
-
-	theString = theString + '```'
-	await client.send_message(message.channel, theString)
-
-async def maps(message, offset=0):
-	theTime = int(time.mktime(time.gmtime()))
-	data = getJSON("https://splatoon2.ink/data/schedules.json")
-	trfWar = data['regular']
-	ranked = data['gachi']
-	league = data['league']
-	embed = discord.Embed(colour=0x3FFF33)
-
-	if offset == 0:
-		embed.title = "Current Splatoon 2 Maps"
-	elif offset == 1:
-		embed.title = "Upcoming Splatoon 2 Maps"
-
-	mapA = trfWar[offset]['stage_a']
-	mapB = trfWar[offset]['stage_b']
-	end = trfWar[offset]['end_time']
-
-	embed.add_field(name="<:turfwar:550103899084816395> Turf War", value=mapA['name'] + "\n" + mapB['name'], inline=True)
-
-	mapA = ranked[offset]['stage_a']
-	mapB = ranked[offset]['stage_b']
-	game = ranked[offset]['rule']
-
-	embed.add_field(name="<:ranked:550104072456372245> Ranked: " + game['name'], value=mapA['name'] + "\n" + mapB['name'], inline=True)
-
-	mapA = league[offset]['stage_a']
-	mapB = league[offset]['stage_b']
-	game = league[offset]['rule']
-
-	embed.add_field(name="<:league:550104147463110656> League: " + game['name'], value=mapA['name'] + "\n" + mapB['name'], inline=True)
-
-	timeRemaining = end - theTime
-	timeRemaining = timeRemaining % 86400
-	hours = int(timeRemaining / 3600)
-	timeRemaining = timeRemaining % 3600
-	minutes = int(timeRemaining / 60)
-
-	if offset == 0:
-		embed.add_field(name="Time Remaining", value=str(hours) + ' Hours, and ' + str(minutes) + ' minutes', inline=False)
-	elif offset >= 1:
-		hours = hours - 2
-		embed.add_field(name="Time Until Map Rotation", value=str(hours) + ' Hours, and ' + str(minutes) + ' minutes', inline=False)
-
-	await client.send_message(message.channel, embed=embed)
-
-async def srParser(message, getNext=0):
-	theTime = int(time.mktime(time.gmtime()))
-	data = getJSON("https://splatoon2.ink/data/coop-schedules.json")
-	currentSR = data['details']
-	gotData = 0
-	start = 0
-	end = 0
-	embed = discord.Embed(colour=0xFF8633)
-	theString = ''	
-
-	if getNext == 0:
-		embed.title = "Current Salmon Run"
-	else:
-		embed.title = "Upcoming Salmon Run"
-
-	for i in currentSR:
-		gotData = 0
-		start = i['start_time']
-		end = i['end_time']
-		map = i['stage']
-		weaps = i['weapons']
-
-		if start <= theTime and theTime <= end:
-			gotData = 1
-
-		if (gotData == 1 and getNext == 0) or (gotData == 0 and getNext == 1):
-			embed.set_thumbnail(url='https://splatoon2.ink/assets/splatnet' + map['image'])
-			embed.add_field(name='Map', value=map['name'], inline=False)
-			for j in i['weapons']:
-				try:
-					weap = j['weapon']
-				except:
-					weap = j['coop_special_weapon']
-				theString = theString + weap['name'] + '\n'
-			break
-
-		elif gotData == 1 and getNext == 1:
-			gotData = 0
-			continue
-
-	embed.add_field(name='Weapons', value=theString, inline=False)
-
-	if gotData == 0 and getNext == 0:
-		await client.send_message(message.channel, 'No SR Currently Running')
-		return
-	elif getNext == 1:
-		timeRemaining = start - theTime
-	else:
-		timeRemaining = end - theTime
-
-	days = int(timeRemaining / 86400)
-	timeRemaining = timeRemaining % 86400
-	hours = int(timeRemaining / 3600)
-	timeRemaining = timeRemaining % 3600
-	minutes = int(timeRemaining / 60)
-
-	if getNext == 1:
-		embed.add_field(name='Time Until Rotation', value=str(days) + ' Days, ' + str(hours) + ' Hours, and ' + str(minutes) + ' Minutes')
-	else:
-		embed.add_field(name="Time Remaining ", value=str(days) + ' Days, ' + str(hours) + ' Hours, and ' + str(minutes) + ' Minutes')
-
-	await client.send_message(message.channel, embed=embed)
-
 @asyncio.coroutine
 async def joinVoiceChannel(channelName, message):
 	await serverVoices[message.server.id].joinVoiceChannel(channelName, message)
@@ -323,6 +173,8 @@ async def on_message(message):
 		await client.send_message(message.channel, "Hey " + message.author.name + ", I'm alive so shut up! :japanese_goblin:")
 	elif command.startswith('!rank'):
 		await nsohandler.getRanks(message)
+	elif command.startswith('!order'):
+		await nsohandler.orderGear(message)
 	elif command.startswith('!stats'):
 		await nsohandler.getStats(message)
 	elif command.startswith('!github'):
@@ -345,15 +197,15 @@ async def on_message(message):
 		else:
 			await joinVoiceChannel(command, message)
 	elif command.startswith('!currentmaps'):
-		await maps(message)
+		await nsohandler.maps(message)
 	elif 'nextmaps' in command and '!' in command:
-		await maps(message, offset=min(11, message.content.count('next')))
+		await nsohandler.maps(message, offset=min(11, message.content.count('next')))
 	elif command.startswith('!currentsr'):
-		await srParser(message)
+		await nsohandler.srParser(message)
 	elif command.startswith('!splatnetgear'):
-		await gearParser(message)
+		await nsohandler.gearParser(message)
 	elif command.startswith('!nextsr'):
-		await srParser(message, 1)
+		await nsohandler.srParser(message, 1)
 	elif command.startswith('!us') or message.content.startswith('!eu') or message.content.startswith('!jp'):
 		await setCRole(message)
 	elif ('pizza' in command and 'pineapple' in command) or ('\U0001F355' in message.content and '\U0001F34D' in message.content):
@@ -390,7 +242,7 @@ async def on_message(message):
 	sys.stdout.flush()
 
 #Setup
-sys.stdout = open('./discordbot.log', 'a')
+#sys.stdout = open('./discordbot.log', 'a')
 
 print('**********NEW SESSION**********')
 loadConfig(firstRun=1)
