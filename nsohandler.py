@@ -148,19 +148,19 @@ class nsoHandler():
 
 		szrank = thejson['records']['player']['udemae_zones']['name']
 		if szrank == "S+":
-			szrank += thejson['records']['player']['udemae_zones']['s_plus_number']
+			szrank += str(thejson['records']['player']['udemae_zones']['s_plus_number'])
 
 		rmrank = thejson['records']['player']['udemae_rainmaker']['name']
 		if rmrank == "S+":
-			rmrank += thejson['records']['player']['udemae_rainmaker']['s_plus_number']
+			rmrank += str(thejson['records']['player']['udemae_rainmaker']['s_plus_number'])
 
 		tcrank = thejson['records']['player']['udemae_tower']['name']
 		if tcrank == "S+":
-			tcrank += thejson['records']['player']['udemae_tower']['s_plus_number']
+			tcrank += str(thejson['records']['player']['udemae_tower']['s_plus_number'])
 
 		cbrank = thejson['records']['player']['udemae_clam']['name']
-		if cbrank == "S+"
-			cbrank += thejson['records']['player']['udemae_clam']['s_plus_number']
+		if cbrank == "S+":
+			cbrank += str(thejson['records']['player']['udemae_clam']['s_plus_number'])
 
 		embed = discord.Embed(colour=0xFF7800)
 		embed.title = name + "'s Ranks"
