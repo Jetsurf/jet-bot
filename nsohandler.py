@@ -147,9 +147,21 @@ class nsoHandler():
 			return
 
 		szrank = thejson['records']['player']['udemae_zones']['name']
+		if szrank == "S+":
+			szrank += str(thejson['records']['player']['udemae_zones']['s_plus_number'])
+
 		rmrank = thejson['records']['player']['udemae_rainmaker']['name']
+		if rmrank == "S+":
+			rmrank += str(thejson['records']['player']['udemae_rainmaker']['s_plus_number'])
+
 		tcrank = thejson['records']['player']['udemae_tower']['name']
+		if tcrank == "S+":
+			tcrank += str(thejson['records']['player']['udemae_tower']['s_plus_number'])
+
 		cbrank = thejson['records']['player']['udemae_clam']['name']
+		if cbrank == "S+":
+			cbrank += str(thejson['records']['player']['udemae_clam']['s_plus_number'])
+
 		embed = discord.Embed(colour=0xFF7800)
 		embed.title = name + "'s Ranks"
 		embed.add_field(name="Splat Zones", value=szrank, inline=True)
