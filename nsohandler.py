@@ -38,6 +38,17 @@ class nsoHandler():
     		"Accept-Encoding": "gzip, deflate",
     		"Accept-Language": "en-US"
 		}
+		self.app_head_coop = {
+			'Host': 'app.splatoon2.nintendo.net',
+			'x-unique-id': '8386546935489260343',
+			'x-requested-with': 'XMLHttpRequest',
+			'x-timezone-offset': self.app_timezone_offset,
+			'User-Agent': 'Mozilla/5.0 (Linux; Android 7.1.2; Pixel Build/NJH47D; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/59.0.3071.125 Mobile Safari/537.36',
+			'Accept': '*/*',
+			'Referer': 'https://app.splatoon2.nintendo.net/coop',
+			'Accept-Encoding': 'gzip, deflate',
+			'Accept-Language': 'en-us'
+		}
 
 	def checkDuplicate(self, id):
 		stmt = "SELECT COUNT(*) FROM tokens WHERE clientid = %s"
@@ -127,6 +138,66 @@ class nsoHandler():
 		embed.add_field(name='Favorite Weapon', value=topweap['weapon']['name'] + " with " + str(topink) + " turf inked total", inline=True)
 
 		await self.client.send_message(message.channel, embed=embed)
+
+	async def getSRStats(self, message):
+		if not self.checkDuplicate(message.author.id):
+			await self.client.send_message(message.channel, "You don't have a token setup with me! Please DM me !token with how to get one setup!")
+			return
+
+		embed = discord.Embed(colour=0xE5922A)
+		stmt = 'SELECT token FROM tokens WHERE clientid = %s'
+		self.cursor.execute(stmt, (message.author.id,))
+		Session_token = self.cursor.fetchone()[0].decode('utf-8')
+		url = "https://app.splatoon2.nintendo.net/api/coop_results"
+		results_list = requests.get(url, headers=self.app_head_coop, cookies=dict(iksm_session=Session_token))
+		thejson = json.loads(results_list.text)
+
+		name = thejson['results'][0]['my_result']['name']
+		jobresults = thejson['results']
+		jobcard = thejson['summary']['card']
+		rank = thejson['summary']['stats'][0]['grade']['name']
+		points = thejson['summary']['stats'][0]['grade_point']
+
+		embed.title = name + "'s - " + rank + " " + str(points) + " - Salmon Run Stats"
+
+		embed.add_field(name="Overall Stats", value="Shifts Worked: " + str(jobcard['job_num']) + '\nTeammates Rescued: ' + str(jobcard['help_total']) + '\nGolden Eggs Collected: ' +
+			str(jobcard['golden_ikura_total']) + '\nPower Eggs Collected: ' + str(jobcard['ikura_total']) + '\nTotal Points: ' + str(jobcard['kuma_point_total']), inline=True)
+
+		sheadcnt, stingcnt, flyfshcnt, seelcnt, scrapcnt, mawscnt, drizcnt, deathcnt, rescnt, matches, hazardpts, geggs, peggs = 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+		for i in jobresults:
+			matches += 1
+			deathcnt += i['my_result']['dead_count']
+			rescnt += i['my_result']['help_count']
+			hazardpts += i['danger_rate']
+			geggs += i['my_result']['golden_ikura_num']
+			peggs += i['my_result']['ikura_num']
+			for j in i['my_result']['boss_kill_counts']:
+				y = i['my_result']['boss_kill_counts'][j]
+				if 'Steelhead' in y['boss']['name']:
+					sheadcnt += y['count']
+				if 'Stinger' in y['boss']['name']:
+					stingcnt += y['count']
+				if 'Flyfish' in y['boss']['name']:
+					flyfshcnt += y['count']
+				if 'Steel Eel' in y['boss']['name']:
+					seelcnt += y['count']
+				if 'Scrapper' in y['boss']['name']:
+					scrapcnt += y['count']
+				if 'Maws' in y['boss']['name']:
+					mawscnt += y['count']
+				if 'Drizzler' in y['boss']['name']:
+					drizcnt += y['count']
+
+		hazardavg = int(hazardpts / matches)
+		geggsavg = int(geggs / matches)
+		peggsavg = int(peggs / matches)
+
+		embed.add_field(name="Stats (Last " + str(matches) + " Games)", value="Teammates Rescued: " + str(rescnt) + "\nTimes Died: " + str(deathcnt) + "\nAverage Golden Eggs: " + str(geggsavg) + "\nAverage Power Eggs: " + str(peggsavg) +
+			"\nAverage Hazard Level: " + str(hazardavg) + "%", inline=True)
+		embed.add_field(name="Boss Kill Counts (Last " + str(matches) + " games)", value='Steelhead: ' + str(sheadcnt) + '\nStinger: ' + str(stingcnt) + '\nFlyfish: ' + str(flyfshcnt) + '\nSteel Eel: ' + str(seelcnt) +
+			'\nScrapper: ' + str(scrapcnt) + '\nMaws: ' + str(mawscnt) + '\nDrizzler: ' + str(drizcnt), inline=True)
+		await self.client.send_message(message.channel, embed=embed)
+
 
 	async def getRanks(self, message):
 		if not self.checkDuplicate(message.author.id):

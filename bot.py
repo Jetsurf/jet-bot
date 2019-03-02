@@ -94,14 +94,17 @@ async def on_role_update(before, after):
 @client.event
 async def on_ready():
 	global client, soundsDir, lists, mysqlConnect, serverPunish, nsohandler, nsoTokens
-
+	cnt = 0
 	print('Logged in as,', client.user.name, client.user.id)
 	print('------')
 	await client.change_presence(game=discord.Game(name="Use !help for directions!", type=0))
 	for server in client.servers:
+		cnt += 1
 		serverVoices[server.id] = vserver.voiceServer(client, mysqlConnect, server.id, soundsDir)
 		serverPunish[server.id] = punish.Punish(client, server.id, mysqlConnect)
 
+	print('I am in ' + str(cnt) + ' servers')
+	sys.stdout.flush()
 	nsohandler = nsohandler.nsoHandler(client, mysqlConnect)
 	nsoTokens = nsotoken.Nsotoken(client, nsohandler)
 	scanAdmins()
@@ -124,6 +127,14 @@ async def on_server_join(server):
 	serverPunish[server.id] = punish.Punish(client, server.id, mysqlConnect)
 
 @client.event
+async def on_server_remove(server):
+	global serverVoices, serverPunish
+	print("I left server: " + server.name)
+	sys.stdout.flush()
+	serverVoices[server.id] = None
+	serverPunish[server.id] = None
+
+@client.event
 async def on_message(message):
 	global serverVoices, serverAdmins, soundsDir, serverPunish, nsohandler
 
@@ -131,7 +142,6 @@ async def on_message(message):
 	
 	if message.server == None:
 		if '!token' in command:
-			#await nsohandler.addToken(message)
 			await nsoTokens.login(message)
 		return
 	else:
@@ -177,6 +187,8 @@ async def on_message(message):
 		await nsohandler.orderGear(message)
 	elif command.startswith('!stats'):
 		await nsohandler.getStats(message)
+	elif command.startswith('!srstats'):
+		await nsohandler.getSRStats(message)
 	elif command.startswith('!github'):
 		await client.send_message(message.channel, 'Here is my github page! : https://github.com/Jetsurf/jet-bot')
 	elif command.startswith('!commands') or command.startswith('!help'):
