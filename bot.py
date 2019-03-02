@@ -84,16 +84,17 @@ def scanAdmins(startup=0, id=None):
 		for server in client.servers:
 			serverAdmins[server.id] = []
 			for mem in server.members:
-				try:
-					if mem.server_permissions.administrator and mem not in serverAdmins[server.id]:
-						serverAdmins[server.id].append(mem)
-				except:
-					return
+				if mem.server_permissions.administrator and mem not in serverAdmins[server.id]:
+					serverAdmins[server.id].append(mem)
+
 	else:
 		serverAdmins[id] = []
 		for mem in id.members:
-			if mem.server_permissions.administrator and mem not in serverAdmins[id.id]:
-				serverAdmins[server].append(mem)
+			try:
+				if mem.server_permissions.administrator and mem not in serverAdmins[id.id]:
+					serverAdmins[server].append(mem)
+			except:
+					return
 
 @client.event
 async def on_member_update(before, after):
