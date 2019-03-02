@@ -77,22 +77,33 @@ async def setCRole(message):
 
 	await client.add_reaction(message, '👍')
 
-def scanAdmins():
+def scanAdmins(startup=0, id=None):
 	global serverAdmins
 
-	for server in client.servers:
-		serverAdmins[server.id] = []
-		for mem in server.members:
-			if mem.server_permissions.administrator and mem not in serverAdmins[server.id]:
-				serverAdmins[server.id].append(mem)
-				
-@client.event
-async def on_member_update(before, after):
-	scanAdmins()
+	if startup == 1:
+		for server in client.servers:
+			serverAdmins[server.id] = []
+			for mem in server.members:
+				if mem.server_permissions.administrator and mem not in serverAdmins[server.id]:
+					serverAdmins[server.id].append(mem)
+
+	else:
+		serverAdmins[id] = []
+		for mem in id.members:
+			try:
+				if mem.server_permissions.administrator and mem not in serverAdmins[id.id]:
+					serverAdmins[server].append(mem)
+			except:
+					return
 
 @client.event
-async def on_role_update(before, after):
-	scanAdmins()
+async def on_member_update(before, after):
+	if before.server_permissions.administrator or after.server_permissions.administrator:
+		scanAdmins(id=before.server)
+
+@client.event
+async def on_server_role_update(before, after):
+	scanAdmins(id=before.server)
 
 @client.event
 async def on_ready():
@@ -116,7 +127,7 @@ async def on_ready():
 	sys.stdout.flush()
 	nsohandler = nsohandler.nsoHandler(client, mysqlConnect)
 	nsoTokens = nsotoken.Nsotoken(client, nsohandler)
-	scanAdmins()
+	scanAdmins(startup=1)
 	
 @client.event
 async def on_member_remove(member):
@@ -134,7 +145,7 @@ async def on_server_join(server):
 	sys.stdout.flush()
 	serverVoices[server.id] = vserver.voiceServer(client, mysqlConnect, server.id, soundsDir)
 	serverPunish[server.id] = punish.Punish(client, server.id, mysqlConnect)
-
+	scanAdmins(id=server.id)
 	if dev == 0:
 		cnt += 1
 		print('I am now in ' + str(cnt) + ' servers, posting to discordbots.org')
@@ -161,12 +172,12 @@ async def on_server_remove(server):
 
 @client.event
 async def on_message(message):
-	global serverVoices, serverAdmins, soundsDir, serverPunish, nsohandler
+	global serverVoices, serverAdmins, soundsDir, serverPunish, nsohandler, test
+
+	if message.server.id == '264445053596991498':
+		return;
 
 	command = message.content.lower()
-	
-	if message.server == '264445053596991498':
-		return;
 
 	if message.server == None:
 		if '!token' in command:
