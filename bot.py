@@ -165,6 +165,9 @@ async def on_message(message):
 
 	command = message.content.lower()
 	
+	if message.server == '264445053596991498':
+		return;
+
 	if message.server == None:
 		if '!token' in command:
 			await nsoTokens.login(message)
