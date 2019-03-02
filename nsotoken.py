@@ -211,7 +211,7 @@ class Nsotoken():
 		url = "https://app.splatoon2.nintendo.net/?lang={}".format(self.lang)
 
 		r = requests.get(url, headers=app_head)
-		print(str(r.cookies))
+		print("Got a token!")
 		return r.cookies["iksm_session"]
 
 	def get_f_from_flapg_api(self, id_token, guid, timestamp):
