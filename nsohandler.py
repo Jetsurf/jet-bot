@@ -55,7 +55,7 @@ class nsoHandler():
 		}
 
 	async def addStoreDM(self, message):
-		abilities = { 'Bomb Defense Up DX',	'Haunt', 'Sub Power Up', 'Ink Resistance', 'Swim Speed Up', 'Special Charge Up', 'Main Power Up', 'Ink Recovery Up',
+		abilities = { 'Bomb Defense Up DX',	'Haunt', 'Sub Power Up', 'Ink Resistance Up', 'Swim Speed Up', 'Special Charge Up', 'Main Power Up', 'Ink Recovery Up',
 						'Quick Super Jump', 'Drop Roller', 'Ink Saver (Main)', 'Ink Saver (Sub)', 'Last-Ditch Effort', 'Ninja Squid', 'Object Shredder', 'Opening Gambit',
 						'Quick Respawn', 'Run Speed Up', 'Special Power Up', 'Special Saver', 'Stealth Jump', 'Sub Power Up', 'Swim Speed Up', 'Tenacity', 'Thermal Ink', 'Comeback' }
 		abilitiesStr = str(abilities)
@@ -86,6 +86,7 @@ class nsoHandler():
 		theGear = data['merchandises'][5]
 
 		theSkill = theGear['skill']['name'].lower()
+		print("Doing Store DM! Checking " + theSkill)
 
 		stmt = "SELECT clientid,serverid FROM storedms WHERE ability = %s"
 		self.cursor.execute(stmt, (theSkill,))
