@@ -77,39 +77,29 @@ async def setCRole(message):
 
 	await client.add_reaction(message, '👍')
 
-def scanAdmins(startup=0, id=None):
+def scanAdmins():
 	global serverAdmins
 
-	if startup == 1:
-		for server in client.servers:
-			serverAdmins[server.id] = []
-			for mem in server.members:
-				if mem.server_permissions.administrator and mem not in serverAdmins[server.id]:
-					serverAdmins[server.id].append(mem)
-
-	else:
-		serverAdmins[id] = []
-		for mem in id.members:
-			try:
-				if mem.server_permissions.administrator and mem not in serverAdmins[id.id]:
-					serverAdmins[server].append(mem)
-			except:
-					return
-
+	for server in client.servers:
+		serverAdmins[server.id] = []
+		for mem in server.members:
+			if mem.server_permissions.administrator and mem not in serverAdmins[server.id]:
+				serverAdmins[server.id].append(mem)
+				
 @client.event
 async def on_member_update(before, after):
-	if before.server_permissions.administrator or after.server_permissions.administrator:
-		scanAdmins(id=before.server)
+	scanAdmins()
 
 @client.event
-async def on_server_role_update(before, after):
-	scanAdmins(id=before.server)
+async def on_role_update(before, after):
+	scanAdmins()
 
 @client.event
 async def on_ready():
 	global client, soundsDir, lists, mysqlConnect, serverPunish, nsohandler, nsoTokens, head, cnt, url, dev
 	print('Logged in as,', client.user.name, client.user.id)
 	
+	cnt = 0
 	await client.change_presence(game=discord.Game(name="Use !help for directions!", type=0))
 	for server in client.servers:
 		cnt += 1
@@ -127,7 +117,7 @@ async def on_ready():
 	sys.stdout.flush()
 	nsohandler = nsohandler.nsoHandler(client, mysqlConnect)
 	nsoTokens = nsotoken.Nsotoken(client, nsohandler)
-	scanAdmins(startup=1)
+	scanAdmins()
 	
 @client.event
 async def on_member_remove(member):
@@ -142,10 +132,9 @@ async def on_member_remove(member):
 async def on_server_join(server):
 	global client, soundsDir, serverVoices, serverPunish, head, url, cnt, dev
 	print("I joined server: " + server.name)
-	sys.stdout.flush()
 	serverVoices[server.id] = vserver.voiceServer(client, mysqlConnect, server.id, soundsDir)
 	serverPunish[server.id] = punish.Punish(client, server.id, mysqlConnect)
-	scanAdmins(id=server.id)
+
 	if dev == 0:
 		cnt += 1
 		print('I am now in ' + str(cnt) + ' servers, posting to discordbots.org')
@@ -153,12 +142,12 @@ async def on_server_join(server):
 		r = requests.post(url, headers=head, json=body)
 	else:
 		print('I am now in ' + str(cnt) + ' servers')
+	sys.stdout.flush()
 
 @client.event
 async def on_server_remove(server):
 	global serverVoices, serverPunish, head, url, cnt, dev
 	print("I left server: " + server.name)
-	sys.stdout.flush()
 	serverVoices[server.id] = None
 	serverPunish[server.id] = None
 
@@ -169,19 +158,21 @@ async def on_server_remove(server):
 		r = requests.post(url, headers=head, json=body)
 	else:
 		print('I am now in ' + str(cnt) + ' servers')
+	sys.stdout.flush()
 
+test = 0
 @client.event
 async def on_message(message):
-	global serverVoices, serverAdmins, soundsDir, serverPunish, nsohandler, test
-
-	if message.server.id == '264445053596991498':
-		return;
+	global serverVoices, serverAdmins, soundsDir, serverPunish, nsohandler
 
 	command = message.content.lower()
-
 	if message.server == None:
+		if message.author.bot:
+			return
 		if '!token' in command:
 			await nsoTokens.login(message)
+		if '!storedm' in command:
+			await client.send_message(message.channel, "Sorry, for performance reasons, you cannot DM me !storedm :frowning:")
 		return
 	else:
 		theServer = message.server.id
@@ -228,6 +219,8 @@ async def on_message(message):
 		await nsohandler.getStats(message)
 	elif command.startswith('!srstats'):
 		await nsohandler.getSRStats(message)
+	elif command.startswith('!storedm'):
+		await nsohandler.addStoreDM(message)
 	elif command.startswith('!github'):
 		await client.send_message(message.channel, 'Here is my github page! : https://github.com/Jetsurf/jet-bot')
 	elif command.startswith('!commands') or command.startswith('!help'):
