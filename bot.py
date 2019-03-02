@@ -12,6 +12,7 @@ import punish
 import nsohandler
 import urllib
 import urllib.request
+import requests
 import nsotoken
 from subprocess import call
 
@@ -24,12 +25,16 @@ serverAdmins = {}
 serverPunish = {}
 token = ''
 log = ''
+dev = 1
+cnt = 0
 soundsDir = ''
 commands = ''
 configData = None
+head = {}
+url = ''
 
 def loadConfig(firstRun=0):
-	global token, adminIDs, soundsDir, lists, commands, mysqlConnect
+	global token, adminIDs, soundsDir, lists, commands, mysqlConnect, dev, head, url
 
 	try:
 		with open('./discordbot.json', 'r') as json_config:
@@ -40,6 +45,15 @@ def loadConfig(firstRun=0):
 
 		soundsDir = configData['soundsdir']
 		commands = configData['commands']
+		try:
+			dbid = configData['discordbotid']
+			dbtoken = configData['discordbottok']
+			head = { 'Authorization': dbtoken }
+			url = 'https://discordbots.org/api/bots/' + str(dbid) + '/stats'
+			dev = 0
+		except:
+			print('No ID/Token for discordbot.org, skipping')
+
 		mysqlConnect = mysqlinfo.mysqlInfo(configData['mysql_host'], configData['mysql_user'], configData['mysql_pw'], configData['mysql_db'])
 
 		print('Config Loaded')
@@ -93,17 +107,24 @@ async def on_role_update(before, after):
 
 @client.event
 async def on_ready():
-	global client, soundsDir, lists, mysqlConnect, serverPunish, nsohandler, nsoTokens
-	cnt = 0
+	global client, soundsDir, lists, mysqlConnect, serverPunish, nsohandler, nsoTokens, head, cnt, url, dev
 	print('Logged in as,', client.user.name, client.user.id)
-	print('------')
+	
 	await client.change_presence(game=discord.Game(name="Use !help for directions!", type=0))
 	for server in client.servers:
 		cnt += 1
 		serverVoices[server.id] = vserver.voiceServer(client, mysqlConnect, server.id, soundsDir)
 		serverPunish[server.id] = punish.Punish(client, server.id, mysqlConnect)
 
-	print('I am in ' + str(cnt) + ' servers')
+	if dev == 0:
+		print(url)
+		print('I am in ' + str(cnt) + ' servers, posting to discordbots.org')
+		body = { 'server_count' : cnt }
+		requests.post(url, headers=head, json=body)
+	else:	
+		print('I am in ' + str(cnt) + ' servers')
+
+	print('------')
 	sys.stdout.flush()
 	nsohandler = nsohandler.nsoHandler(client, mysqlConnect)
 	nsoTokens = nsotoken.Nsotoken(client, nsohandler)
@@ -120,19 +141,35 @@ async def on_member_remove(member):
 			
 @client.event
 async def on_server_join(server):
-	global client, soundsDir, serverVoices, serverPunish
+	global client, soundsDir, serverVoices, serverPunish, head, url, cnt, dev
 	print("I joined server: " + server.name)
 	sys.stdout.flush()
 	serverVoices[server.id] = vserver.voiceServer(client, mysqlConnect, server.id, soundsDir)
 	serverPunish[server.id] = punish.Punish(client, server.id, mysqlConnect)
 
+	if dev == 0:
+		cnt += 1
+		print('I am now in ' + str(cnt) + ' servers, posting to discordbots.org')
+		body = { 'server_count' : cnt }
+		r = requests.post(url, headers=head, json=body)
+	else:
+		print('I am now in ' + str(cnt) + ' servers')
+
 @client.event
 async def on_server_remove(server):
-	global serverVoices, serverPunish
+	global serverVoices, serverPunish, head, url, cnt, dev
 	print("I left server: " + server.name)
 	sys.stdout.flush()
 	serverVoices[server.id] = None
 	serverPunish[server.id] = None
+
+	if dev == 0:
+		cnt -= 1
+		print('I am now in ' + str(cnt) + ' servers, posting to discordbots.org')
+		body = { 'server_count' : cnt }
+		r = requests.post(url, headers=head, json=body)
+	else:
+		print('I am now in ' + str(cnt) + ' servers')
 
 @client.event
 async def on_message(message):
@@ -254,7 +291,8 @@ async def on_message(message):
 	sys.stdout.flush()
 
 #Setup
-sys.stdout = open('./discordbot.log', 'a')
+if dev == 0:
+	sys.stdout = open('./discordbot.log', 'a')
 
 print('**********NEW SESSION**********')
 loadConfig(firstRun=1)
