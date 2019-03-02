@@ -1,4 +1,3 @@
-Here is how to control me! :
 !joinvoice or !join CHANNELNAME : Join a Voice Channel, must be exact Upper/Lower case. If no name is provided, join your current voice channel
 !leavevoice : Leaves a joined voicechannel
 !play URL : Play/Queue Up a website to Play from URL
@@ -17,10 +16,8 @@ Here is how to control me! :
 !splatnetgear : Gets all of the current gear for sale on SplatNet
 !us OR !eu OR !jp : Show what region you hail from (Americas, Europe, and Japan/Asia respectfully, if these roles are setup)
 !github : Posts a link to my github page
-
-For More Splatnet2 Things, DM the bot with !token to set this up, then the following commands are available
+For these Splatnet2 commands: DM the bot with !token to set this up, then the following commands are available: 
 !rank : Shows your ranked gamemodes ranks
 !stats : Shows various stats from your gameplay
+!srstats : Shows various stats from Salmon Run
 !order ID : The !splatnetgear command gives "ID to order" run this with that ID to place an order in the store
-
-If you want something added or want to report a bug/error, tell jetsurf#8514...

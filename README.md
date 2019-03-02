@@ -1,12 +1,8 @@
-# Jetbot
-Jetbot was originally created to be a music/soundclip playing bot. It 
+# Splatnet/Music Bot
+Splatnet/Music bot was originally created to be a music/soundclip playing bot. It 
 has evolved into its primary purpose of fetching data about Splatoon 2 
-maps/splatnet to help discord servers to access this information 
+maps/Splatnet to help discord servers to access this information 
 quickly.
-
-# NOTE
-This bot still has some hardcoded things in place, most have been
-resolved, but the !us/jp/eu role commands are not.
 
 ## Installation
 Requires https://github.com/Rapptz/discord.py discord python library to 
@@ -17,6 +13,9 @@ Requires youtube-dl and ffmpeg for online video/music playback.
 Soundclips are to be placed in a directory defined by discordbot.json.
 
 Likely more dependencies needed to be listed later.
+
+Alternatively, use the following link to join the bot to your server!
+[Splatnet/Music Bot](Bothttps://discordbots.org/bot/542488723128844312)
 
 ## Configuration
 An example configuration file is given at discordbot.json.example.
@@ -82,9 +81,14 @@ The following commands require you to DM the bot with !token and follow the inst
    place an order in the splatnet store
 
 The following command requires 3 roles to be in place. Americas - Europe - 
-Japan/Asia
+Japan/Asia (will work fine without them)
 
  - !us OR !eu OR !jp : Show what region you hail from (Americas, Europe,
    and Japan/Asia respectfully)
 
 This command will be corrected to allow configuration of roles at a later date
+
+#License
+
+[GPLv3](https://www.gnu.org/licenses/gpl-3.0.html)
+
