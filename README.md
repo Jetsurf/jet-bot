@@ -15,6 +15,7 @@ Soundclips are to be placed in a directory defined by discordbot.json.
 Likely more dependencies needed to be listed later.
 
 Alternatively, use the following link to join the bot to your server!
+
 [![Discord Bots](https://discordbots.org/api/widget/542488723128844312.svg)](https://discordbots.org/bot/542488723128844312)
 
 ## Configuration
