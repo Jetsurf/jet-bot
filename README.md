@@ -15,7 +15,7 @@ Soundclips are to be placed in a directory defined by discordbot.json.
 Likely more dependencies needed to be listed later.
 
 Alternatively, use the following link to join the bot to your server!
-[Splatnet/Music Bot](https://discordbots.org/bot/542488723128844312)
+[![Discord Bots](https://discordbots.org/api/widget/542488723128844312.svg)](https://discordbots.org/bot/542488723128844312)
 
 ## Configuration
 An example configuration file is given at discordbot.json.example.
@@ -77,6 +77,7 @@ The following commands require you to DM the bot with !token and follow the inst
 
  - !rank : Shows your ranks in the ranked gamemodes
  - !stats : Shows various stats from your gameplay
+ - !srstats : Shows various stats from Salmon Run
  - !order ID : The !splatnetgear command gives you 'ID to buy' run this with that ID to
    place an order in the splatnet store
 
