@@ -147,7 +147,7 @@ class voiceServer():
 				await self.client.send_message(message.channel, "Sorry, I can't play that, give this info to jetsurf: " + str(e))
 		else:
 			try:
-				if 'youtube' in message.content:
+				if 'youtube' in message.content.lower():
 					query = urllib.request.pathname2url(' '.join(message.content.split()[2:]))
 					url = "https://youtube.com/results?search_query=" + query
 					response = urllib.request.urlopen(url)
@@ -158,7 +158,7 @@ class voiceServer():
 						theURL = 'https://youtube.com' + vid[1]['href']
 					else:	
 						theURL = "https://youtube.com" + vid[0]['href']
-				elif 'soundcloud' in message.content:
+				elif 'soundcloud' in message.content.lower():
 					query = ' '.join(message.content.split()[2:])
 					url = "https://soundcloud.com/search/sounds?q=" + query
 					response = requests.get(url)
