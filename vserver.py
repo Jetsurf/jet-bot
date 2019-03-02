@@ -20,8 +20,16 @@ class voiceServer():
 		self.ytPlayer = None
 		self.player = None
 		self.soundsDir = soundsDir
-		self.theDB = mysql.connector.connect(host=mysqlinfo.host, user=mysqlinfo.user, password=mysqlinfo.pw, database=mysqlinfo.db)
-		self.cursor = self.theDB.cursor(cursor_class=MySQLCursorPrepared)
+		self.mysqlinfo = mysqlinfo
+
+	def connect(self):
+		theDB = mysql.connector.connect(host=self.mysqlinfo.host, user=self.mysqlinfo.user, password=self.mysqlinfo.pw, database=self.mysqlinfo.db)
+		cursor = theDB.cursor(cursor_class=MySQLCursorPrepared)
+		return theDB, cursor
+
+	def disconnect(self, db, cursor):
+		cursor.close()
+		db.close()
 
 	async def joinVoiceChannel(self, channelName, message):
 		id = 0
@@ -161,7 +169,7 @@ class voiceServer():
 				else:
 					await self.client.send_message(message.channel, "Don't know where to search, try !play youtube SEARCH or !play soundcloud SEARCH")
 					return
-				if self.listCheck(self.blacklist, theURL):
+				if self.listCheck(1, theURL):
 					print(message.author.name + " tried to play a blacklisted video")
 					await self.client.send_message(message.channel, "Sorry, I can't play that")
 					return
@@ -180,6 +188,7 @@ class voiceServer():
 				await self.client.send_message(message.channel, "Sorry, I can't play that, give this info to jetsurf: " + str(e))
 
 	def listCheck(self, theList, theURL):
+		theDB, cursor = self.connect()
 		stmt = "SELECT COUNT(*) FROM "
 
 		if theList == 0:
@@ -188,15 +197,16 @@ class voiceServer():
 			stmt = stmt + "blacklist "
 
 		stmt = stmt + "WHERE serverid = %s AND url = %s"
-		self.cursor.execute(stmt, (self.server, theURL,))
-		count = self.cursor.fetchone()
-
+		cursor.execute(stmt, (self.server, theURL,))
+		count = cursor.fetchone()
+		self.disconnect(theDB, cursor)
 		if count[0] > 0:
 			return True
 		else:
 			return False
 
 	async def listAdd(self, theList, toAdd, message):
+		theDB, cursor = self.connect()
 		stmt = "INSERT INTO "
 
 		if theList == 0:
@@ -206,20 +216,23 @@ class voiceServer():
 
 		stmt = stmt + "(serverid, url) VALUES(%s, %s)"
 		input = (self.server, toAdd,)
-		self.cursor.execute(stmt, input)
-		if self.cursor.lastrowid != None:
-			self.theDB.commit()
+		cursor.execute(stmt, input)
+		if cursor.lastrowid != None:
+			theDB.commit()
+			self.disconnect(theDB, cursor)
 		else:
 			await self.client.send_message(message.channel, "Something went wrong!")
 
 	async def playRandom(self, message, numToQueue):
+		theDB, cursor = self.connect()
 		toPlay = []
 		tempytplayer = None
 		ytdlOptions = { "playlistend" : 5 }
 		beforeArgs = "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5"
 		stmt = "SELECT url FROM playlist WHERE serverid = %s"
-		self.cursor.execute(stmt, (self.server,))
-		x = self.cursor.fetchall()
+		cursor.execute(stmt, (self.server,))
+		x = cursor.fetchall()
+		self.disconnect(theDB, cursor)
 
 		numToQueue = min(numToQueue, len(x))
 		for y in range(numToQueue):

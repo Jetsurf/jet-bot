@@ -14,6 +14,7 @@ import urllib
 import urllib.request
 import requests
 import nsotoken
+import aiomysql
 from subprocess import call
 
 client = discord.Client()
@@ -33,16 +34,13 @@ configData = None
 head = {}
 url = ''
 
-def loadConfig(firstRun=0):
+def loadConfig():
 	global token, adminIDs, soundsDir, lists, commands, mysqlConnect, dev, head, url
-
 	try:
 		with open('./discordbot.json', 'r') as json_config:
 			configData = json.load(json_config)
 
-		if firstRun == 1:
-			token = configData['token']
-
+		token = configData['token']
 		soundsDir = configData['soundsdir']
 		commands = configData['commands']
 		try:
@@ -57,14 +55,9 @@ def loadConfig(firstRun=0):
 		mysqlConnect = mysqlinfo.mysqlInfo(configData['mysql_host'], configData['mysql_user'], configData['mysql_pw'], configData['mysql_db'])
 
 		print('Config Loaded')
-		if firstRun == 0:
-			return True
 	except Exception as e:
 		print('Failed to load config: ' + str(e))
-		if firstRun == 1:
-			quit(1)
-		else:
-			return False
+		quit(1)
 
 async def setCRole(message):
 	us = discord.utils.get(message.server.roles, name='Americas')
@@ -83,10 +76,6 @@ async def setCRole(message):
 		await client.add_roles(message.author, jp)
 
 	await client.add_reaction(message, '👍')
-
-@asyncio.coroutine
-async def joinVoiceChannel(channelName, message):
-	await serverVoices[message.server.id].joinVoiceChannel(channelName, message)
 
 def scanAdmins():
 	global serverAdmins
@@ -117,7 +106,6 @@ async def on_ready():
 		serverPunish[server.id] = punish.Punish(client, server.id, mysqlConnect)
 
 	if dev == 0:
-		print(url)
 		print('I am in ' + str(cnt) + ' servers, posting to discordbots.org')
 		body = { 'server_count' : cnt }
 		requests.post(url, headers=head, json=body)
@@ -229,11 +217,13 @@ async def on_message(message):
 	elif command.startswith('!github'):
 		await client.send_message(message.channel, 'Here is my github page! : https://github.com/Jetsurf/jet-bot')
 	elif command.startswith('!commands') or command.startswith('!help'):
-		theString = ''
+		embed = discord.Embed(colour=0x2AE5B8)
+		embed.title = "Here is how to control me!"
 		with open(commands, 'r') as f:
 			for line in f:
-				theString = theString + line
-		await client.send_message(message.channel, theString)
+				embed.add_field(name=line.split(":")[0], value=line.split(":")[1], inline=False)
+			embed.set_footer(text="If you want something added or want to report a bug/error, tell jetsurf#8514...")
+		await client.send_message(message.channel, embed=embed)
 	elif command.startswith('!sounds'):
 		theSounds = subprocess.check_output(["ls", soundsDir])
 		theSounds = theSounds.decode("utf-8")
@@ -242,9 +232,9 @@ async def on_message(message):
 		await client.send_message(message.channel, "Current Sounds:\n```" + theSounds + "```")
 	elif command.startswith('!join'):
 		if len(message.content) > 6:
-			await joinVoiceChannel(message.content.split(" ", 1)[1], message)
+			await serverVoices[message.server.id].joinVoiceChannel(message.content.split(" ", 1)[1], message)
 		else:
-			await joinVoiceChannel(command, message)
+			await serverVoices[message.server.id].joinVoiceChannel(command, message)
 	elif command.startswith('!currentmaps'):
 		await nsohandler.maps(message)
 	elif 'nextmaps' in command and '!' in command:
@@ -291,12 +281,11 @@ async def on_message(message):
 	sys.stdout.flush()
 
 #Setup
+loadConfig()
 if dev == 0:
 	sys.stdout = open('./discordbot.log', 'a')
 
 print('**********NEW SESSION**********')
-loadConfig(firstRun=1)
-
 print('Logging into discord')
 
 sys.stdout.flush()

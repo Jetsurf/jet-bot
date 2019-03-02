@@ -71,12 +71,12 @@ class nsoHandler():
 		self.cursor.execute(stmt, input)
 		if self.cursor.lastrowid != None:
 			if 'UPDATE' in stmt:
-				await self.client.send_message(message.channel, 'Token updated for you!')
+				await self.client.send_message(message.channel, 'Token updated for you! Please delete the link you sent me for security reasons!')
 			else:
-				await self.client.send_message(message.channel, 'Token added for you!')
+				await self.client.send_message(message.channel, 'Token added for you! Please delete the link you sent me for security reasons!')
 			self.theDB.commit()
 		else:
-			await self.client.send_message(message.channel, "Something went wrong!")
+			await self.client.send_message(message.channel, "Something went wrong! Tell jetsurf#8514 that something broke!")
 
 	async def getStats(self, message):
 		if not self.checkDuplicate(message.author.id):
@@ -158,7 +158,7 @@ class nsoHandler():
 		rank = thejson['summary']['stats'][0]['grade']['name']
 		points = thejson['summary']['stats'][0]['grade_point']
 
-		embed.title = name + "'s - " + rank + " " + str(points) + " - Salmon Run Stats"
+		embed.title = name + " - " + rank + " " + str(points) + " - Salmon Run Stats"
 
 		embed.add_field(name="Overall Stats", value="Shifts Worked: " + str(jobcard['job_num']) + '\nTeammates Rescued: ' + str(jobcard['help_total']) + '\nGolden Eggs Collected: ' +
 			str(jobcard['golden_ikura_total']) + '\nPower Eggs Collected: ' + str(jobcard['ikura_total']) + '\nTotal Points: ' + str(jobcard['kuma_point_total']), inline=True)
@@ -191,13 +191,15 @@ class nsoHandler():
 		hazardavg = int(hazardpts / matches)
 		geggsavg = int(geggs / matches)
 		peggsavg = int(peggs / matches)
-
-		embed.add_field(name="Stats (Last " + str(matches) + " Games)", value="Teammates Rescued: " + str(rescnt) + "\nTimes Died: " + str(deathcnt) + "\nAverage Golden Eggs: " + str(geggsavg) + "\nAverage Power Eggs: " + str(peggsavg) +
+		deathsavg = int(deathcnt / matches)
+		resavg = int(rescnt / matches)
+		embed.add_field(name=" Average Stats (Last " + str(matches) + " Games)", value="Average Teammates Rescued: " + str(resavg) + "\nAverage Times Died: " + str(deathsavg) + "\nAverage Golden Eggs: " + str(geggsavg) + "\nAverage Power Eggs: " + str(peggsavg) +
 			"\nAverage Hazard Level: " + str(hazardavg) + "%", inline=True)
+		embed.add_field(name=" Total Stats (Last " + str(matches) + " Games)", value="Total Teammates Rescued: " + str(rescnt) + "\nTotal Times Died: " + str(deathcnt) + "\nTotal Golden Eggs: " + str(geggs) + "\nTotal Power Eggs: " + str(peggs), inline=True)
 		embed.add_field(name="Boss Kill Counts (Last " + str(matches) + " games)", value='Steelhead: ' + str(sheadcnt) + '\nStinger: ' + str(stingcnt) + '\nFlyfish: ' + str(flyfshcnt) + '\nSteel Eel: ' + str(seelcnt) +
 			'\nScrapper: ' + str(scrapcnt) + '\nMaws: ' + str(mawscnt) + '\nDrizzler: ' + str(drizcnt), inline=True)
-		await self.client.send_message(message.channel, embed=embed)
 
+		await self.client.send_message(message.channel, embed=embed)
 
 	async def getRanks(self, message):
 		if not self.checkDuplicate(message.author.id):
