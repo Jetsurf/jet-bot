@@ -70,6 +70,7 @@ Currently implemented commands are as follows:
  - !currentsr : Displays the current Splatoon 2 Salmon Run Map/Weapons
  - !nextsr : Displays the next Splatoon 2 Salmon Run Map/Weapons
  - !splatnetgear : Gets all of the current gear for sale on SplatNet
+ - !storedm ABILITY : DM's you when a piece of gear with ABILITY appears in the store (only once, can't DM the bot with this)
  - !github : Displays my github link
 
 Splatoon 2 Splatnet Commands

@@ -14,6 +14,7 @@
 !currentsr : Displays the current Splatoon 2 Salmon Run Map/Weapons
 !nextsr : Displays the next Splatoon 2 Salmon Run Map/Weapons
 !splatnetgear : Gets all of the current gear for sale on SplatNet
+!storedm ABILITY : DM you when a piece of gear with ABILITY appears in the Splatnet Store (Can't DM me this command)
 !us OR !eu OR !jp : Show what region you hail from (Americas, Europe, and Japan/Asia respectfully, if these roles are setup)
 !github : Posts a link to my github page
 For these Splatnet2 commands: DM the bot with !token to set this up, then the following commands are available: 

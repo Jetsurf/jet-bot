@@ -8,6 +8,7 @@ import requests
 import json
 import urllib
 import urllib.request
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 class nsoHandler():
 	def __init__(self, client, mysqlinfo):
@@ -15,6 +16,9 @@ class nsoHandler():
 		self.theDB = mysql.connector.connect(host=mysqlinfo.host, user=mysqlinfo.user, password=mysqlinfo.pw, database=mysqlinfo.db)
 		self.cursor = self.theDB.cursor(cursor_class=MySQLCursorPrepared)
 		self.app_timezone_offset = str(int((time.mktime(time.gmtime()) - time.mktime(time.localtime()))/60))
+		self.scheduler = AsyncIOScheduler()
+		self.scheduler.add_job(self.doStoreDM, 'cron', hour="*/2", minute='5') 
+		self.scheduler.start()
 		self.app_head = {
 			'Host': 'app.splatoon2.nintendo.net',
 			'x-unique-id': '8386546935489260343',
@@ -49,6 +53,57 @@ class nsoHandler():
 			'Accept-Encoding': 'gzip, deflate',
 			'Accept-Language': 'en-us'
 		}
+
+	async def addStoreDM(self, message):
+		abilities = { 'Bomb Defense Up DX',	'Haunt', 'Sub Power Up', 'Ink Resistance', 'Swim Speed Up', 'Special Charge Up', 'Main Power Up', 'Ink Recovery Up',
+						'Quick Super Jump', 'Drop Roller', 'Ink Saver (Main)', 'Ink Saver (Sub)', 'Last-Ditch Effort', 'Ninja Squid', 'Object Shredder', 'Opening Gambit',
+						'Quick Respawn', 'Run Speed Up', 'Special Power Up', 'Special Saver', 'Stealth Jump', 'Sub Power Up', 'Swim Speed Up', 'Tenacity', 'Thermal Ink', 'Comeback' }
+		abilitiesStr = str(abilities)
+		abilitiesStr = abilitiesStr.replace('\'', '')
+		abilitiesStr = abilitiesStr.replace('{', '')
+		abilitiesStr = abilitiesStr.replace('}', '')
+
+		ability = message.content.split(' ', 1)[1].lower()
+		if ability not in str(abilities).lower():
+			await self.client.send_message(message.channel, 'The ablility you gave doesn\'t exist!\nValid Abilities are: ' + abilitiesStr)
+			return
+
+		stmt = "SELECT COUNT(*) FROM storedms WHERE clientid = %s AND ability = %s"
+		self.cursor.execute(stmt, (message.author.id, ability,))
+		count = self.cursor.fetchone()
+
+		if count[0] > 0:
+			await self.client.send_message(message.channel, "You already will be DM'ed when gear with " + ability + " appears in the store!")
+			return
+
+		stmt = 'INSERT INTO storedms (clientid, serverid, ability) VALUES(%s, %s, %s)'
+		self.cursor.execute(stmt, (message.author.id, message.server.id, ability,))
+		self.theDB.commit()
+		await self.client.send_message(message.channel, "Added you to recieve a DM when gear with " + ability + " appears in the shop!")
+
+	async def doStoreDM(self):
+		data = self.getJSON("https://splatoon2.ink/data/merchandises.json")
+		theGear = data['merchandises'][5]
+
+		theSkill = theGear['skill']['name'].lower()
+
+		stmt = "SELECT clientid,serverid FROM storedms WHERE ability = %s"
+		self.cursor.execute(stmt, (theSkill,))
+		toDM = self.cursor.fetchall()
+
+		for id in range(len(toDM)):
+			memid = toDM[id][0]
+			servid = toDM[id][1]
+			for server in self.client.servers:
+				if str(server.id) != str(servid):
+					break
+				theMem = server.get_member(str(memid))
+				if theMem != None:
+					await self.client.send_message(theMem, "Gear with " + theSkill + " has appeared in the shop! DM Me again with !storedm ABILITY to get another notification!")
+					break	
+			stmt = 'DELETE FROM storedms WHERE clientid = %s AND ability = %s'
+			self.cursor.execute(stmt, (memid, theSkill,))
+			self.theDB.commit()				
 
 	def checkDuplicate(self, id):
 		stmt = "SELECT COUNT(*) FROM tokens WHERE clientid = %s"
