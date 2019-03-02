@@ -15,7 +15,7 @@ Soundclips are to be placed in a directory defined by discordbot.json.
 Likely more dependencies needed to be listed later.
 
 Alternatively, use the following link to join the bot to your server!
-[Splatnet/Music Bot](Bothttps://discordbots.org/bot/542488723128844312)
+[Splatnet/Music Bot](https://discordbots.org/bot/542488723128844312)
 
 ## Configuration
 An example configuration file is given at discordbot.json.example.
@@ -88,7 +88,7 @@ Japan/Asia (will work fine without them)
 
 This command will be corrected to allow configuration of roles at a later date
 
-#License
+# License
 
 [GPLv3](https://www.gnu.org/licenses/gpl-3.0.html)
 
