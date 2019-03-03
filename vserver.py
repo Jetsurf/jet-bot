@@ -127,7 +127,7 @@ class voiceServer():
 			self.ytPlayer.start()
 
 	async def setupPlay(self, message):
-		ytdlOptions = { "playlistend" : 5 }
+		ytdlOptions = { "playlistend" : 5, "quiet" : 1 }
 		beforeArgs = "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5"
 		if self.player != None:
 			self.player.stop()
@@ -234,6 +234,7 @@ class voiceServer():
 		x = cursor.fetchall()
 		self.disconnect(theDB, cursor)
 
+		print("Playing random")
 		numToQueue = min(numToQueue, len(x))
 		for y in range(numToQueue):
 			while 1:
@@ -242,7 +243,6 @@ class voiceServer():
 					continue
 				else:
 					toPlay.append(numToPlay)
-					print("I am going to play track " + str(numToPlay) + " " + x[numToPlay - 1][0].decode('utf-8'))
 					break
 
 			tempytplayer = await self.vclient.create_ytdl_player(x[numToPlay - 1][0].decode('utf-8'),  ytdl_options=ytdlOptions, before_options=beforeArgs)
@@ -251,8 +251,6 @@ class voiceServer():
 
 			if self.ytPlayer == None and self.vclient != None:
 				await self.client.send_message(message.channel, "Playing : " + x[toPlay[0] - 1][0].decode('utf-8'))
-			if y == 1:
-				print("I am queueing song " + str(numToPlay) + " " + x[numToPlay - 1][0].decode('utf-8'))
 			self.play()
 		if numToQueue > 1:
 			await self.client.send_message(message.channel, "Also queued " + str(numToQueue - 1) + " more song(s) from my playlist")
