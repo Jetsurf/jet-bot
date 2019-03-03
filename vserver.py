@@ -227,7 +227,7 @@ class voiceServer():
 		theDB, cursor = self.connect()
 		toPlay = []
 		tempytplayer = None
-		ytdlOptions = { "playlistend" : 5 }
+		ytdlOptions = { "playlistend" : 5, "quiet" : 1 }
 		beforeArgs = "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5"
 		stmt = "SELECT url FROM playlist WHERE serverid = %s"
 		cursor.execute(stmt, (self.server,))

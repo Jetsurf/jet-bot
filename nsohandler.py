@@ -17,7 +17,7 @@ class nsoHandler():
 		self.cursor = self.theDB.cursor(cursor_class=MySQLCursorPrepared)
 		self.app_timezone_offset = str(int((time.mktime(time.gmtime()) - time.mktime(time.localtime()))/60))
 		self.scheduler = AsyncIOScheduler()
-		self.scheduler.add_job(self.doStoreDM, 'cron', hour="*/2", minute='5') 
+		self.scheduler.add_job(self.doStoreDM, 'cron', minute='*')#hour="*/2", minute='5') 
 		self.scheduler.start()
 		self.app_head = {
 			'Host': 'app.splatoon2.nintendo.net',
@@ -64,7 +64,13 @@ class nsoHandler():
 		abilitiesStr = abilitiesStr.replace('}', '')
 
 		ability = message.content.split(' ', 1)[1].lower()
-		if ability not in str(abilities).lower():
+		flag = 0
+		for i in abilities:
+			if ability is str(i).lower():
+				flag = 1
+				break;
+
+		if flag == 1:
 			await self.client.send_message(message.channel, 'The ablility you gave doesn\'t exist!\nValid Abilities are: ' + abilitiesStr)
 			return
 
@@ -80,6 +86,9 @@ class nsoHandler():
 		self.cursor.execute(stmt, (message.author.id, message.server.id, ability,))
 		self.theDB.commit()
 		await self.client.send_message(message.channel, "Added you to recieve a DM when gear with " + ability + " appears in the shop!")
+
+	def checkifdm(self, message):
+		return message.channel.type == discord.ChannelType.private
 
 	async def doStoreDM(self):
 		data = self.getJSON("https://splatoon2.ink/data/merchandises.json")
@@ -100,8 +109,17 @@ class nsoHandler():
 					break
 				theMem = server.get_member(str(memid))
 				if theMem != None:
-					await self.client.send_message(theMem, "Gear with " + theSkill + " has appeared in the shop! DM Me again with !storedm ABILITY to get another notification!")
-					break	
+					await self.client.send_message(theMem, "Gear with " + theSkill + " has appeared in the shop! Please respond with yes to get another notification.")
+					print('Messaged ' + theMem.name)
+					response = await self.client.wait_for_message(author=theMem, check=self.checkifdm)
+					if response.content.lower() == 'yes':
+						print('Messaging ' + theMem.name + ' Again')
+						await self.client.send_message(theMem, "DM'ing you again when gear with " + theSkill + " appears in the store again!")
+						return
+					else:
+						print('Not Messaging ' + theMem.name + ' Again')
+						await self.client.send_message(theMem, "Not DM'ing you again when gear with " + theSkill + ' appears in the shop!')
+						break	
 			stmt = 'DELETE FROM storedms WHERE clientid = %s AND ability = %s'
 			self.cursor.execute(stmt, (memid, theSkill,))
 			self.theDB.commit()				
