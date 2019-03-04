@@ -17,7 +17,7 @@ class nsoHandler():
 		self.cursor = self.theDB.cursor(cursor_class=MySQLCursorPrepared)
 		self.app_timezone_offset = str(int((time.mktime(time.gmtime()) - time.mktime(time.localtime()))/60))
 		self.scheduler = AsyncIOScheduler()
-		self.scheduler.add_job(self.doStoreDM, 'cron', hour="*/2", minute='5') 
+		self.scheduler.add_job(self.doStoreDM, 'cron', minute='*')#hour="*/2", minute='5') 
 		self.scheduler.start()
 		self.app_head = {
 			'Host': 'app.splatoon2.nintendo.net',
@@ -55,7 +55,7 @@ class nsoHandler():
 		}
 
 	async def addStoreDM(self, message):
-		abilities = { 'Bomb Defense Up DX',	'Haunt', 'Sub Power Up', 'Ink Resistance Up', 'Swim Speed Up', 'Special Charge Up', 'Main Power Up', 'Ink Recovery Up',
+		abilities = { 'Bomb Defense Up DX',	'Haunt', 'Sub Power Up', 'Ink Resistance Up', 'Swim Speed Up', 'Special Charge Up', 'Main Power Up', 'Ink Recovery Up', 'Respawn Punisher',
 						'Quick Super Jump', 'Drop Roller', 'Ink Saver (Main)', 'Ink Saver (Sub)', 'Last-Ditch Effort', 'Ninja Squid', 'Object Shredder', 'Opening Gambit',
 						'Quick Respawn', 'Run Speed Up', 'Special Power Up', 'Special Saver', 'Stealth Jump', 'Sub Power Up', 'Swim Speed Up', 'Tenacity', 'Thermal Ink', 'Comeback' }
 		abilitiesStr = str(abilities)
@@ -104,25 +104,18 @@ class nsoHandler():
 		for id in range(len(toDM)):
 			memid = toDM[id][0]
 			servid = toDM[id][1]
+			flag = True
 			for server in self.client.servers:
 				if str(server.id) != str(servid):
 					break
 				theMem = server.get_member(str(memid))
 				if theMem != None:
-					await self.client.send_message(theMem, "Gear with " + theSkill + " has appeared in the shop! Please respond with yes to get another notification.")
+					await self.client.send_message(theMem, "Gear with " + theSkill + " has appeared in the shop! Run !storedm again to get another notification!")
 					print('Messaged ' + theMem.name)
-					response = await self.client.wait_for_message(author=theMem, check=self.checkifdm)
-					if response.content.lower() == 'yes':
-						print('Messaging ' + theMem.name + ' Again')
-						await self.client.send_message(theMem, "DM'ing you again when gear with " + theSkill + " appears in the store again!")
-						return
-					else:
-						print('Not Messaging ' + theMem.name + ' Again')
-						await self.client.send_message(theMem, "Not DM'ing you again when gear with " + theSkill + ' appears in the shop!')
-						break	
+
 			stmt = 'DELETE FROM storedms WHERE clientid = %s AND ability = %s'
 			self.cursor.execute(stmt, (memid, theSkill,))
-			self.theDB.commit()				
+			self.theDB.commit()	
 
 	def checkDuplicate(self, id):
 		stmt = "SELECT COUNT(*) FROM tokens WHERE clientid = %s"
