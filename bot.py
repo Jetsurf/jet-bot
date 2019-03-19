@@ -27,7 +27,6 @@ serverPunish = {}
 token = ''
 log = ''
 dev = 1
-cnt = 0
 soundsDir = ''
 commands = ''
 configData = None
@@ -107,22 +106,20 @@ async def on_server_role_update(before, after):
 
 @client.event
 async def on_ready():
-	global client, soundsDir, lists, mysqlConnect, serverPunish, nsohandler, nsoTokens, head, cnt, url, dev
+	global client, soundsDir, lists, mysqlConnect, serverPunish, nsohandler, nsoTokens, head, url, dev
 	print('Logged in as,', client.user.name, client.user.id)
 	
-	cnt = 0
 	await client.change_presence(game=discord.Game(name="Use !help for directions!", type=0))
 	for server in client.servers:
-		cnt += 1
 		serverVoices[server.id] = vserver.voiceServer(client, mysqlConnect, server.id, soundsDir)
 		serverPunish[server.id] = punish.Punish(client, server.id, mysqlConnect)
 
 	if dev == 0:
-		print('I am in ' + str(cnt) + ' servers, posting to discordbots.org')
-		body = { 'server_count' : cnt }
+		print('I am in ' + str(len(client.servers)) + ' servers, posting to discordbots.org')
+		body = { 'server_count' : len(client.servers) }
 		requests.post(url, headers=head, json=body)
 	else:	
-		print('I am in ' + str(cnt) + ' servers')
+		print('I am in ' + str(len(client.servers)) + ' servers')
 
 	print('------')
 	sys.stdout.flush()
@@ -141,34 +138,32 @@ async def on_member_remove(member):
 			
 @client.event
 async def on_server_join(server):
-	global client, soundsDir, serverVoices, serverPunish, head, url, cnt, dev
+	global client, soundsDir, serverVoices, serverPunish, head, url, dev
 	print("I joined server: " + server.name)
 	serverVoices[server.id] = vserver.voiceServer(client, mysqlConnect, server.id, soundsDir)
 	serverPunish[server.id] = punish.Punish(client, server.id, mysqlConnect)
 
 	if dev == 0:
-		cnt += 1
-		print('I am now in ' + str(cnt) + ' servers, posting to discordbots.org')
-		body = { 'server_count' : cnt }
+		print('I am now in ' + str(len(client.servers)) + ' servers, posting to discordbots.org')
+		body = { 'server_count' : len(client.servers) }
 		r = requests.post(url, headers=head, json=body)
 	else:
-		print('I am now in ' + str(cnt) + ' servers')
+		print('I am now in ' + str(len(client.servers)) + ' servers')
 	sys.stdout.flush()
 
 @client.event
 async def on_server_remove(server):
-	global serverVoices, serverPunish, head, url, cnt, dev
+	global serverVoices, serverPunish, head, url, dev
 	print("I left server: " + server.name)
 	serverVoices[server.id] = None
 	serverPunish[server.id] = None
 
 	if dev == 0:
-		cnt -= 1
-		print('I am now in ' + str(cnt) + ' servers, posting to discordbots.org')
-		body = { 'server_count' : cnt }
+		print('I am now in ' + str(len(client.servers)) + ' servers, posting to discordbots.org')
+		body = { 'server_count' : len(client.servers) }
 		r = requests.post(url, headers=head, json=body)
 	else:
-		print('I am now in ' + str(cnt) + ' servers')
+		print('I am now in ' + str(len(client.servers)) + ' servers')
 	sys.stdout.flush()
 
 test = 0
