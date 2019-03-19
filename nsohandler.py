@@ -17,7 +17,7 @@ class nsoHandler():
 		self.cursor = self.theDB.cursor(cursor_class=MySQLCursorPrepared)
 		self.app_timezone_offset = str(int((time.mktime(time.gmtime()) - time.mktime(time.localtime()))/60))
 		self.scheduler = AsyncIOScheduler()
-		self.scheduler.add_job(self.doStoreDM, 'cron', minute='*')#hour="*/2", minute='5') 
+		self.scheduler.add_job(self.doStoreDM, 'cron', hour="*/2", minute='5') 
 		self.scheduler.start()
 		self.app_head = {
 			'Host': 'app.splatoon2.nintendo.net',
@@ -103,7 +103,7 @@ class nsoHandler():
 			await self.client.send_message(theMem, "Ok, I won't DM you again when gear with " + theSkill + " appears in the shop.")
 		else:
 			print("Keeping " + theMem.name + " in DM's")
-			await self.client.send_message(theMem, "Didn't see no in your message, I'll DM you again when gear with " + theSkill + " appears in the shop!")
+			await self.client.send_message(theMem, "Didn't see no in your message (or didn't get a message), I'll DM you again when gear with " + theSkill + " appears in the shop!")
 
 	async def doStoreDM(self):
 		data = self.getJSON("https://splatoon2.ink/data/merchandises.json")
