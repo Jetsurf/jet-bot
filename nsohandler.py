@@ -35,8 +35,7 @@ class nsoHandler():
     		"x-unique-id": '16131049444609162796',
     		"x-requested-with": "XMLHttpRequest",
     		"x-timezone-offset": self.app_timezone_offset,
-    		"User-Agent": "Mozilla/5.0 (Linux; Android 7.1.2; Pixel Build/NJH47D; wv) AppleWebKit/537.36 (KHTML, like Gecko) "
-                  			"Version/4.0 Chrome/59.0.3071.125 Mobile Safari/537.36",
+    		"User-Agent": "Mozilla/5.0 (Linux; Android 7.1.2; Pixel Build/NJH47D; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/59.0.3071.125 Mobile Safari/537.36",
     		"Accept": "*/*",
     		"Referer": "https://app.splatoon2.nintendo.net/results",
     		"Accept-Encoding": "gzip, deflate",
@@ -87,8 +86,24 @@ class nsoHandler():
 		self.theDB.commit()
 		await self.client.send_message(message.channel, "Added you to recieve a DM when gear with " + ability + " appears in the shop!")
 
-	def checkifdm(self, message):
-		return message.channel.type == discord.ChannelType.private
+	async def handleDM(self, theMem, theSkill):
+		await self.client.send_message(theMem, "Gear with " + theSkill + " has appeared in the shop! Respond with no within the next 2 hours to stop receiving notifications!")
+		print('Messaged ' + theMem.name)
+
+		while True:
+			resp = await self.client.wait_for_message(timeout=7100, author=theMem)
+			if resp == None or resp.channel.is_private == True:
+				break
+
+		if resp == None or 'no' in resp.content.lower():
+			stmt = 'DELETE FROM storedms WHERE clientid = %s AND ability = %s'
+			print("Removing " + theMem.name + " from DM's")
+			self.cursor.execute(stmt, (theMem.id, theSkill,))
+			self.theDB.commit()	
+			await self.client.send_message(theMem, "Ok, I won't DM you again when gear with " + theSkill + " appears in the shop.")
+		else:
+			print("Keeping " + theMem.name + " in DM's")
+			await self.client.send_message(theMem, "Didn't see no in your message (or didn't get a message), I'll DM you again when gear with " + theSkill + " appears in the shop!")
 
 	async def doStoreDM(self):
 		data = self.getJSON("https://splatoon2.ink/data/merchandises.json")
@@ -110,12 +125,7 @@ class nsoHandler():
 					continue
 				theMem = server.get_member(str(memid))
 				if theMem != None:
-					await self.client.send_message(theMem, "Gear with " + theSkill + " has appeared in the shop! Run !storedm again to get another notification!")
-					print('Messaged ' + theMem.name)
-
-			stmt = 'DELETE FROM storedms WHERE clientid = %s AND ability = %s'
-			self.cursor.execute(stmt, (memid, theSkill,))
-			self.theDB.commit()	
+					asyncio.ensure_future(self.handleDM(theMem, theSkill))
 
 	def checkDuplicate(self, id):
 		stmt = "SELECT COUNT(*) FROM tokens WHERE clientid = %s"
