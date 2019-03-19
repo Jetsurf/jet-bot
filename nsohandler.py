@@ -17,7 +17,7 @@ class nsoHandler():
 		self.cursor = self.theDB.cursor(cursor_class=MySQLCursorPrepared)
 		self.app_timezone_offset = str(int((time.mktime(time.gmtime()) - time.mktime(time.localtime()))/60))
 		self.scheduler = AsyncIOScheduler()
-		self.scheduler.add_job(self.doStoreDM, 'cron', minute='*')#hour="*/2", minute='5') 
+		self.scheduler.add_job(self.doStoreDM, 'cron', hour="*/2", minute='5') 
 		self.scheduler.start()
 		self.app_head = {
 			'Host': 'app.splatoon2.nintendo.net',
@@ -107,7 +107,7 @@ class nsoHandler():
 			flag = True
 			for server in self.client.servers:
 				if str(server.id) != str(servid):
-					break
+					continue
 				theMem = server.get_member(str(memid))
 				if theMem != None:
 					await self.client.send_message(theMem, "Gear with " + theSkill + " has appeared in the shop! Run !storedm again to get another notification!")

@@ -244,8 +244,13 @@ class voiceServer():
 				else:
 					toPlay.append(numToPlay)
 					break
+			try:
+				tempytplayer = await self.vclient.create_ytdl_player(x[numToPlay - 1][0].decode('utf-8'),  ytdl_options=ytdlOptions, before_options=beforeArgs)
+			except Exception as e:
+				print("ERROR: Failure on song " + x[numToPlay - 1][0].decode('utf-8'))
+				sys,stdout.flush()
+				continue
 
-			tempytplayer = await self.vclient.create_ytdl_player(x[numToPlay - 1][0].decode('utf-8'),  ytdl_options=ytdlOptions, before_options=beforeArgs)
 			tempytplayer.after = self.playNext
 			self.ytQueue.put(tempytplayer)
 

@@ -297,11 +297,13 @@ async def on_message(message):
 		elif command.startswith('!'):
 			await serverVoices[theServer].playSound(command, message)
 	sys.stdout.flush()
+	sys.stderr.flush()
 
 #Setup
 loadConfig()
 if dev == 0:
 	sys.stdout = open('./discordbot.log', 'a')
+	sys.stderr = open('./discordbot.err', 'a')
 
 print('**********NEW SESSION**********')
 print('Logging into discord')
