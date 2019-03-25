@@ -95,7 +95,7 @@ class nsoHandler():
 			if resp == None or resp.channel.is_private == True:
 				break
 
-		if resp == None or 'no' in resp.content.lower():
+		if 'no' in resp.content.lower():
 			stmt = 'DELETE FROM storedms WHERE clientid = %s AND ability = %s'
 			print("Removing " + theMem.name + " from DM's")
 			self.cursor.execute(stmt, (theMem.id, theSkill,))
