@@ -95,7 +95,10 @@ class nsoHandler():
 			if resp == None or resp.channel.is_private == True:
 				break
 
-		if 'no' in resp.content.lower():
+		if resp == None:
+			print("Keeping " + theMem.name + " in DM's")
+			await self.client.send_message(theMem, "Didn't get a message from you, I'll DM you again when gear with " + theSkill + " appears in the shop!")
+		elif 'no' in resp.content.lower():
 			stmt = 'DELETE FROM storedms WHERE clientid = %s AND ability = %s'
 			print("Removing " + theMem.name + " from DM's")
 			self.cursor.execute(stmt, (theMem.id, theSkill,))
@@ -103,7 +106,7 @@ class nsoHandler():
 			await self.client.send_message(theMem, "Ok, I won't DM you again when gear with " + theSkill + " appears in the shop.")
 		else:
 			print("Keeping " + theMem.name + " in DM's")
-			await self.client.send_message(theMem, "Didn't see no in your message (or didn't get a message), I'll DM you again when gear with " + theSkill + " appears in the shop!")
+			await self.client.send_message(theMem, "Didn't see no in your message. I'll DM you again when gear with " + theSkill + " appears in the shop!")
 
 	async def doStoreDM(self):
 		data = self.getJSON("https://splatoon2.ink/data/merchandises.json")
