@@ -1,6 +1,6 @@
 from __future__ import print_function
 import requests, json, re, sys
-import os, base64, hashlib
+import os, base64, hashlib, random, string
 import uuid, time
 import nsohandler
 
@@ -40,8 +40,8 @@ class Nsotoken():
 
 		post_login = r.history[0].url
 
-		await self.client.send_message(message.channel, "Sorry, this functionality is currently broken, see https://github.com/frozenpandaman/splatnet2statink/issues/79 for further info")
-		return
+		#await self.client.send_message(message.channel, "Sorry, this functionality is currently broken, see https://github.com/frozenpandaman/splatnet2statink/issues/79 for further info")
+		#return
 
 		await self.client.send_message(message.channel, "Navigate to this URL in your browser: " + post_login)
 		await self.client.send_message(message.channel, "Log in, right click the \"Select this person\" button, copy the link address, and paste it back to me")
@@ -59,9 +59,16 @@ class Nsotoken():
 		thetoken = self.get_cookie(session_token_code)
 		await self.nsohandler.addToken(message, str(thetoken))
 
+	def get_hash(self, id_token, timestamp):
+		version = '1.5.1'
+		api_app_head = { 'User-Agent': "splatnet2statink/{}".format(version) }
+		api_body = { 'naIdToken': id_token, 'timestamp': timestamp }
+		api_response = requests.post("https://elifessler.com/s2s/api/gen2", headers=api_app_head, data=api_body)
+		return json.loads(api_response.text)["hash"]
+
 	def get_session_token(self, session_token_code, auth_code_verifier):
 		head = {
-			'User-Agent':      'OnlineLounge/1.4.1 NASDKAPI Android',
+			'User-Agent':      'OnlineLounge/1.5.0 NASDKAPI Android',
 			'Accept-Language': 'en-US',
 			'Accept':          'application/json',
 			'Content-Type':    'application/x-www-form-urlencoded',
@@ -79,6 +86,19 @@ class Nsotoken():
 		r = self.session.post('https://accounts.nintendo.com/connect/1.0.0/api/session_token', headers=head, data=body)
 		return json.loads(r.text)["session_token"]
 
+	def call_flapg(self, id_token, guid, timestamp):
+		api_app_head = {
+			'x-token': id_token,
+			'x-time':  str(timestamp),
+			'x-guid':  guid,
+			'x-hash':  self.get_hash(id_token, timestamp),
+			'x-ver':   '2',
+			'x-iid':   ''.join([random.choice(string.ascii_letters + string.digits) for n in range(8)])
+		}
+		api_response = requests.get("https://flapg.com/ika2/api/login", headers=api_app_head)
+		f = json.loads(api_response.text)
+		return f
+
 	def get_cookie(self, session_token):
 		timestamp = int(time.time())
 		guid = str(uuid.uuid4())
@@ -91,7 +111,7 @@ class Nsotoken():
 			'Content-Length': '437',
 			'Accept': 'application/json',
 			'Connection': 'Keep-Alive',
-			'User-Agent': 'OnlineLounge/1.4.1 NASDKAPI Android'
+			'User-Agent': 'OnlineLounge/1.5.0 NASDKAPI Android'
 		}
 		body = {
 			'client_id': '71b963c1b7b6d119',
@@ -102,7 +122,7 @@ class Nsotoken():
 		r = requests.post("https://accounts.nintendo.com/connect/1.0.0/api/token", headers=head, json=body)
 		id_response = json.loads(r.text)
 		head = {
-			'User-Agent': 'OnlineLounge/1.4.1 NASDKAPI Android',
+			'User-Agent': 'OnlineLounge/1.5.0 NASDKAPI Android',
 			'Accept-Language': 'en-US',
 			'Accept': 'application/json',
 			'Authorization': 'Bearer ' + id_response["access_token"],
@@ -116,9 +136,9 @@ class Nsotoken():
 		head = {
 			'Host': 'api-lp1.znc.srv.nintendo.net',
 			'Accept-Language': 'en-US',
-			'User-Agent': 'com.nintendo.znca/1.4.1 (Android/7.1.2)',
+			'User-Agent': 'com.nintendo.znca/1.5.0 (Android/7.1.2)',
 			'Accept': 'application/json',
-			'X-ProductVersion': '1.4.1',
+			'X-ProductVersion': '1.5.0',
 			'Content-Type': 'application/json; charset=utf-8',
 			'Connection': 'Keep-Alive',
 			'Authorization': 'Bearer',
@@ -126,9 +146,17 @@ class Nsotoken():
 			'X-Platform': 'Android',
 			'Accept-Encoding': 'gzip'
 		}
+
 		idToken = id_response["id_token"]
+		flapg_response = self.call_flapg(idToken, guid, timestamp)
+		flapg_nso = flapg_response["login_nso"]
+		flapg_app = flapg_response["login_app"]
+		
 		parameter = {
-			'f': None,
+			'f':          flapg_nso["f"],
+			'naIdToken':  flapg_nso["p1"],
+			'timestamp':  flapg_nso["p2"],
+			'requestId':  flapg_nso["p3"],
 			'naIdToken': idToken,
 			'naCountry': user_info["country"],
 			'naBirthday': user_info["birthday"],
@@ -141,13 +169,12 @@ class Nsotoken():
 
 		r = requests.post("https://api-lp1.znc.srv.nintendo.net/v1/Account/Login", headers=head, json=body)
 		splatoon_token = json.loads(r.text)
-		print(str(r))
-
+		
 		head = {
 			'Host': 'api-lp1.znc.srv.nintendo.net',
-			'User-Agent': 'com.nintendo.znca/1.4.1 (Android/7.1.2)',
+			'User-Agent': 'com.nintendo.znca/1.5.0 (Android/7.1.2)',
 			'Accept': 'application/json',
-			'X-ProductVersion': '1.4.1',
+			'X-ProductVersion': '1.5.0',
 			'Content-Type': 'application/json; charset=utf-8',
 			'Connection': 'Keep-Alive',
 			'Authorization': 'Bearer ' + splatoon_token["result"]["webApiServerCredential"]["accessToken"],
@@ -156,14 +183,20 @@ class Nsotoken():
 			'Accept-Encoding': 'gzip'
 		}
 		parameter = {
-			"id": 5741031244955648
+			'id': 5741031244955648,
+			'f':                 flapg_app["f"],
+			'registrationToken': flapg_app["p1"],
+			'timestamp':         flapg_app["p2"],
+			'requestId':         flapg_app["p3"]
 		}
+
 		body = {}
 		body["parameter"] = parameter
 
-		r = requests.post("https://api-lp1.znc.srv.nintendo.net/v1/Game/GetWebServiceToken", headers=head, json=body)
+		r = requests.post("https://api-lp1.znc.srv.nintendo.net/v2/Game/GetWebServiceToken", headers=head, json=body)
 		token = json.loads(r.text)
 
+		print(str(token))
 		head = {
 			'Host': 'app.splatoon2.nintendo.net',
 			'X-IsAppAnalyticsOptedIn': 'false',
