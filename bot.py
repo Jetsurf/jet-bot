@@ -25,6 +25,7 @@ serverVoices = {}
 serverAdmins = {}
 serverPunish = {}
 token = ''
+owners = None
 log = ''
 dev = 1
 soundsDir = ''
@@ -34,7 +35,7 @@ head = {}
 url = ''
 
 def loadConfig():
-	global token, adminIDs, soundsDir, lists, commands, mysqlConnect, dev, head, url
+	global token, adminIDs, soundsDir, lists, commands, mysqlConnect, dev, head, url, owners
 	try:
 		with open('./discordbot.json', 'r') as json_config:
 			configData = json.load(json_config)
@@ -51,6 +52,7 @@ def loadConfig():
 		except:
 			print('No ID/Token for discordbot.org, skipping')
 
+		owners = configData['owner_ids']
 		mysqlConnect = mysqlinfo.mysqlInfo(configData['mysql_host'], configData['mysql_user'], configData['mysql_pw'], configData['mysql_db'])
 
 		print('Config Loaded')
@@ -169,10 +171,21 @@ async def on_server_remove(server):
 test = 0
 @client.event
 async def on_message(message):
-	global serverVoices, serverAdmins, soundsDir, serverPunish, nsohandler
+	global serverVoices, serverAdmins, soundsDir, serverPunish, nsohandler, owners
 
 	command = message.content.lower()
 	if message.server == None:
+		if message.author.id in owners:
+			if '!servers' in message.content:
+				numServers = str(len(client.servers))
+				serverNames = ""
+				for server in client.servers:
+					serverNames = serverNames + str(server.name + '\n')
+				await client.send_message(message.channel, "I am in: " + str(numServers) + " servers\n" + serverNames)
+			if '!restart' in message.content:
+				await client.send_message(message.channel, "Going to restart!")
+				await client.close
+				sys.exit(0)
 		if message.author.bot:
 			return
 		if '!token' in command:
