@@ -68,7 +68,7 @@ class Nsotoken():
 
 	def get_session_token(self, session_token_code, auth_code_verifier):
 		head = {
-			'User-Agent':      'OnlineLounge/1.5.0 NASDKAPI Android',
+			'User-Agent':      'OnlineLounge/1.5.2 NASDKAPI Android',
 			'Accept-Language': 'en-US',
 			'Accept':          'application/json',
 			'Content-Type':    'application/x-www-form-urlencoded',
@@ -111,7 +111,7 @@ class Nsotoken():
 			'Content-Length': '437',
 			'Accept': 'application/json',
 			'Connection': 'Keep-Alive',
-			'User-Agent': 'OnlineLounge/1.5.0 NASDKAPI Android'
+			'User-Agent': 'OnlineLounge/1.5.2 NASDKAPI Android'
 		}
 		body = {
 			'client_id': '71b963c1b7b6d119',
@@ -122,7 +122,7 @@ class Nsotoken():
 		r = requests.post("https://accounts.nintendo.com/connect/1.0.0/api/token", headers=head, json=body)
 		id_response = json.loads(r.text)
 		head = {
-			'User-Agent': 'OnlineLounge/1.5.0 NASDKAPI Android',
+			'User-Agent': 'OnlineLounge/1.5.2 NASDKAPI Android',
 			'Accept-Language': 'en-US',
 			'Accept': 'application/json',
 			'Authorization': 'Bearer ' + id_response["access_token"],
@@ -136,9 +136,9 @@ class Nsotoken():
 		head = {
 			'Host': 'api-lp1.znc.srv.nintendo.net',
 			'Accept-Language': 'en-US',
-			'User-Agent': 'com.nintendo.znca/1.5.0 (Android/7.1.2)',
+			'User-Agent': 'com.nintendo.znca/1.5.2 (Android/7.1.2)',
 			'Accept': 'application/json',
-			'X-ProductVersion': '1.5.0',
+			'X-ProductVersion': '1.5.2',
 			'Content-Type': 'application/json; charset=utf-8',
 			'Connection': 'Keep-Alive',
 			'Authorization': 'Bearer',
@@ -169,12 +169,12 @@ class Nsotoken():
 
 		r = requests.post("https://api-lp1.znc.srv.nintendo.net/v1/Account/Login", headers=head, json=body)
 		splatoon_token = json.loads(r.text)
-		
+		print(str(splatoon_token))
 		head = {
 			'Host': 'api-lp1.znc.srv.nintendo.net',
-			'User-Agent': 'com.nintendo.znca/1.5.0 (Android/7.1.2)',
+			'User-Agent': 'com.nintendo.znca/1.5.2 (Android/7.1.2)',
 			'Accept': 'application/json',
-			'X-ProductVersion': '1.5.0',
+			'X-ProductVersion': '1.5.2',
 			'Content-Type': 'application/json; charset=utf-8',
 			'Connection': 'Keep-Alive',
 			'Authorization': 'Bearer ' + splatoon_token["result"]["webApiServerCredential"]["accessToken"],
