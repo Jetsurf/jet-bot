@@ -16,6 +16,7 @@ import requests
 import nsotoken
 import aiomysql
 from subprocess import call
+from ctypes import *
 
 client = discord.Client()
 mysqlConnect = None
@@ -82,46 +83,49 @@ def scanAdmins(startup=0, id=None):
 	global serverAdmins
 
 	if startup == 1:
-		for server in client.servers:
+		for server in client.guilds:
 			serverAdmins[server.id] = []
 			for mem in server.members:
-				if mem.server_permissions.administrator and mem not in serverAdmins[server.id]:
+				if mem.guild_permissions.administrator and mem not in serverAdmins[server.id]:
 					serverAdmins[server.id].append(mem)
 
 	else:
 		serverAdmins[id] = []
 		for mem in id.members:
 			try:
-				if mem.server_permissions.administrator and mem not in serverAdmins[id.id]:
+				if mem.guild_permissions.administrator and mem not in serverAdmins[id.id]:
 					serverAdmins[server].append(mem)
 			except:
 					return
 				
 @client.event
 async def on_member_update(before, after):
-	if before.server_permissions.administrator or after.server_permissions.administrator:
-		scanAdmins(id=before.server)
+	if before.guild_permissions.administrator or after.guild_permissions.administrator:
+		scanAdmins(id=before.guild)
 
 @client.event
 async def on_server_role_update(before, after):
-	scanAdmins(id=before.server)
+	scanAdmins(id=before.guild)
 
 @client.event
 async def on_ready():
 	global client, soundsDir, lists, mysqlConnect, serverPunish, nsohandler, nsoTokens, head, url, dev
+
 	print('Logged in as,', client.user.name, client.user.id)
+
+	game = discord.Game("Use !help for directions!")
 	
-	await client.change_presence(game=discord.Game(name="Use !help for directions!", type=0))
-	for server in client.servers:
+	await client.change_presence(status=discord.Status.online, activity=game)
+	for server in client.guilds:
 		serverVoices[server.id] = vserver.voiceServer(client, mysqlConnect, server.id, soundsDir)
 		serverPunish[server.id] = punish.Punish(client, server.id, mysqlConnect)
 
 	if dev == 0:
-		print('I am in ' + str(len(client.servers)) + ' servers, posting to discordbots.org')
-		body = { 'server_count' : len(client.servers) }
+		print('I am in ' + str(len(client.guilds)) + ' servers, posting to discordbots.org')
+		body = { 'server_count' : len(client.guilds) }
 		requests.post(url, headers=head, json=body)
 	else:	
-		print('I am in ' + str(len(client.servers)) + ' servers')
+		print('I am in ' + str(len(client.guilds)) + ' servers')
 
 	print('------')
 	sys.stdout.flush()
@@ -174,27 +178,29 @@ async def on_message(message):
 	global serverVoices, serverAdmins, soundsDir, serverPunish, nsohandler, owners
 
 	command = message.content.lower()
-	if message.server == None:
+	channel = message.channel
+	if message.guild == None:
 		if message.author.id in owners:
 			if '!servers' in message.content:
 				numServers = str(len(client.servers))
 				serverNames = ""
 				for server in client.servers:
 					serverNames = serverNames + str(server.name + '\n')
-				await client.send_message(message.channel, "I am in: " + str(numServers) + " servers\n" + serverNames)
+				await channel.send("I am in: " + str(numServers) + " servers\n" + serverNames)
 			if '!restart' in message.content:
-				await client.send_message(message.channel, "Going to restart!")
+				await channel.send("Going to restart!")
 				await client.close
+				sys.stdout.flush()
 				sys.exit(0)
 		if message.author.bot:
 			return
 		if '!token' in command:
 			await nsoTokens.login(message)
 		if '!storedm' in command:
-			await client.send_message(message.channel, "Sorry, for performance reasons, you cannot DM me !storedm :frowning:")
+			await channel.send("Sorry, for performance reasons, you cannot DM me !storedm :frowning:")
 		return
 	else:
-		theServer = message.server.id
+		theServer = message.guild.id
 
 	if message.author.bot:
 		return
@@ -213,7 +219,7 @@ async def on_message(message):
 			elif 'wtfboom' in message.content:
 				await serverVoices[theServer].playWTF(message)
 			elif 'tts' in message.content:
-				await client.send_message(message.channel, message.content[11:], tts=True)
+				await channel.send(message.content[11:], tts=True)
 			elif 'squelch current' in message.content:
 				await serverPunish[theServer].getSquelches(message)
 			elif 'squelch log' in message.content:
@@ -227,9 +233,9 @@ async def on_message(message):
 			elif 'dm remove' in message.content:
 				await serverPunish[theServer].removeDM(message)
 		else:
-			await client.send_message(message.channel, message.author.name + " you are not an admin... :cop:")
+			await channel.send_message(message.author.name + " you are not an admin... :cop:")
 	elif command.startswith('!alive'):
-		await client.send_message(message.channel, "Hey " + message.author.name + ", I'm alive so shut up! :japanese_goblin:")
+		await channel.send("Hey " + message.author.name + ", I'm alive so shut up! :japanese_goblin:")
 	elif command.startswith('!rank'):
 		await nsohandler.getRanks(message)
 	elif command.startswith('!order'):
@@ -241,7 +247,7 @@ async def on_message(message):
 	elif command.startswith('!storedm'):
 		await nsohandler.addStoreDM(message)
 	elif command.startswith('!github'):
-		await client.send_message(message.channel, 'Here is my github page! : https://github.com/Jetsurf/jet-bot')
+		await channel.send('Here is my github page! : https://github.com/Jetsurf/jet-bot')
 	elif command.startswith('!commands') or command.startswith('!help'):
 		embed = discord.Embed(colour=0x2AE5B8)
 		embed.title = "Here is how to control me!"
@@ -249,18 +255,18 @@ async def on_message(message):
 			for line in f:
 				embed.add_field(name=line.split(":")[0], value=line.split(":")[1], inline=False)
 			embed.set_footer(text="If you want something added or want to report a bug/error, tell jetsurf#8514...")
-		await client.send_message(message.channel, embed=embed)
+		await channel.send(embed=embed)
 	elif command.startswith('!sounds'):
 		theSounds = subprocess.check_output(["ls", soundsDir])
 		theSounds = theSounds.decode("utf-8")
 		theSounds = theSounds.replace('.mp3', '')
 		theSounds = theSounds.replace('\n', ', ')
-		await client.send_message(message.channel, "Current Sounds:\n```" + theSounds + "```")
+		await channel.send("Current Sounds:\n```" + theSounds + "```")
 	elif command.startswith('!join'):
 		if len(message.content) > 6:
-			await serverVoices[message.server.id].joinVoiceChannel(message.content.split(" ", 1)[1], message)
+			await serverVoices[theServer].joinVoiceChannel(message.content.split(" ", 1)[1], message)
 		else:
-			await serverVoices[message.server.id].joinVoiceChannel(command, message)
+			await serverVoices[theServer].joinVoiceChannel(command, message)
 	elif command.startswith('!currentmaps'):
 		await nsohandler.maps(message)
 	elif 'nextmaps' in command and '!' in command:
@@ -274,13 +280,13 @@ async def on_message(message):
 	elif command.startswith('!us') or message.content.startswith('!eu') or message.content.startswith('!jp'):
 		await setCRole(message)
 	elif ('pizza' in command and 'pineapple' in command) or ('\U0001F355' in message.content and '\U0001F34D' in message.content):
-		await client.send_message(message.channel, 'Don\'t ever think pineapple and pizza go together ' + message.author.name + '!!!')
+		await channel.send('Don\'t ever think pineapple and pizza go together ' + message.author.name + '!!!')
 	elif serverVoices[theServer].vclient is not None:
 		if command.startswith('!currentsong'):
-			if serverVoices[theServer].ytPlayer is not None:
-				await client.send_message(message.channel, 'Currently Playing Video: ' + serverVoices[theServer].ytPlayer.url)
+			if serverVoices[theServer].source is not None:
+				await channel.send('Currently Playing Video: ' + serverVoices[theServer].source.url)
 			else:
-				await client.send_message(message.channel, 'I\'m not playing anything.')
+				await channel.send('I\'m not playing anything.')
 		elif command.startswith('!leavevoice'):
 			await serverVoices[theServer].vclient.disconnect()
 		elif command.startswith('!playrandom'):
@@ -298,8 +304,8 @@ async def on_message(message):
 			vol = int(command.split(' ')[1])
 			if vol > 60:
 				vol = 60
-			await client.send_message(message.channel, "Setting Volume to " + str(vol) + "%")
-			serverVoices[theServer].ytPlayer.volume = float(vol / 100)
+			await channel.send("Setting Volume to " + str(vol) + "%")
+			serverVoices[theServer].source.volume = float(vol / 100)
 		elif command.startswith('!queue'):
 			await serverVoices[theServer].printQueue(message)
 		elif command.startswith('!'):

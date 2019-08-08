@@ -7,9 +7,54 @@ import urllib
 import urllib.request
 import mysql.connector
 import copy
+import youtube_dl
 from mysql.connector.cursor import MySQLCursorPrepared
 from bs4 import BeautifulSoup
 from random import randint
+
+youtube_dl.utils.bug_reports_message = lambda: ''
+
+ytdl_format_options = {
+    'format': 'bestaudio/best',
+    'outtmpl': '%(extractor)s-%(id)s-%(title)s.%(ext)s',
+    'restrictfilenames': True,
+    'noplaylist': True,
+    'nocheckcertificate': True,
+    'ignoreerrors': False,
+    'logtostderr': False,
+    'quiet': True,
+    'no_warnings': True,
+    'default_search': 'auto',
+    'source_address': '0.0.0.0',
+    'playlistend' : '5'
+}
+
+ffmpeg_options = {
+    'options': '-vn'
+}
+
+ytdl = youtube_dl.YoutubeDL(ytdl_format_options)
+
+class YTDLSource(discord.PCMVolumeTransformer):
+    def __init__(self, source, *, data, volume=0.5):
+        super().__init__(source, volume)
+
+        self.data = data
+
+        self.title = data.get('title')
+        self.url = data.get('url')
+
+    @classmethod
+    async def from_url(cls, url, *, loop=None, stream=False):
+        loop = loop or asyncio.get_event_loop()
+        data = await loop.run_in_executor(None, lambda: ytdl.extract_info(url, download=not stream))
+
+        if 'entries' in data:
+            # take first item from a playlist
+            data = data['entries'][0]
+
+        filename = data['url'] if stream else ytdl.prepare_filename(data)
+        return cls(discord.FFmpegPCMAudio(filename, **ffmpeg_options), data=data)
 
 class voiceServer():
 	def __init__(self, client, mysqlinfo, id, soundsDir):
@@ -17,7 +62,7 @@ class voiceServer():
 		self.server = id
 		self.vclient = None
 		self.ytQueue = queue.Queue()
-		self.ytPlayer = None
+		self.source = None
 		self.player = None
 		self.soundsDir = soundsDir
 		self.mysqlinfo = mysqlinfo
@@ -35,27 +80,27 @@ class voiceServer():
 		id = 0
 		channel = None
 		
-		if message.author.voice_channel != None:
-			channel = message.author.voice.voice_channel
+		if message.author.voice.channel != None:
+			channel = message.author.voice.channel
 
 		if len(message.content) > 6:
-			server = message.server
-			for channel in server.channels:
+			server = message.guild
+			for channel in server.voice_channels:
 				if channel.name == channelName:
 					id = channel.id
 					break
 			if id is not 0:
 				if self.vclient != None:
 					await self.vclient.disconnect()
-				self.vclient = await self.client.join_voice_channel(self.client.get_channel(id))
+				self.vclient = await channel.connect()
 			else:
-				await self.client.send_message(message.channel, "I could not join channel " + str(channelName))
+				await message.channel.send("I could not join channel " + str(channelName))
 		elif channel != None:
 			if self.vclient != None:
 				await self.vclient.disconnect()
-			self.vclient = await self.client.join_voice_channel(channel)
+			self.vclient = await channel.connect()
 		else:
-			await self.client.send_message(message.channel, "Cannot join a channel, either be in a channel or specify which channel to join")
+			await message.channel.send("Cannot join a channel, either be in a channel or specify which channel to join")
 
 	async def playWTF(self, message):
 		if self.vclient != None and self.ytPlayer == None:
@@ -67,26 +112,31 @@ class voiceServer():
 			self.player.start()
 
 	async def playSound(self, command, message):
-		if self.ytPlayer == None:
-			if self.player != None:
-				self.player.stop()
+		#if self.ytPlayer == None:
+			#if self.player != None:
+		#		self.player.stop()
 
-			self.player = self.vclient.create_ffmpeg_player(self.soundsDir + '/' + command[1:] + '.mp3')
+	
+		source = discord.FFmpegOpusAudio(self.soundsDir + '/' + command[1:] + '.mp3')
 
-			if '!wtfboom' in command or '!johncena' in command or '!ohmygod' in command or "!leeroy" in command:
-				self.player.volume = .1
-			elif '!whosaidthat' in command or '!chrishansen' in command or '!sotasty' in command:
-				self.player.volume = .4
-			else:
-				self.player.volume = .25
+		#source = discord.PCMVolumeTransformer(source)
+		#source.volume = 1.0
+		self.vclient.play(source)
 
-			self.player.start()
+			#if '!wtfboom' in command or '!johncena' in command or '!ohmygod' in command or "!leeroy" in command:
+			#	self.player.volume = .1
+			#elif '!whosaidthat' in command or '!chrishansen' in command or '!sotasty' in command:
+			#	self.player.volume = .4
+			#else:
+			#	self.player.volume = .25
+
+			#self.player.start()
 
 	async def stop(self, message):
-		if self.ytPlayer != None:
-			self.ytPlayer.stop()
+		if self.source != None:
+			self.source.stop()
 		else:
-			await self.client.send_message(message.channel, "I'm not playing anything right now")
+			await message.channel.send("I'm not playing anything right now")
 
 	async def printQueue(self, message):
 		theQueue = self.ytQueue.queue
@@ -105,46 +155,45 @@ class voiceServer():
 			seconds = duration % 60
 			embed.add_field(name=name, value="Duration - " + str(minutes) + " Minutes " + str(seconds) + " Seconds\nURL - " + str(url), inline=False)
 
-		await self.client.send_message(message.channel, embed=embed)
+		await message.channel.send(embed=embed)
 
 	def end(self):
 		self.ytQueue = queue.Queue()
-		self.ytPlayer.stop()
-		self.ytPlayer = None
+		self.source.stop()
+		self.source = None
 
 	def play(self):
-		if self.ytPlayer == None and self.ytQueue.qsize() == 1:
-			self.ytPlayer = self.ytQueue.get()
-			self.ytPlayer.volume = .07
-			self.ytPlayer.start()
+		print("test")
+		if self.source == None and self.ytQueue.qsize() == 1:
+			print("Nope")
+			source = self.ytQueue.get()
+			self.vclient.play(source, after=self.playNext)
+			self.source = source
 
 	def playNext(self):
 		if self.ytQueue.empty():
-			self.ytPlayer = None
+			self.source = None
 		else:
-			self.ytPlayer = self.ytQueue.get()
-			self.ytPlayer.volume = .07
-			self.ytPlayer.start()
+			self.source = self.ytQueue.get()
+			#self.source.volume = .07
+			self.vclient.play(self.source, after=self.playNext)
 
 	async def setupPlay(self, message):
-		ytdlOptions = { "playlistend" : 5, "quiet" : 1 }
-		beforeArgs = "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5"
 		if self.player != None:
 			self.player.stop()
 		if 'https://' in message.content:
 			if self.listCheck(1, message.content.split(' ')[1]):
 				print(message.author.name + " tried to play a blacklisted video")
-				await self.client.send_message(message.channel, "Sorry, I can't play that")
+				await message.channel.send("Sorry, I can't play that")
 				return
 			try:
-				tempytplayer = await self.vclient.create_ytdl_player(message.content.split(' ')[1], ytdl_options=ytdlOptions, before_options=beforeArgs)
-				tempytplayer.after = self.playNext
-				self.ytQueue.put(tempytplayer)
+				tempPlayer = await YTDLSource.from_url(message.content.split(' ')[1])
+				self.ytQueue.put(tempPlayer)
 				self.play()
-				await self.client.add_reaction(message, '👍')
+				await message.add_reaction('👍')
 			except Exception as e:
 				print(str(e))
-				await self.client.send_message(message.channel, "Sorry, I can't play that, give this info to jetsurf: " + str(e))
+				await message.channel.send("Sorry, I can't play that, give this info to jetsurf: " + str(e))
 		else:
 			try:
 				if 'youtube' in message.content.lower():
@@ -167,25 +216,24 @@ class voiceServer():
 					song = song.a.get("href")
 					theURL = "https://soundcloud.com" + song
 				else:
-					await self.client.send_message(message.channel, "Don't know where to search, try !play youtube SEARCH or !play soundcloud SEARCH")
+					await message.channel.send("Don't know where to search, try !play youtube SEARCH or !play soundcloud SEARCH")
 					return
 				if self.listCheck(1, theURL):
 					print(message.author.name + " tried to play a blacklisted video")
-					await self.client.send_message(message.channel, "Sorry, I can't play that")
+					await message.channel.send("Sorry, I can't play that")
 					return
 
-				if self.ytQueue.empty() and self.ytPlayer == None:
-					await self.client.send_message(message.channel, "Playing : " + theURL)
+				if self.ytQueue.empty() and self.source == None:
+					await message.channel.send("Playing : " + theURL)
 				else:
-					await self.client.send_message(message.channel, "Queued : " + theURL)
+					await message.channel.send("Queued : " + theURL)
 				print("Playing: " + theURL)
-				tempytplayer = await self.vclient.create_ytdl_player(theURL, ytdl_options=ytdlOptions, before_options=beforeArgs)
-				tempytplayer.after = self.playNext
-				self.ytQueue.put(tempytplayer)
+				tempPlayer = await YTDLSource.from_url(theURL)
+				self.ytQueue.put(tempPlayer)
 				self.play()
 			except Exception as e:
 				print(str(e))
-				await self.client.send_message(message.channel, "Sorry, I can't play that, give this info to jetsurf: " + str(e))
+				await message.channel.send("Sorry, I can't play that, give this info to jetsurf: " + str(e))
 
 	def listCheck(self, theList, theURL):
 		theDB, cursor = self.connect()
@@ -226,9 +274,7 @@ class voiceServer():
 	async def playRandom(self, message, numToQueue):
 		theDB, cursor = self.connect()
 		toPlay = []
-		tempytplayer = None
-		ytdlOptions = { "playlistend" : 5, "quiet" : 1 }
-		beforeArgs = "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5"
+		tempPlayer = None
 		stmt = "SELECT url FROM playlist WHERE serverid = %s"
 		cursor.execute(stmt, (self.server,))
 		x = cursor.fetchall()
@@ -245,20 +291,19 @@ class voiceServer():
 					toPlay.append(numToPlay)
 					break
 			try:
-				tempytplayer = await self.vclient.create_ytdl_player(x[numToPlay - 1][0].decode('utf-8'),  ytdl_options=ytdlOptions, before_options=beforeArgs)
+				tempPlayer = await YTDLSource.from_url(x[numToPlay - 1][0].decode('utf-8'))
 			except Exception as e:
-				print("ERROR: Failure on song " + x[numToPlay - 1][0].decode('utf-8'))
-				sys,stdout.flush()
+				print("ERROR: Failure on song " + x[numToPlay - 1][0].decode('utf-8') + " " + str(e))
+				sys.stdout.flush()
 				continue
 
-			tempytplayer.after = self.playNext
-			self.ytQueue.put(tempytplayer)
+			self.ytQueue.put(tempPlayer)
 
-			if self.ytPlayer == None and self.vclient != None:
-				await self.client.send_message(message.channel, "Playing : " + x[toPlay[0] - 1][0].decode('utf-8'))
+			if self.source == None and self.vclient != None:
+				await message.channel.send("Playing : " + x[toPlay[0] - 1][0].decode('utf-8'))
 			self.play()
 		if numToQueue > 1:
-			await self.client.send_message(message.channel, "Also queued " + str(numToQueue - 1) + " more song(s) from my playlist")
+			await message.channel.send("Also queued " + str(numToQueue - 1) + " more song(s) from my playlist")
 
 	async def addPlaylist(self, message):
 		toAdd = ''

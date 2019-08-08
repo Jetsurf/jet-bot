@@ -40,9 +40,6 @@ class Nsotoken():
 
 		post_login = r.history[0].url
 
-		#await self.client.send_message(message.channel, "Sorry, this functionality is currently broken, see https://github.com/frozenpandaman/splatnet2statink/issues/79 for further info")
-		#return
-
 		await self.client.send_message(message.channel, "Navigate to this URL in your browser: " + post_login)
 		await self.client.send_message(message.channel, "Log in, right click the \"Select this person\" button, copy the link address, and paste it back to me")
 
