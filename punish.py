@@ -74,7 +74,7 @@ class Punish():
 				await message.channel.send("User " + theUser.name + " isn't squelched")
 			else:
 				stmt = "UPDATE squelch SET expireddate = NOW() WHERE serverid = %s AND userid = %s AND expireddate > NOW()"
-				cursor.execute(stmt, (self.server, theUser.id,))
+				cursor.execute(stmt, (self.server, str(theUser.id),))
 				if cursor.lastrowid != None:
 					await message.channel.send("User " + theUser.name + " has been unsquelched")
 					theDB.commit()
@@ -87,7 +87,7 @@ class Punish():
 	def checkDM(self, clientid):
 		theDB, cursor = self.connect()
 		stmt = "SELECT COUNT(*) FROM dms WHERE serverid = %s AND clientid = %s"
-		cursor.execute(stmt, (self.server, clientid,))
+		cursor.execute(stmt, (self.server, str(clientid),))
 		count = cursor.fetchone()
 		self.disconnect(theDB, cursor)
 
@@ -102,7 +102,7 @@ class Punish():
 			await message.channel.send("You are already in my list of people to DM")
 			return
 		stmt = "INSERT INTO dms(serverid, clientid) values(%s, %s)"
-		cursor.execute(stmt, (self.server, message.author.id,))
+		cursor.execute(stmt, (self.server, str(message.author.id),))
 		if cursor.lastrowid != None:
 			theDB.commit()
 			await message.channel.send("Added " + message.author.name + " to my DM list!")
@@ -118,7 +118,7 @@ class Punish():
 			return
 
 		stmt = "DELETE FROM dms WHERE serverid = %s AND clientid = %s"
-		cursor.execute(stmt, (self.server, message.author.id,))
+		cursor.execute(stmt, (self.server, str(message.author.id),))
 		if cursor.lastrowid != None:
 			theDB.commit()
 			await message.channel.send("Removed " + message.author.name + " from my DM list!")
@@ -132,7 +132,7 @@ class Punish():
 	def checkSquelch(self, theUser):
 		theDB, cursor= self.connect()
 		stmt = "SELECT COUNT(*) FROM squelch WHERE serverid = %s AND userid = %s AND expireddate > NOW()"
-		cursor.execute(stmt, (self.server, theUser.id,))
+		cursor.execute(stmt, (self.server, str(theUser.id),))
 		count = cursor.fetchone()
 		self.disconnect(theDB, cursor)
 

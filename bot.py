@@ -110,7 +110,7 @@ async def on_member_update(before, after):
 		scanAdmins(id=before.guild)
 
 @client.event
-async def on_server_role_update(before, after):
+async def on_guild_role_update(before, after):
 	scanAdmins(id=before.guild)
 
 @client.event
@@ -149,7 +149,7 @@ async def on_member_remove(member):
 			await mem.send(member.name + " left " + member.guild.name)
 			
 @client.event
-async def on_server_join(server):
+async def on_guild_join(server):
 	global client, soundsDir, serverVoices, serverPunish, head, url, dev
 	print("I joined server: " + server.name)
 	serverVoices[server.id] = vserver.voiceServer(client, mysqlConnect, server.id, soundsDir)
@@ -164,7 +164,7 @@ async def on_server_join(server):
 	sys.stdout.flush()
 
 @client.event
-async def on_server_remove(server):
+async def on_guild_remove(server):
 	global serverVoices, serverPunish, head, url, dev
 	print("I left server: " + server.name)
 	serverVoices[server.id] = None
@@ -290,7 +290,7 @@ async def on_message(message):
 	elif serverVoices[theServer].vclient is not None:
 		if command.startswith('!currentsong'):
 			if serverVoices[theServer].source is not None:
-				await channel.send('Currently Playing Video: ' + serverVoices[theServer].source.url)
+				await channel.send('Currently Playing Video: ' + serverVoices[theServer].source.yturl)
 			else:
 				await channel.send('I\'m not playing anything.')
 		elif command.startswith('!leavevoice'):

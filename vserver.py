@@ -40,9 +40,9 @@ class YTDLSource(discord.PCMVolumeTransformer):
         super().__init__(source, volume)
 
         self.data = data
-
         self.title = data.get('title')
         self.url = data.get('url')
+        self.yturl = data.get('webpage_url')
         self.duration = data.get('duration')
 
     @classmethod
@@ -63,7 +63,6 @@ class voiceServer():
 		self.vclient = None
 		self.ytQueue = queue.Queue()
 		self.source = None
-		self.player = None
 		self.soundsDir = soundsDir
 		self.mysqlinfo = mysqlinfo
 
@@ -112,25 +111,20 @@ class voiceServer():
 			self.player.start()
 
 	async def playSound(self, command, message):
-		#if self.source == None:
-		#	if self.player != None:
-		#		self.player.stop()
+		if self.source != None:
+			return
+		
+		source = discord.FFmpegPCMAudio(self.soundsDir + '/' + command[1:] + '.mp3')
+		source = discord.PCMVolumeTransformer(source)
 
-	
-		source = discord.FFmpegOpusAudio(self.soundsDir + '/' + command[1:] + '.mp3')
+		if '!wtfboom' in command or '!johncena' in command or '!ohmygod' in command or "!leeroy" in command:
+			source.volume = .1
+		elif '!whosaidthat' in command or '!chrishansen' in command or '!sotasty' in command:
+			source.volume = .4
+		else:
+			source.volume = .25
 
-		#source = discord.PCMVolumeTransformer(source)
-		#source.volume = 1.0
-		self.vclient.play(source)
-
-			#if '!wtfboom' in command or '!johncena' in command or '!ohmygod' in command or "!leeroy" in command:
-			#	self.player.volume = .1
-			#elif '!whosaidthat' in command or '!chrishansen' in command or '!sotasty' in command:
-			#	self.player.volume = .4
-			#else:
-			#	self.player.volume = .25
-
-			#self.player.start()
+		self.vclient.play(source, after=self.soundEnd)
 
 	async def stop(self, message):
 		if self.source != None:
@@ -149,7 +143,7 @@ class voiceServer():
 		for i in range(len(theQueue)):
 			song = theQueue[i]
 			name = song.title
-			url = song.url
+			url = song.yturl
 			duration = song.duration
 			minutes = int(duration / 60)
 			seconds = duration % 60
@@ -162,24 +156,23 @@ class voiceServer():
 		self.vclient.stop()
 		self.source = None
 
+	def soundEnd(self, e):
+		self.source = None
+
 	def play(self):
 		if self.source == None and self.ytQueue.qsize() == 1:
 			source = self.ytQueue.get()
 			self.vclient.play(source, after=self.playNext)
 			self.source = source
 
-	def playNext(self):
-		print("From playnext!")
+	def playNext(self, e):
 		if self.ytQueue.empty():
 			self.source = None
 		else:
 			self.source = self.ytQueue.get()
-			#self.source.volume = .07
 			self.vclient.play(self.source, after=self.playNext)
 
 	async def setupPlay(self, message):
-		if self.player != None:
-			self.vclient.stop()
 		if 'https://' in message.content:
 			if self.listCheck(1, message.content.split(' ')[1]):
 				print(message.author.name + " tried to play a blacklisted video")
