@@ -74,7 +74,7 @@ class nsoHandler():
 			return
 
 		stmt = "SELECT COUNT(*) FROM storedms WHERE clientid = %s AND ability = %s"
-		self.cursor.execute(stmt, (message.author.id, ability,))
+		self.cursor.execute(stmt, (str(message.author.id), ability,))
 		count = self.cursor.fetchone()
 
 		if count[0] > 0:
@@ -82,7 +82,7 @@ class nsoHandler():
 			return
 
 		stmt = 'INSERT INTO storedms (clientid, serverid, ability) VALUES(%s, %s, %s)'
-		self.cursor.execute(stmt, (message.author.id, message.server.id, ability,))
+		self.cursor.execute(stmt, (str(message.author.id), str(message.guild.id), ability,))
 		self.theDB.commit()
 		await message.channel.send("Added you to recieve a DM when gear with " + ability + " appears in the shop!")
 
@@ -126,7 +126,7 @@ class nsoHandler():
 			memid = toDM[id][0]
 			servid = toDM[id][1]
 			flag = True
-			for server in self.client.servers:
+			for server in self.client.guilds:
 				if str(server.id) != str(servid):
 					continue
 				theMem = server.get_member(str(memid))
