@@ -124,7 +124,7 @@ class voiceServer():
 		else:
 			source.volume = .25
 
-		self.vclient.play(source, after=self.soundEnd)
+		self.vclient.play(source)
 
 	async def stop(self, message):
 		if self.source != None:
@@ -154,9 +154,6 @@ class voiceServer():
 	def end(self):
 		self.ytQueue = queue.Queue()
 		self.vclient.stop()
-		self.source = None
-
-	def soundEnd(self, e):
 		self.source = None
 
 	def play(self):
