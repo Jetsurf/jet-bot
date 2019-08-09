@@ -102,13 +102,11 @@ class voiceServer():
 			await message.channel.send("Cannot join a channel, either be in a channel or specify which channel to join")
 
 	async def playWTF(self, message):
-		if self.vclient != None and self.ytPlayer == None:
-			if self.player != None:
-				self.player.stop()
-			
-			self.player = self.vclient.create_ffmpeg_player(self.soundsDir + '/wtfboom.mp3')
-			self.player.volume = .5
-			self.player.start()
+		if self.vclient != None and self.source == None:
+			source = discord.FFmpegPCMAudio(self.soundsDir + '/wtfboom.mp3')
+			souce = discord.PCMVolumeTransformer(source)
+			source.volume = .5
+			self.vclient.play(source)
 
 	async def playSound(self, command, message):
 		if self.source != None:
