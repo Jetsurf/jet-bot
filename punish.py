@@ -34,11 +34,11 @@ class Punish():
 		self.disconnect(theDB, cursor)
 
 		for row in records:
-			user = discord.utils.find(lambda m : m.id == str(row[1]), message.channel.server.members)
-			admin = discord.utils.find(lambda m : m.id == str(row[2]), message.channel.server.members)
+			user = discord.utils.find(lambda m : m.id == str(row[1]), message.channel.guild.members)
+			admin = discord.utils.find(lambda m : m.id == str(row[2]), message.channel.guild.members)
 			embed.add_field(name= "User: " + user.name, value=" squelched by " + admin.name + " on " + str(row[3]) + " expiring " + str(row[4]), inline=False)
 		
-		await self.client.send_message(message.channel, theString)
+		await message.channel.send(theString)
 
 	def getMutes(self):
 		print("TBD")
@@ -48,46 +48,46 @@ class Punish():
 			theDB, cursor = self.connect()
 			theUser = message.mentions[0]
 			if theUser.server_permissions.administrator:
-				await self.client.send_message(message.channel, "Cannot squelch " + theUser.name + " as they are an admin!")
+				await message.channel.send("Cannot squelch " + theUser.name + " as they are an admin!")
 				return
 
 			if self.checkSquelch(theUser):
-				await self.client.send_message(message.channel, theUser.name + " is already squelched!")
+				await message.channel.send(theUser.name + " is already squelched!")
 			else:	
 				stmt = "INSERT INTO squelch(serverid, userid, adminid, addeddate, expireddate, reason) VALUES(%s, %s, %s, NOW(), NOW() + INTERVAL %s HOUR, %s)"
 				input = (self.server, theUser.id, message.author.id, message.content.split(' ')[3], message.content.split(' ', 4)[4],)
 				cursor.execute(stmt, input)
 				if cursor.lastrowid != None:
 					theDB.commit()
-					await self.client.send_message(message.channel, theUser.name + " has been squelched for " + message.content.split(' ')[3] + " hours")
+					await message.channel.send(theUser.name + " has been squelched for " + message.content.split(' ')[3] + " hours")
 				else:
-					await self.client.send_message(message.channel, "Something went wrong!")
+					await message.channel.send("Something went wrong!")
 			self.disconnect(theDB, cursor)
 		except Exception as e:
-			await self.client.send_message(message.channel, "You didn't do something right, proper command is !admin squelch @user TIME REASON: Error is " + str(e))
+			await message.channel.send("You didn't do something right, proper command is !admin squelch @user TIME REASON: Error is " + str(e))
 
 	async def removeSquelch(self, message):
 		try:
 			theDB, cursor = self.connect()
 			theUser = message.mentions[0]
 			if not self.checkSquelch(theUser):
-				await client.send_message(message.channel, "User " + theUser.name + " isn't squelched")
+				await message.channel.send("User " + theUser.name + " isn't squelched")
 			else:
 				stmt = "UPDATE squelch SET expireddate = NOW() WHERE serverid = %s AND userid = %s AND expireddate > NOW()"
-				cursor.execute(stmt, (self.server, theUser.id,))
+				cursor.execute(stmt, (self.server, str(theUser.id),))
 				if cursor.lastrowid != None:
-					await self.client.send_message(message.channel, "User " + theUser.name + " has been unsquelched")
+					await message.channel.send("User " + theUser.name + " has been unsquelched")
 					theDB.commit()
 				else:
-					await self.client.send_message(message.channel, "Something went wrong!")
+					await message.channel.send("Something went wrong!")
 			self.disconnect(theDB, cursor)
 		except Exception as e:
-			await self.client.send_message(message.channel, "You didn't do something right, proper command is !admin unsquelch @user: Error is " + str(e))	
+			await message.channel.send("You didn't do something right, proper command is !admin unsquelch @user: Error is " + str(e))	
 
 	def checkDM(self, clientid):
 		theDB, cursor = self.connect()
 		stmt = "SELECT COUNT(*) FROM dms WHERE serverid = %s AND clientid = %s"
-		cursor.execute(stmt, (self.server, clientid,))
+		cursor.execute(stmt, (self.server, str(clientid),))
 		count = cursor.fetchone()
 		self.disconnect(theDB, cursor)
 
@@ -99,31 +99,31 @@ class Punish():
 	async def addDM(self, message):
 		theDB, cursor = self.connect()
 		if self.checkDM(message.author.id):
-			await self.client.send_message(message.channel, "You are already in my list of people to DM")
+			await message.channel.send("You are already in my list of people to DM")
 			return
 		stmt = "INSERT INTO dms(serverid, clientid) values(%s, %s)"
-		cursor.execute(stmt, (self.server, message.author.id,))
+		cursor.execute(stmt, (self.server, str(message.author.id),))
 		if cursor.lastrowid != None:
 			theDB.commit()
-			await self.client.send_message(message.channel, "Added " + message.author.name + " to my DM list!")
+			await message.channel.send("Added " + message.author.name + " to my DM list!")
 		else:
-			await self.client.send_message(message.channel, "Something went wrong!")
+			await message.channel.send("Something went wrong!")
 		self.disconnect(theDB, cursor)
 
 	async def removeDM(self, message):
 		theDB, cursor = self.connect()
 
 		if not self.checkDM(message.author.id):
-			await self.client.send_message(message.channel, "You aren't in my list of people to DM")
+			await message.channel.send("You aren't in my list of people to DM")
 			return
 
 		stmt = "DELETE FROM dms WHERE serverid = %s AND clientid = %s"
-		cursor.execute(stmt, (self.server, message.author.id,))
+		cursor.execute(stmt, (self.server, str(message.author.id),))
 		if cursor.lastrowid != None:
 			theDB.commit()
-			await self.client.send_message(message.channel, "Removed " + message.author.name + " from my DM list!")
+			await message.channel.send("Removed " + message.author.name + " from my DM list!")
 		else:
-			await self.client.send_message(message.channel, "Something went wrong!")
+			await message.channel.send("Something went wrong!")
 		self.disconnect(theDB, cursor)
 
 	def doMute(self):
@@ -132,7 +132,7 @@ class Punish():
 	def checkSquelch(self, theUser):
 		theDB, cursor= self.connect()
 		stmt = "SELECT COUNT(*) FROM squelch WHERE serverid = %s AND userid = %s AND expireddate > NOW()"
-		cursor.execute(stmt, (self.server, theUser.id,))
+		cursor.execute(stmt, (self.server, str(theUser.id),))
 		count = cursor.fetchone()
 		self.disconnect(theDB, cursor)
 

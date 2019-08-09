@@ -63,50 +63,52 @@ class nsoHandler():
 		abilitiesStr = abilitiesStr.replace('}', '')
 
 		ability = message.content.split(' ', 1)[1].lower()
-		flag = 0
+		
+		flag = False
 		for i in abilities:
-			if ability is str(i).lower():
-				flag = 1
+			if ability == i.lower():
+				flag = True
 				break;
 
-		if flag == 1:
-			await self.client.send_message(message.channel, 'The ablility you gave doesn\'t exist!\nValid Abilities are: ' + abilitiesStr)
+		if not flag:
+			await message.channel.send('The ablility you gave doesn\'t exist!\nValid Abilities are: ' + abilitiesStr)
 			return
 
 		stmt = "SELECT COUNT(*) FROM storedms WHERE clientid = %s AND ability = %s"
-		self.cursor.execute(stmt, (message.author.id, ability,))
+		self.cursor.execute(stmt, (str(message.author.id), ability,))
 		count = self.cursor.fetchone()
-
 		if count[0] > 0:
-			await self.client.send_message(message.channel, "You already will be DM'ed when gear with " + ability + " appears in the store!")
+			await message.channel.send("You already will be DM'ed when gear with " + ability + " appears in the store!")
 			return
 
 		stmt = 'INSERT INTO storedms (clientid, serverid, ability) VALUES(%s, %s, %s)'
-		self.cursor.execute(stmt, (message.author.id, message.server.id, ability,))
+		self.cursor.execute(stmt, (str(message.author.id), str(message.guild.id), ability,))
 		self.theDB.commit()
-		await self.client.send_message(message.channel, "Added you to recieve a DM when gear with " + ability + " appears in the shop!")
+		await message.channel.send("Added you to recieve a DM when gear with " + ability + " appears in the shop!")
 
 	async def handleDM(self, theMem, theSkill):
-		await self.client.send_message(theMem, "Gear with " + theSkill + " has appeared in the shop! Respond with no within the next 2 hours to stop receiving notifications!")
+		await theMem.send("Gear with " + theSkill + " has appeared in the shop! Respond with no within the next 2 hours to stop receiving notifications!")
 		print('Messaged ' + theMem.name)
 
-		while True:
-			resp = await self.client.wait_for_message(timeout=7100, author=theMem)
-			if resp == None or resp.channel.is_private == True:
-				break
-
+		def check1(m):
+			if isinstance(m.channel, discord.DMChannel) and m.channel.recipient.name == theMem.name and not m.author.bot:
+				return True
+			else:
+				return False
+			
+		resp = await self.client.wait_for('message', timeout=7100, check=check1)
 		if resp == None:
 			print("Keeping " + theMem.name + " in DM's")
-			await self.client.send_message(theMem, "Didn't get a message from you, I'll DM you again when gear with " + theSkill + " appears in the shop!")
+			await theMem.send("Didn't get a message from you, I'll DM you again when gear with " + theSkill + " appears in the shop!")
 		elif 'no' in resp.content.lower():
 			stmt = 'DELETE FROM storedms WHERE clientid = %s AND ability = %s'
 			print("Removing " + theMem.name + " from DM's")
 			self.cursor.execute(stmt, (theMem.id, theSkill,))
 			self.theDB.commit()	
-			await self.client.send_message(theMem, "Ok, I won't DM you again when gear with " + theSkill + " appears in the shop.")
+			await theMem.send("Ok, I won't DM you again when gear with " + theSkill + " appears in the shop.")
 		else:
 			print("Keeping " + theMem.name + " in DM's")
-			await self.client.send_message(theMem, "Didn't see no in your message. I'll DM you again when gear with " + theSkill + " appears in the shop!")
+			await theMem.send("Didn't see no in your message. I'll DM you again when gear with " + theSkill + " appears in the shop!")
 
 	async def doStoreDM(self):
 		data = self.getJSON("https://splatoon2.ink/data/merchandises.json")
@@ -123,16 +125,16 @@ class nsoHandler():
 			memid = toDM[id][0]
 			servid = toDM[id][1]
 			flag = True
-			for server in self.client.servers:
+			for server in self.client.guilds:
 				if str(server.id) != str(servid):
 					continue
-				theMem = server.get_member(str(memid))
+				theMem = server.get_member(memid)
 				if theMem != None:
 					asyncio.ensure_future(self.handleDM(theMem, theSkill))
 
 	def checkDuplicate(self, id):
 		stmt = "SELECT COUNT(*) FROM tokens WHERE clientid = %s"
-		self.cursor.execute(stmt, (id,))
+		self.cursor.execute(stmt, (str(id),))
 		count = self.cursor.fetchone()
 
 		if count[0] > 0:
@@ -141,30 +143,30 @@ class nsoHandler():
 			return False
 
 	async def addToken(self, message, token):
-		if self.checkDuplicate(message.author.id):
+		if self.checkDuplicate(str(message.author.id)):
 			stmt = "UPDATE tokens SET token = %s WHERE clientid = %s"
-			input = (token, message.author.id,)
+			input = (token, str(message.author.id),)
 		else:
 			stmt = "INSERT INTO tokens (clientid, token) VALUES(%s, %s)"
-			input = (message.author.id, token,)
+			input = (str(message.author.id), token,)
 
 		self.cursor.execute(stmt, input)
 		if self.cursor.lastrowid != None:
 			if 'UPDATE' in stmt:
-				await self.client.send_message(message.channel, 'Token updated for you! Please delete the link you sent me for security reasons!')
+				await message.channel.send('Token updated for you! Please delete the link you sent me for security reasons!')
 			else:
-				await self.client.send_message(message.channel, 'Token added for you! Please delete the link you sent me for security reasons!')
+				await message.channel.send('Token added for you! Please delete the link you sent me for security reasons!')
 			self.theDB.commit()
 		else:
-			await self.client.send_message(message.channel, "Something went wrong! Tell jetsurf#8514 that something broke!")
+			await message.channel.send("Something went wrong! Tell jetsurf#8514 that something broke!")
 
 	async def getStats(self, message):
 		if not self.checkDuplicate(message.author.id):
-			await self.client.send_message(message.channel, "You don't have a token setup with me! Please DM me !token with how to get one setup!")
+			await message.channel.send("You don't have a token setup with me! Please DM me !token with how to get one setup!")
 			return
 
 		stmt = 'SELECT token FROM tokens WHERE clientid = %s'
-		self.cursor.execute(stmt, (message.author.id,))
+		self.cursor.execute(stmt, (str(message.author.id),))
 		Session_token = self.cursor.fetchone()[0].decode('utf-8')
 		url = "https://app.splatoon2.nintendo.net/api/records"
 		results_list = requests.get(url, headers=self.app_head, cookies=dict(iksm_session=Session_token))
@@ -173,7 +175,7 @@ class nsoHandler():
 		try:
 			name = thejson['records']['player']['nickname']
 		except:
-			await self.client.send_message(message.channel, message.author.name + " there is a problem with your token")
+			await message.channel.send(message.author.name + " there is a problem with your token")
 			return
 
 		turfinked = thejson['challenges']['total_paint_point_octa'] + thejson['challenges']['total_paint_point']
@@ -217,16 +219,16 @@ class nsoHandler():
 		embed.add_field(name='Pair League Medals', value='Gold: ' + str(leaguepairgold) + '\nSilver: ' + str(leaguepairsilver) + '\nBronze: ' + str(leaguepairbronze) + '\nUnranked: ' + str(leaguepairnone), inline=True)
 		embed.add_field(name='Favorite Weapon', value=topweap['weapon']['name'] + " with " + str(topink) + " turf inked total", inline=True)
 
-		await self.client.send_message(message.channel, embed=embed)
+		await message.channel.send(embed=embed)
 
 	async def getSRStats(self, message):
 		if not self.checkDuplicate(message.author.id):
-			await self.client.send_message(message.channel, "You don't have a token setup with me! Please DM me !token with how to get one setup!")
+			await message.channel.send("You don't have a token setup with me! Please DM me !token with how to get one setup!")
 			return
 
 		embed = discord.Embed(colour=0xE5922A)
 		stmt = 'SELECT token FROM tokens WHERE clientid = %s'
-		self.cursor.execute(stmt, (message.author.id,))
+		self.cursor.execute(stmt, (str(message.author.id),))
 		Session_token = self.cursor.fetchone()[0].decode('utf-8')
 		url = "https://app.splatoon2.nintendo.net/api/coop_results"
 		results_list = requests.get(url, headers=self.app_head_coop, cookies=dict(iksm_session=Session_token))
@@ -279,15 +281,15 @@ class nsoHandler():
 		embed.add_field(name="Boss Kill Counts (Last " + str(matches) + " games)", value='Steelhead: ' + str(sheadcnt) + '\nStinger: ' + str(stingcnt) + '\nFlyfish: ' + str(flyfshcnt) + '\nSteel Eel: ' + str(seelcnt) +
 			'\nScrapper: ' + str(scrapcnt) + '\nMaws: ' + str(mawscnt) + '\nDrizzler: ' + str(drizcnt), inline=True)
 
-		await self.client.send_message(message.channel, embed=embed)
+		await message.channel.send(embed=embed)
 
 	async def getRanks(self, message):
 		if not self.checkDuplicate(message.author.id):
-			await self.client.send_message(message.channel, "You don't have a token setup with me! Please DM me !token with how to get one setup!")
+			await message.channel.send("You don't have a token setup with me! Please DM me !token with how to get one setup!")
 			return
 
 		stmt = 'SELECT token FROM tokens WHERE clientid = %s'
-		self.cursor.execute(stmt, (message.author.id,))
+		self.cursor.execute(stmt, (str(message.author.id),))
 		Session_token = self.cursor.fetchone()[0].decode('utf-8')
 		url = "https://app.splatoon2.nintendo.net/api/records"
 		results_list = requests.get(url, headers=self.app_head, cookies=dict(iksm_session=Session_token))
@@ -296,7 +298,7 @@ class nsoHandler():
 		try:
 			name = thejson['records']['player']['nickname']
 		except:
-			await self.client.send_message(message.channel, message.author.name + " there is a problem with your token")
+			await message.channel.send(message.author.name + " there is a problem with your token")
 			return
 
 		szrank = thejson['records']['player']['udemae_zones']['name']
@@ -321,7 +323,7 @@ class nsoHandler():
 		embed.add_field(name="Tower Control", value=tcrank, inline=True)
 		embed.add_field(name="Rainmaker", value=rmrank, inline=True)
 		embed.add_field(name="Clam Blitz", value=cbrank, inline=True)
-		await self.client.send_message(message.channel, embed=embed)
+		await message.channel.send(embed=embed)
 
 	def getJSON(self, url):
 		req = urllib.request.Request(url, headers={ 'User-Agent' : 'Magic!' })
@@ -331,11 +333,11 @@ class nsoHandler():
 
 	async def orderGear(self, message):
 		if not self.checkDuplicate(message.author.id):
-			await self.client.send_message(message.channel, "You don't have a token setup with me! Please DM me !token with how to get one setup!")
+			await message.channel.send("You don't have a token setup with me! Please DM me !token with how to get one setup!")
 			return
 
 		stmt = 'SELECT token FROM tokens WHERE clientid = %s'
-		self.cursor.execute(stmt, (message.author.id,))
+		self.cursor.execute(stmt, (str(message.author.id),))
 		Session_token = self.cursor.fetchone()[0].decode('utf-8')
 
 		data = self.getJSON("https://splatoon2.ink/data/merchandises.json")
@@ -354,8 +356,12 @@ class nsoHandler():
 		thejson = json.loads(results_list.text)
 		gearToBuy = thejson['merchandises'][orderID]
 		gearToBuyName = thejson['merchandises'][orderID]['gear']['name']
-		await self.client.send_message(message.channel, message.author.name + " - do you want to order " + gearToBuyName + "? Respond with yes to buy!")
-		confirm = await self.client.wait_for_message(author=message.author, channel=message.channel)
+		await message.channel.send(message.author.name + " - do you want to order " + gearToBuyName + "? Respond with yes to buy!")
+
+		def check(m):
+			return m.author == message.author and m.channel == message.channel
+
+		confirm = await self.client.wait_for('message', check=check)
 
 		if 'yes' in confirm.content.lower():
 			url = 'https://app.splatoon2.nintendo.net/api/onlineshop/order/' + gearToBuy['id']
@@ -364,23 +370,23 @@ class nsoHandler():
 			if '200' not in str(response):
 				ordered = thejson['ordered_info']
 
-				await self.client.send_message(message.channel, message.author.name + " you already have " + ordered['gear']['name'] + " ordered, respond back yes to confirm you want to replace this order!")
-				confirm = await self.client.wait_for_message(author=message.author, channel=message.channel)
+				await message.channel.send(message.author.name + " you already have " + ordered['gear']['name'] + " ordered, respond back yes to confirm you want to replace this order!")
+				confirm = await self.client.wait_for('message', check=check)
 				if 'yes' in confirm.content.lower():
 					url = 'https://app.splatoon2.nintendo.net/api/onlineshop/order/' + gearToBuy['id']
 					payload = { "override" : 1 }
 					response = requests.post(url, headers=self.app_head_shop, cookies=dict(iksm_session=Session_token), data=payload)
 
 					if '200' not in str(response):
-						await self.client.send_message(message.channel, message.author.name + "  - failed to order")
+						await message.channel.send(message.author.name + "  - failed to order")
 					else:
-						await self.client.send_message(message.channel, message.author.name + " - ordered!")
+						await message.channel.send(message.author.name + " - ordered!")
 				else:
-					await self.client.send_message(message.channel, message.author.name + " - order canceled")
+					await message.channel.send(message.author.name + " - order canceled")
 			else:
-				await self.client.send_message(message.channel, message.author.name + " - ordered!")
+				await message.channel.send(message.author.name + " - ordered!")
 		else:
-			await self.client.send_message(message.channel, message.author.name + " - order canceled")
+			await message.channel.send(message.author.name + " - order canceled")
 
 	async def gearParser(self, message):
 		theTime = int(time.mktime(time.gmtime()))
@@ -421,7 +427,7 @@ class nsoHandler():
 			theString = ''
 			j = j + 1
 
-		await self.client.send_message(message.channel, embed=embed)
+		await message.channel.send(embed=embed)
 
 	async def maps(self, message, offset=0):
 		theTime = int(time.mktime(time.gmtime()))
@@ -466,7 +472,7 @@ class nsoHandler():
 			hours = hours - 2
 			embed.add_field(name="Time Until Map Rotation", value=str(hours) + ' Hours, and ' + str(minutes) + ' minutes', inline=False)
 
-		await self.client.send_message(message.channel, embed=embed)
+		await message.channel.send(embed=embed)
 
 	async def srParser(self, message, getNext=0):
 		theTime = int(time.mktime(time.gmtime()))
@@ -529,4 +535,4 @@ class nsoHandler():
 		else:
 			embed.add_field(name="Time Remaining ", value=str(days) + ' Days, ' + str(hours) + ' Hours, and ' + str(minutes) + ' Minutes')
 
-		await self.client.send_message(message.channel, embed=embed)
+		await message.channel.send(embed=embed)
