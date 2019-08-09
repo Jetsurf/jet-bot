@@ -162,12 +162,12 @@ class nsoHandler():
 			await message.channel.send("Something went wrong! Tell jetsurf#8514 that something broke!")
 
 	async def getStats(self, message):
-		if not self.checkDuplicate(str(message.author.id)):
+		if not self.checkDuplicate(message.author.id):
 			await message.channel.send("You don't have a token setup with me! Please DM me !token with how to get one setup!")
 			return
 
 		stmt = 'SELECT token FROM tokens WHERE clientid = %s'
-		self.cursor.execute(stmt, (str(message.author.id),))
+		self.cursor.execute(stmt, (message.author.id),)
 		Session_token = self.cursor.fetchone()[0].decode('utf-8')
 		url = "https://app.splatoon2.nintendo.net/api/records"
 		results_list = requests.get(url, headers=self.app_head, cookies=dict(iksm_session=Session_token))
@@ -229,7 +229,7 @@ class nsoHandler():
 
 		embed = discord.Embed(colour=0xE5922A)
 		stmt = 'SELECT token FROM tokens WHERE clientid = %s'
-		self.cursor.execute(stmt, (str(message.author.id),))
+		self.cursor.execute(stmt, (message.author.id),)
 		Session_token = self.cursor.fetchone()[0].decode('utf-8')
 		url = "https://app.splatoon2.nintendo.net/api/coop_results"
 		results_list = requests.get(url, headers=self.app_head_coop, cookies=dict(iksm_session=Session_token))
@@ -285,12 +285,12 @@ class nsoHandler():
 		await message.channel.send(embed=embed)
 
 	async def getRanks(self, message):
-		if not self.checkDuplicate(str(message.author.id)):
+		if not self.checkDuplicate(message.author.id):
 			await message.channel.send("You don't have a token setup with me! Please DM me !token with how to get one setup!")
 			return
 
 		stmt = 'SELECT token FROM tokens WHERE clientid = %s'
-		self.cursor.execute(stmt, (str(essage.author.id),))
+		self.cursor.execute(stmt, (message.author.id),)
 		Session_token = self.cursor.fetchone()[0].decode('utf-8')
 		url = "https://app.splatoon2.nintendo.net/api/records"
 		results_list = requests.get(url, headers=self.app_head, cookies=dict(iksm_session=Session_token))
@@ -338,7 +338,7 @@ class nsoHandler():
 			return
 
 		stmt = 'SELECT token FROM tokens WHERE clientid = %s'
-		self.cursor.execute(stmt, (str(message.author.id),))
+		self.cursor.execute(stmt, (message.author.id),)
 		Session_token = self.cursor.fetchone()[0].decode('utf-8')
 
 		data = self.getJSON("https://splatoon2.ink/data/merchandises.json")
