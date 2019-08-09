@@ -90,14 +90,13 @@ class nsoHandler():
 		await theMem.send("Gear with " + theSkill + " has appeared in the shop! Respond with no within the next 2 hours to stop receiving notifications!")
 		print('Messaged ' + theMem.name)
 
-		while True:
-			def check1(message):
-				return message.channel == theMem
-
-			resp = await self.client.wait_for('message', timeout=7100, check=check1)
-			if resp == None or resp.channel.is_private == True:
-				break
-
+		def check1(m):
+			if isinstance(m.channel, discord.DMChannel) and m.channel.recipient.name == theMem.name and not m.author.bot:
+				return True
+			else:
+				return False
+			
+		resp = await self.client.wait_for('message', timeout=7100, check=check1)
 		if resp == None:
 			print("Keeping " + theMem.name + " in DM's")
 			await theMem.send("Didn't get a message from you, I'll DM you again when gear with " + theSkill + " appears in the shop!")
@@ -129,7 +128,7 @@ class nsoHandler():
 			for server in self.client.guilds:
 				if str(server.id) != str(servid):
 					continue
-				theMem = server.get_member(str(memid))
+				theMem = server.get_member(memid)
 				if theMem != None:
 					asyncio.ensure_future(self.handleDM(theMem, theSkill))
 

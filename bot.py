@@ -183,9 +183,6 @@ async def on_message(message):
 	command = message.content.lower()
 	channel = message.channel
 
-	if message.author.bot and message.author.name == "Github":
-		print("Testing github!")
-
 	if message.guild == None:
 		if str(message.author.id) in owners:
 			if '!servers' in message.content:
