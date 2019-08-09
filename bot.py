@@ -143,10 +143,10 @@ async def on_ready():
 async def on_member_remove(member):
 	global serverAdmins, serverPunish
 
-	theServer = member.server.id
+	theServer = member.guild.id
 	for mem in serverAdmins[theServer]:
 		if mem.id != client.user.id and serverPunish[theServer].checkDM(mem.id):
-			await client.send_message(mem, member.name + " left " + member.server.name)
+			await mem.send(member.name + " left " + member.guild.name)
 			
 @client.event
 async def on_server_join(server):
@@ -156,11 +156,11 @@ async def on_server_join(server):
 	serverPunish[server.id] = punish.Punish(client, server.id, mysqlConnect)
 
 	if dev == 0:
-		print('I am now in ' + str(len(client.servers)) + ' servers, posting to discordbots.org')
-		body = { 'server_count' : len(client.servers) }
+		print('I am now in ' + str(len(client.guilds)) + ' servers, posting to discordbots.org')
+		body = { 'server_count' : len(client.guilds) }
 		r = requests.post(url, headers=head, json=body)
 	else:
-		print('I am now in ' + str(len(client.servers)) + ' servers')
+		print('I am now in ' + str(len(client.guilds)) + ' servers')
 	sys.stdout.flush()
 
 @client.event
@@ -171,11 +171,11 @@ async def on_server_remove(server):
 	serverPunish[server.id] = None
 
 	if dev == 0:
-		print('I am now in ' + str(len(client.servers)) + ' servers, posting to discordbots.org')
-		body = { 'server_count' : len(client.servers) }
+		print('I am now in ' + str(len(client.guilds)) + ' servers, posting to discordbots.org')
+		body = { 'server_count' : len(client.guilds) }
 		r = requests.post(url, headers=head, json=body)
 	else:
-		print('I am now in ' + str(len(client.servers)) + ' servers')
+		print('I am now in ' + str(len(client.guilds)) + ' servers')
 	sys.stdout.flush()
 
 test = 0
@@ -195,7 +195,7 @@ async def on_message(message):
 				await channel.send("I am in: " + str(numServers) + " servers\n" + serverNames)
 			if '!restart' in message.content:
 				await channel.send("Going to restart!")
-				await client.close
+				await client.close()
 				sys.stdout.flush()
 				sys.exit(0)
 		if message.author.bot:
@@ -214,7 +214,7 @@ async def on_message(message):
 		return
 
 	if serverPunish[theServer].checkSquelch(message.author):
-		await client.delete_message(message)
+		await message.delete()
 		return	
 	if command.startswith("!admin"):
 		if message.author in serverAdmins[theServer]:
