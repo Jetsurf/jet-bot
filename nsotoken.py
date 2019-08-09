@@ -40,17 +40,21 @@ class Nsotoken():
 
 		post_login = r.history[0].url
 
-		await self.client.send_message(message.channel, "Navigate to this URL in your browser: " + post_login)
-		await self.client.send_message(message.channel, "Log in, right click the \"Select this person\" button, copy the link address, and paste it back to me")
+		await message.channel.send("Navigate to this URL in your browser: " + post_login)
+		await message.channel.send("Log in, right click the \"Select this person\" button, copy the link address, and paste it back to me")
 
 		while True:
-			accounturl = await self.client.wait_for_message(author=message.author, channel=message.channel)
+			def check(m):
+				return m.author == message.author and m.channel == message.channel
+
+			accounturl = await self.client.wait_for('message', check=check)
 			accounturl = accounturl.content
 			if 'npf71b963c1b7b6d119' not in accounturl:
-				await self.client.send_message(message.channel, "Invalid URL, please copy the link in \"Select this person\"")
+				await message.channel.send("Invalid URL, please copy the link in \"Select this person\"")
 			else:
 				break
 
+		
 		session_token_code = re.search('session_token_code=(.*)&', accounturl)
 		session_token_code = self.get_session_token(session_token_code.group(0)[19:-1], auth_code_verifier)
 		thetoken = self.get_cookie(session_token_code)
