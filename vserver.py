@@ -79,7 +79,7 @@ class voiceServer():
 		id = 0
 		channel = None
 		
-		if message.author.voice.channel != None:
+		if message.author.voice != None:
 			channel = message.author.voice.channel
 
 		if len(message.content) > 6:
