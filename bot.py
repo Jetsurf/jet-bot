@@ -51,7 +51,7 @@ def loadConfig():
 			url = 'https://discordbots.org/api/bots/' + str(dbid) + '/stats'
 			dev = 0
 		except:
-			print('No ID/Token for discordbot.org, skipping')
+			print('No ID/Token for discordbots.org, skipping')
 
 		owners = configData['owner_ids']
 		mysqlConnect = mysqlinfo.mysqlInfo(configData['mysql_host'], configData['mysql_user'], configData['mysql_pw'], configData['mysql_db'])
@@ -183,17 +183,20 @@ test = 0
 async def on_message(message):
 	global serverVoices, serverAdmins, soundsDir, serverPunish, nsohandler, owners
 
+	if message.author.bot:
+		return
+
 	command = message.content.lower()
 	channel = message.channel
 	if message.guild == None:
-		if message.author.id in owners:
+		if str(message.author.id) in owners:
 			if '!servers' in message.content:
 				numServers = str(len(client.guilds))
 				serverNames = ""
 				for server in client.guilds:
 					serverNames = serverNames + str(server.name + '\n')
 				await channel.send("I am in: " + str(numServers) + " servers\n" + serverNames)
-			if '!restart' in message.content:
+			elif '!restart' in message.content:
 				await channel.send("Going to restart!")
 				await client.close()
 				sys.stdout.flush()
@@ -202,20 +205,16 @@ async def on_message(message):
 			return
 		if '!token' in command:
 			await nsoTokens.login(message)
-		if '!storedm' in command:
+		elif '!storedm' in command:
 			await channel.send("Sorry, for performance reasons, you cannot DM me !storedm :frowning:")
 		return
 	else:
 		theServer = message.guild.id
 
-	if message.author.bot:
-		return
-	if message.author.name == client.user.name:
-		return
-
 	if serverPunish[theServer].checkSquelch(message.author):
 		await message.delete()
 		return	
+
 	if command.startswith("!admin"):
 		if message.author in serverAdmins[theServer]:
 			if 'playlist' in message.content:
