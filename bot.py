@@ -57,12 +57,6 @@ def loadConfig():
 		mysqlConnect = mysqlinfo.mysqlInfo(configData['mysql_host'], configData['mysql_user'], configData['mysql_pw'], configData['mysql_db'])
 
 		print('Config Loaded')
-		discord.opus.load_opus('libopus.so.0')
-		if discord.opus.is_loaded():
-			print("Opus Library Loaded, continuing")
-		else:
-			print("Failed to load Opus Library... quitting")
-			quit(1)
 	except Exception as e:
 		print('Failed to load config: ' + str(e))
 		quit(1)
@@ -188,6 +182,10 @@ async def on_message(message):
 
 	command = message.content.lower()
 	channel = message.channel
+
+	if message.author.bot and message.author.name == "Github":
+		print("Testing github!")
+
 	if message.guild == None:
 		if str(message.author.id) in owners:
 			if '!servers' in message.content:

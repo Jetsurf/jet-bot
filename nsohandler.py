@@ -63,9 +63,10 @@ class nsoHandler():
 		abilitiesStr = abilitiesStr.replace('}', '')
 
 		ability = message.content.split(' ', 1)[1].lower()
+		
 		flag = False
 		for i in abilities:
-			if ability is str(i).lower():
+			if ability == i.lower():
 				flag = True
 				break;
 
@@ -76,7 +77,6 @@ class nsoHandler():
 		stmt = "SELECT COUNT(*) FROM storedms WHERE clientid = %s AND ability = %s"
 		self.cursor.execute(stmt, (str(message.author.id), ability,))
 		count = self.cursor.fetchone()
-
 		if count[0] > 0:
 			await message.channel.send("You already will be DM'ed when gear with " + ability + " appears in the store!")
 			return
