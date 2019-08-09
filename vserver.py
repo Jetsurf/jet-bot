@@ -26,11 +26,12 @@ ytdl_format_options = {
     'no_warnings': True,
     'default_search': 'auto',
     'source_address': '0.0.0.0',
-    'playlistend' : '5'
+    'playlistend' : '5',
+    'quiet' : '1'
 }
 
 ffmpeg_options = {
-    'options': '-vn'
+    'options': '-vn -reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5'
 }
 
 ytdl = youtube_dl.YoutubeDL(ytdl_format_options)
@@ -46,7 +47,7 @@ class YTDLSource(discord.PCMVolumeTransformer):
         self.duration = data.get('duration')
 
     @classmethod
-    async def from_url(cls, url, *, loop=None, stream=False):
+    async def from_url(cls, url, *, loop=None, stream=True):
         loop = loop or asyncio.get_event_loop()
         data = await loop.run_in_executor(None, lambda: ytdl.extract_info(url, download=not stream))
 
@@ -289,8 +290,10 @@ class voiceServer():
 			if self.source == None and self.vclient != None:
 				await message.channel.send("Playing : " + x[toPlay[0] - 1][0].decode('utf-8'))
 			self.play()
-		if numToQueue > 1:
+		if numToQueue > 1 and self.source == None:
 			await message.channel.send("Also queued " + str(numToQueue - 1) + " more song(s) from my playlist")
+		else:
+			await message.channel.send("Added " + str(numToQueue) + " more song(s) to the queue from my playlist")
 
 	async def addPlaylist(self, message):
 		toAdd = ''

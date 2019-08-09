@@ -63,13 +63,13 @@ class nsoHandler():
 		abilitiesStr = abilitiesStr.replace('}', '')
 
 		ability = message.content.split(' ', 1)[1].lower()
-		flag = 0
+		flag = False
 		for i in abilities:
 			if ability is str(i).lower():
-				flag = 1
+				flag = True
 				break;
 
-		if flag == 1:
+		if not flag:
 			await message.channel.send('The ablility you gave doesn\'t exist!\nValid Abilities are: ' + abilitiesStr)
 			return
 
