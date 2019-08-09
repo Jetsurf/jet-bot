@@ -188,9 +188,9 @@ async def on_message(message):
 	if message.guild == None:
 		if message.author.id in owners:
 			if '!servers' in message.content:
-				numServers = str(len(client.servers))
+				numServers = str(len(client.guilds))
 				serverNames = ""
-				for server in client.servers:
+				for server in client.guilds:
 					serverNames = serverNames + str(server.name + '\n')
 				await channel.send("I am in: " + str(numServers) + " servers\n" + serverNames)
 			if '!restart' in message.content:
