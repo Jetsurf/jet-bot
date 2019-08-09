@@ -36,13 +36,14 @@ ffmpeg_options = {
 ytdl = youtube_dl.YoutubeDL(ytdl_format_options)
 
 class YTDLSource(discord.PCMVolumeTransformer):
-    def __init__(self, source, *, data, volume=0.5):
+    def __init__(self, source, *, data, volume=0.07):
         super().__init__(source, volume)
 
         self.data = data
 
         self.title = data.get('title')
         self.url = data.get('url')
+        self.duration = data.get('duration')
 
     @classmethod
     async def from_url(cls, url, *, loop=None, stream=False):
@@ -50,7 +51,6 @@ class YTDLSource(discord.PCMVolumeTransformer):
         data = await loop.run_in_executor(None, lambda: ytdl.extract_info(url, download=not stream))
 
         if 'entries' in data:
-            # take first item from a playlist
             data = data['entries'][0]
 
         filename = data['url'] if stream else ytdl.prepare_filename(data)
@@ -112,8 +112,8 @@ class voiceServer():
 			self.player.start()
 
 	async def playSound(self, command, message):
-		#if self.ytPlayer == None:
-			#if self.player != None:
+		#if self.source == None:
+		#	if self.player != None:
 		#		self.player.stop()
 
 	
@@ -134,7 +134,7 @@ class voiceServer():
 
 	async def stop(self, message):
 		if self.source != None:
-			self.source.stop()
+			self.vclient.stop()
 		else:
 			await message.channel.send("I'm not playing anything right now")
 
@@ -159,18 +159,17 @@ class voiceServer():
 
 	def end(self):
 		self.ytQueue = queue.Queue()
-		self.source.stop()
+		self.vclient.stop()
 		self.source = None
 
 	def play(self):
-		print("test")
 		if self.source == None and self.ytQueue.qsize() == 1:
-			print("Nope")
 			source = self.ytQueue.get()
 			self.vclient.play(source, after=self.playNext)
 			self.source = source
 
 	def playNext(self):
+		print("From playnext!")
 		if self.ytQueue.empty():
 			self.source = None
 		else:
@@ -180,7 +179,7 @@ class voiceServer():
 
 	async def setupPlay(self, message):
 		if self.player != None:
-			self.player.stop()
+			self.vclient.stop()
 		if 'https://' in message.content:
 			if self.listCheck(1, message.content.split(' ')[1]):
 				print(message.author.name + " tried to play a blacklisted video")

@@ -57,27 +57,33 @@ def loadConfig():
 		mysqlConnect = mysqlinfo.mysqlInfo(configData['mysql_host'], configData['mysql_user'], configData['mysql_pw'], configData['mysql_db'])
 
 		print('Config Loaded')
+		discord.opus.load_opus('libopus.so.0')
+		if discord.opus.is_loaded():
+			print("Opus Library Loaded, continuing")
+		else:
+			print("Failed to load Opus Library... quitting")
+			quit(1)
 	except Exception as e:
 		print('Failed to load config: ' + str(e))
 		quit(1)
 
 async def setCRole(message):
-	us = discord.utils.get(message.server.roles, name='Americas')
-	eu = discord.utils.get(message.server.roles, name='Europe')
-	jp = discord.utils.get(message.server.roles, name='Japan/Asia')
+	us = discord.utils.get(message.guild.roles, name='Americas')
+	eu = discord.utils.get(message.guild.roles, name='Europe')
+	jp = discord.utils.get(message.guild.roles, name='Japan/Asia')
 
-	await client.remove_roles(message.author, us)
-	await client.remove_roles(message.author, eu)
-	await client.remove_roles(message.author, jp)
+	await message.author.remove_roles(us)
+	await message.author.remove_roles(eu)
+	await message.author.remove_roles(jp)
 
 	if message.content.startswith('!us'):
-		await client.add_roles(message.author, us)
+		await message.author.add_roles(us)
 	elif message.content.startswith('!eu'):
-		await client.add_roles(message.author, eu)
+		await message.author.add_roles(eu)
 	elif message.content.startswith('!jp'):
-		await client.add_roles(message.author, jp)
+		await message.author.add_roles(jp)
 
-	await client.add_reaction(message, '👍')
+	await message.add_reaction('👍')
 
 def scanAdmins(startup=0, id=None):
 	global serverAdmins
