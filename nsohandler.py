@@ -95,12 +95,16 @@ class nsoHandler():
 				return True
 			else:
 				return False
-			
-		resp = await self.client.wait_for('message', timeout=7100, check=check1)
-		if resp == None:
-			print("Keeping " + theMem.name + " in DM's")
-			await theMem.send("Didn't get a message from you, I'll DM you again when gear with " + theSkill + " appears in the shop!")
-		elif 'no' in resp.content.lower():
+		
+		# Discord.py changed timeouts to throw exceptions...
+		try:	
+			resp = await self.client.wait_for('message', timeout=7100, check=check1)
+		except:
+			if resp == None:
+				print("TIMEOUT: Keeping " + theMem.name + " in DM's")
+				await theMem.send("Didn't get a message from you, I'll DM you again when gear with " + theSkill + " appears in the shop!")
+
+		if 'no' in resp.content.lower():
 			stmt = 'DELETE FROM storedms WHERE clientid = %s AND ability = %s'
 			print("Removing " + theMem.name + " from DM's")
 			self.cursor.execute(stmt, (theMem.id, theSkill,))
