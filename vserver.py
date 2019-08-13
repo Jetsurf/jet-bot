@@ -221,7 +221,6 @@ class voiceServer():
 				self.play()
 			except Exception as e:
 				print(traceback.format_exc())
-				#print(str(e))
 				await message.channel.send("Sorry, I can't play that, give this info to jetsurf: " + str(e))
 
 	def listCheck(self, theList, theURL):
