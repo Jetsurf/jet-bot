@@ -8,6 +8,7 @@ import urllib.request
 import mysql.connector
 import copy
 import youtube_dl
+import traceback
 from mysql.connector.cursor import MySQLCursorPrepared
 from bs4 import BeautifulSoup
 from random import randint
@@ -219,7 +220,8 @@ class voiceServer():
 				self.ytQueue.put(tempPlayer)
 				self.play()
 			except Exception as e:
-				print(str(e))
+				print(traceback.format_exc())
+				#print(str(e))
 				await message.channel.send("Sorry, I can't play that, give this info to jetsurf: " + str(e))
 
 	def listCheck(self, theList, theURL):
