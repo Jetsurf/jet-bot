@@ -6,7 +6,7 @@ quickly.
 
 ## Installation
 Requires https://github.com/Rapptz/discord.py discord python library to 
-function.
+function (Version >= 1.0 needed).
 
 Requires youtube-dl and ffmpeg for online video/music playback.
 
@@ -34,16 +34,6 @@ There are a few admin commands to configure the bot:
 Run the command with a URL to either add it to the !playrandom playlist or prevent the video at the URL from ever being played.
 
 To subscribe to direct DM's on users leaving, run !admin dm add. To unsubscribe to this, run !admin dm remove.
-
-The following admin commands are used for chat squelching (voice mute to come soon)
-
- - !admin squelch @user hours reason
- - !admin unsquelch @user
- - !admin squelch current
- - !admin squelch log
- 
-The squelch current command gives a list of all users currently squelched by the bot, squelch log provides a detailed log
-of what users are actively or ever were squeleched.
 
 To run these commands, you need the administrator role in your discord server.
 
@@ -88,8 +78,6 @@ Japan/Asia (will work fine without them)
 
  - !us OR !eu OR !jp : Show what region you hail from (Americas, Europe,
    and Japan/Asia respectfully)
-
-This command will be corrected to allow configuration of roles at a later date
 
 # License
 
