@@ -146,13 +146,21 @@ class nsoHandler():
 		else:
 			return False
 
-	async def addToken(self, message, token):
+	def get_session_token(self, message):
+		id = message.author.id
+		stmt = "SELECT session_token FROM tokens WHERE clientid = %s"
+		self.cursor.execute(stmt, (str(id),))
+		session_token = self.cursor.fetchall()
+
+		return session_token[0][0].decode()
+
+	async def addToken(self, message, token, session_token):
 		if self.checkDuplicate(str(message.author.id)):
 			stmt = "UPDATE tokens SET token = %s WHERE clientid = %s"
 			input = (token, str(message.author.id),)
 		else:
-			stmt = "INSERT INTO tokens (clientid, token) VALUES(%s, %s)"
-			input = (str(message.author.id), token,)
+			stmt = "INSERT INTO tokens (clientid, token, session_token) VALUES(%s, %s, %s)"
+			input = (str(message.author.id), token, session_token)
 
 		self.cursor.execute(stmt, input)
 		if self.cursor.lastrowid != None:

@@ -196,6 +196,8 @@ async def on_message(message):
 				await client.close()
 				sys.stdout.flush()
 				sys.exit(0)
+			elif '!dev-token' in command:
+				await nsoTokens.do_iksm_refresh(message)
 		if message.author.bot:
 			return
 		if '!token' in command:
