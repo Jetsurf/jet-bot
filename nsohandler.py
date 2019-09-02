@@ -156,8 +156,8 @@ class nsoHandler():
 
 	async def addToken(self, message, token, session_token):
 		if self.checkDuplicate(str(message.author.id)):
-			stmt = "UPDATE tokens SET token = %s WHERE clientid = %s"
-			input = (token, str(message.author.id),)
+			stmt = "UPDATE tokens SET token = %s, session_token = %s WHERE clientid = %s"
+			input = (token, str(session_token), str(message.author.id),)
 		else:
 			stmt = "INSERT INTO tokens (clientid, token, session_token) VALUES(%s, %s, %s)"
 			input = (str(message.author.id), token, session_token)
