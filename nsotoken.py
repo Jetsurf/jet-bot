@@ -54,11 +54,11 @@ class Nsotoken():
 			else:
 				break
 
-		
+		await message.channel.trigger_typing()
 		session_token_code = re.search('session_token_code=(.*)&', accounturl)
 		session_token_code = self.get_session_token(session_token_code.group(0)[19:-1], auth_code_verifier)
 		thetoken = self.get_cookie(session_token_code)
-		await self.nsohandler.addToken(message, str(thetoken))
+		await self.nsohandler.addToken(message, str(thetoken), session_token_code)
 
 	def get_hash(self, id_token, timestamp):
 		version = '1.5.1'
@@ -66,6 +66,11 @@ class Nsotoken():
 		api_body = { 'naIdToken': id_token, 'timestamp': timestamp }
 		api_response = requests.post("https://elifessler.com/s2s/api/gen2", headers=api_app_head, data=api_body)
 		return json.loads(api_response.text)["hash"]
+
+	async def do_iksm_refresh(self, message):
+		session_token = self.nsohandler.get_session_token(message)
+		print("Going for iksm refresh with token -" + str(session_token))
+		self.get_cookie(session_token)
 
 	def get_session_token(self, session_token_code, auth_code_verifier):
 		head = {
