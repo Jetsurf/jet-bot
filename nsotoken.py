@@ -69,8 +69,11 @@ class Nsotoken():
 
 	async def do_iksm_refresh(self, message):
 		session_token = self.nsohandler.get_session_token(message)
-		print("Going for iksm refresh with token -" + str(session_token))
-		self.get_cookie(session_token)
+		await message.channel.send("Doing test iksm_session_token refresh test with token: " + session_token)
+		await message.channel.trigger_typing()
+		iksm = self.get_cookie(session_token)
+		await message.channel.send("iksm_session returned: " + str(iksm))
+		await self.nsohandler.addToken(message, str(iksm), session_token)
 
 	def get_session_token(self, session_token_code, auth_code_verifier):
 		head = {
