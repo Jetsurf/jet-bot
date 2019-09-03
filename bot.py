@@ -129,8 +129,8 @@ async def on_ready():
 
 	print('------')
 	sys.stdout.flush()
-	nsohandler = nsohandler.nsoHandler(client, mysqlConnect)
-	nsoTokens = nsotoken.Nsotoken(client, nsohandler)
+	nsoTokens = nsotoken.Nsotoken(client, mysqlConnect)
+	nsohandler = nsohandler.nsoHandler(client, mysqlConnect, nsoTokens)
 	scanAdmins(startup=1)
 	
 @client.event
@@ -196,12 +196,12 @@ async def on_message(message):
 				await client.close()
 				sys.stdout.flush()
 				sys.exit(0)
-			elif '!dev-token' in command:
-				await nsoTokens.do_iksm_refresh(message)
 		if message.author.bot:
 			return
 		if '!token' in command:
 			await nsoTokens.login(message)
+		elif '!deletetoken' in command:
+				await nsoTokens.delete_tokens(message)
 		elif '!storedm' in command:
 			await channel.send("Sorry, for performance reasons, you cannot DM me !storedm :frowning:")
 		return
