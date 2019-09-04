@@ -148,6 +148,32 @@ class nsoHandler():
 		else:
 			return False
 
+	def get_session_token(self, message):
+		id = message.author.id
+		stmt = "SELECT session_token FROM tokens WHERE clientid = %s"
+		self.cursor.execute(stmt, (str(id),))
+		session_token = self.cursor.fetchall()
+
+		return session_token[0][0].decode()
+
+	async def addToken(self, message, token, session_token):
+		if self.checkDuplicate(str(message.author.id)):
+			stmt = "UPDATE tokens SET token = %s, session_token = %s WHERE clientid = %s"
+			input = (token, str(session_token), str(message.author.id),)
+		else:
+			stmt = "INSERT INTO tokens (clientid, token, session_token) VALUES(%s, %s, %s)"
+			input = (str(message.author.id), token, session_token)
+
+		self.cursor.execute(stmt, input)
+		if self.cursor.lastrowid != None:
+			if 'UPDATE' in stmt:
+				await message.channel.send('Token updated for you! Please delete the link you sent me for security reasons!')
+			else:
+				await message.channel.send('Token added for you! Please delete the link you sent me for security reasons!')
+			self.theDB.commit()
+		else:
+			await message.channel.send("Something went wrong! Tell jetsurf#8514 that something broke!")
+
 	async def getStats(self, message):
 		if not self.checkDuplicate(message.author.id):
 			await message.channel.send("You don't have a token setup with me! Please DM me !token with how to get one setup!")
