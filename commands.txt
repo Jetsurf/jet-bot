@@ -17,7 +17,7 @@
 !storedm ABILITY : DM you when a piece of gear with ABILITY appears in the Splatnet Store (Can't DM me this command)
 !us OR !eu OR !jp : Show what region you hail from (Americas, Europe, and Japan/Asia respectfully, if these roles are setup)
 !github : Posts a link to my github page
-For these Splatnet2 commands: DM the bot with !token to set this up, then the following commands are available: 
+For these Splatnet2 commands: DM the bot with !token to set this up (!deletetokens to remove them), then the following commands are available: 
 !rank : Shows your ranked gamemodes ranks
 !stats : Shows various stats from your gameplay
 !srstats : Shows various stats from Salmon Run
