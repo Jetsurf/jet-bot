@@ -8,10 +8,11 @@ import requests
 import json
 import urllib
 import urllib.request
+import nsotoken
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 class nsoHandler():
-	def __init__(self, client, mysqlinfo):
+	def __init__(self, client, mysqlinfo, nsotoken):
 		self.client = client
 		self.theDB = mysql.connector.connect(host=mysqlinfo.host, user=mysqlinfo.user, password=mysqlinfo.pw, database=mysqlinfo.db)
 		self.cursor = self.theDB.cursor(cursor_class=MySQLCursorPrepared)
@@ -19,6 +20,7 @@ class nsoHandler():
 		self.scheduler = AsyncIOScheduler()
 		self.scheduler.add_job(self.doStoreDM, 'cron', hour="*/2", minute='5') 
 		self.scheduler.start()
+		self.nsotoken = nsotoken
 		self.app_head = {
 			'Host': 'app.splatoon2.nintendo.net',
 			'x-unique-id': '8386546935489260343',
@@ -183,6 +185,13 @@ class nsoHandler():
 		url = "https://app.splatoon2.nintendo.net/api/records"
 		results_list = requests.get(url, headers=self.app_head, cookies=dict(iksm_session=Session_token))
 		thejson = json.loads(results_list.text)
+
+		if 'AUTHENTICATION_ERROR' in str(thejson):
+			print(str(thejson))
+			iksm = await self.nsotoken.do_iksm_refresh(message)
+			results_list = requests.get(url, headers=self.app_head_coop, cookies=dict(iksm_session=iksm))
+			thejson = json.loads(results_list.text)
+
 		embed = discord.Embed(colour=0x0004FF)
 		try:
 			name = thejson['records']['player']['nickname']
@@ -246,7 +255,18 @@ class nsoHandler():
 		results_list = requests.get(url, headers=self.app_head_coop, cookies=dict(iksm_session=Session_token))
 		thejson = json.loads(results_list.text)
 
-		name = thejson['results'][0]['my_result']['name']
+		if 'AUTHENTICATION_ERROR' in str(thejson):
+			print(str(thejson))
+			iksm = await self.nsotoken.do_iksm_refresh(message)
+			results_list = requests.get(url, headers=self.app_head_coop, cookies=dict(iksm_session=iksm))
+			thejson = json.loads(results_list.text)
+
+		try:
+			name = thejson['results'][0]['my_result']['name']
+		except:
+			await message.channel.send(message.author.name + " there is a problem with your token")
+			return
+			
 		jobresults = thejson['results']
 		jobcard = thejson['summary']['card']
 		rank = thejson['summary']['stats'][0]['grade']['name']
@@ -307,6 +327,12 @@ class nsoHandler():
 		results_list = requests.get(url, headers=self.app_head, cookies=dict(iksm_session=Session_token))
 		thejson = json.loads(results_list.text)
 
+		if 'AUTHENTICATION_ERROR' in str(thejson):
+			print(thejson)
+			iksm = await self.nsotoken.do_iksm_refresh(message)
+			results_list = requests.get(url, headers=self.app_head_coop, cookies=dict(iksm_session=iksm))
+			thejson = json.loads(results_list.text)
+
 		try:
 			name = thejson['records']['player']['nickname']
 		except:
@@ -361,7 +387,17 @@ class nsoHandler():
 		url = "https://app.splatoon2.nintendo.net/api/timeline"
 		results_list = requests.get(url, headers=self.app_head, cookies=dict(iksm_session=Session_token))
 		thejson = json.loads(results_list.text)
-		self.app_head_shop['x-unique-id'] = thejson['unique_id']
+
+		if 'AUTHENTICATION_ERROR' in str(thejson):
+			Session_token = await self.nsotoken.do_iksm_refresh(message)
+			results_list = requests.get(url, headers=self.app_head_coop, cookies=dict(iksm_session=Session_token))
+			thejson = json.loads(results_list.text)
+
+		try:
+			self.app_head_shop['x-unique-id'] = thejson['unique_id']
+		except:
+			await message.channel.send(message.author.name + " there is a problem with your token")
+			return
 
 		url = "https://app.splatoon2.nintendo.net/api/onlineshop/merchandises"
 		results_list = requests.get(url, headers=self.app_head, cookies=dict(iksm_session=Session_token))
@@ -379,6 +415,7 @@ class nsoHandler():
 			url = 'https://app.splatoon2.nintendo.net/api/onlineshop/order/' + gearToBuy['id']
 			response = requests.post(url, headers=self.app_head_shop, cookies=dict(iksm_session=Session_token))
 			responsejson = json.loads(response.text)
+
 			if '200' not in str(response):
 				ordered = thejson['ordered_info']
 

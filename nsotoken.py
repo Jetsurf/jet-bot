@@ -1,14 +1,67 @@
 from __future__ import print_function
+import mysql.connector
+from mysql.connector.cursor import MySQLCursorPrepared
+import mysqlinfo
 import requests, json, re, sys
 import os, base64, hashlib, random, string
 import uuid, time
 import nsohandler
 
 class Nsotoken():
-	def __init__(self, client, nsohandler):
+	def __init__(self, client, mysqlinfo):
 		self.client = client
 		self.session = requests.Session()
-		self.nsohandler = nsohandler
+		self.theDB = mysql.connector.connect(host=mysqlinfo.host, user=mysqlinfo.user, password=mysqlinfo.pw, database=mysqlinfo.db)
+		self.cursor = self.theDB.cursor(cursor_class=MySQLCursorPrepared)
+
+	def checkDuplicate(self, id):
+		stmt = "SELECT COUNT(*) FROM tokens WHERE clientid = %s"
+		self.cursor.execute(stmt, (str(id),))
+		count = self.cursor.fetchone()
+
+		if count[0] > 0:
+			return True
+		else:
+			return False
+
+	async def delete_tokens(self, message):
+		print("Deleting token")
+		stmt = "DELETE FROM tokens WHERE clientid = %s"
+		input = (message.author.id,)
+		self.cursor.execute(stmt, input)
+		if self.cursor.lastrowid != None:
+			self.theDB.commit()
+			await message.channel.send("Tokens deleted!")
+		else:
+			await message.channel.send("Something went wrong! Tell jetsurf#8514 that something broke!")
+
+	async def addToken(self, message, token, session_token):
+		print("Adding new iksm: " + str(token))
+		if self.checkDuplicate(str(message.author.id)):
+			print("Updating...")
+			stmt = "UPDATE tokens SET token = %s, session_token = %s WHERE clientid = %s"
+			input = (token, str(session_token), str(message.author.id),)
+		else:
+			print("Inserting...")
+			stmt = "INSERT INTO tokens (clientid, token, session_token) VALUES(%s, %s, %s)"
+			input = (str(message.author.id), token, session_token,)
+
+		self.cursor.execute(stmt, input)
+		if self.cursor.lastrowid != None:
+			print("Success!")
+			self.theDB.commit()
+			return True
+		else:
+			await message.channel.send("Something went wrong! Tell jetsurf#8514 that something broke!")
+			return False
+
+	def get_session_token_mysql(self, message):
+		id = message.author.id
+		stmt = "SELECT session_token FROM tokens WHERE clientid = %s"
+		self.cursor.execute(stmt, (str(id),))
+		session_token = self.cursor.fetchall()
+
+		return session_token[0][0].decode()
 
 	async def login(self, message):
 		auth_state = base64.urlsafe_b64encode(os.urandom(36))
@@ -58,7 +111,8 @@ class Nsotoken():
 		session_token_code = re.search('session_token_code=(.*)&', accounturl)
 		session_token_code = self.get_session_token(session_token_code.group(0)[19:-1], auth_code_verifier)
 		thetoken = self.get_cookie(session_token_code)
-		await self.nsohandler.addToken(message, str(thetoken), session_token_code)
+		await self.addToken(message, str(thetoken), session_token_code)
+		await message.channel.send("Token added, !srstats !stats !ranks and !order will now work! You shouldn't need to run this command again.")
 
 	def get_hash(self, id_token, timestamp):
 		version = '1.5.1'
@@ -68,12 +122,11 @@ class Nsotoken():
 		return json.loads(api_response.text)["hash"]
 
 	async def do_iksm_refresh(self, message):
-		session_token = self.nsohandler.get_session_token(message)
-		await message.channel.send("Doing test iksm_session_token refresh test with token: " + session_token)
+		session_token = self.get_session_token_mysql(message)
 		await message.channel.trigger_typing()
 		iksm = self.get_cookie(session_token)
-		await message.channel.send("iksm_session returned: " + str(iksm))
-		await self.nsohandler.addToken(message, str(iksm), session_token)
+		await self.addToken(message, str(iksm), session_token)
+		return iksm
 
 	def get_session_token(self, session_token_code, auth_code_verifier):
 		head = {
@@ -205,7 +258,6 @@ class Nsotoken():
 		r = requests.post("https://api-lp1.znc.srv.nintendo.net/v2/Game/GetWebServiceToken", headers=head, json=body)
 		token = json.loads(r.text)
 
-		print(str(token))
 		head = {
 			'Host': 'app.splatoon2.nintendo.net',
 			'X-IsAppAnalyticsOptedIn': 'false',

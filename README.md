@@ -65,7 +65,7 @@ Currently implemented commands are as follows:
 
 Splatoon 2 Splatnet Commands
 
-The following commands require you to DM the bot with !token and follow the instructions
+The following commands require you to DM the bot with !token and follow the instructions. DM !deletetoken to remove all tokens from the bot.
 
  - !rank : Shows your ranks in the ranked gamemodes
  - !stats : Shows various stats from your gameplay
