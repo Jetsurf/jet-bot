@@ -38,14 +38,17 @@ class Nsotoken():
 	async def addToken(self, message, token, session_token):
 		print("Adding new iksm: " + str(token))
 		if self.checkDuplicate(str(message.author.id)):
+			print("Updating...")
 			stmt = "UPDATE tokens SET token = %s, session_token = %s WHERE clientid = %s"
 			input = (token, str(session_token), str(message.author.id),)
 		else:
+			print("Inserting...")
 			stmt = "INSERT INTO tokens (clientid, token, session_token) VALUES(%s, %s, %s)"
 			input = (str(message.author.id), token, session_token,)
 
 		self.cursor.execute(stmt, input)
 		if self.cursor.lastrowid != None:
+			print("Success!")
 			self.theDB.commit()
 			return True
 		else:
@@ -255,7 +258,6 @@ class Nsotoken():
 		r = requests.post("https://api-lp1.znc.srv.nintendo.net/v2/Game/GetWebServiceToken", headers=head, json=body)
 		token = json.loads(r.text)
 
-		print(str(token))
 		head = {
 			'Host': 'app.splatoon2.nintendo.net',
 			'X-IsAppAnalyticsOptedIn': 'false',
