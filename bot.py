@@ -15,10 +15,12 @@ import urllib.request
 import requests
 import nsotoken
 import aiomysql
+from commandparser import CommandParser
 from subprocess import call
 from ctypes import *
 
 client = discord.Client()
+commandParser = CommandParser()
 mysqlConnect = None
 nsoHandler = None
 nsoTokens = None
@@ -129,6 +131,7 @@ async def on_ready():
 
 	print('------')
 	sys.stdout.flush()
+	commandParser.setUserid(client.user.id)
 	nsoTokens = nsotoken.Nsotoken(client, mysqlConnect)
 	nsohandler = nsohandler.nsoHandler(client, mysqlConnect, nsoTokens)
 	scanAdmins(startup=1)
@@ -210,47 +213,59 @@ async def on_message(message):
 
 	if serverPunish[theServer].checkSquelch(message.author):
 		await message.delete()
-		return	
+		return
 
-	if command.startswith("!admin"):
+	parsed = commandParser.parse("!", message.content)
+	if parsed == None:
+		return
+
+	cmd = parsed['cmd']
+	args = parsed['args']
+
+	if cmd == "admin":
 		if message.author in serverAdmins[theServer]:
-			if 'playlist' in message.content:
+			subcommand = args[0].lower()
+			if subcommand == 'playlist':
 				await serverVoices[theServer].addPlaylist(message)
-			elif 'blacklist' in message.content:
+			elif subcommand == 'blacklist':
 				await serverVoices[theServer].addBlacklist(message)
-			elif 'wtfboom' in message.content:
+			elif subcommand == 'wtfboom':
 				await serverVoices[theServer].playWTF(message)
-			elif 'tts' in message.content:
-				await channel.send(message.content[11:], tts=True)
-			elif 'squelch current' in message.content:
-				await serverPunish[theServer].getSquelches(message)
-			elif 'squelch log' in message.content:
-				await serverPunish[theServer].getSquelches(message, all=1)
-			elif 'unsquelch' in message.content:
+			elif subcommand == 'tts':
+				await channel.send(args[1:].join(" "), tts=True)
+			elif subcommand == 'squelch':
+				subcommand2 = args[1]
+				if subcommand2 == 'current':
+					await serverPunish[theServer].getSquelches(message)
+				elif subcommand2 == 'log':
+					await serverPunish[theServer].getSquelches(message, all=1)
+				else:
+					await serverPunish[theServer].doSquelch(message)
+			elif subcommand == 'unsquelch':
 				await serverPunish[theServer].removeSquelch(message)
-			elif 'squelch' in message.content:
-				await serverPunish[theServer].doSquelch(message)
-			elif 'dm add' in message.content:
-				await serverPunish[theServer].addDM(message)
-			elif 'dm remove' in message.content:
-				await serverPunish[theServer].removeDM(message)
+			elif subcommand == 'dm':
+				subcommand2 = args[1].lower()
+				if subcommand2 == 'add':
+					await serverPunish[theServer].addDM(message)
+				elif subcommand2 == 'remove':
+					await serverPunish[theServer].removeDM(message)
 		else:
 			await channel.send_message(message.author.name + " you are not an admin... :cop:")
-	elif command.startswith('!alive'):
+	elif cmd == 'alive':
 		await channel.send("Hey " + message.author.name + ", I'm alive so shut up! :japanese_goblin:")
-	elif command.startswith('!rank'):
+	elif cmd == 'rank':
 		await nsohandler.getRanks(message)
-	elif command.startswith('!order'):
+	elif cmd == 'order':
 		await nsohandler.orderGear(message)
-	elif command.startswith('!stats'):
+	elif cmd == 'stats':
 		await nsohandler.getStats(message)
-	elif command.startswith('!srstats'):
+	elif cmd == 'srstats':
 		await nsohandler.getSRStats(message)
-	elif command.startswith('!storedm'):
+	elif cmd == 'storedm':
 		await nsohandler.addStoreDM(message)
-	elif command.startswith('!github'):
+	elif cmd == 'github':
 		await channel.send('Here is my github page! : https://github.com/Jetsurf/jet-bot')
-	elif command.startswith('!commands') or command.startswith('!help'):
+	elif cmd == 'commands' or cmd == 'help':
 		embed = discord.Embed(colour=0x2AE5B8)
 		embed.title = "Here is how to control me!"
 		with open(commands, 'r') as f:
@@ -258,57 +273,57 @@ async def on_message(message):
 				embed.add_field(name=line.split(":")[0], value=line.split(":")[1], inline=False)
 			embed.set_footer(text="If you want something added or want to report a bug/error, tell jetsurf#8514...")
 		await channel.send(embed=embed)
-	elif command.startswith('!sounds'):
+	elif cmd == 'sounds':
 		theSounds = subprocess.check_output(["ls", soundsDir])
 		theSounds = theSounds.decode("utf-8")
 		theSounds = theSounds.replace('.mp3', '')
 		theSounds = theSounds.replace('\n', ', ')
 		await channel.send("Current Sounds:\n```" + theSounds + "```")
-	elif command.startswith('!join'):
+	elif cmd == 'join':
 		if len(message.content) > 6:
 			await serverVoices[theServer].joinVoiceChannel(message.content.split(" ", 1)[1], message)
 		else:
 			await serverVoices[theServer].joinVoiceChannel(command, message)
-	elif command.startswith('!currentmaps'):
+	elif cmd == 'currentmaps':
 		await nsohandler.maps(message)
-	elif 'nextmaps' in command and '!' in command:
+	elif cmd == 'nextmaps':
 		await nsohandler.maps(message, offset=min(11, message.content.count('next')))
-	elif command.startswith('!currentsr'):
+	elif cmd == 'currentsr':
 		await nsohandler.srParser(message)
-	elif command.startswith('!splatnetgear'):
+	elif cmd == 'splatnetgear':
 		await nsohandler.gearParser(message)
-	elif command.startswith('!nextsr'):
+	elif cmd == 'nextsr':
 		await nsohandler.srParser(message, 1)
-	elif command.startswith('!us') or message.content.startswith('!eu') or message.content.startswith('!jp'):
+	elif (cmd == 'us') or (cmd == 'eu') or (cmd == 'jp'):
 		await setCRole(message)
 	elif ('pizza' in command and 'pineapple' in command) or ('\U0001F355' in message.content and '\U0001F34D' in message.content):
 		await channel.send('Don\'t ever think pineapple and pizza go together ' + message.author.name + '!!!')
 	elif serverVoices[theServer].vclient is not None:
-		if command.startswith('!currentsong'):
+		if cmd == 'currentsong':
 			if serverVoices[theServer].source is not None:
 				await channel.send('Currently Playing Video: ' + serverVoices[theServer].source.yturl)
 			else:
 				await channel.send('I\'m not playing anything.')
-		elif command.startswith('!leavevoice'):
+		elif cmd == 'leavevoice':
 			await serverVoices[theServer].vclient.disconnect()
-		elif command.startswith('!playrandom'):
+		elif cmd == 'playrandom':
 			if len(command) > 11:
 				await serverVoices[theServer].playRandom(message, int(message.content.split(' ')[1]))
 			else:
 				await serverVoices[theServer].playRandom(message, 1)
-		elif command.startswith('!play'):
+		elif cmd == 'play':
 			await serverVoices[theServer].setupPlay(message)
-		elif command.startswith('!skip'):
+		elif cmd == 'skip':
 			await serverVoices[theServer].stop(message)
-		elif command.startswith('!end') or command.startswith('!stop'):
+		elif (cmd == 'end') or (cmd == 'stop'):
 			serverVoices[theServer].end()
-		elif command.startswith('!volume'):
+		elif cmd == 'volume':
 			vol = int(command.split(' ')[1])
 			if vol > 60:
 				vol = 60
 			await channel.send("Setting Volume to " + str(vol) + "%")
 			serverVoices[theServer].source.volume = float(vol / 100)
-		elif command.startswith('!queue'):
+		elif cmd == 'queue':
 			await serverVoices[theServer].printQueue(message)
 		elif command.startswith('!'):
 			await serverVoices[theServer].playSound(command, message)
