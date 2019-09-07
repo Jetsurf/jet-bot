@@ -15,12 +15,12 @@ import urllib.request
 import requests
 import nsotoken
 import aiomysql
-from commandparser import CommandParser
+import commandparser
 from subprocess import call
 from ctypes import *
 
 client = discord.Client()
-commandParser = CommandParser()
+commandParser = commandparser.CommandParser()
 mysqlConnect = None
 nsoHandler = None
 nsoTokens = None
@@ -57,6 +57,8 @@ def loadConfig():
 
 		owners = configData['owner_ids']
 		mysqlConnect = mysqlinfo.mysqlInfo(configData['mysql_host'], configData['mysql_user'], configData['mysql_pw'], configData['mysql_db'])
+
+		commandParser.setMysqlInfo(mysqlConnect)
 
 		print('Config Loaded')
 	except Exception as e:
@@ -215,7 +217,7 @@ async def on_message(message):
 		await message.delete()
 		return
 
-	parsed = commandParser.parse("!", message.content)
+	parsed = commandParser.parse(theServer, message.content)
 	if parsed == None:
 		return
 
@@ -249,8 +251,15 @@ async def on_message(message):
 					await serverPunish[theServer].addDM(message)
 				elif subcommand2 == 'remove':
 					await serverPunish[theServer].removeDM(message)
+			elif subcommand == 'prefix':
+				if (len(args) == 1):
+					await channel.send("Current command prefix is: " + commandParser.getPrefix(theServer))
+				elif (len(args) != 2) or (len(args[1]) != 1):
+					await channel.send("Usage: ```admin prefix <char>``` where *char* is a single character")
+				else:
+					commandParser.setPrefix(theServer, args[1])
 		else:
-			await channel.send_message(message.author.name + " you are not an admin... :cop:")
+			await channel.send(message.author.name + " you are not an admin... :cop:")
 	elif cmd == 'alive':
 		await channel.send("Hey " + message.author.name + ", I'm alive so shut up! :japanese_goblin:")
 	elif cmd == 'rank':
