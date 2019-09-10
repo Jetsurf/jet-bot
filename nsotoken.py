@@ -40,7 +40,7 @@ class Nsotoken():
 		if self.checkDuplicate(str(message.author.id)):
 			print("Updating...")
 			stmt = "UPDATE tokens SET token = %s, session_token = %s WHERE clientid = %s"
-			input = (token, str(session_token), str(message.author.id),)
+			input = (str(token), str(session_token), str(message.author.id),)
 		else:
 			print("Inserting...")
 			stmt = "INSERT INTO tokens (clientid, token, session_token) VALUES(%s, %s, %s)"
@@ -60,7 +60,6 @@ class Nsotoken():
 		stmt = "SELECT session_token FROM tokens WHERE clientid = %s"
 		self.cursor.execute(stmt, (str(id),))
 		session_token = self.cursor.fetchall()
-
 		return session_token[0][0].decode()
 
 	async def login(self, message):
