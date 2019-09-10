@@ -195,6 +195,9 @@ async def on_message(message):
 	command = message.content.lower()
 	channel = message.channel
 
+	if ('pizza' in command and 'pineapple' in command) or ('\U0001F355' in message.content and '\U0001F34D' in message.content):
+		await channel.send('Don\'t ever think pineapple and pizza go together ' + message.author.name + '!!!')
+
 	if message.guild == None:
 		if message.author.id in owners:
 			if '!servers' in message.content:
@@ -299,8 +302,6 @@ async def on_message(message):
 		await nsohandler.srParser(message, 1)
 	elif (cmd == 'us') or (cmd == 'eu') or (cmd == 'jp'):
 		await setCRole(message)
-	elif ('pizza' in command and 'pineapple' in command) or ('\U0001F355' in message.content and '\U0001F34D' in message.content):
-		await channel.send('Don\'t ever think pineapple and pizza go together ' + message.author.name + '!!!')
 	elif serverVoices[theServer].vclient is not None:
 		if cmd == 'currentsong':
 			if serverVoices[theServer].source is not None:
