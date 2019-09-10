@@ -177,7 +177,10 @@ test = 0
 async def on_message(message):
 	global serverVoices, serverAdmins, soundsDir, serverPunish, nsohandler, owners
 
+	# Filter out bots and system messages
 	if message.author.bot:
+		return
+	elif message.type != discord.MessageType.default:
 		return
 
 	command = message.content.lower()
