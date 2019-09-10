@@ -55,7 +55,6 @@ def loadConfig():
 		except:
 			print('No ID/Token for discordbots.org, skipping')
 
-		owners = configData['owner_ids']
 		mysqlConnect = mysqlinfo.mysqlInfo(configData['mysql_host'], configData['mysql_user'], configData['mysql_pw'], configData['mysql_db'])
 
 		commandParser.setMysqlInfo(mysqlConnect)
@@ -113,12 +112,19 @@ async def on_guild_role_update(before, after):
 
 @client.event
 async def on_ready():
-	global client, soundsDir, lists, mysqlConnect, serverPunish, nsohandler, nsoTokens, head, url, dev
+	global client, soundsDir, lists, mysqlConnect, serverPunish, nsohandler, nsoTokens, head, url, dev, owners
 
 	print('Logged in as,', client.user.name, client.user.id)
 
 	game = discord.Game("Use !help for directions!")
 	
+	#Get owners from Discord team api
+	theapp = await client.application_info()
+	members = theapp.team.members
+	owners = []
+	for i in members:
+		owners.append(i.id)
+
 	await client.change_presence(status=discord.Status.online, activity=game)
 	for server in client.guilds:
 		serverVoices[server.id] = vserver.voiceServer(client, mysqlConnect, server.id, soundsDir)
@@ -182,14 +188,15 @@ test = 0
 async def on_message(message):
 	global serverVoices, serverAdmins, soundsDir, serverPunish, nsohandler, owners
 
-	if message.author.bot:
+	# Filter out bots and system messages
+	if message.author.bot or message.type != discord.MessageType.default:
 		return
 
 	command = message.content.lower()
 	channel = message.channel
 
 	if message.guild == None:
-		if str(message.author.id) in owners:
+		if message.author.id in owners:
 			if '!servers' in message.content:
 				numServers = str(len(client.guilds))
 				serverNames = ""

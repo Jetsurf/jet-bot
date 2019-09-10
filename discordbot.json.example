@@ -5,9 +5,5 @@
 	"mysql_host"	: "",
 	"mysql_user"	: "",
 	"mysql_pw"	: "",
-	"mysql_db"	: "",
-		"owner_ids"	: [
-				"",
-				""
-			  ]
+	"mysql_db"	: ""
 }
