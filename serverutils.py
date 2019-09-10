@@ -9,6 +9,8 @@ class serverUtils():
 		self.client = client
 		self.mysqlinfo = mysqlinfo
 		self.server = id
+		self.valid_commands = [ "join", "play", "playrandom", "currentsong", "queue", "stop", "skip", "volume", "sounds", "currentmaps", "nextmaps",
+							 "currentsr", "nextsr", "splatnetgear", "leavevoice", "storedm", "rank", "stats", "srstats", "order", "github", "help" ]
 
 	def connect(self):
 		theDB = mysql.connector.connect(host=self.mysqlinfo.host, user=self.mysqlinfo.user, password=self.mysqlinfo.pw, database=self.mysqlinfo.db)
@@ -37,10 +39,7 @@ class serverUtils():
 		print("TBD")
 
 	def increment_cmd(self, cmd):
-		valid_commands = [ "join", "play", "playrandom", "currentsong", "queue", "stop", "skip", "volume", "sounds", "currentmaps", "nextmaps",
-							 "currentsr", "nextsr", "splatnetgear", "leavevoice", "storedm", "rank", "stats", "srstats", "order", "github", "help" ]
-
-		if cmd not in valid_commands:
+		if cmd not in self.valid_commands:
 			return
 
 		theDB, cursor = self.connect()
