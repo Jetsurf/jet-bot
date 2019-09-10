@@ -31,6 +31,24 @@ class serverUtils():
 		else:
 			return False
 
+	async def report_cmd_totals(self, message):
+		embed = discord.Embed(colour=0x00FFF3)
+		embed.title = "Command Totals"
+		print("TBD")
+
+	def increment_cmd(self, cmd):
+		valid_commands = [ "join", "play", "playrandom", "currentsong", "queue", "stop", "skip", "volume", "sounds", "currentmaps", "nextmaps",
+							 "currentsr", "nextsr", "splatnetgear", "leavevoice", "storedm", "rank", "stats", "srstats", "order", "github", "help" ]
+
+		if cmd not in valid_commands:
+			return
+
+		theDB, cursor = self.connect()
+		stmt = "INSERT INTO commandcounts (serverid, command, count) VALUES (%s, %s, 1) ON DUPLICATE KEY UPDATE count = count + 1;"
+		cursor.execute(stmt, (self.server, cmd))
+		theDB.commit()
+		self.disconnect(theDB, cursor)
+
 	async def addDM(self, message):
 		theDB, cursor = self.connect()
 		if self.checkDM(message.author.id):

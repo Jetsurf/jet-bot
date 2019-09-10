@@ -226,6 +226,7 @@ async def on_message(message):
 
 	cmd = parsed['cmd']
 	args = parsed['args']
+	serverUtils[theServer].increment_cmd(cmd)
 
 	if cmd == "admin":
 		if message.author in serverAdmins[theServer]:
