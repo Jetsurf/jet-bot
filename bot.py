@@ -8,7 +8,7 @@ import json
 import time
 import vserver
 import mysqlinfo
-import punish
+import serverutils
 import nsohandler
 import urllib
 import urllib.request
@@ -26,7 +26,7 @@ nsoHandler = None
 nsoTokens = None
 serverVoices = {}
 serverAdmins = {}
-serverPunish = {}
+serverUtils = {}
 token = ''
 owners = None
 log = ''
@@ -55,7 +55,6 @@ def loadConfig():
 		except:
 			print('No ID/Token for discordbots.org, skipping')
 
-		owners = configData['owner_ids']
 		mysqlConnect = mysqlinfo.mysqlInfo(configData['mysql_host'], configData['mysql_user'], configData['mysql_pw'], configData['mysql_db'])
 
 		commandParser.setMysqlInfo(mysqlConnect)
@@ -113,16 +112,23 @@ async def on_guild_role_update(before, after):
 
 @client.event
 async def on_ready():
-	global client, soundsDir, lists, mysqlConnect, serverPunish, nsohandler, nsoTokens, head, url, dev
+	global client, soundsDir, lists, mysqlConnect, serverUtils, nsohandler, nsoTokens, head, url, dev, owners
 
 	print('Logged in as,', client.user.name, client.user.id)
 
 	game = discord.Game("Use !help for directions!")
 	
+	#Get owners from Discord team api
+	theapp = await client.application_info()
+	members = theapp.team.members
+	owners = []
+	for i in members:
+		owners.append(i.id)
+
 	await client.change_presence(status=discord.Status.online, activity=game)
 	for server in client.guilds:
 		serverVoices[server.id] = vserver.voiceServer(client, mysqlConnect, server.id, soundsDir)
-		serverPunish[server.id] = punish.Punish(client, server.id, mysqlConnect)
+		serverUtils[server.id] = serverutils.serverUtils(client, server.id, mysqlConnect)
 
 	if dev == 0:
 		print('I am in ' + str(len(client.guilds)) + ' servers, posting to discordbots.org')
@@ -140,19 +146,19 @@ async def on_ready():
 	
 @client.event
 async def on_member_remove(member):
-	global serverAdmins, serverPunish
+	global serverAdmins, serverUtils
 
 	theServer = member.guild.id
 	for mem in serverAdmins[theServer]:
-		if mem.id != client.user.id and serverPunish[theServer].checkDM(mem.id):
+		if mem.id != client.user.id and serverUtils[theServer].checkDM(mem.id):
 			await mem.send(member.name + " left " + member.guild.name)
 			
 @client.event
 async def on_guild_join(server):
-	global client, soundsDir, serverVoices, serverPunish, head, url, dev
+	global client, soundsDir, serverVoices, serverUtils, head, url, dev
 	print("I joined server: " + server.name)
 	serverVoices[server.id] = vserver.voiceServer(client, mysqlConnect, server.id, soundsDir)
-	serverPunish[server.id] = punish.Punish(client, server.id, mysqlConnect)
+	serverUtils[server.id] = serverutils.serverUtils(client, server.id, mysqlConnect)
 
 	if dev == 0:
 		print('I am now in ' + str(len(client.guilds)) + ' servers, posting to discordbots.org')
@@ -164,10 +170,10 @@ async def on_guild_join(server):
 
 @client.event
 async def on_guild_remove(server):
-	global serverVoices, serverPunish, head, url, dev
+	global serverVoices, serverUtils, head, url, dev
 	print("I left server: " + server.name)
 	serverVoices[server.id] = None
-	serverPunish[server.id] = None
+	serverUtils[server.id] = None
 
 	if dev == 0:
 		print('I am now in ' + str(len(client.guilds)) + ' servers, posting to discordbots.org')
@@ -180,19 +186,20 @@ async def on_guild_remove(server):
 test = 0
 @client.event
 async def on_message(message):
-	global serverVoices, serverAdmins, soundsDir, serverPunish, nsohandler, owners
+	global serverVoices, serverAdmins, soundsDir, serverUtils, nsohandler, owners
 
 	# Filter out bots and system messages
-	if message.author.bot:
-		return
-	elif message.type != discord.MessageType.default:
+	if message.author.bot or message.type != discord.MessageType.default:
 		return
 
 	command = message.content.lower()
 	channel = message.channel
 
+	if ('pizza' in command and 'pineapple' in command) or ('\U0001F355' in message.content and '\U0001F34D' in message.content):
+		await channel.send('Don\'t ever think pineapple and pizza go together ' + message.author.name + '!!!')
+
 	if message.guild == None:
-		if str(message.author.id) in owners:
+		if message.author.id in owners:
 			if '!servers' in message.content:
 				numServers = str(len(client.guilds))
 				serverNames = ""
@@ -216,16 +223,13 @@ async def on_message(message):
 	else:
 		theServer = message.guild.id
 
-	if serverPunish[theServer].checkSquelch(message.author):
-		await message.delete()
-		return
-
 	parsed = commandParser.parse(theServer, message.content)
 	if parsed == None:
 		return
 
 	cmd = parsed['cmd']
 	args = parsed['args']
+	serverUtils[theServer].increment_cmd(cmd)
 
 	if cmd == "admin":
 		if message.author in serverAdmins[theServer]:
@@ -238,22 +242,12 @@ async def on_message(message):
 				await serverVoices[theServer].playWTF(message)
 			elif subcommand == 'tts':
 				await channel.send(args[1:].join(" "), tts=True)
-			elif subcommand == 'squelch':
-				subcommand2 = args[1]
-				if subcommand2 == 'current':
-					await serverPunish[theServer].getSquelches(message)
-				elif subcommand2 == 'log':
-					await serverPunish[theServer].getSquelches(message, all=1)
-				else:
-					await serverPunish[theServer].doSquelch(message)
-			elif subcommand == 'unsquelch':
-				await serverPunish[theServer].removeSquelch(message)
 			elif subcommand == 'dm':
 				subcommand2 = args[1].lower()
 				if subcommand2 == 'add':
-					await serverPunish[theServer].addDM(message)
+					await serverUtils[theServer].addDM(message)
 				elif subcommand2 == 'remove':
-					await serverPunish[theServer].removeDM(message)
+					await serverUtils[theServer].removeDM(message)
 			elif subcommand == 'prefix':
 				if (len(args) == 1):
 					await channel.send("Current command prefix is: " + commandParser.getPrefix(theServer))
@@ -308,8 +302,6 @@ async def on_message(message):
 		await nsohandler.srParser(message, 1)
 	elif (cmd == 'us') or (cmd == 'eu') or (cmd == 'jp'):
 		await setCRole(message)
-	elif ('pizza' in command and 'pineapple' in command) or ('\U0001F355' in message.content and '\U0001F34D' in message.content):
-		await channel.send('Don\'t ever think pineapple and pizza go together ' + message.author.name + '!!!')
 	elif serverVoices[theServer].vclient is not None:
 		if cmd == 'currentsong':
 			if serverVoices[theServer].source is not None:
