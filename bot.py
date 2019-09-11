@@ -158,7 +158,7 @@ async def on_guild_join(server):
 	global client, soundsDir, serverVoices, serverUtils, head, url, dev
 	print("I joined server: " + server.name)
 	serverVoices[server.id] = vserver.voiceServer(client, mysqlConnect, server.id, soundsDir)
-	serverUtils[server.id] = punish.Punish(client, server.id, mysqlConnect)
+	serverUtils[server.id] = serverutils.serverUtils(client, server.id, mysqlConnect)
 
 	if dev == 0:
 		print('I am now in ' + str(len(client.guilds)) + ' servers, posting to discordbots.org')
