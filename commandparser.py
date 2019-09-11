@@ -47,6 +47,10 @@ class CommandParser():
 		return '!'
 
 	def parse(self, serverid, message):
+		# Ignore zero-length messages. This can happen if there is no text but attached pictures.
+		if len(message) == 0:
+			return None
+
 		prefix = self.getPrefix(serverid)
 
 		# Validate command prefix or mention
