@@ -5,18 +5,23 @@ maps/Splatnet to help discord servers to access this information
 quickly.
 
 ## Installation
+
+If you don't care about self-hosting the bot, you can use the following link:
+
+[![Discord Bots](https://discordbots.org/api/widget/542488723128844312.svg)](https://discordbots.org/bot/542488723128844312)
+
+For self-hosting:
+
+Requires a bot token from the Discord Developer Portal
+
 Requires https://github.com/Rapptz/discord.py discord python library to 
-function (Version >= 1.0 needed).
+function (Version >= 1.3 needed) as well as all dependencies for it.
 
 Requires youtube-dl and ffmpeg for online video/music playback.
 
 Soundclips are to be placed in a directory defined by discordbot.json.
 
-Likely more dependencies needed to be listed later.
-
-Alternatively, use the following link to join the bot to your server!
-
-[![Discord Bots](https://discordbots.org/api/widget/542488723128844312.svg)](https://discordbots.org/bot/542488723128844312)
+Requires a mysql backend, configured in discordbot.json.
 
 ## Configuration
 An example configuration file is given at discordbot.json.example.
