@@ -222,9 +222,11 @@ async def on_message(message):
 	else:
 		theServer = message.guild.id
 
-	if "!prefix" in command:
+	if '!prefix' in command:
 		prefix = commandParser.getPrefix(theServer)
 		await message.channel.send("The command prefix for this server is: " + prefix)
+	elif '!help' in message.content and commandParser.getPrefix(theServer) not in '!':
+		await serverUtils.print_help(message, commands, commandParser.getPrefix(theServer))
 
 	parsed = commandParser.parse(theServer, message.content)
 	if parsed == None:
