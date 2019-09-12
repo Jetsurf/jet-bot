@@ -26,7 +26,7 @@ nsoHandler = None
 nsoTokens = None
 serverVoices = {}
 serverAdmins = {}
-serverUtils = {}
+serverUtils = None
 token = ''
 owners = None
 log = ''
@@ -128,7 +128,6 @@ async def on_ready():
 	await client.change_presence(status=discord.Status.online, activity=game)
 	for server in client.guilds:
 		serverVoices[server.id] = vserver.voiceServer(client, mysqlConnect, server.id, soundsDir)
-		serverUtils[server.id] = serverutils.serverUtils(client, server.id, mysqlConnect)
 
 	if dev == 0:
 		print('I am in ' + str(len(client.guilds)) + ' servers, posting to discordbots.org')
@@ -140,6 +139,7 @@ async def on_ready():
 	print('------')
 	sys.stdout.flush()
 	commandParser.setUserid(client.user.id)
+	serverUtils = serverutils.serverUtils(mysqlConnect)
 	nsoTokens = nsotoken.Nsotoken(client, mysqlConnect)
 	nsohandler = nsohandler.nsoHandler(client, mysqlConnect, nsoTokens)
 	scanAdmins(startup=1)
@@ -158,7 +158,6 @@ async def on_guild_join(server):
 	global client, soundsDir, serverVoices, serverUtils, head, url, dev
 	print("I joined server: " + server.name)
 	serverVoices[server.id] = vserver.voiceServer(client, mysqlConnect, server.id, soundsDir)
-	serverUtils[server.id] = serverutils.serverUtils(client, server.id, mysqlConnect)
 
 	if dev == 0:
 		print('I am now in ' + str(len(client.guilds)) + ' servers, posting to discordbots.org')
@@ -173,7 +172,6 @@ async def on_guild_remove(server):
 	global serverVoices, serverUtils, head, url, dev
 	print("I left server: " + server.name)
 	serverVoices[server.id] = None
-	serverUtils[server.id] = None
 
 	if dev == 0:
 		print('I am now in ' + str(len(client.guilds)) + ' servers, posting to discordbots.org')
@@ -186,7 +184,7 @@ async def on_guild_remove(server):
 test = 0
 @client.event
 async def on_message(message):
-	global serverVoices, serverAdmins, soundsDir, serverUtils, nsohandler, owners
+	global serverVoices, serverAdmins, soundsDir, serverUtils, nsohandler, owners, commands
 
 	# Filter out bots and system messages
 	if message.author.bot or message.type != discord.MessageType.default:
@@ -209,10 +207,11 @@ async def on_message(message):
 			elif '!restart' in message.content:
 				await channel.send("Going to restart!")
 				await client.close()
+				sys.stderr.flush()
 				sys.stdout.flush()
 				sys.exit(0)
-		if message.author.bot:
-			return
+			elif '!cmdreport' in message.content:
+				await serverUtils.report_cmd_totals(message)
 		if '!token' in command:
 			await nsoTokens.login(message)
 		elif '!deletetoken' in command:
@@ -223,13 +222,23 @@ async def on_message(message):
 	else:
 		theServer = message.guild.id
 
+	if '!prefix' in command:
+		await message.channel.send("The command prefix for this server is: " + commandParser.getPrefix(theServer))
+	elif '!help' in message.content and commandParser.getPrefix(theServer) not in '!':
+		await serverUtils.print_help(message, commands, commandParser.getPrefix(theServer))
+
 	parsed = commandParser.parse(theServer, message.content)
 	if parsed == None:
 		return
 
 	cmd = parsed['cmd']
 	args = parsed['args']
-	serverUtils[theServer].increment_cmd(cmd)
+
+	#Don't just fail if command count can't be incremented
+	try:
+		serverUtils.increment_cmd(message, cmd)
+	except:
+		print("Failed to increment command... issue with MySQL?")
 
 	if cmd == "admin":
 		if message.author in serverAdmins[theServer]:
@@ -245,9 +254,9 @@ async def on_message(message):
 			elif subcommand == 'dm':
 				subcommand2 = args[1].lower()
 				if subcommand2 == 'add':
-					await serverUtils[theServer].addDM(message)
+					await serverUtils.addDM(message)
 				elif subcommand2 == 'remove':
-					await serverUtils[theServer].removeDM(message)
+					await serverUtils.removeDM(message)
 			elif subcommand == 'prefix':
 				if (len(args) == 1):
 					await channel.send("Current command prefix is: " + commandParser.getPrefix(theServer))
@@ -271,14 +280,10 @@ async def on_message(message):
 		await nsohandler.addStoreDM(message)
 	elif cmd == 'github':
 		await channel.send('Here is my github page! : https://github.com/Jetsurf/jet-bot')
+	elif cmd == 'support':
+		await channel.send('Here is a link to my support server: https://discord.gg/TcZgtP5')
 	elif cmd == 'commands' or cmd == 'help':
-		embed = discord.Embed(colour=0x2AE5B8)
-		embed.title = "Here is how to control me!"
-		with open(commands, 'r') as f:
-			for line in f:
-				embed.add_field(name=line.split(":")[0], value=line.split(":")[1], inline=False)
-			embed.set_footer(text="If you want something added or want to report a bug/error, tell jetsurf#8514...")
-		await channel.send(embed=embed)
+		await serverUtils.print_help(message, commands, commandParser.getPrefix(theServer))
 	elif cmd == 'sounds':
 		theSounds = subprocess.check_output(["ls", soundsDir])
 		theSounds = theSounds.decode("utf-8")
