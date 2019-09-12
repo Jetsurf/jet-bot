@@ -32,6 +32,9 @@ You can also configure some settings at runtime with [admin commands](#admin-com
 The default command prefix is `!`. You can also send commands without the prefix by @mentioning the bot:
 ```@Splatnet/Music Bot nextmaps```
 
+You can always run `!help` to get a list of the commands regardless of the prefix. Also, you can run
+`!prefix`. 
+
 The following sections list the different commands that are available.
 
 ### Admin commands
@@ -80,12 +83,6 @@ The following commands require you to DM the bot with !token and follow the inst
  - `!srstats` : Shows various stats from Salmon Run
  - `!order ID` : The !splatnetgear command gives you 'ID to buy' run this with that ID to
    place an order in the splatnet store
-
-The following command requires 3 roles to be in place. Americas - Europe - 
-Japan/Asia (will work fine without them)
-
- - `!us` OR `!eu` OR `!jp` : Show what region you hail from (Americas, Europe,
-   and Japan/Asia respectfully)
 
  ### Bot Info Commands
  
