@@ -5,18 +5,23 @@ maps/Splatnet to help discord servers to access this information
 quickly.
 
 ## Installation
+
+If you don't care about self-hosting the bot, you can use the following link:
+
+[![Discord Bots](https://discordbots.org/api/widget/542488723128844312.svg)](https://discordbots.org/bot/542488723128844312)
+
+For self-hosting:
+
+Requires a bot token from the Discord Developer Portal
+
 Requires https://github.com/Rapptz/discord.py discord python library to 
-function (Version >= 1.0 needed).
+function (Version >= 1.3 needed) as well as all dependencies for it.
 
 Requires youtube-dl and ffmpeg for online video/music playback.
 
 Soundclips are to be placed in a directory defined by discordbot.json.
 
-Likely more dependencies needed to be listed later.
-
-Alternatively, use the following link to join the bot to your server!
-
-[![Discord Bots](https://discordbots.org/api/widget/542488723128844312.svg)](https://discordbots.org/bot/542488723128844312)
+Requires a mysql backend, configured in discordbot.json.
 
 ## Configuration
 An example configuration file is given at discordbot.json.example.
@@ -31,6 +36,9 @@ You can also configure some settings at runtime with [admin commands](#admin-com
 
 The default command prefix is `!`. You can also send commands without the prefix by @mentioning the bot:
 ```@Splatnet/Music Bot nextmaps```
+
+You can always run `!help` to get a list of the commands regardless of the prefix. Also, you can run
+`!prefix`. 
 
 The following sections list the different commands that are available.
 
@@ -80,12 +88,6 @@ The following commands require you to DM the bot with !token and follow the inst
  - `!srstats` : Shows various stats from Salmon Run
  - `!order ID` : The !splatnetgear command gives you 'ID to buy' run this with that ID to
    place an order in the splatnet store
-
-The following command requires 3 roles to be in place. Americas - Europe - 
-Japan/Asia (will work fine without them)
-
- - `!us` OR `!eu` OR `!jp` : Show what region you hail from (Americas, Europe,
-   and Japan/Asia respectfully)
 
  ### Bot Info Commands
  
