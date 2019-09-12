@@ -29,7 +29,6 @@ serverAdmins = {}
 serverUtils = None
 token = ''
 owners = None
-log = ''
 dev = 1
 soundsDir = ''
 commands = ''
@@ -38,7 +37,7 @@ head = {}
 url = ''
 
 def loadConfig():
-	global token, adminIDs, soundsDir, commands, mysqlConnect, dev, head, url
+	global token, soundsDir, commands, mysqlConnect, dev, head, url
 	try:
 		with open('./discordbot.json', 'r') as json_config:
 			configData = json.load(json_config)
@@ -89,7 +88,6 @@ def scanAdmins(startup=0, id=None):
 			for mem in server.members:
 				if mem.guild_permissions.administrator and mem not in serverAdmins[server.id]:
 					serverAdmins[server.id].append(mem)
-
 	else:
 		serverAdmins[id] = []
 		for mem in id.members:
@@ -115,17 +113,12 @@ async def on_ready():
 
 	print('Logged in as,', client.user.name, client.user.id)
 
-	game = discord.Game("Use !help for directions!")
-	
 	#Get owners from Discord team api
 	print("Loading owners...")
 	theapp = await client.application_info()
-	members = theapp.team.members
-	owners = []
-	for i in members:
-		owners.append(i.id)
+	owners = [x.id for x in theapp.team.members]
 
-	await client.change_presence(status=discord.Status.online, activity=game)
+	await client.change_presence(status=discord.Status.online, activity=discord.Game("Use !help for directions!"))
 
 	if dev == 0:
 		print('I am in ' + str(len(client.guilds)) + ' servers, posting to discordbots.org')
@@ -151,9 +144,8 @@ async def on_ready():
 async def on_member_remove(member):
 	global serverAdmins, serverUtils
 
-	theServer = member.guild.id
-	for mem in serverAdmins[theServer]:
-		if mem.id != client.user.id and serverUtils[theServer].checkDM(mem.id):
+	for mem in serverAdmins[member.guild.id]:
+		if mem.id != client.user.id and serverUtils[member.guild.id].checkDM(mem.id):
 			await mem.send(member.name + " left " + member.guild.name)
 			
 @client.event
