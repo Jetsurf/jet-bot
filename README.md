@@ -90,6 +90,7 @@ Japan/Asia (will work fine without them)
  ### Bot Info Commands
  
  - `!github` : Displays my github link
+ - `!support` : Posts an invite link to my discord support guild
 
 # License
 

@@ -211,7 +211,7 @@ async def on_message(message):
 				sys.stdout.flush()
 				sys.exit(0)
 			elif '!cmdreport' in message.content:
-				serverUtils.report_cmd_totals(message)
+				await serverUtils.report_cmd_totals(message)
 		if '!token' in command:
 			await nsoTokens.login(message)
 		elif '!deletetoken' in command:
@@ -223,8 +223,7 @@ async def on_message(message):
 		theServer = message.guild.id
 
 	if '!prefix' in command:
-		prefix = commandParser.getPrefix(theServer)
-		await message.channel.send("The command prefix for this server is: " + prefix)
+		await message.channel.send("The command prefix for this server is: " + commandParser.getPrefix(theServer))
 	elif '!help' in message.content and commandParser.getPrefix(theServer) not in '!':
 		await serverUtils.print_help(message, commands, commandParser.getPrefix(theServer))
 
@@ -281,6 +280,8 @@ async def on_message(message):
 		await nsohandler.addStoreDM(message)
 	elif cmd == 'github':
 		await channel.send('Here is my github page! : https://github.com/Jetsurf/jet-bot')
+	elif cmd == 'support':
+		await channel.send('Here is a link to my support server: https://discord.gg/TcZgtP5')
 	elif cmd == 'commands' or cmd == 'help':
 		await serverUtils.print_help(message, commands, commandParser.getPrefix(theServer))
 	elif cmd == 'sounds':

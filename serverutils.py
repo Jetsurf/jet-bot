@@ -35,7 +35,13 @@ class serverUtils():
 	async def report_cmd_totals(self, message):
 		embed = discord.Embed(colour=0x00FFF3)
 		embed.title = "Command Totals"
-		print("TBD")
+		
+		for cmd in self.valid_commands:
+			stmt = "SELECT IFNULL(SUM(count), 0) FROM commandcounts WHERE (command = %s)"
+			self.cursor.execute(stmt, (cmd,))
+			count = self.cursor.fetchone()
+			embed.add_field(name=cmd, value=str(count[0].decode()), inline=True)
+		await message.channel.send(embed=embed)
 
 	def increment_cmd(self, message, cmd):
 		if cmd not in self.valid_commands:
