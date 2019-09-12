@@ -38,7 +38,7 @@ head = {}
 url = ''
 
 def loadConfig():
-	global token, adminIDs, soundsDir, lists, commands, mysqlConnect, dev, head, url, owners
+	global token, adminIDs, soundsDir, commands, mysqlConnect, dev, head, url
 	try:
 		with open('./discordbot.json', 'r') as json_config:
 			configData = json.load(json_config)
@@ -56,8 +56,6 @@ def loadConfig():
 			print('No ID/Token for discordbots.org, skipping')
 
 		mysqlConnect = mysqlinfo.mysqlInfo(configData['mysql_host'], configData['mysql_user'], configData['mysql_pw'], configData['mysql_db'])
-
-		commandParser.setMysqlInfo(mysqlConnect)
 
 		print('Config Loaded')
 	except Exception as e:
@@ -112,13 +110,15 @@ async def on_guild_role_update(before, after):
 
 @client.event
 async def on_ready():
-	global client, soundsDir, lists, mysqlConnect, serverUtils, nsohandler, nsoTokens, head, url, dev, owners
+	global client, soundsDir, mysqlConnect, serverUtils
+	global nsohandler, nsoTokens, head, url, dev, owners, commandParser
 
 	print('Logged in as,', client.user.name, client.user.id)
 
 	game = discord.Game("Use !help for directions!")
 	
 	#Get owners from Discord team api
+	print("Loading owners...")
 	theapp = await client.application_info()
 	members = theapp.team.members
 	owners = []
@@ -126,8 +126,6 @@ async def on_ready():
 		owners.append(i.id)
 
 	await client.change_presence(status=discord.Status.online, activity=game)
-	for server in client.guilds:
-		serverVoices[server.id] = vserver.voiceServer(client, mysqlConnect, server.id, soundsDir)
 
 	if dev == 0:
 		print('I am in ' + str(len(client.guilds)) + ' servers, posting to discordbots.org')
@@ -136,13 +134,18 @@ async def on_ready():
 	else:	
 		print('I am in ' + str(len(client.guilds)) + ' servers')
 
-	print('------')
-	sys.stdout.flush()
+	print("Doing Startup...")
+	for server in client.guilds:
+		serverVoices[server.id] = vserver.voiceServer(client, mysqlConnect, server.id, soundsDir)
+
+	commandParser.setMysqlInfo(mysqlConnect)
 	commandParser.setUserid(client.user.id)
 	serverUtils = serverutils.serverUtils(mysqlConnect)
 	nsoTokens = nsotoken.Nsotoken(client, mysqlConnect)
 	nsohandler = nsohandler.nsoHandler(client, mysqlConnect, nsoTokens)
 	scanAdmins(startup=1)
+	print('Done\n------')
+	sys.stdout.flush()
 	
 @client.event
 async def on_member_remove(member):
@@ -155,7 +158,7 @@ async def on_member_remove(member):
 			
 @client.event
 async def on_guild_join(server):
-	global client, soundsDir, serverVoices, serverUtils, head, url, dev
+	global client, soundsDir, serverVoices, head, url, dev
 	print("I joined server: " + server.name)
 	serverVoices[server.id] = vserver.voiceServer(client, mysqlConnect, server.id, soundsDir)
 
@@ -169,7 +172,7 @@ async def on_guild_join(server):
 
 @client.event
 async def on_guild_remove(server):
-	global serverVoices, serverUtils, head, url, dev
+	global serverVoices, head, url, dev
 	print("I left server: " + server.name)
 	serverVoices[server.id] = None
 
@@ -184,7 +187,8 @@ async def on_guild_remove(server):
 test = 0
 @client.event
 async def on_message(message):
-	global serverVoices, serverAdmins, soundsDir, serverUtils, nsohandler, owners, commands
+	global serverVoices, serverAdmins, soundsDir, serverUtils
+	global nsohandler, owners, commands, commandParser
 
 	# Filter out bots and system messages
 	if message.author.bot or message.type != discord.MessageType.default:
@@ -192,9 +196,6 @@ async def on_message(message):
 
 	command = message.content.lower()
 	channel = message.channel
-
-	if ('pizza' in command and 'pineapple' in command) or ('\U0001F355' in message.content and '\U0001F34D' in message.content):
-		await channel.send('Don\'t ever think pineapple and pizza go together ' + message.author.name + '!!!')
 
 	if message.guild == None:
 		if message.author.id in owners:
@@ -226,6 +227,8 @@ async def on_message(message):
 		await message.channel.send("The command prefix for this server is: " + commandParser.getPrefix(theServer))
 	elif '!help' in message.content and commandParser.getPrefix(theServer) not in '!':
 		await serverUtils.print_help(message, commands, commandParser.getPrefix(theServer))
+	elif ('pizza' in command and 'pineapple' in command) or ('\U0001F355' in message.content and '\U0001F34D' in message.content):
+		await channel.send('Don\'t ever think pineapple and pizza go together ' + message.author.name + '!!!')		
 
 	parsed = commandParser.parse(theServer, message.content)
 	if parsed == None:
