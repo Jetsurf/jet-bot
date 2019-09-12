@@ -22,6 +22,16 @@ class serverUtils():
 		else:
 			return False
 
+	async def print_help(self, message, commands, prefix):
+		embed = discord.Embed(colour=0x2AE5B8)
+		embed.title = "Here is how to control me!"
+		with open(commands, 'r') as f:
+			for line in f:
+				line = line.replace('!', prefix)
+				embed.add_field(name=line.split(":")[0], value=line.split(":")[1], inline=False)
+			embed.set_footer(text="If you want something added or want to report a bug/error, tell jetsurf#8514...")
+		await message.channel.send(embed=embed)
+
 	async def report_cmd_totals(self, message):
 		embed = discord.Embed(colour=0x00FFF3)
 		embed.title = "Command Totals"

@@ -184,7 +184,7 @@ async def on_guild_remove(server):
 test = 0
 @client.event
 async def on_message(message):
-	global serverVoices, serverAdmins, soundsDir, serverUtils, nsohandler, owners
+	global serverVoices, serverAdmins, soundsDir, serverUtils, nsohandler, owners, commands
 
 	# Filter out bots and system messages
 	if message.author.bot or message.type != discord.MessageType.default:
@@ -280,13 +280,7 @@ async def on_message(message):
 	elif cmd == 'github':
 		await channel.send('Here is my github page! : https://github.com/Jetsurf/jet-bot')
 	elif cmd == 'commands' or cmd == 'help':
-		embed = discord.Embed(colour=0x2AE5B8)
-		embed.title = "Here is how to control me!"
-		with open(commands, 'r') as f:
-			for line in f:
-				embed.add_field(name=line.split(":")[0], value=line.split(":")[1], inline=False)
-			embed.set_footer(text="If you want something added or want to report a bug/error, tell jetsurf#8514...")
-		await channel.send(embed=embed)
+		await serverUtils.print_help(message, commands, commandParser.getPrefix(theServer))
 	elif cmd == 'sounds':
 		theSounds = subprocess.check_output(["ls", soundsDir])
 		theSounds = theSounds.decode("utf-8")
