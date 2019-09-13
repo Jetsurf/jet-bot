@@ -24,12 +24,16 @@ class SplatMode(SplatMatchItem):
 	pass
 
 class SplatMap(SplatMatchItem):
-	def __init__(self, name, shortname, abbrevs):
+	def __init__(self, name, shortname, abbrevs, id):
 		self._shortname = shortname
+		self._id	= id
 		super().__init__(name, abbrevs)
 
 	def shortname(self):
 		return self._shortname
+
+	def id(self):
+		return self._id
 
 class SplatSubweapon(SplatMatchItem):
 	pass
@@ -108,29 +112,29 @@ class SplatInfo():
 
 	def initMaps(self):
 		self.maps = [
-			SplatMap("The Reef",              "Reef", ["r", "tr"]),
-			SplatMap("Musselforge Fitness",   "Musselforge", ["mf"]),
-			SplatMap("Starfish Mainstage",    "Starfish", ["sfm", "sm"]),
-			SplatMap("Humpback Pump Track",   "Humpback", ["hb", "hbpt", "hp"]),
-			SplatMap("Inkblot Art Academy",   "Inkblot", ["ia", "iac"]),
-			SplatMap("Sturgeon Shipyard",     "Sturgeon", ["ss"]),
-			SplatMap("Moray Towers",          "Moray", ["mt"]),
-			SplatMap("Port Mackerel",         "Port Mac", ["pm"]),
-			SplatMap("Manta Maria",           "Manta", ["mam"]),  # "mm" conflicts with Mako Mart
-			SplatMap("Kelp Dome",             "Kelp", ["kd"]),
-			SplatMap("Snapper Canal",         "Snapper", ["sc"]),
-			SplatMap("Blackbelly Skatepark",  "Blackbelly", ["bb", "bbsp", "bsp", "bs"]),
-			SplatMap("MakoMart",              "Mako", ["mkm"]),  # "mm" conflicts with Manta Maria
-			SplatMap("Walleye Warehouse",     "Walleye", ["wwh"]),  # "ww" conflicts with Wahoo World
-			SplatMap("Shellendorf Institute", "Shellendorf", ["si"]),
-			SplatMap("Arowana Mall",          "Arowana", ["am"]),
-			SplatMap("Goby Arena",            "Goby", ["ga"]),
-			SplatMap("Piranha Pit",           "Piranha", ["pp"]),
-			SplatMap("Camp Triggerfish",      "Triggerfish", ["ct", "ctf"]),
-			SplatMap("Wahoo World",           "Wahoo", ["whw"]),  # "ww" conflicts with Walleye Warehouse
-			SplatMap("New Albacore Hotel",    "Albacore", ["nah", "ah"]),
-			SplatMap("Ancho-V Games",         "Ancho-V", ["av", "avg", "ag"]),
-			SplatMap("Skipper Pavilion",      "Skipper", ["sp"])
+			SplatMap("The Reef",              "Reef",        ["r", "tr"],          0),
+			SplatMap("Musselforge Fitness",   "Musselforge", ["mf"],               1),
+			SplatMap("Starfish Mainstage",    "Starfish",    ["sfm", "sm"],        2),
+			SplatMap("Humpback Pump Track",   "Humpback",    ["hb", "hbpt", "hp"], 5),
+			SplatMap("Inkblot Art Academy",   "Inkblot",     ["ia", "iac"],        4),
+			SplatMap("Sturgeon Shipyard",     "Sturgeon",    ["ss"],               3),
+			SplatMap("Moray Towers",          "Moray",       ["mt"],               8),
+			SplatMap("Port Mackerel",         "Port Mac",    ["pm"],               7),
+			SplatMap("Manta Maria",           "Manta",       ["mam"],              6),  # "mm" conflicts with Mako Mart
+			SplatMap("Kelp Dome",             "Kelp",        ["kd"],               10),
+			SplatMap("Snapper Canal",         "Snapper",     ["sc"],               9),
+			SplatMap("Blackbelly Skatepark",  "Blackbelly",  ["bb", "bbsp", "bsp", "bs"], 11),
+			SplatMap("MakoMart",              "Mako",        ["mkm"],              13),  # "mm" conflicts with Manta Maria
+			SplatMap("Walleye Warehouse",     "Walleye",     ["wwh"],              14),  # "ww" conflicts with Wahoo World
+			SplatMap("Shellendorf Institute", "Shellendorf", ["si"],               12),
+			SplatMap("Arowana Mall",          "Arowana",     ["am"],               15),
+			SplatMap("Goby Arena",            "Goby",        ["ga"],               18),
+			SplatMap("Piranha Pit",           "Piranha",     ["pp"],               17),
+			SplatMap("Camp Triggerfish",      "Triggerfish", ["ct", "ctf"],        16),
+			SplatMap("Wahoo World",           "Wahoo",       ["whw"],              20),  # "ww" conflicts with Walleye Warehouse
+			SplatMap("New Albacore Hotel",    "Albacore",    ["nah", "ah"],        19),
+			SplatMap("Ancho-V Games",         "Ancho-V",     ["av", "avg", "ag"],  21),
+			SplatMap("Skipper Pavilion",      "Skipper",     ["sp"],               22)
 		]
 
 	def initSubweapons(self):
