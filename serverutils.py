@@ -5,75 +5,74 @@ import asyncio
 import mysqlinfo
 
 class serverUtils():
-	def __init__(self, client, id, mysqlinfo):
-		self.client = client
+	def __init__(self, mysqlinfo):
 		self.mysqlinfo = mysqlinfo
-		self.server = id
 		self.valid_commands = [ "join", "play", "playrandom", "currentsong", "queue", "stop", "skip", "volume", "sounds", "currentmaps", "nextmaps",
 							 "currentsr", "nextsr", "splatnetgear", "leavevoice", "storedm", "rank", "stats", "srstats", "order", "github", "help" ]
+		self.theDB = mysql.connector.connect(host=self.mysqlinfo.host, user=self.mysqlinfo.user, password=self.mysqlinfo.pw, database=self.mysqlinfo.db)
+		self.cursor = self.theDB.cursor(cursor_class=MySQLCursorPrepared)
 
-	def connect(self):
-		theDB = mysql.connector.connect(host=self.mysqlinfo.host, user=self.mysqlinfo.user, password=self.mysqlinfo.pw, database=self.mysqlinfo.db)
-		cursor = theDB.cursor(cursor_class=MySQLCursorPrepared)
-		return theDB, cursor
-
-	def disconnect(self, db, cursor):
-		cursor.close()
-		db.close()
-
-	def checkDM(self, clientid):
-		theDB, cursor = self.connect()
+	def checkDM(self, clientid, serverid):
 		stmt = "SELECT COUNT(*) FROM dms WHERE serverid = %s AND clientid = %s"
-		cursor.execute(stmt, (self.server, str(clientid),))
-		count = cursor.fetchone()
-		self.disconnect(theDB, cursor)
+		self.cursor.execute(stmt, (serverid, clientid,))
+		count = self.cursor.fetchone()
 
 		if count[0] > 0:
 			return True
 		else:
 			return False
 
+	async def print_help(self, message, commands, prefix):
+		embed = discord.Embed(colour=0x2AE5B8)
+		embed.title = "Here is how to control me!"
+		with open(commands, 'r') as f:
+			for line in f:
+				line = line.replace('!', prefix)
+				embed.add_field(name=line.split(":")[0], value=line.split(":")[1], inline=False)
+			embed.set_footer(text="If you want something added or want to report a bug/error, tell jetsurf#8514...")
+		await message.channel.send(embed=embed)
+
 	async def report_cmd_totals(self, message):
 		embed = discord.Embed(colour=0x00FFF3)
 		embed.title = "Command Totals"
-		print("TBD")
+		
+		for cmd in self.valid_commands:
+			stmt = "SELECT IFNULL(SUM(count), 0) FROM commandcounts WHERE (command = %s)"
+			self.cursor.execute(stmt, (cmd,))
+			count = self.cursor.fetchone()
+			embed.add_field(name=cmd, value=str(count[0].decode()), inline=True)
+		await message.channel.send(embed=embed)
 
-	def increment_cmd(self, cmd):
+	def increment_cmd(self, message, cmd):
 		if cmd not in self.valid_commands:
 			return
 
-		theDB, cursor = self.connect()
 		stmt = "INSERT INTO commandcounts (serverid, command, count) VALUES (%s, %s, 1) ON DUPLICATE KEY UPDATE count = count + 1;"
-		cursor.execute(stmt, (self.server, cmd))
-		theDB.commit()
-		self.disconnect(theDB, cursor)
+		self.cursor.execute(stmt, (message.guild.id, cmd,))
+		self.theDB.commit()
 
 	async def addDM(self, message):
-		theDB, cursor = self.connect()
-		if self.checkDM(message.author.id):
+		if self.checkDM(message.author.id, message.guild.id):
 			await message.channel.send("You are already in my list of people to DM")
 			return
+
 		stmt = "INSERT INTO dms(serverid, clientid) values(%s, %s)"
-		cursor.execute(stmt, (self.server, str(message.author.id),))
-		if cursor.lastrowid != None:
-			theDB.commit()
+		self.cursor.execute(stmt, (message.guild.id, message.author.id,))
+		if self.cursor.lastrowid != None:
+			self.theDB.commit()
 			await message.channel.send("Added " + message.author.name + " to my DM list!")
 		else:
 			await message.channel.send("Something went wrong!")
-		self.disconnect(theDB, cursor)
 
 	async def removeDM(self, message):
-		theDB, cursor = self.connect()
-
-		if not self.checkDM(message.author.id):
+		if not self.checkDM(message.author.id, message.guild.id):
 			await message.channel.send("You aren't in my list of people to DM")
 			return
 
 		stmt = "DELETE FROM dms WHERE serverid = %s AND clientid = %s"
-		cursor.execute(stmt, (self.server, str(message.author.id),))
-		if cursor.lastrowid != None:
-			theDB.commit()
+		self.cursor.execute(stmt, (message.guild.id, str(message.author.id),))
+		if self.cursor.lastrowid != None:
+			self.theDB.commit()
 			await message.channel.send("Removed " + message.author.name + " from my DM list!")
 		else:
 			await message.channel.send("Something went wrong!")
-		self.disconnect(theDB, cursor)
