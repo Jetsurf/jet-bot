@@ -152,7 +152,7 @@ async def on_member_remove(member):
 			
 @client.event
 async def on_guild_join(server):
-	global client, soundsDir, serverVoices, head, url, dev
+	global serverVoices, head, url, dev, owners
 	print("I joined server: " + server.name)
 	serverVoices[server.id] = vserver.voiceServer(client, mysqlConnect, server.id, soundsDir)
 
@@ -166,7 +166,7 @@ async def on_guild_join(server):
 
 @client.event
 async def on_guild_remove(server):
-	global serverVoices, head, url, dev
+	global serverVoices, head, url, dev, owners
 	print("I left server: " + server.name)
 	serverVoices[server.id] = None
 
@@ -345,6 +345,15 @@ async def on_message(message):
 		elif subcommand == "list":
 			await channel.send("TODO")
 			return
+		elif subcommand == "stats":
+			if len(args) > 1:
+				themap = " ".join(args[1:])
+				match = splatInfo.matchMaps(themap)
+				if not match.isValid():
+					await channel.send(match.errorMessage())
+					return
+				id = match.get().id()
+				await nsohandler.mapParser(message, id)
 		elif subcommand == "random":
 			count = 1
 			if len(args) > 1:
@@ -366,6 +375,9 @@ async def on_message(message):
 				await channel.send(out)
 		else:
 			await channel.send("Unknown subcommand. Try 'maps help'")
+	elif (cmd == 'weapon') or (cmd == 'weapons'):
+		await message.channel.send("Ok, gettings ID's, check log")
+		await nsohandler.weaponParser(message)
 
 	sys.stdout.flush()
 	sys.stderr.flush()

@@ -176,180 +176,184 @@ class SplatInfo():
 
 	def initWeapons(self):
 		data = [
-			[".52 Gal",       ["52g"],  "Splat Bomb",   "Baller",     14],
+			[".52 Gal",       ["52g"],  "Splat Bomb",   "Baller",     14,	50],
 			[".52 Gal Deco",  ["52gd"], "Curling Bomb", "Sting Ray",  22],
-			["Kensa .52 Gal", ["k52g"], "Splash Wall", "Booyah Bomb", 25],
+			["Kensa .52 Gal", ["k52g"], "Splash Wall", "Booyah Bomb", 25,	52],
 
-			[".96 Gal",      ["96g"],  "Sprinkler",    "Ink Armor",  21],
-			[".96 Gal Deco", ["96gd"], "Splash Wall",  "Splashdown", 26],
+			[".96 Gal",      ["96g"],  "Sprinkler",    "Ink Armor",  21,	80],
+			[".96 Gal Deco", ["96gd"], "Splash Wall",  "Splashdown", 26,	81],
 
-			["Aerospray MG", ["amg", "aeromg"], "Suction Bomb", "Curling Bomb Launcher", 6],
-			["Aerospray PG", ["apg", "aeropg"], "Burst Bomb",   "Booyah Bomb",           29],
-			["Aerospray RG", ["arg", "aerorg"], "Sprinkler",    "Baller",                28],
+			["Aerospray MG", ["amg", "aeromg"], "Suction Bomb", "Curling Bomb Launcher", 6, 	30],
+			["Aerospray RG", ["arg", "aerorg"], "Sprinkler",    "Baller",                28, 	31],
+			["Aerospray PG", ["apg", "aeropg"], "Burst Bomb",   "Booyah Bomb",           29,	32],
 
-			["Ballpoint Splatling",         ["bp", "bps"],   "Toxic Mist",   "Inkjet",    25],
+			["Ballpoint Splatling",         ["bp", "bps"],   "Toxic Mist",   "Inkjet",    25,	4030],
 			["Ballpoint Splatling Nouveau", ["bpn", "bpsn"], "Squid Beakon", "Ink Storm", 28],
 
-			["Bamboozler 14 Mk I",   ["bb1", "bamboo1", "boozler1"], "Curling Bomb", "Tenta Missiles",      18],
-			["Bamboozler 14 Mk II",  ["bb2", "bamboo2", "boozler2"], "Toxic Mist",   "Burst Bomb Launcher", 21],
+			["Bamboozler 14 Mk I",   ["bb1", "bamboo1", "boozler1"], "Curling Bomb", "Tenta Missiles",      18,		2050],
+			["Bamboozler 14 Mk II",  ["bb2", "bamboo2", "boozler2"], "Toxic Mist",   "Burst Bomb Launcher", 21, 	2051],
 			["Bamboozler 14 Mk III", ["bb3", "bamboo3", "boozler3"], "Fizzy Bomb",   "Bubble Blower",       27],
 
-			["Blaster",        ["b"],   "Toxic Mist", "Splashdown", 5],
+			["Blaster",        ["b"],   "Toxic Mist", "Splashdown", 5,	210],
 			["Custom Blaster", ["cub"], "Autobomb",   "Inkjet",     27],
 
-			["Bloblobber",      ["bl"],  "Splash Wall", "Ink Storm",             11],
-			["Bloblobber Deco", ["bld"], "Sprinkler",   "Suction Bomb Launcher", 20],
+			["Bloblobber",      ["bl"],  "Splash Wall", "Ink Storm",             11,	3030],
+			["Bloblobber Deco", ["bld"], "Sprinkler",   "Suction Bomb Launcher", 20,	3031],
 
-			["Carbon Roller",      ["cr"],   "Autobomb",   "Ink Storm",         7],
-			["Carbon Roller Deco", ["crd"],  "Burst Bomb", "Autobomb Launcher", 10],
+			["Carbon Roller",      ["cr"],   "Autobomb",   "Ink Storm",         7,	1000],
+			["Carbon Roller Deco", ["crd"],  "Burst Bomb", "Autobomb Launcher", 10,	1001],
 
-			["Clash Blaster",     ["cb", "trash blaster"],      "Splat Bomb",   "Stingray",       30],
-			["Clash Blaster Neo", ["cbn", "trash blaster neo"], "Curling Bomb", "Tenta Missiles", 30],
+			["Clash Blaster",     ["cb", "trash blaster"],      "Splat Bomb",   "Stingray",       30, 	230],
+			["Clash Blaster Neo", ["cbn", "trash blaster neo"], "Curling Bomb", "Tenta Missiles", 30,	231],
 
-			["Dapple Dualies",         ["dd", "red dapples"],               "Squid Beakon", "Suction Bomb Launcher", 26],
-			["Dapple Dualies Nouveau", ["ddn", "blue dapples"],             "Toxic Mist",   "Ink Storm",             29],
-			["Clear Dapple Dualies",   ["cdd", "clear dapples", "clappes"], "Torpedo",      "Splashdown",            30],
+			["Dapple Dualies",         ["dd", "red dapples"],               "Squid Beakon", "Suction Bomb Launcher", 26,	5000],
+			["Dapple Dualies Nouveau", ["ddn", "blue dapples"],             "Toxic Mist",   "Ink Storm",             29,	5001],
+			["Clear Dapple Dualies",   ["cdd", "clear dapples", "clappes"], "Torpedo",      "Splashdown",            30,	5002],
 
-			["Dualie Squelchers",        ["ds", "squelchies"],         "Point Sensor", "Tenta Missiles", 12],
-			["Custom Dualie Squelchers", ["cds", "custom squelchies"], "Splat Bomb",   "Ink Storm", 28],
+			["Dualie Squelchers",        ["ds", "squelchies"],         "Point Sensor", "Tenta Missiles", 12,	5030],
+			["Custom Dualie Squelchers", ["cds", "custom squelchies"], "Splat Bomb",   "Ink Storm",  	 28,	5031],
 
-			["Dynamo Roller",       ["dr"],  "Ink Mine",   "String Ray",  20],
-			["Gold Dynamo Roller",  ["gdr"], "Splat Bomb", "Ink Armor",   25],
-			["Kensa Dynamo Roller", ["kdr"], "Sprinkler",  "Booyah Bomb", 29],
+			["Dynamo Roller",       ["dr"],  "Ink Mine",   "String Ray",  20,	1020],
+			["Gold Dynamo Roller",  ["gdr"], "Splat Bomb", "Ink Armor",   25,	1021],
+			["Kensa Dynamo Roller", ["kdr"], "Sprinkler",  "Booyah Bomb", 29,	1022],
 
-			["E-liter 4K",              ["el", "el4k"],     "Ink Mine", "Ink Storm", 20],
-			["E-liter 4K Scope",        ["els", "el4ks"],   "Ink Mine", "Ink Storm", 30],
-			["Custom E-liter 4K",       ["cel", "cel4k"],   "Squid Beakon", "Bubble Blower", 26],
+			["E-liter 4K",              ["el", "el4k"],     "Ink Mine", "Ink Storm", 20,			2030],
+			["Custom E-liter 4K",       ["cel", "cel4k"],   "Squid Beakon", "Bubble Blower", 26,	2031],
+
+			["E-liter 4K Scope",        ["els", "el4ks"],   "Ink Mine", "Ink Storm", 30,	2040],
 			["Custom E-liter 4K Scope", ["cels", "cel4ks"], "Squid Beakon", "Bubble Blower", 30],
 
-			["Explosher",        ["xp"],  "Sprinkler",    "Bubble Blower", 18],
-			["Custom Explosher", ["cxp"], "Point Sensor", "Baller",        22],
+			["Explosher",        ["xp"],  "Sprinkler",    "Bubble Blower", 18,	3040],
+			["Custom Explosher", ["cxp"], "Point Sensor"," Baller",        22,	3041],
 
 			["Flingza Roller",      ["fr"],  "Splash Wall",  "Splat Bomb Launcher", 24],
 			["Foil Flingza Roller", ["ffr"], "Suction Bomb", "Tenta Missiles",      28],
 
-			["Glooga Dualies",       ["gd", "ggd"],   "Ink Mine",    "Inkjet",    17],
-			["Glooga Dualies Deco",  ["gdd", "ggdd"], "Splash Wall", "Baller",    24],
+			["Glooga Dualies",       ["gd", "ggd"],   "Ink Mine",    "Inkjet",    17,	5020],
+			["Glooga Dualies Deco",  ["gdd", "ggdd"], "Splash Wall", "Baller",    24,	5021],
 			["Kensa Glooga Dualies", ["kgd", "kggd"], "Fizzy Bomb",  "Ink Armor", 27],
 
-			["Goo Tuber",        ["gt"],  "Suction Bomb", "Splashdown", 22],
+			["Goo Tuber",        ["gt"],  "Suction Bomb", "Splashdown", 22,	2060],
 			["Custom Goo Tuber", ["cgt"], "Curling Bomb", "Inkjet",     28],
 
-			["Heavy Splatling",       ["hs"],  "Sprinkler",    "Sting Ray",     8],
+			["Heavy Splatling",       ["hs"],  "Sprinkler",    "Sting Ray",     8,	4010],
 			["Heavy Splatling Deco",  ["hsd"], "Splash Wall",  "Bubble Blower", 12],
-			["Heavy Splatling Remix", ["hsr"], "Point Sensor", "Booyah Bomb",   19],
+			["Heavy Splatling Remix", ["hsr"], "Point Sensor", "Booyah Bomb",   19,	4012],
 
 			["H-3 Nozzlenose",        ["h3"],  "Point Sensor", "Tenta Missiles", 29],
-			["H-3 Nozzlenose D",      ["h3d"], "Suction Bomb", "Ink Armor",      30],
+			["H-3 Nozzlenose D",      ["h3d"], "Suction Bomb", "Ink Armor",      30,	311],
 			["Cherry H-3 Nozzlenose", ["ch3"], "Splash Wall",  "Bubble Blower",  30],
 
-			["Hydra Splatling",        ["hys"],            "Autobomb", "Splashdown", 27],
-			["Custom Hydra Splatling", ["chys", "chydra"], "Ink Mine", "Ink Armor",  29],
+			["Hydra Splatling",        ["hys"],            "Autobomb", "Splashdown", 27,	4020],
+			["Custom Hydra Splatling", ["chys", "chydra"], "Ink Mine", "Ink Armor",  29,	4021],
 
-			["Inkbrush",           ["ib"],  "Splat Bomb", "Splashdown", 5],
-			["Inkbrush Nouveau",   ["ibn"], "Ink Mine",   "Baller",     7],
+			["Inkbrush",           ["ib"],  "Splat Bomb", "Splashdown", 5,	1100],
+			["Inkbrush Nouveau",   ["ibn"], "Ink Mine",   "Baller",     7,	1101],
 			["Permanent Inkbrush", ["pib"], "Sprinkler",  "Ink Armor",  12],
 
-			["Jet Squelcher",        ["js"],  "Toxic Mist", "Tenta Missiles", 17],
-			["Custom Jet Squelcher", ["cjs"], "Burst Bomb", "Sting Ray",      27],
+			["Jet Squelcher",        ["js"],  "Toxic Mist", "Tenta Missiles", 17,	90],
+			["Custom Jet Squelcher", ["cjs"], "Burst Bomb", "Sting Ray",      27, 	91],
 
 			["L-3 Nozzlenose",       ["l3"],  "Curling Bomb", "Baller", 18],
 			["L-3 Nozzlenose D",     ["l3d"], "Burst Bomb",   "Inkjet", 23],
-			["Kensa L-3 Nozzlenose", ["kl3"], "Splash Wall",  "Ultra Stamp", 27],
+			["Kensa L-3 Nozzlenose", ["kl3"], "Splash Wall",  "Ultra Stamp", 27,	302],
 
-			["Luna Blaster",       ["lb"],  "Splat Bomb", "Baller",                19],
+			["Luna Blaster",       ["lb"],  "Splat Bomb", "Baller",                19,	200],
 			["Luna Blaster Neo",   ["lbn"], "Ink Mine",   "Suction Bomb Launcher", 24],
-			["Kensa Luna Blaster", ["klb"], "Fizzy Bomb", "Ink Storm",             26],
+			["Kensa Luna Blaster", ["klb"], "Fizzy Bomb", "Ink Storm",             26,	202],
 
-			["Nautilus 47", ["n47"], "Point Sensor", "Baller", 26],
+			["Nautilus 47", ["n47"], "Point Sensor", "Baller", 26, 	4040],
 			["Nautilus 79", ["n79"], "Suction Bomb", "Inkjet", 30],
 
-			["N-Zap 85", ["nz85"], "Suction Bomb", "Ink Armor",      9],
-			["N-Zap 89", ["nz89"], "Autobomb",     "Tenta Missiles", 11],
-			["N-Zap 83", ["nz83"], "Sprinkler",    "Ink Storm",      19],
+			["N-Zap 85", ["nz85"], "Suction Bomb", "Ink Armor",      9,		60],
+			["N-Zap 89", ["nz89"], "Autobomb",     "Tenta Missiles", 11, 	61],
+			["N-Zap 83", ["nz83"], "Sprinkler",    "Ink Storm",      19,	62],
 
-			["Octobrush",         ["ob"],  "Autobomb",     "Inkjet",         10],
-			["Octobrush Nouveau", ["obn"], "Squid Beakon", "Tenta Missiles", 15],
-			["Kensa Octobrush",   ["kob"], "Suction Bomb", "Ultra Stamp",    20],
+			["Octobrush",         ["ob"],  "Autobomb",     "Inkjet",         10,	1110],
+			["Octobrush Nouveau", ["obn"], "Squid Beakon", "Tenta Missiles", 15,	1111],
+			["Kensa Octobrush",   ["kob"], "Suction Bomb", "Ultra Stamp",    20,	1112],
 
 			["Mini Splatling",       ["ms"],          "Burst Bomb",   "Tenta Missiles", 23],
 			["Zink Mini Splatling",  ["zms", "zini"], "Curling Bomb", "Ink Storm",      26],
 			["Kensa Mini Splatling", ["kms", "kini"], "Toxic Mist",   "Ulta Stamp",     29],
 
 			["Range Blaster",        ["rngb"],  "Suction Bomb", "Ink Storm",      14],
-			["Custom Range Blaster", ["crngb"], "Curling Bomb", "Bubble Blower",  18],
+			["Custom Range Blaster", ["crngb"], "Curling Bomb", "Bubble Blower",  18,	221],
 			["Grim Range Blaster",   ["grngb"], "Burst Bomb",   "Tenta Missiles", 23],
 
-			["Rapid Blaster",       ["rapb"],            "Ink Mine",     "Splat Bomb Launcher", 13],
-			["Rapid Blaster Deco",  ["rapbd"],           "Suction Bomb", "Inkjet",              16],
-			["Kensa Rapid Blaster", ["krapb", "krapid"], "Torpedo",      "Baller",              21],
+			["Rapid Blaster",       ["rapb"],            "Ink Mine",     "Splat Bomb Launcher", 13,	240],
+			["Rapid Blaster Deco",  ["rapbd"],           "Suction Bomb", "Inkjet",              16,	241],
+			["Kensa Rapid Blaster", ["krapb", "krapid"], "Torpedo",      "Baller",              21,	242],
+
+			["Rapid Blaster Pro",       ["rapbp"],            "Toxic Mist",     "Ink Storm",	22,	250],
+			["Rapid Blaster Pro Deco",  ["rapbpd"],           "Splash Wall",	"Ink Armor",	24,	251],
 
 			["Slosher",      ["slosh"],               "Suction Bomb", "Tenta Missiles",      5],
 			["Slosher Deco", ["sloshd", "sloshdeco"], "Sprinkler",    "Baller",              8],
-			["Soda Slosher", ["sslosh", "sodaslosh"], "Splat Bomb",   "Burst Bomb Launcher", 16],
+			["Soda Slosher", ["sslosh", "sodaslosh"], "Splat Bomb",   "Burst Bomb Launcher", 16,	3002],
 
-			["Sloshing Machine",       ["sm", "sloshine"],                  "Autobomb",     "Sting Ray",           13],
+			["Sloshing Machine",       ["sm", "sloshine"],                  "Autobomb",     "Sting Ray",           13,	3020],
 			["Sloshing Machine Neo",   ["smn", "sloshine neo"],             "Point Sensor", "Splat Bomb Launcher", 19],
-			["Kensa Sloshing Machine", ["ksm", "kslosh", "kensa sloshine"], "Fizzy Bomb",   "Splashdown",          21],
+			["Kensa Sloshing Machine", ["ksm", "kslosh", "kensa sloshine"], "Fizzy Bomb",   "Splashdown",          21,	3022],
 
-			["Splash-o-matic",     ["splasho"],               "Toxic Mist", "Inkjet",                25],
+			["Splash-o-matic",     ["splasho"],               "Toxic Mist", "Inkjet",                25,	20],
 			["Neo Splash-o-matic", ["nsplasho", "neosplash"], "Burst Bomb", "Suction Bomb Launcher", 27],
 
-			["Sploosh-o-matic",     ["sploosh", "sploosho"],   "Curling Bomb", "Splashdown",     10],
+			["Sploosh-o-matic",     ["sploosh", "sploosho"],   "Curling Bomb", "Splashdown",     10,	0],
 			["Neo Sploosh-o-matic", ["nsploosh", "nsploosho"], "Squid Beakon", "Tenta Missiles", 18],
-			["Sploosh-o-matic 7",   ["sploosh7", "sploosho7"], "Splat Bomb",   "Ultra Stamp",    23],
+			["Sploosh-o-matic 7",   ["sploosh7", "sploosho7"], "Splat Bomb",   "Ultra Stamp",    23,	2],
 
-			["Splat Charger",         ["sc"],          "Splat Bomb",  "Sting Ray",             3],
+			["Splat Charger",         ["sc"],          "Splat Bomb",  "Sting Ray",             3,	2010],
 			["Firefin Splat Charger", ["fsc", "ffsc"], "Splash Wall", "Suction Bomb Launcher", 16],
-			["Kensa Charger",         ["kc", "ksc"],   "Sprinkler",   "Baller",                19],
+			["Kensa Charger",         ["kc", "ksc"],   "Sprinkler",   "Baller",                19,	2012],
 
-			["Splatterscope",         ["ssc"],                 "Splat Bomb",  "Sting Ray",             15],
-			["Firefin Splatterscope", ["fssc", "fss", "ffss"], "Splash Wall", "Suction Bomb Launcher", 25],
+			["Splatterscope",         ["ssc"],                 "Splat Bomb",  "Sting Ray",             15,	2020],
+			["Firefin Splatterscope", ["fssc", "fss", "ffss"], "Splash Wall", "Suction Bomb Launcher", 25,	2021],
 			["Kensa Splatterscope",   ["kssc"],                "Sprinkler",   "Baller",                28],
 
-			["Splat Brella",   ["sb"],  "Sprinkler", "Ink Storm",           9],
+			["Splat Brella",   ["sb"],  "Sprinkler", "Ink Storm",           9,	6000],
 			["Sorella Brella", ["srb"], "Autobomb",  "Splat Bomb Launcher", 15],
 
-			["Splat Dualies",         ["sd"],  "Burst Bomb",   "Tenta Missiles", 4],
-			["Enperry Splat Dualies", ["esd"], "Curling Bomb", "Inkjet",         11],
-			["Kensa Splat Dualies",   ["ksd"], "Suction Bomb", "Baller",         16],
+			["Splat Dualies",         ["sd"],  "Burst Bomb",   "Tenta Missiles", 4,		5010],
+			["Enperry Splat Dualies", ["esd"], "Curling Bomb", "Inkjet",         11,	5011],
+			["Kensa Splat Dualies",   ["ksd"], "Suction Bomb", "Baller",         16,	5012],
 
-			["Splat Roller",         ["sr"],   "Curling Bomb", "Splashdown",     3],
-			["Krak-On Splat Roller", ["kosr"], "Squid Beakon", "Baller",         12],
-			["Kensa Splat Roller",   ["ksr"],  "Splat Bomb",   "Bubbler Blower", 14],
+			["Splat Roller",         ["sr"],   "Curling Bomb", "Splashdown",     3,		1010],
+			["Krak-On Splat Roller", ["kosr"], "Squid Beakon", "Baller",         12,	1011],
+			["Kensa Splat Roller",   ["ksr"],  "Splat Bomb",   "Bubbler Blower", 14,	1012],
 
-			["Splattershot",          ["ss"],           "Burst Bomb",   "Splashdown",     2],
+			["Splattershot",          ["ss"],           "Burst Bomb",   "Splashdown",     2,	40],
 			["Tentatek Splattershot", ["ttss", "ttek"], "Splat Bomb",   "Inkjet",         4],
 			["Kensa Splattershot",    ["kss"],          "Suction Bomb", "Tenta Missiles", 6],
 
-			["Splattershot Jr",        ["ssj", "ssjr", ], "Splat Bomb", "Ink Armor",     1],
-			["Custom Splattershot Jr", ["cssj", "cssjr"], "Autobomb",   "Ink Storm",     4],
-			["Kensa Splattershot Jr",  ["kssj", "kssjr"], "Torpedo",    "Bubble Blower", 9],
+			["Splattershot Jr",        ["ssj", "ssjr", ], "Splat Bomb", "Ink Armor",     1,	10],
+			["Custom Splattershot Jr", ["cssj", "cssjr"], "Autobomb",   "Ink Storm",     4,	11],
+			["Kensa Splattershot Jr",  ["kssj", "kssjr"], "Torpedo",    "Bubble Blower", 9,	12],
 
-			["Splattershot Pro",       ["ssp", "sspro"],           "Point Sensor", "Ink Storm",     10],
-			["Forge Splattershot Pro", ["fssp", "fsspro"],         "Suction Bomb", "Bubble Blower", 20],
-			["Kensa Splattershot Pro", ["kssp", "ksspro", "kpro"], "Splat Bomb",   "Booyah Bomb",   23],
+			["Splattershot Pro",       ["ssp", "sspro"],           "Point Sensor", "Ink Storm",     10,	70],
+			["Forge Splattershot Pro", ["fssp", "fsspro"],         "Suction Bomb", "Bubble Blower", 20,	71],
+			["Kensa Splattershot Pro", ["kssp", "ksspro", "kpro"], "Splat Bomb",   "Booyah Bomb",   23,	72],
 
 			["Squeezer",      ["sq"],  "Splash Wall", "Sting Ray", 16],
-			["Foil Squeezer", ["fsq"], "Splat Bomb",  "Bubble Blower", 25],
+			["Foil Squeezer", ["fsq"], "Splat Bomb",  "Bubble Blower", 25,	401],
 
 			["Classic Squiffer", ["csq"],  "Point Sensor", "Ink Armor", 12],
+			["New Squiffer",     ["nsq"],  "Autobomb",     "Baller",    17,	2001],
 			["Fresh Squiffer",   ["frsq"], "Suction Bomb", "Inkjet",    24],
-			["New Squiffer",     ["nsq"],  "Autobomb",     "Baller",    17],
 
-			["Tenta Brella",         ["tb"],  "Squid Beakon", "Bubbler Blower",        23],
+			["Tenta Brella",         ["tb"],  "Squid Beakon", "Bubbler Blower",        23,	6010],
+			["Tenta Sorella Brella", ["tsb"], "Splash Wall",  "Curling Bomb Launcher", 28,	6011],
 			["Tenta Camo Brella",    ["tcb"], "Ink Mine",     "Ultra Stamp",           28],
-			["Tenta Sorella Brella", ["tsb"], "Splash Wall",  "Curling Bomb Launcher", 28],
+			
+			["Dark Tetra Dualies",  ["dtd"], "Autobomb",  "Splashdown",        14,	5040],
+			["Light Tetra Dualies", ["ltd"], "Sprinkler", "Autobomb Launcher", 21,	5041],
 
-			["Dark Tetra Dualies",  ["dtd"], "Autobomb",  "Splashdown",        14],
-			["Light Tetra Dualies", ["ltd"], "Sprinkler", "Autobomb Launcher", 21],
+			["Tri-Slosher",         ["ts"],  "Burst Bomb", "Ink Armor", 15,	3010],
+			["Tri-Slosher Nouveau", ["tsn"], "Splat Bomb", "Ink Storm", 17,	3011],
 
-			["Tri-Slosher",         ["ts"],  "Burst Bomb", "Ink Armor", 15],
-			["Tri-Slosher Nouveau", ["tsn"], "Splat Bomb", "Ink Storm", 17],
-
-			["Undercover Brella",         ["ub"],  "Ink Mine",   "Splashdown", 13],
-			["Undercover Sorella Brella", ["usb"], "Splat Bomb", "Baller",     19],
-			["Kensa Undercover Brella",   ["kub"], "Torpedo",    "Ink Armor",  24]
+			["Undercover Brella",         ["ub"],  "Ink Mine",   "Splashdown", 13,	6020],
+			["Undercover Sorella Brella", ["usb"], "Splat Bomb", "Baller",     19,	6021],
+			["Kensa Undercover Brella",   ["kub"], "Torpedo",    "Ink Armor",  24,	6022]
 		]
 
 		self.weapons = []

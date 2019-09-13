@@ -149,6 +149,88 @@ class nsoHandler():
 		else:
 			return False
 
+	async def weaponParser(self, message):
+		stmt = 'SELECT token FROM tokens WHERE clientid = %s'
+		self.cursor.execute(stmt, (str(message.author.id),))
+		Session_token = self.cursor.fetchone()[0].decode('utf-8')
+		url = "https://app.splatoon2.nintendo.net/api/records"
+		results_list = requests.get(url, headers=self.app_head, cookies=dict(iksm_session=Session_token))
+		thejson = json.loads(results_list.text)	
+
+		if 'AUTHENTICATION_ERROR' in str(thejson):
+			iksm = await self.nsotoken.do_iksm_refresh(message)
+			results_list = requests.get(url, headers=self.app_head_coop, cookies=dict(iksm_session=iksm))
+			thejson = json.loads(results_list.text)
+
+		try:
+			weapondata = thejson['records']['weapon_stats']
+		except:
+			await message.channel.send(message.author.name + " there is a problem with your token")
+
+		for i in weapondata:
+			print(weapondata[i]['weapon']['name'] + " ID: " + i)
+
+	async def mapParser(self, message, mapid):
+		stmt = 'SELECT token FROM tokens WHERE clientid = %s'
+		self.cursor.execute(stmt, (str(message.author.id),))
+		Session_token = self.cursor.fetchone()[0].decode('utf-8')
+		url = "https://app.splatoon2.nintendo.net/api/records"
+		results_list = requests.get(url, headers=self.app_head, cookies=dict(iksm_session=Session_token))
+		thejson = json.loads(results_list.text)	
+
+		if 'AUTHENTICATION_ERROR' in str(thejson):
+			iksm = await self.nsotoken.do_iksm_refresh(message)
+			results_list = requests.get(url, headers=self.app_head_coop, cookies=dict(iksm_session=iksm))
+			thejson = json.loads(results_list.text)
+
+		try:
+			allmapdata = thejson['records']['stage_stats']
+		except:
+			await message.channel.send(message.author.name + " there is a problem with your token")
+
+		themapdata = None
+		for i in allmapdata:
+			if int(i) == mapid:
+				themapdata = allmapdata[i]
+				break
+
+		name = thejson['records']['player']['nickname']
+		embed = discord.Embed(colour=0x0004FF)
+		embed.title = str(name) + "'s Stats for " + themapdata['stage']['name'] + " (Wins/Losses/%)"
+
+		rmwin = themapdata['hoko_win']
+		rmloss = themapdata['hoko_lose']
+		szwin = themapdata['area_win']
+		szloss = themapdata['area_lose']
+		tcwin = themapdata['yagura_win']
+		tcloss = themapdata['yagura_lose']
+		cbwin = themapdata['asari_win']
+		cbloss = themapdata['asari_lose']
+
+		if (rmwin + rmloss) != 0:
+			rmpercent = int(rmwin / (rmwin + rmloss) * 100)
+		else:
+			rmpercent = 0
+		if (szwin + szloss) != 0:
+			szpercent = int(szwin / (szwin + szloss) * 100)
+		else:
+			szpercent = 0
+		if (tcwin + tcloss) != 0:
+			tcpercent = int(tcwin / (tcwin + tcloss) * 100)
+		else:
+			tcpercent = 0
+		if (cbwin + cbloss) != 0:
+			cbpercent = int(cbwin / (cbwin + cbloss) * 100)
+		else:
+			cbpercent = 0
+
+		embed.set_thumbnail(url='https://splatoon2.ink/assets/splatnet' + themapdata['stage']['image'])
+		embed.add_field(name="Splat Zones", value=str(szwin) + "/" + str(szloss) + "/" + str(szpercent) + "%", inline=True)
+		embed.add_field(name="Rainmaker", value=str(rmwin) + "/" + str(rmloss) + "/" + str(rmpercent) + "%", inline=True)
+		embed.add_field(name="Tower Control", value=str(tcwin) + "/" + str(tcloss) + "/" + str(tcpercent) + "%", inline=True)
+		embed.add_field(name="Clam Blitz", value=str(cbwin) + "/" + str(cbloss) + "/" + str(cbpercent) + "%", inline=True)
+		await message.channel.send(embed=embed)
+
 	async def getStats(self, message):
 		if not self.checkDuplicate(message.author.id):
 			await message.channel.send("You don't have a token setup with me! Please DM me !token with how to get one setup!")
@@ -165,6 +247,9 @@ class nsoHandler():
 			iksm = await self.nsotoken.do_iksm_refresh(message)
 			results_list = requests.get(url, headers=self.app_head_coop, cookies=dict(iksm_session=iksm))
 			thejson = json.loads(results_list.text)
+
+		with open('jetstats.json', 'w') as outfile:
+ 		   json.dump(thejson, outfile)
 
 		embed = discord.Embed(colour=0x0004FF)
 		try:
