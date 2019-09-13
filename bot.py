@@ -346,7 +346,14 @@ async def on_message(message):
 			await channel.send("TODO")
 			return
 		elif subcommand == "stats":
-			await nsohandler.mapParser(message, '6')
+			if len(args) > 1:
+				themap = " ".join(args[1:])
+				match = splatInfo.matchMaps(themap)
+				if not match.isValid():
+					await channel.send(match.errorMessage())
+					return
+				id = match.get().id()
+				await nsohandler.mapParser(message, id)
 		elif subcommand == "random":
 			count = 1
 			if len(args) > 1:
