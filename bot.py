@@ -217,7 +217,7 @@ async def on_message(message):
 
 	if '!prefix' in command:
 		await message.channel.send("The command prefix for this server is: " + commandParser.getPrefix(theServer))
-	elif '!help' in message.content and commandParser.getPrefix(theServer) not in '!':
+	elif message.content.startswith('!help') and commandParser.getPrefix(theServer) not in '!':
 		await serverUtils.print_help(message, commands, commandParser.getPrefix(theServer))
 	elif ('pizza' in command and 'pineapple' in command) or ('\U0001F355' in message.content and '\U0001F34D' in message.content):
 		await channel.send('Don\'t ever think pineapple and pizza go together ' + message.author.name + '!!!')		
