@@ -149,8 +149,6 @@ class nsoHandler():
 		else:
 			return False
 
-
-
 	async def mapParser(self, message, mapid):
 		stmt = 'SELECT token FROM tokens WHERE clientid = %s'
 		self.cursor.execute(stmt, (str(message.author.id),))
@@ -205,6 +203,7 @@ class nsoHandler():
 		else:
 			cbpercent = 0
 
+		embed.set_thumbnail(url='https://splatoon2.ink/assets/splatnet' + themapdata['stage']['image'])
 		embed.add_field(name="Splat Zones", value=str(szwin) + "/" + str(szloss) + "/" + str(szpercent) + "%", inline=True)
 		embed.add_field(name="Rainmaker", value=str(rmwin) + "/" + str(rmloss) + "/" + str(rmpercent) + "%", inline=True)
 		embed.add_field(name="Tower Control", value=str(tcwin) + "/" + str(tcloss) + "/" + str(tcpercent) + "%", inline=True)
