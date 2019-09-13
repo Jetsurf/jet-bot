@@ -12,7 +12,7 @@ class serverUtils():
 		self.theDB = mysql.connector.connect(host=self.mysqlinfo.host, user=self.mysqlinfo.user, password=self.mysqlinfo.pw, database=self.mysqlinfo.db)
 		self.cursor = self.theDB.cursor(cursor_class=MySQLCursorPrepared)
 
-	def checkDM(self, clientid, serverid):
+	def checkDM(self, clientid):
 		stmt = "SELECT COUNT(*) FROM dms WHERE serverid = %s AND clientid = %s"
 		self.cursor.execute(stmt, (serverid, clientid,))
 		count = self.cursor.fetchone()
