@@ -345,8 +345,8 @@ class SplatInfo():
 			["Tenta Sorella Brella", ["tsb"], "Splash Wall",  "Curling Bomb Launcher", 28,	6011],
 			["Tenta Camo Brella",    ["tcb"], "Ink Mine",     "Ultra Stamp",           28],
 			
-			["Dark Tetra Dualies",  ["dtd"], "Autobomb",  "Splashdown",        14],
-			["Light Tetra Dualies", ["ltd"], "Sprinkler", "Autobomb Launcher", 21],
+			["Dark Tetra Dualies",  ["dtd"], "Autobomb",  "Splashdown",        14,	5040],
+			["Light Tetra Dualies", ["ltd"], "Sprinkler", "Autobomb Launcher", 21,	5041],
 
 			["Tri-Slosher",         ["ts"],  "Burst Bomb", "Ink Armor", 15,	3010],
 			["Tri-Slosher Nouveau", ["tsn"], "Splat Bomb", "Ink Storm", 17,	3011],

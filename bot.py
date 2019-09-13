@@ -152,7 +152,7 @@ async def on_member_remove(member):
 			
 @client.event
 async def on_guild_join(server):
-	global client, soundsDir, serverVoices, head, url, dev
+	global serverVoices, head, url, dev, owners
 	print("I joined server: " + server.name)
 	serverVoices[server.id] = vserver.voiceServer(client, mysqlConnect, server.id, soundsDir)
 
@@ -166,7 +166,7 @@ async def on_guild_join(server):
 
 @client.event
 async def on_guild_remove(server):
-	global serverVoices, head, url, dev
+	global serverVoices, head, url, dev, owners
 	print("I left server: " + server.name)
 	serverVoices[server.id] = None
 
