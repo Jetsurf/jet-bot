@@ -15,7 +15,7 @@ class SplatMatchItem():
 		return self._abbrevs
 
 	def format(self):
-		return "`" + self._name + "` (" + self.abbrev() + ")"
+		return "__" + self._name + "__ (**" + self.abbrev() + "**)"
 
 	def hasAbbrev(self, a):
 		return a.lower() in self._abbrevs
