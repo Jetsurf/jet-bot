@@ -27,6 +27,7 @@ class SplatMap(SplatMatchItem):
 	def __init__(self, name, shortname, abbrevs, id):
 		self._shortname = shortname
 		self._id	= id
+
 		super().__init__(name, abbrevs)
 
 	def shortname(self):
