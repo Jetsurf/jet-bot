@@ -16,10 +16,12 @@ import requests
 import nsotoken
 import aiomysql
 import commandparser
+import splatinfo
 from subprocess import call
 from ctypes import *
 
 client = discord.Client()
+splatInfo = splatinfo.SplatInfo()
 commandParser = commandparser.CommandParser()
 mysqlConnect = None
 nsoHandler = None
@@ -331,6 +333,40 @@ async def on_message(message):
 			await serverVoices[theServer].printQueue(message)
 		elif command.startswith('!'):
 			await serverVoices[theServer].playSound(command, message)
+	elif (cmd == 'map') or (cmd == 'maps'):
+		if len(args) == 0:
+			await channel.send("Try 'maps help' for help")
+			return
+
+		subcommand = args[0].lower()
+		if subcommand == "help":
+			await channel.send("maps random [n]: Generate a list of random maps")
+			return
+		elif subcommand == "list":
+			await channel.send("TODO")
+			return
+		elif subcommand == "random":
+			count = 1
+			if len(args) > 1:
+				if not args[1].isdigit():
+					await channel.send("Argument to 'maps random' must be numeric")
+					return
+				elif (int(args[1]) < 1) or (int(args[1]) > 10):
+					await channel.send("Number of random maps must be within 1..10")
+					return
+				else:
+					count = int(args[1])
+
+			if count == 1:
+				await channel.send("Random map: " + splatInfo.getRandomMap().name())
+			else:
+				out = "Random maps:\n"
+				for i in range(count):
+					out += "%d: %s\n" % (i + 1, splatInfo.getRandomMap().name())
+				await channel.send(out)
+		else:
+			await channel.send("Unknown subcommand. Try 'maps help'")
+
 	sys.stdout.flush()
 	sys.stderr.flush()
 
