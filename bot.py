@@ -145,7 +145,7 @@ async def on_member_remove(member):
 	global serverAdmins, serverUtils
 
 	for mem in serverAdmins[member.guild.id]:
-		if mem.id != client.user.id and serverUtils.checkDM(mem.id):
+		if mem.id != client.user.id and serverUtils.checkDM(mem.id, member.guild.id):
 			await mem.send(member.name + " left " + member.guild.name)
 			
 @client.event
@@ -215,7 +215,7 @@ async def on_message(message):
 	else:
 		theServer = message.guild.id
 
-	if '!prefix' in command:
+	if command.startswith('!prefix'):
 		await message.channel.send("The command prefix for this server is: " + commandParser.getPrefix(theServer))
 	elif message.content.startswith('!help') and commandParser.getPrefix(theServer) not in '!':
 		await serverUtils.print_help(message, commands, commandParser.getPrefix(theServer))
