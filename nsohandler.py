@@ -149,6 +149,27 @@ class nsoHandler():
 		else:
 			return False
 
+	async def weaponParser(self, message):
+		stmt = 'SELECT token FROM tokens WHERE clientid = %s'
+		self.cursor.execute(stmt, (str(message.author.id),))
+		Session_token = self.cursor.fetchone()[0].decode('utf-8')
+		url = "https://app.splatoon2.nintendo.net/api/records"
+		results_list = requests.get(url, headers=self.app_head, cookies=dict(iksm_session=Session_token))
+		thejson = json.loads(results_list.text)	
+
+		if 'AUTHENTICATION_ERROR' in str(thejson):
+			iksm = await self.nsotoken.do_iksm_refresh(message)
+			results_list = requests.get(url, headers=self.app_head_coop, cookies=dict(iksm_session=iksm))
+			thejson = json.loads(results_list.text)
+
+		try:
+			weapondata = thejson['records']['weapon_stats']
+		except:
+			await message.channel.send(message.author.name + " there is a problem with your token")
+
+		for i in weapondata:
+			print(weapondata[i]['weapon']['name'] + " ID: " + i)
+
 	async def mapParser(self, message, mapid):
 		stmt = 'SELECT token FROM tokens WHERE clientid = %s'
 		self.cursor.execute(stmt, (str(message.author.id),))

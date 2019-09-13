@@ -375,6 +375,9 @@ async def on_message(message):
 				await channel.send(out)
 		else:
 			await channel.send("Unknown subcommand. Try 'maps help'")
+	elif (cmd == 'weapon') or (cmd == 'weapons'):
+		await message.channel.send("Ok, gettings ID's, check log")
+		await nsohandler.weaponParser(message)
 
 	sys.stdout.flush()
 	sys.stderr.flush()
