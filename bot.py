@@ -345,6 +345,8 @@ async def on_message(message):
 		elif subcommand == "list":
 			await channel.send("TODO")
 			return
+		elif subcommand == "stats":
+			await nsohandler.mapParser(message, '6')
 		elif subcommand == "random":
 			count = 1
 			if len(args) > 1:

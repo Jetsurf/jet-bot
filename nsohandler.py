@@ -149,6 +149,35 @@ class nsoHandler():
 		else:
 			return False
 
+
+
+	async def mapParser(self, message, mapid):
+		stmt = 'SELECT token FROM tokens WHERE clientid = %s'
+		self.cursor.execute(stmt, (str(message.author.id),))
+		Session_token = self.cursor.fetchone()[0].decode('utf-8')
+		url = "https://app.splatoon2.nintendo.net/api/records"
+		results_list = requests.get(url, headers=self.app_head, cookies=dict(iksm_session=Session_token))
+		thejson = json.loads(results_list.text)	
+
+		if 'AUTHENTICATION_ERROR' in str(thejson):
+			iksm = await self.nsotoken.do_iksm_refresh(message)
+			results_list = requests.get(url, headers=self.app_head_coop, cookies=dict(iksm_session=iksm))
+			thejson = json.loads(results_list.text)
+
+		allmapdata = thejson['records']['stage_stats']
+
+		themapdata = None
+		for i in allmapdata:
+			if i == mapid:
+				themapdata = allmapdata[i]
+				break
+
+		print("Test: " + str(themapdata))
+		#print(str(allmapdata))
+		#themapdata = thejson[mapid]
+
+		await message.channel.send("Raw data: " + str(themapdata))
+
 	async def getStats(self, message):
 		if not self.checkDuplicate(message.author.id):
 			await message.channel.send("You don't have a token setup with me! Please DM me !token with how to get one setup!")
@@ -165,6 +194,9 @@ class nsoHandler():
 			iksm = await self.nsotoken.do_iksm_refresh(message)
 			results_list = requests.get(url, headers=self.app_head_coop, cookies=dict(iksm_session=iksm))
 			thejson = json.loads(results_list.text)
+
+		with open('jetstats.json', 'w') as outfile:
+ 		   json.dump(thejson, outfile)
 
 		embed = discord.Embed(colour=0x0004FF)
 		try:
