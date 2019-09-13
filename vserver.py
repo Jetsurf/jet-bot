@@ -268,6 +268,10 @@ class voiceServer():
 		x = cursor.fetchall()
 		self.disconnect(theDB, cursor)
 
+		if len(x) == 0:
+			await message.channel.send("You have nothing added to your playlist, use !admin playlist URL to add songs!")
+			return
+			
 		print("Playing random")
 		numToQueue = min(numToQueue, len(x))
 		for y in range(numToQueue):
