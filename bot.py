@@ -16,10 +16,12 @@ import requests
 import nsotoken
 import aiomysql
 import commandparser
+import splatinfo
 from subprocess import call
 from ctypes import *
 
 client = discord.Client()
+splatInfo = splatinfo.SplatInfo()
 commandParser = commandparser.CommandParser()
 mysqlConnect = None
 nsoHandler = None
