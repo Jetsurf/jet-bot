@@ -168,11 +168,17 @@ class nsoHandler():
 			await message.channel.send(message.author.name + " there is a problem with your token")
 
 		theweapdata = None
+		gotweap = False
 		for i in weapondata:
 			if int(i) == weapid:
+				gotweap = True
 				theweapdata = weapondata[i]
 				break
 		
+		if not gotweap:
+			await message.channel.send("I have no stats for that weapon for you")
+			return
+
 		name = thejson['records']['player']['nickname']
 		turfinked = theweapdata['total_paint_point']
 		wins = theweapdata['win_count']
