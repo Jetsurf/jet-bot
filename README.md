@@ -78,6 +78,8 @@ There are a few admin commands to configure the bot. To run these commands, you 
  - `!nextsr` : Displays the next Splatoon 2 Salmon Run Map/Weapons
  - `!splatnetgear` : Gets all of the current gear for sale on SplatNet
  - `!storedm` ABILITY : DM's you when a piece of gear with ABILITY appears in the store (only once, can't DM the bot with this)
+ - `!map random` NUM : Generates a list of random maps (1-10, NUM is optional for just 1 random map)
+ - `!weapon random` NUM : Generates a list of random weapons (1-10, NUM is optional for just 1 random weapon)
  
 ### Splatoon 2 Splatnet Commands
 
@@ -88,6 +90,8 @@ The following commands require you to DM the bot with !token and follow the inst
  - `!srstats` : Shows various stats from Salmon Run
  - `!order ID` : The !splatnetgear command gives you 'ID to buy' run this with that ID to
    place an order in the splatnet store
+ - `!map stats` MAP : Pulls stats for a specific map (Accepts partial names)
+ - `!weapon stats` WEAPON : Pulls stats for a specific weapon (Accepts partial names)
 
  ### Bot Info Commands
  

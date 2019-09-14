@@ -15,10 +15,14 @@
 !nextsr : Displays the next Splatoon 2 Salmon Run Map/Weapons
 !splatnetgear : Gets all of the current gear for sale on SplatNet
 !storedm ABILITY : DM you when a piece of gear with ABILITY appears in the Splatnet Store (Can't DM me this command)
+!map random NUM : Generates a list of random maps (1-10, NUM is optional for just 1 random map)
+!weapon random NUM : Generates a list of random weapons (1-10, NUM is optional for just 1 random weapon)
 !github : Posts a link to my github page
 !support : Posts an invite link to my support discord guild
 For these Splatnet2 commands: DM the bot with !token to set this up (!deletetokens to remove them), then the following commands are available: 
 !rank : Shows your ranked gamemodes ranks
 !stats : Shows various stats from your gameplay
 !srstats : Shows various stats from Salmon Run
+!map stats MAP : Pulls stats for a specific map (Accepts partial names)
+!weapon stats WEAPON : Pulls stats for a specific weapon (Accepts partial names)
 !order ID : The !splatnetgear command gives "ID to order" run this with that ID to place an order in the store
