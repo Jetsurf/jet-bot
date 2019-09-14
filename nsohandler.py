@@ -153,7 +153,7 @@ class nsoHandler():
 		if not self.checkDuplicate(message.author.id):
 			await message.channel.send("You don't have a token setup with me! Please DM me !token with how to get one setup!")
 			return
-			
+
 		stmt = 'SELECT token FROM tokens WHERE clientid = %s'
 		self.cursor.execute(stmt, (str(message.author.id),))
 		Session_token = self.cursor.fetchone()[0].decode('utf-8')
@@ -285,9 +285,6 @@ class nsoHandler():
 			iksm = await self.nsotoken.do_iksm_refresh(message)
 			results_list = requests.get(url, headers=self.app_head_coop, cookies=dict(iksm_session=iksm))
 			thejson = json.loads(results_list.text)
-
-		with open('jetstats.json', 'w') as outfile:
- 		   json.dump(thejson, outfile)
 
 		embed = discord.Embed(colour=0x0004FF)
 		try:
