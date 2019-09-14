@@ -25,10 +25,26 @@ class serverUtils():
 	async def print_help(self, message, commands, prefix):
 		embed = discord.Embed(colour=0x2AE5B8)
 		embed.title = "Here is how to control me!"
+		titlenum = 0
+		theString = ''
+		title = ''
 		with open(commands, 'r') as f:
 			for line in f:
-				line = line.replace('!', prefix)
-				embed.add_field(name=line.split(":")[0], value=line.split(":")[1], inline=False)
+				if '*' in line and titlenum > 0:
+					embed.add_field(name=title, value=theString, inline=False)
+					title = line[1:]
+					theString = ''
+					titlenum += 1
+				elif titlenum == 0:
+					titlenum += 1
+					title = line[1:]
+				else:
+					line = line.replace('!', prefix)
+					if line.startswith(prefix):
+						theString = theString + "**" + line.replace(":", ":**")
+					else:
+						theString = theString + line
+			embed.add_field(name=title, value=theString, inline=False)	
 			embed.set_footer(text="If you want something added or want to report a bug/error, tell jetsurf#8514...")
 		await message.channel.send(embed=embed)
 
