@@ -411,6 +411,9 @@ class SplatInfo():
 	def matchMaps(self, query):
 		return self.matchItems("map", self.maps, query)
 
+	def matchWeapons(self, query):
+		return self.matchItems("weapon", self.weapons, query)
+
 	def getItemByName(self, set, name):
 		for i in set:
 			if i.name() == name:
