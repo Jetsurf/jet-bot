@@ -9,7 +9,7 @@
 !weapon random NUM : Generates a list of random weapons (1-10, NUM is optional for just 1 random weapon)
 !github : Posts a link to my github page
 !support : Posts an invite link to my support discord guild
-*Stat Splatnet
+*Stats From Splatnet
 For these Splatnet2 commands, DM the bot with !token to set this up (!deletetokens to remove them), then the following commands are available
 !rank : Shows your ranked gamemodes ranks
 !stats : Shows various stats from your gameplay

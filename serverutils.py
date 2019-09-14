@@ -39,8 +39,8 @@ class serverUtils():
 					titlenum += 1
 					title = line[1:]
 				else:
-					line = line.replace('!', prefix)
-					if line.startswith(prefix):
+					if line.startswith('!'):
+						line = line.replace('!', prefix)
 						theString = theString + "**" + line.replace(":", ":**")
 					else:
 						theString = theString + line
