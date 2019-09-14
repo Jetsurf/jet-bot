@@ -392,8 +392,8 @@ async def cmdWeaps(message, args):
 
 	subcommand = args[0].lower()
 	if subcommand == "help":
-		await message.channel.send("weaponss random [n]: Generate a list of random weapons")
-		await message.channel.send("weaponss stats WEAPON: Show player stats for WEAPON")
+		await message.channel.send("weapons random [n]: Generate a list of random weapons")
+		await message.channel.send("weapons stats WEAPON: Show player stats for WEAPON")
 		return
 	elif subcommand == "info":
 		await message.channel.send("TODO")
@@ -422,7 +422,7 @@ async def cmdWeaps(message, args):
 				count = int(args[1])
 
 		if count == 1:
-			await message.channel.send("Random map: " + splatInfo.getRandomWeapon().name())
+			await message.channel.send("Random weapon: " + splatInfo.getRandomWeapon().name())
 		else:
 			out = "Random weapons:\n"
 			for i in range(count):
@@ -430,7 +430,6 @@ async def cmdWeaps(message, args):
 			await message.channel.send(out)
 	else:
 		await message.channel.send("Unknown subcommand. Try 'maps help'")
-
 
 #Setup
 loadConfig()
