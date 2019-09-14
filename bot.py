@@ -352,7 +352,7 @@ async def cmdMaps(message, args):
 		await message.channel.send("maps stats MAP: Show player stats for MAP")
 		return
 	elif subcommand == "list":
-		await message.channel.send("TODO")
+		print("TODO")
 		return
 	elif subcommand == "stats":
 		if len(args) > 1:
@@ -396,9 +396,9 @@ async def cmdWeaps(message, args):
 		await message.channel.send("weapons stats WEAPON: Show player stats for WEAPON")
 		return
 	elif subcommand == "info":
-		await message.channel.send("TODO")
+		print("TODO")
 	elif subcommand == "list":
-		await message.channel.send("TODO")
+		print("TODO")
 		return
 	elif subcommand == "stats":
 		if len(args) > 1:
@@ -429,7 +429,7 @@ async def cmdWeaps(message, args):
 				out += "%d: %s\n" % (i + 1, splatInfo.getRandomWeapon().name())
 			await message.channel.send(out)
 	else:
-		await message.channel.send("Unknown subcommand. Try 'maps help'")
+		await message.channel.send("Unknown subcommand. Try 'weapons help'")
 
 #Setup
 loadConfig()
