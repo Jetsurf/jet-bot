@@ -334,53 +334,58 @@ async def on_message(message):
 		elif command.startswith('!'):
 			await serverVoices[theServer].playSound(command, message)
 	elif (cmd == 'map') or (cmd == 'maps'):
-		if len(args) == 0:
-			await channel.send("Try 'maps help' for help")
-			return
-
-		subcommand = args[0].lower()
-		if subcommand == "help":
-			await channel.send("maps random [n]: Generate a list of random maps")
-			return
-		elif subcommand == "list":
-			await channel.send("TODO")
-			return
-		elif subcommand == "stats":
-			if len(args) > 1:
-				themap = " ".join(args[1:])
-				match = splatInfo.matchMaps(themap)
-				if not match.isValid():
-					await channel.send(match.errorMessage())
-					return
-				id = match.get().id()
-				await nsohandler.mapParser(message, id)
-		elif subcommand == "random":
-			count = 1
-			if len(args) > 1:
-				if not args[1].isdigit():
-					await channel.send("Argument to 'maps random' must be numeric")
-					return
-				elif (int(args[1]) < 1) or (int(args[1]) > 10):
-					await channel.send("Number of random maps must be within 1..10")
-					return
-				else:
-					count = int(args[1])
-
-			if count == 1:
-				await channel.send("Random map: " + splatInfo.getRandomMap().name())
-			else:
-				out = "Random maps:\n"
-				for i in range(count):
-					out += "%d: %s\n" % (i + 1, splatInfo.getRandomMap().name())
-				await channel.send(out)
-		else:
-			await channel.send("Unknown subcommand. Try 'maps help'")
+		await cmdMaps(message, args)
 	elif (cmd == 'weapon') or (cmd == 'weapons'):
 		await message.channel.send("Ok, gettings ID's, check log")
 		await nsohandler.weaponParser(message)
 
 	sys.stdout.flush()
 	sys.stderr.flush()
+
+async def cmdMaps(message, args):
+	if len(args) == 0:
+		await message.channel.send("Try 'maps help' for help")
+		return
+
+	subcommand = args[0].lower()
+	if subcommand == "help":
+		await message.channel.send("maps random [n]: Generate a list of random maps")
+		await message.channel.send("maps stats MAP: Show player stats for MAP")
+		return
+	elif subcommand == "list":
+		await message.channel.send("TODO")
+		return
+	elif subcommand == "stats":
+		if len(args) > 1:
+			themap = " ".join(args[1:])
+			match = splatInfo.matchMaps(themap)
+			if not match.isValid():
+				await message.channel.send(match.errorMessage())
+				return
+			id = match.get().id()
+			await nsohandler.mapParser(message, id)
+	elif subcommand == "random":
+		count = 1
+		if len(args) > 1:
+			if not args[1].isdigit():
+				await message.channel.send("Argument to 'maps random' must be numeric")
+				return
+			elif (int(args[1]) < 1) or (int(args[1]) > 10):
+				await message.channel.send("Number of random maps must be within 1..10")
+				return
+			else:
+				count = int(args[1])
+
+		if count == 1:
+			await message.channel.send("Random map: " + splatInfo.getRandomMap().name())
+		else:
+			out = "Random maps:\n"
+			for i in range(count):
+				out += "%d: %s\n" % (i + 1, splatInfo.getRandomMap().name())
+			await message.channel.send(out)
+	else:
+		await message.channel.send("Unknown subcommand. Try 'maps help'")
+
 
 #Setup
 loadConfig()
