@@ -150,6 +150,10 @@ class nsoHandler():
 			return False
 
 	async def weaponParser(self, message, weapid):
+		if not self.checkDuplicate(message.author.id):
+			await message.channel.send("You don't have a token setup with me! Please DM me !token with how to get one setup!")
+			return
+			
 		stmt = 'SELECT token FROM tokens WHERE clientid = %s'
 		self.cursor.execute(stmt, (str(message.author.id),))
 		Session_token = self.cursor.fetchone()[0].decode('utf-8')
@@ -201,6 +205,10 @@ class nsoHandler():
 		await message.channel.send(embed=embed)
 
 	async def mapParser(self, message, mapid):
+		if not self.checkDuplicate(message.author.id):
+			await message.channel.send("You don't have a token setup with me! Please DM me !token with how to get one setup!")
+			return
+
 		stmt = 'SELECT token FROM tokens WHERE clientid = %s'
 		self.cursor.execute(stmt, (str(message.author.id),))
 		Session_token = self.cursor.fetchone()[0].decode('utf-8')
