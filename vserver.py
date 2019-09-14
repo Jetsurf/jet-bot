@@ -191,6 +191,9 @@ class voiceServer():
 					html = response.read()
 					soup = BeautifulSoup(html, "lxml")
 					vid =  soup.find_all(attrs={'class':'yt-uix-tile-link'})
+					if len(vid) == 0:
+						await message.channel.send("No videos found")
+						return
 					if 'googleadservices' in vid[0]['href']:
 						theURL = 'https://youtube.com' + vid[1]['href']
 					else:	
@@ -267,6 +270,10 @@ class voiceServer():
 		cursor.execute(stmt, (self.server,))
 		x = cursor.fetchall()
 		self.disconnect(theDB, cursor)
+
+		if len(x) == 0:
+			await message.channel.send("You have nothing added to your playlist, use !admin playlist URL to add songs!")
+			return
 
 		print("Playing random")
 		numToQueue = min(numToQueue, len(x))

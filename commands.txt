@@ -1,4 +1,24 @@
-!joinvoice or !join CHANNELNAME : Join a Voice Channel, must be exact Upper/Lower case. If no name is provided, join your current voice channel
+*General Splatnet
+!currentmaps : Displays the current Splatoon 2 Gamemodes/Maps
+!nextmaps : Displays the upcoming Splatoon 2 Gamemodes/Maps (!nextnextmaps displays 2 map rotations from now, etc)
+!currentsr : Displays the current Splatoon 2 Salmon Run Map/Weapons
+!nextsr : Displays the next Splatoon 2 Salmon Run Map/Weapons
+!splatnetgear : Gets all of the current gear for sale on SplatNet
+!storedm ABILITY : DM you when a piece of gear with ABILITY appears in the Splatnet Store (Can't DM me this command)
+!map random NUM : Generates a list of random maps (1-10, NUM is optional for just 1 random map)
+!weapon random NUM : Generates a list of random weapons (1-10, NUM is optional for just 1 random weapon)
+!github : Posts a link to my github page
+!support : Posts an invite link to my support discord guild
+*Stats From Splatnet
+For these Splatnet2 commands, DM the bot with !token to set this up (!deletetokens to remove them), then the following commands are available
+!rank : Shows your ranked gamemodes ranks
+!stats : Shows various stats from your gameplay
+!srstats : Shows various stats from Salmon Run
+!map stats MAP : Pulls stats for a specific map (Accepts partial names)
+!weapon stats WEAPON : Pulls stats for a specific weapon (Accepts partial names)
+!order ID : The !splatnetgear command gives "ID to order" run this with that ID to place an order in the store
+*Music
+!join CHANNELNAME : Join a Voice Channel, must be exact Upper/Lower case. If no name is provided, join your current voice channel
 !leavevoice : Leaves a joined voicechannel
 !play URL : Play/Queue Up a website to Play from URL
 !play SOURCE SEARCH : Searches SOURCE for SEARCH to play (Supports Youtube/Soundcloud)
@@ -9,16 +29,3 @@
 !skip : Skip the currently playing video
 !volume : Sets my voice volume (!play defaults to 7%, caps at 60% vol, resets after every song played)
 !sounds : List all possible sounds, prepend ! to any sound name to play
-!currentmaps : Displays the current Splatoon 2 Gamemodes/Maps
-!nextmaps : Displays the upcoming Splatoon 2 Gamemodes/Maps (!nextnextmaps displays 2 map rotations from now, etc)
-!currentsr : Displays the current Splatoon 2 Salmon Run Map/Weapons
-!nextsr : Displays the next Splatoon 2 Salmon Run Map/Weapons
-!splatnetgear : Gets all of the current gear for sale on SplatNet
-!storedm ABILITY : DM you when a piece of gear with ABILITY appears in the Splatnet Store (Can't DM me this command)
-!github : Posts a link to my github page
-!support : Posts an invite link to my support discord guild
-For these Splatnet2 commands: DM the bot with !token to set this up (!deletetokens to remove them), then the following commands are available: 
-!rank : Shows your ranked gamemodes ranks
-!stats : Shows various stats from your gameplay
-!srstats : Shows various stats from Salmon Run
-!order ID : The !splatnetgear command gives "ID to order" run this with that ID to place an order in the store

@@ -16,10 +16,12 @@ import requests
 import nsotoken
 import aiomysql
 import commandparser
+import splatinfo
 from subprocess import call
 from ctypes import *
 
 client = discord.Client()
+splatInfo = splatinfo.SplatInfo()
 commandParser = commandparser.CommandParser()
 mysqlConnect = None
 nsoHandler = None
@@ -150,7 +152,7 @@ async def on_member_remove(member):
 			
 @client.event
 async def on_guild_join(server):
-	global client, soundsDir, serverVoices, head, url, dev
+	global serverVoices, head, url, dev, owners
 	print("I joined server: " + server.name)
 	serverVoices[server.id] = vserver.voiceServer(client, mysqlConnect, server.id, soundsDir)
 
@@ -164,7 +166,7 @@ async def on_guild_join(server):
 
 @client.event
 async def on_guild_remove(server):
-	global serverVoices, head, url, dev
+	global serverVoices, head, url, dev, owners
 	print("I left server: " + server.name)
 	serverVoices[server.id] = None
 
@@ -331,8 +333,103 @@ async def on_message(message):
 			await serverVoices[theServer].printQueue(message)
 		elif command.startswith('!'):
 			await serverVoices[theServer].playSound(command, message)
+	elif (cmd == 'map') or (cmd == 'maps'):
+		await cmdMaps(message, args)
+	elif (cmd == 'weapon') or (cmd == 'weapons'):
+		await cmdWeaps(message, args)
+
 	sys.stdout.flush()
 	sys.stderr.flush()
+
+async def cmdMaps(message, args):
+	if len(args) == 0:
+		await message.channel.send("Try 'maps help' for help")
+		return
+
+	subcommand = args[0].lower()
+	if subcommand == "help":
+		await message.channel.send("maps random [n]: Generate a list of random maps")
+		await message.channel.send("maps stats MAP: Show player stats for MAP")
+		return
+	elif subcommand == "list":
+		print("TODO")
+		return
+	elif subcommand == "stats":
+		if len(args) > 1:
+			themap = " ".join(args[1:])
+			match = splatInfo.matchMaps(themap)
+			if not match.isValid():
+				await message.channel.send(match.errorMessage())
+				return
+			id = match.get().id()
+			await nsohandler.mapParser(message, id)
+	elif subcommand == "random":
+		count = 1
+		if len(args) > 1:
+			if not args[1].isdigit():
+				await message.channel.send("Argument to 'maps random' must be numeric")
+				return
+			elif (int(args[1]) < 1) or (int(args[1]) > 10):
+				await message.channel.send("Number of random maps must be within 1..10")
+				return
+			else:
+				count = int(args[1])
+
+		if count == 1:
+			await message.channel.send("Random map: " + splatInfo.getRandomMap().name())
+		else:
+			out = "Random maps:\n"
+			for i in range(count):
+				out += "%d: %s\n" % (i + 1, splatInfo.getRandomMap().name())
+			await message.channel.send(out)
+	else:
+		await message.channel.send("Unknown subcommand. Try 'maps help'")
+
+async def cmdWeaps(message, args):
+	if len(args) == 0:
+		await message.channel.send("Try 'weapons help' for help")
+		return
+
+	subcommand = args[0].lower()
+	if subcommand == "help":
+		await message.channel.send("weapons random [n]: Generate a list of random weapons")
+		await message.channel.send("weapons stats WEAPON: Show player stats for WEAPON")
+		return
+	elif subcommand == "info":
+		print("TODO")
+	elif subcommand == "list":
+		print("TODO")
+		return
+	elif subcommand == "stats":
+		if len(args) > 1:
+			theWeapon = " ".join(args[1:])
+			match = splatInfo.matchWeapons(theWeapon)
+			if not match.isValid():
+				await message.channel.send(match.errorMessage())
+				return
+			id = match.get().id()
+			await nsohandler.weaponParser(message, id)
+	elif subcommand == "random":
+		count = 1
+		if len(args) > 1:
+			if not args[1].isdigit():
+				await message.channel.send("Argument to 'weapons random' must be numeric")
+				return
+			elif (int(args[1]) < 1) or (int(args[1]) > 10):
+				await message.channel.send("Number of random weapons must be within 1..10")
+				return
+			else:
+				count = int(args[1])
+
+		if count == 1:
+			await message.channel.send("Random weapon: " + splatInfo.getRandomWeapon().name())
+		else:
+			out = "Random weapons:\n"
+			for i in range(count):
+				out += "%d: %s\n" % (i + 1, splatInfo.getRandomWeapon().name())
+			await message.channel.send(out)
+	else:
+		await message.channel.send("Unknown subcommand. Try 'weapons help'")
 
 #Setup
 loadConfig()

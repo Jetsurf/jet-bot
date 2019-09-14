@@ -7,8 +7,8 @@ import mysqlinfo
 class serverUtils():
 	def __init__(self, mysqlinfo):
 		self.mysqlinfo = mysqlinfo
-		self.valid_commands = [ "join", "play", "playrandom", "currentsong", "queue", "stop", "skip", "volume", "sounds", "currentmaps", "nextmaps",
-							 "currentsr", "nextsr", "splatnetgear", "leavevoice", "storedm", "rank", "stats", "srstats", "order", "github", "help" ]
+		self.valid_commands = [ "join", "play", "playrandom", "currentsong", "queue", "stop", "skip", "volume", "sounds", "currentmaps", "nextmaps", "weapon", "weapons"
+							 "currentsr", "nextsr", "splatnetgear", "leavevoice", "storedm", "rank", "stats", "srstats", "order", "github", "help", "map", "maps" ]
 		self.theDB = mysql.connector.connect(host=self.mysqlinfo.host, user=self.mysqlinfo.user, password=self.mysqlinfo.pw, database=self.mysqlinfo.db)
 		self.cursor = self.theDB.cursor(cursor_class=MySQLCursorPrepared)
 
@@ -25,10 +25,26 @@ class serverUtils():
 	async def print_help(self, message, commands, prefix):
 		embed = discord.Embed(colour=0x2AE5B8)
 		embed.title = "Here is how to control me!"
+		titlenum = 0
+		theString = ''
+		title = ''
 		with open(commands, 'r') as f:
 			for line in f:
-				line = line.replace('!', prefix)
-				embed.add_field(name=line.split(":")[0], value=line.split(":")[1], inline=False)
+				if '*' in line and titlenum > 0:
+					embed.add_field(name=title, value=theString, inline=False)
+					title = line[1:]
+					theString = ''
+					titlenum += 1
+				elif titlenum == 0:
+					titlenum += 1
+					title = line[1:]
+				else:
+					if line.startswith('!'):
+						line = line.replace('!', prefix)
+						theString = theString + "**" + line.replace(":", ":**")
+					else:
+						theString = theString + line
+			embed.add_field(name=title, value=theString, inline=False)	
 			embed.set_footer(text="If you want something added or want to report a bug/error, tell jetsurf#8514...")
 		await message.channel.send(embed=embed)
 
