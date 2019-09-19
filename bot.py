@@ -341,6 +341,9 @@ async def on_message(message):
 	sys.stdout.flush()
 	sys.stderr.flush()
 
+async def cmdSubs(message, args):
+	print("TODO")
+
 async def cmdMaps(message, args):
 	if len(args) == 0:
 		await message.channel.send("Try 'maps help' for help")
@@ -396,7 +399,20 @@ async def cmdWeaps(message, args):
 		await message.channel.send("weapons stats WEAPON: Show player stats for WEAPON")
 		return
 	elif subcommand == "info":
-		print("TODO")
+		if len(args) > 1:
+			theWeapon = " ".join(args[1:])
+			match = splatInfo.matchWeapons(theWeapon)
+			if not match.isValid():
+				await message.channel.send(match.errorMessage())
+				return
+			weap = match.get()
+			embed = discord.Embed(colour=0x0004FF)
+			embed.title = weap.name() + " Info"
+			embed.add_field(name="Sub", value=weap.sub().name(), inline=True)
+			embed.add_field(name="Sepcial", value=weap.special().name(), inline=True)
+			embed.add_field(name="Pts for Special", value=str(weap.specpts), inline=True)
+			embed.add_field(name="Level to Purchase", value=str(weap.level), inline=True)
+			await message.channel.send(embed=embed)
 	elif subcommand == "list":
 		print("TODO")
 		return
