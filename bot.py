@@ -395,8 +395,10 @@ async def cmdWeaps(message, args):
 
 	subcommand = args[0].lower()
 	if subcommand == "help":
-		await message.channel.send("weapons random [n]: Generate a list of random weapons")
-		await message.channel.send("weapons stats WEAPON: Show player stats for WEAPON")
+		await message.channel.send("weapons random [n]: Generate a list of random weapons\n"
+			"weapons stats WEAPON: Show player stats for WEAPON\n"
+			"weapons sub SUB: Show all weapons with SUB\n"
+			"weapons special SPECIAL: Show all weapons with SPECIAL")
 		return
 	elif subcommand == "info":
 		if len(args) > 1:
@@ -413,6 +415,10 @@ async def cmdWeaps(message, args):
 			embed.add_field(name="Pts for Special", value=str(weap.specpts), inline=True)
 			embed.add_field(name="Level to Purchase", value=str(weap.level), inline=True)
 			await message.channel.send(embed=embed)
+	elif subcommand == "sub":
+		pass
+	elif subcommand == "special":
+		pass
 	elif subcommand == "list":
 		print("TODO")
 		return
