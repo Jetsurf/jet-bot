@@ -187,7 +187,7 @@ class SplatInfo():
 			SplatSpecial("Curling Bomb Launcher", ["cubl"]),
 			SplatSpecial("Splat Bomb Launcher",   ["spbl", "triangle"]),
 			SplatSpecial("Suction Bomb Launcher", ["subl", "suck", "succ"]),
-			SplatSpecial("Baller",                ["b", "ball"]),
+			SplatSpecial("Baller",                ["b"]),
 			SplatSpecial("Booyah Bomb",           ["byb", "spirit bomb"]),	# "bb" conflicts with Bubble Blower
 			SplatSpecial("Bubble Blower",         ["bub", "bubbles"]),	# "bb" conflicts with Booyah Bomb
 			SplatSpecial("Ink Armor",             ["ia", "armour", "ink armour"]),
@@ -222,7 +222,7 @@ class SplatInfo():
 			["Blaster",        ["b"],   "Toxic Mist", "Splashdown", 170,	5,  210],
 			["Custom Blaster", ["cub"], "Autobomb",   "Inkjet",     180,	27, 211],
 
-			["Bloblobber",      ["bl"],  "Splash Wall", "Ink Storm",             180,	11,	3030],
+			["Bloblobber",      ["bl", "tub", "kwads tub"],  "Splash Wall", "Ink Storm",             180,	11,	3030],
 			["Bloblobber Deco", ["bld"], "Sprinkler",   "Suction Bomb Launcher", 180,	20,	3031],
 
 			["Carbon Roller",      ["cr"],   "Autobomb",   "Ink Storm",         160,	7,	1000],
@@ -240,7 +240,7 @@ class SplatInfo():
 
 			["Dynamo Roller",       ["dr"],  "Ink Mine",   "Sting Ray",  180,	20,	1020],
 			["Gold Dynamo Roller",  ["gdr"], "Splat Bomb", "Ink Armor",   200,	25,	1021],
-			["Kensa Dynamo Roller", ["kdr"], "Sprinkler",  "Booyah Bomb", 180,	29,	1022],
+			["Kensa Dynamo Roller", ["kdr", "buns wrecking roller"], "Sprinkler",  "Booyah Bomb", 180,	29,	1022],
 
 			["E-liter 4K",              ["el", "el4k"],     "Ink Mine", "Ink Storm",         170,	20, 2030],
 			["Custom E-liter 4K",       ["cel", "cel4k"],   "Squid Beakon", "Bubble Blower", 180,	26, 2031],
@@ -269,7 +269,7 @@ class SplatInfo():
 			["H-3 Nozzlenose D",      ["h3d"], "Suction Bomb", "Ink Armor",      190,	30, 311],
 			["Cherry H-3 Nozzlenose", ["ch3"], "Splash Wall",  "Bubble Blower",  190,	30, 312],
 
-			["Hydra Splatling",        ["hys"],            "Autobomb", "Splashdown", 180,	27,	4020],
+			["Hydra Splatling",        ["hys", "hydra"],            "Autobomb", "Splashdown", 180,	27,	4020],
 			["Custom Hydra Splatling", ["chys", "chydra"], "Ink Mine", "Ink Armor",  180,	29,	4021],
 
 			["Inkbrush",           ["ib"],  "Splat Bomb", "Splashdown", 160,	5,  1100],
@@ -277,7 +277,7 @@ class SplatInfo():
 			["Permanent Inkbrush", ["pib"], "Sprinkler",  "Ink Armor",  180,	12, 1102],
 
 			["Jet Squelcher",        ["js"],  "Toxic Mist", "Tenta Missiles", 180,	17,	90],
-			["Custom Jet Squelcher", ["cjs"], "Burst Bomb", "Sting Ray",      180,	27, 	91],
+			["Custom Jet Squelcher", ["cjs", "andys lemon squeezer"], "Burst Bomb", "Sting Ray",      180,	27, 	91],
 
 			["L-3 Nozzlenose",       ["l3"],  "Curling Bomb", "Baller",      180,	18, 300],
 			["L-3 Nozzlenose D",     ["l3d"], "Burst Bomb",   "Inkjet",      180,	23, 301],
@@ -294,7 +294,7 @@ class SplatInfo():
 			["N-Zap 89", ["nz89"], "Autobomb",     "Tenta Missiles", 190,	11, 61],
 			["N-Zap 83", ["nz83"], "Sprinkler",    "Ink Storm",      180,	19, 62],
 
-			["Octobrush",         ["ob"],  "Autobomb",     "Inkjet",         180,	10,	1110],
+			["Octobrush",         ["ob", "weeb machine"],  "Autobomb",     "Inkjet",         180,	10,	1110],
 			["Octobrush Nouveau", ["obn"], "Squid Beakon", "Tenta Missiles", 170,	15,	1111],
 			["Kensa Octobrush",   ["kob"], "Suction Bomb", "Ultra Stamp",    180,	20,	1112],
 
@@ -373,7 +373,7 @@ class SplatInfo():
 			["Dark Tetra Dualies",  ["dtd"], "Autobomb",  "Splashdown",        170,	14,	5040],
 			["Light Tetra Dualies", ["ltd"], "Sprinkler", "Autobomb Launcher", 200,	21,	5041],
 
-			["Tri-Slosher",         ["ts"],  "Burst Bomb", "Ink Armor", 210,	15,	3010],
+			["Tri-Slosher",         ["ts", "bucket", "jets beer"],  "Burst Bomb", "Ink Armor", 210,	15,	3010],
 			["Tri-Slosher Nouveau", ["tsn"], "Splat Bomb", "Ink Storm", 180,	17,	3011],
 
 			["Undercover Brella",         ["ub"],  "Ink Mine",   "Splashdown", 160,	13,	6020],
