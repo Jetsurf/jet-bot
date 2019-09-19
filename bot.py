@@ -341,9 +341,6 @@ async def on_message(message):
 	sys.stdout.flush()
 	sys.stderr.flush()
 
-async def cmdSubs(message, args):
-	print("TODO")
-
 async def cmdMaps(message, args):
 	if len(args) == 0:
 		await message.channel.send("Try 'maps help' for help")
