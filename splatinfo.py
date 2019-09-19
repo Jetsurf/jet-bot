@@ -54,6 +54,12 @@ class SplatWeapon(SplatMatchItem):
 	def id(self):
 		return self._id
 
+	def special(self):
+		return self._special
+
+	def sub(self):
+		return self._sub
+
 	# Exact duplicates will have a dupid pointing to the original weapon
 	def dupid(self):
 		return self._dupid
@@ -425,6 +431,12 @@ class SplatInfo():
 
 	def getWeaponByName(self, name):
 		return self.getItemByName(self.weapons, name)
+
+	def getWeaponsBySpecial(self, special):
+		return list(filter(lambda w: w.special() == special, self.weapons))
+
+	def getWeaponsBySub(self, sub):
+		return list(filter(lambda w: w.sub() == sub, self.weapons))
 
 	def getSpecialByName(self, name):
 		return self.getItemByName(self.specials, name)
