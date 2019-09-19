@@ -228,7 +228,7 @@ class SplatInfo():
 			["Carbon Roller",      ["cr"],   "Autobomb",   "Ink Storm",         160,	7,	1000],
 			["Carbon Roller Deco", ["crd"],  "Burst Bomb", "Autobomb Launcher", 190,	10,	1001],
 
-			["Clash Blaster",     ["cb", "trash blaster"],      "Splat Bomb",   "Stingray",       170,	30,	230],
+			["Clash Blaster",     ["cb", "trash blaster"],      "Splat Bomb",   "Sting Ray",       170,	30,	230],
 			["Clash Blaster Neo", ["cbn", "trash blaster neo"], "Curling Bomb", "Tenta Missiles", 180,	30,	231],
 
 			["Dapple Dualies",         ["dd", "red dapples"],               "Squid Beakon", "Suction Bomb Launcher", 180,	26,	5000],
@@ -238,7 +238,7 @@ class SplatInfo():
 			["Dualie Squelchers",        ["ds", "squelchies"],         "Point Sensor", "Tenta Missiles", 190,	12, 5030],
 			["Custom Dualie Squelchers", ["cds", "custom squelchies"], "Splat Bomb",   "Ink Storm",      190,	28, 5031],
 
-			["Dynamo Roller",       ["dr"],  "Ink Mine",   "String Ray",  180,	20,	1020],
+			["Dynamo Roller",       ["dr"],  "Ink Mine",   "Sting Ray",  180,	20,	1020],
 			["Gold Dynamo Roller",  ["gdr"], "Splat Bomb", "Ink Armor",   200,	25,	1021],
 			["Kensa Dynamo Roller", ["kdr"], "Sprinkler",  "Booyah Bomb", 180,	29,	1022],
 
@@ -249,7 +249,7 @@ class SplatInfo():
 			["Custom E-liter 4K Scope", ["cels", "cel4ks"], "Squid Beakon", "Bubble Blower", 180,	30, 2041],
 
 			["Explosher",        ["xp"],  "Sprinkler",    "Bubble Blower", 190,	18,	3040],
-			["Custom Explosher", ["cxp"], "Point Sensor"," Baller",        190,	22,	3041],
+			["Custom Explosher", ["cxp"], "Point Sensor", "Baller",        190,	22,	3041],
 
 			["Flingza Roller",      ["fr"],  "Splash Wall",  "Splat Bomb Launcher", 180,	24, 1030],
 			["Foil Flingza Roller", ["ffr"], "Suction Bomb", "Tenta Missiles",      180,	28, 1031],
@@ -300,7 +300,7 @@ class SplatInfo():
 
 			["Mini Splatling",       ["ms"],          "Burst Bomb",   "Tenta Missiles", 180,	23, 4000],
 			["Zink Mini Splatling",  ["zms", "zini"], "Curling Bomb", "Ink Storm",      200,	26, 4001],
-			["Kensa Mini Splatling", ["kms", "kini"], "Toxic Mist",   "Ulta Stamp",     180,	29, 4002],
+			["Kensa Mini Splatling", ["kms", "kini"], "Toxic Mist",   "Ultra Stamp",     180,	29, 4002],
 
 			["Range Blaster",        ["rngb"],  "Suction Bomb", "Ink Storm",      180,	14, 220],
 			["Custom Range Blaster", ["crngb"], "Curling Bomb", "Bubble Blower",  180,	18, 221],
@@ -345,7 +345,7 @@ class SplatInfo():
 
 			["Splat Roller",         ["sr"],   "Curling Bomb", "Splashdown",     170,	3,		1010],
 			["Krak-On Splat Roller", ["kosr"], "Squid Beakon", "Baller",         180,	12,	1011],
-			["Kensa Splat Roller",   ["ksr"],  "Splat Bomb",   "Bubbler Blower", 180,	14,	1012],
+			["Kensa Splat Roller",   ["ksr"],  "Splat Bomb",   "Bubble Blower", 180,	14,	1012],
 
 			["Splattershot",          ["ss"],           "Burst Bomb",   "Splashdown",     190,	2, 40],
 			["Tentatek Splattershot", ["ttss", "ttek"], "Splat Bomb",   "Inkjet",         210,	4, 41],
@@ -366,7 +366,7 @@ class SplatInfo():
 			["New Squiffer",     ["nsq"],  "Autobomb",     "Baller",    180,	17,	2001],
 			["Fresh Squiffer",   ["frsq"], "Suction Bomb", "Inkjet",    190,	24, 2002],
 
-			["Tenta Brella",         ["tb"],  "Squid Beakon", "Bubbler Blower",        180,	23, 6010],
+			["Tenta Brella",         ["tb"],  "Squid Beakon", "Bubble Blower",        180,	23, 6010],
 			["Tenta Sorella Brella", ["tsb"], "Splash Wall",  "Curling Bomb Launcher", 180,	28, 6011],
 			["Tenta Camo Brella",    ["tcb"], "Ink Mine",     "Ultra Stamp",           190,	28, 6012],
 
