@@ -165,37 +165,37 @@ class SplatInfo():
 
 	def initSubweapons(self):
 		self.subweapons = [
-			SplatSubweapon("Splat Bomb",   ["spb", "triangle"]),
+			SplatSubweapon("Splat Bomb",   ["spb", "triangle", "splat"]),
 			SplatSubweapon("Suction Bomb", ["sub", "suck", "succ"]),
-			SplatSubweapon("Burst Bomb",   ["bb", "bub"]),
-			SplatSubweapon("Curling Bomb", ["cb", "cub"]),
-			SplatSubweapon("Autobomb",     ["ab", "aub"]),
-			SplatSubweapon("Ink Mine",     ["im"]),
+			SplatSubweapon("Burst Bomb",   ["bb", "bub", "burst"]),
+			SplatSubweapon("Curling Bomb", ["cb", "cub", "curl"]),
+			SplatSubweapon("Autobomb",     ["ab", "aub", "chicken", "chickens"]),
+			SplatSubweapon("Ink Mine",     ["im", "mines", "mine"]),
 			SplatSubweapon("Toxic Mist",   ["tm", "fart"]),
-			SplatSubweapon("Point Sensor", ["ps"]),
-			SplatSubweapon("Splash Wall",  ["sw"]),
+			SplatSubweapon("Point Sensor", ["ps", "sensor"]),
+			SplatSubweapon("Splash Wall",  ["sw", "wall"]),
 			SplatSubweapon("Sprinkler",    ["s"]),
 			SplatSubweapon("Squid Beakon", ["sb", "beacon"]),
-			SplatSubweapon("Fizzy Bomb",   ["fb", "fib"]),
-			SplatSubweapon("Torpedo",      ["t"])
+			SplatSubweapon("Fizzy Bomb",   ["fb", "fib", "soda"]),
+			SplatSubweapon("Torpedo",      ["t", "torp"])
 		]
 
 	def initSpecials(self):
 		self.specials = [
-			SplatSpecial("Autobomb Launcher",     ["aubl"]),
-			SplatSpecial("Burst Bomb Launcher",   ["bubl"]),
-			SplatSpecial("Curling Bomb Launcher", ["cubl"]),
-			SplatSpecial("Splat Bomb Launcher",   ["spbl", "triangle"]),
+			SplatSpecial("Autobomb Launcher",     ["aubl", "chicken"]),
+			SplatSpecial("Burst Bomb Launcher",   ["bubl", "burst"]),
+			SplatSpecial("Curling Bomb Launcher", ["cubl", "curl", "curling"]),
+			SplatSpecial("Splat Bomb Launcher",   ["spbl", "triangle", "splat"]),
 			SplatSpecial("Suction Bomb Launcher", ["subl", "suck", "succ"]),
-			SplatSpecial("Baller",                ["b"]),
-			SplatSpecial("Booyah Bomb",           ["byb"]),             # "bb" conflicts with Bubble Blower
-			SplatSpecial("Bubble Blower",         ["bub", "bubbles"]),  # "bb" conflicts with Booyah Bomb
+			SplatSpecial("Baller",                ["b", "ball"]),
+			SplatSpecial("Booyah Bomb",           ["byb", "spirit bomb", "booyah"]),	# "bb" conflicts with Bubble Blower
+			SplatSpecial("Bubble Blower",         ["bub", "bubbles"]),	# "bb" conflicts with Booyah Bomb
 			SplatSpecial("Ink Armor",             ["ia", "armour", "ink armour"]),
 			SplatSpecial("Ink Storm",             ["is", "rain"]),
-			SplatSpecial("Inkjet",                ["ij"]),
-			SplatSpecial("Splashdown",            ["sd"]),
-			SplatSpecial("Sting Ray",             ["sr"]),
-			SplatSpecial("Tenta Missiles",        ["tm"]),
+			SplatSpecial("Inkjet",                ["ij", "jet"]),
+			SplatSpecial("Splashdown",            ["sd", "splash"]),
+			SplatSpecial("Sting Ray",             ["sr", "sting", "ray"]),
+			SplatSpecial("Tenta Missiles",        ["tm", "missiles"]),
 			SplatSpecial("Ultra Stamp",           ["us", "hammer"]),
 		]
 
