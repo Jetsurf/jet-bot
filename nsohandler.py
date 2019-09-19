@@ -149,7 +149,11 @@ class nsoHandler():
 		else:
 			return False
 
-	async def weaponParser(self, message):
+	async def weaponParser(self, message, weapid):
+		if not self.checkDuplicate(message.author.id):
+			await message.channel.send("You don't have a token setup with me! Please DM me !token with how to get one setup!")
+			return
+
 		stmt = 'SELECT token FROM tokens WHERE clientid = %s'
 		self.cursor.execute(stmt, (str(message.author.id),))
 		Session_token = self.cursor.fetchone()[0].decode('utf-8')
@@ -167,10 +171,44 @@ class nsoHandler():
 		except:
 			await message.channel.send(message.author.name + " there is a problem with your token")
 
+		theweapdata = None
+		gotweap = False
 		for i in weapondata:
-			print(weapondata[i]['weapon']['name'] + " ID: " + i)
+			if int(i) == weapid:
+				gotweap = True
+				theweapdata = weapondata[i]
+				break
+		
+		if not gotweap:
+			await message.channel.send("I have no stats for that weapon for you")
+			return
+
+		name = thejson['records']['player']['nickname']
+		turfinked = theweapdata['total_paint_point']
+		wins = theweapdata['win_count']
+		loss = theweapdata['lose_count']
+		if (wins + loss) != 0:
+			winper = int(wins / (wins + loss) * 100)
+		else:
+			winper = 0
+
+		freshcur = theweapdata['win_meter']
+		freshmax = theweapdata['max_win_meter']
+
+		embed = discord.Embed(colour=0x0004FF)
+		embed.title = str(name) + "'s Stats for " + theweapdata['weapon']['name']
+		embed.set_thumbnail(url='https://splatoon2.ink/assets/splatnet' + theweapdata['weapon']['image'])
+		embed.add_field(name="Wins/Losses/%", value=str(wins) + "/" + str(loss) + "/" + str(winper) + "%", inline=True)
+		embed.add_field(name="Turf Inked", value=str(turfinked), inline=True)
+		embed.add_field(name="Freshness (Current/Max)", value=str(freshcur) + "/" + str(freshmax), inline=True)
+
+		await message.channel.send(embed=embed)
 
 	async def mapParser(self, message, mapid):
+		if not self.checkDuplicate(message.author.id):
+			await message.channel.send("You don't have a token setup with me! Please DM me !token with how to get one setup!")
+			return
+
 		stmt = 'SELECT token FROM tokens WHERE clientid = %s'
 		self.cursor.execute(stmt, (str(message.author.id),))
 		Session_token = self.cursor.fetchone()[0].decode('utf-8')
@@ -247,9 +285,6 @@ class nsoHandler():
 			iksm = await self.nsotoken.do_iksm_refresh(message)
 			results_list = requests.get(url, headers=self.app_head_coop, cookies=dict(iksm_session=iksm))
 			thejson = json.loads(results_list.text)
-
-		with open('jetstats.json', 'w') as outfile:
- 		   json.dump(thejson, outfile)
 
 		embed = discord.Embed(colour=0x0004FF)
 		try:

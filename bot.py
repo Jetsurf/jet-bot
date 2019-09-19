@@ -336,8 +336,7 @@ async def on_message(message):
 	elif (cmd == 'map') or (cmd == 'maps'):
 		await cmdMaps(message, args)
 	elif (cmd == 'weapon') or (cmd == 'weapons'):
-		await message.channel.send("Ok, gettings ID's, check log")
-		await nsohandler.weaponParser(message)
+		await cmdWeaps(message, args)
 
 	sys.stdout.flush()
 	sys.stderr.flush()
@@ -353,7 +352,7 @@ async def cmdMaps(message, args):
 		await message.channel.send("maps stats MAP: Show player stats for MAP")
 		return
 	elif subcommand == "list":
-		await message.channel.send("TODO")
+		print("TODO")
 		return
 	elif subcommand == "stats":
 		if len(args) > 1:
@@ -386,6 +385,64 @@ async def cmdMaps(message, args):
 	else:
 		await message.channel.send("Unknown subcommand. Try 'maps help'")
 
+async def cmdWeaps(message, args):
+	if len(args) == 0:
+		await message.channel.send("Try 'weapons help' for help")
+		return
+
+	subcommand = args[0].lower()
+	if subcommand == "help":
+		await message.channel.send("weapons random [n]: Generate a list of random weapons")
+		await message.channel.send("weapons stats WEAPON: Show player stats for WEAPON")
+		return
+	elif subcommand == "info":
+		if len(args) > 1:
+			theWeapon = " ".join(args[1:])
+			match = splatInfo.matchWeapons(theWeapon)
+			if not match.isValid():
+				await message.channel.send(match.errorMessage())
+				return
+			weap = match.get()
+			embed = discord.Embed(colour=0x0004FF)
+			embed.title = weap.name() + " Info"
+			embed.add_field(name="Sub", value=weap.sub().name(), inline=True)
+			embed.add_field(name="Sepcial", value=weap.special().name(), inline=True)
+			embed.add_field(name="Pts for Special", value=str(weap.specpts), inline=True)
+			embed.add_field(name="Level to Purchase", value=str(weap.level), inline=True)
+			await message.channel.send(embed=embed)
+	elif subcommand == "list":
+		print("TODO")
+		return
+	elif subcommand == "stats":
+		if len(args) > 1:
+			theWeapon = " ".join(args[1:])
+			match = splatInfo.matchWeapons(theWeapon)
+			if not match.isValid():
+				await message.channel.send(match.errorMessage())
+				return
+			id = match.get().id()
+			await nsohandler.weaponParser(message, id)
+	elif subcommand == "random":
+		count = 1
+		if len(args) > 1:
+			if not args[1].isdigit():
+				await message.channel.send("Argument to 'weapons random' must be numeric")
+				return
+			elif (int(args[1]) < 1) or (int(args[1]) > 10):
+				await message.channel.send("Number of random weapons must be within 1..10")
+				return
+			else:
+				count = int(args[1])
+
+		if count == 1:
+			await message.channel.send("Random weapon: " + splatInfo.getRandomWeapon().name())
+		else:
+			out = "Random weapons:\n"
+			for i in range(count):
+				out += "%d: %s\n" % (i + 1, splatInfo.getRandomWeapon().name())
+			await message.channel.send(out)
+	else:
+		await message.channel.send("Unknown subcommand. Try 'weapons help'")
 
 #Setup
 loadConfig()
