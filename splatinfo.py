@@ -61,6 +61,9 @@ class SplatWeapon(SplatMatchItem):
 	def special(self):
 		return self._special
 
+	def sub(self):
+		return self._sub
+
 	def specpts(self):
 		return self.specpts
 
@@ -442,6 +445,12 @@ class SplatInfo():
 
 	def getWeaponByName(self, name):
 		return self.getItemByName(self.weapons, name)
+
+	def getWeaponsBySpecial(self, special):
+		return list(filter(lambda w: w.special() == special, self.weapons))
+
+	def getWeaponsBySub(self, sub):
+		return list(filter(lambda w: w.sub() == sub, self.weapons))
 
 	def getSpecialByName(self, name):
 		return self.getItemByName(self.specials, name)
