@@ -91,11 +91,11 @@ def scanAdmins(startup=0, id=None):
 				if mem.guild_permissions.administrator and mem not in serverAdmins[server.id]:
 					serverAdmins[server.id].append(mem)
 	else:
-		serverAdmins[id] = []
+		serverAdmins[id.id] = []
 		for mem in id.members:
 			try:
 				if mem.guild_permissions.administrator and mem not in serverAdmins[id.id]:
-					serverAdmins[server].append(mem)
+					serverAdmins[id.id].append(mem)
 			except:
 					return
 				
@@ -155,6 +155,7 @@ async def on_guild_join(server):
 	global serverVoices, head, url, dev, owners
 	print("I joined server: " + server.name)
 	serverVoices[server.id] = vserver.voiceServer(client, mysqlConnect, server.id, soundsDir)
+	scanAdmins(server)
 
 	if dev == 0:
 		print('I am now in ' + str(len(client.guilds)) + ' servers, posting to discordbots.org')
@@ -325,6 +326,9 @@ async def on_message(message):
 			serverVoices[theServer].end()
 		elif cmd == 'volume':
 			vol = int(command.split(' ')[1])
+			if not vol.isdigit():
+				await message.channel.send("Volume must be a digit 1-60")
+				return
 			if vol > 60:
 				vol = 60
 			await channel.send("Setting Volume to " + str(vol) + "%")
