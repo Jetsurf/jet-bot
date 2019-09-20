@@ -91,11 +91,11 @@ def scanAdmins(startup=0, id=None):
 				if mem.guild_permissions.administrator and mem not in serverAdmins[server.id]:
 					serverAdmins[server.id].append(mem)
 	else:
-		serverAdmins[id] = []
+		serverAdmins[id.id] = []
 		for mem in id.members:
 			try:
 				if mem.guild_permissions.administrator and mem not in serverAdmins[id.id]:
-					serverAdmins[server].append(mem)
+					serverAdmins[id.id].append(mem)
 			except:
 					return
 				
@@ -155,6 +155,7 @@ async def on_guild_join(server):
 	global serverVoices, head, url, dev, owners
 	print("I joined server: " + server.name)
 	serverVoices[server.id] = vserver.voiceServer(client, mysqlConnect, server.id, soundsDir)
+	scanAdmins(server)
 
 	if dev == 0:
 		print('I am now in ' + str(len(client.guilds)) + ' servers, posting to discordbots.org')
@@ -325,6 +326,9 @@ async def on_message(message):
 			serverVoices[theServer].end()
 		elif cmd == 'volume':
 			vol = int(command.split(' ')[1])
+			if not vol.isdigit():
+				await message.channel.send("Volume must be a digit 1-60")
+				return
 			if vol > 60:
 				vol = 60
 			await channel.send("Setting Volume to " + str(vol) + "%")
@@ -392,11 +396,56 @@ async def cmdWeaps(message, args):
 
 	subcommand = args[0].lower()
 	if subcommand == "help":
-		await message.channel.send("weapons random [n]: Generate a list of random weapons")
-		await message.channel.send("weapons stats WEAPON: Show player stats for WEAPON")
+		await message.channel.send("**weapons random [n]**: Generate a list of random weapons\n"
+			"**weapons stats WEAPON**: Show player stats for WEAPON\n"
+			"**weapons sub SUB**: Show all weapons with SUB\n"
+			"**weapons special SPECIAL**: Show all weapons with SPECIAL")
 		return
 	elif subcommand == "info":
-		print("TODO")
+		if len(args) > 1:
+			theWeapon = " ".join(args[1:])
+			match = splatInfo.matchWeapons(theWeapon)
+			if not match.isValid():
+				await message.channel.send(match.errorMessage())
+				return
+			weap = match.get()
+			embed = discord.Embed(colour=0x0004FF)
+			embed.title = weap.name() + " Info"
+			embed.add_field(name="Sub", value=weap.sub().name(), inline=True)
+			embed.add_field(name="Sepcial", value=weap.special().name(), inline=True)
+			embed.add_field(name="Pts for Special", value=str(weap.specpts), inline=True)
+			embed.add_field(name="Level to Purchase", value=str(weap.level), inline=True)
+			await message.channel.send(embed=embed)
+	elif subcommand == "sub":
+		if len(args) > 1:
+			theSub = " ".join(args[1:])
+			actualSub = splatInfo.matchSubweapons(theSub)
+			if not actualSub.isValid():
+				await message.channel.send(actualSub.errorMessage())
+				return
+			weaponsList = splatInfo.getWeaponsBySub(actualSub.get())
+			embed = discord.Embed(colour=0x0004FF)
+			embed.title = "Weapons with Subweapon: " + actualSub.get().name()
+			for i in weaponsList:
+				embed.add_field(name=i.name(), value="Special: " + i.special().name() +
+					"\nPts for Special: " + str(i.specpts) +
+					"\nLevel To Purchase: " + str(i.level), inline=True)
+			await message.channel.send(embed=embed)
+	elif subcommand == "special":
+		if len(args) > 1:
+			theSpecial = " ".join(args[1:])
+			actualSpecial = splatInfo.matchSpecials(theSpecial)
+			if not actualSpecial.isValid():
+				await message.channel.send(actualSpecial.errorMessage())
+				return
+			weaponsList = splatInfo.getWeaponsBySpecial(actualSpecial.get())
+			embed = discord.Embed(colour=0x0004FF)
+			embed.title = "Weapons with Special: " + actualSpecial.get().name()
+			for i in weaponsList:
+				embed.add_field(name=i.name(), value="Subweapon: " + i.sub().name() +
+					"\nPts for Special: " + str(i.specpts) +
+					"\nLevel To Purchase: " + str(i.level), inline=True)
+			await message.channel.send(embed=embed)
 	elif subcommand == "list":
 		print("TODO")
 		return
