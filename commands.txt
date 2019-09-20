@@ -7,6 +7,7 @@
 !storedm ABILITY : DM you when a piece of gear with ABILITY appears in the Splatnet Store (Can't DM me this command)
 !map random NUM : Generates a list of random maps (1-10, NUM is optional for just 1 random map)
 !weapon random NUM : Generates a list of random weapons (1-10, NUM is optional for just 1 random weapon)
+!weapon info WEAP : Gets Sub/Special/Level/Points for special for WEAP
 !weapon sub SUB : Gets all weapons with the subweapon SUB
 !weapon special SPECIAL : Gets all weapons with the special SPECIAL
 !github : Posts a link to my github page
