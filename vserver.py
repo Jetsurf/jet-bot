@@ -76,7 +76,7 @@ class voiceServer():
 		cursor.close()
 		db.close()
 
-	async def joinVoiceChannel(self, channelName, message):
+	async def joinVoiceChannel(self, message, channelName=None):
 		id = 0
 		channel = None
 		
@@ -113,8 +113,11 @@ class voiceServer():
 		if self.source != None:
 			return
 		
-		source = discord.FFmpegPCMAudio(self.soundsDir + '/' + command[1:] + '.mp3')
-		source = discord.PCMVolumeTransformer(source)
+		try:
+			source = discord.FFmpegPCMAudio(self.soundsDir + '/' + command[1:] + '.mp3')
+			source = discord.PCMVolumeTransformer(source)
+		except:
+			return
 
 		if '!wtfboom' in command or '!johncena' in command or '!ohmygod' in command or "!leeroy" in command:
 			source.volume = .1
@@ -299,7 +302,7 @@ class voiceServer():
 			self.play()
 		if numToQueue > 1 and self.source == None:
 			await message.channel.send("Also queued " + str(numToQueue - 1) + " more song(s) from my playlist")
-		else:
+		elif numToQueue > 1:
 			await message.channel.send("Added " + str(numToQueue) + " more song(s) to the queue from my playlist")
 
 	async def addPlaylist(self, message):
