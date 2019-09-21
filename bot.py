@@ -30,7 +30,7 @@ serverVoices = {}
 serverAdmins = {}
 serverUtils = None
 token = ''
-owners = None
+owners = []
 dev = 1
 soundsDir = ''
 commands = ''
@@ -93,12 +93,9 @@ def scanAdmins(startup=0, id=None):
 	else:
 		serverAdmins[id.id] = []
 		for mem in id.members:
-			try:
-				if mem.guild_permissions.administrator and mem not in serverAdmins[id.id]:
-					serverAdmins[id.id].append(mem)
-			except:
-					return
-				
+			if mem.guild_permissions.administrator and mem not in serverAdmins[id.id]:
+				serverAdmins[id.id].append(mem)
+							
 @client.event
 async def on_member_update(before, after):
 	if before.guild_permissions.administrator or after.guild_permissions.administrator:
@@ -118,7 +115,12 @@ async def on_ready():
 	#Get owners from Discord team api
 	print("Loading owners...")
 	theapp = await client.application_info()
-	owners = [x.id for x in theapp.team.members]
+	ownerids = [x.id for x in theapp.team.members]
+	for mem in client.get_all_members():
+		if mem.id in ownerids:
+			owners.append(mem)
+		if len(owners) == len(ownerids):
+			break;
 
 	await client.change_presence(status=discord.Status.online, activity=discord.Game("Use !help for directions!"))
 
@@ -166,6 +168,9 @@ async def on_guild_join(server):
 		r = requests.post(url, headers=head, json=body)
 	else:
 		print('I am now in ' + str(len(client.guilds)) + ' servers')
+
+	for mem in owners:
+		await mem.send("I joined server: " + server.name + " - I am now in " + len(client.guilds) + " servers with " + str(len(set(client.get_all_members()))) + " total members")
 	sys.stdout.flush()
 
 @client.event
@@ -180,9 +185,11 @@ async def on_guild_remove(server):
 		r = requests.post(url, headers=head, json=body)
 	else:
 		print('I am now in ' + str(len(client.guilds)) + ' servers')
+
+	for mem in owners:
+		await mem.send("I left server: " + server.name + " - I am now in " + len(client.guilds) + " servers with " + str(len(set(client.get_all_members()))) + " total members")
 	sys.stdout.flush()
 
-test = 0
 @client.event
 async def on_message(message):
 	global serverVoices, serverAdmins, soundsDir, serverUtils
@@ -196,7 +203,7 @@ async def on_message(message):
 	channel = message.channel
 
 	if message.guild == None:
-		if message.author.id in owners:
+		if message.author in owners:
 			if '!servers' in message.content:
 				numServers = str(len(client.guilds))
 				serverNames = ""
