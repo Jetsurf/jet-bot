@@ -290,9 +290,9 @@ async def on_message(message):
 		await channel.send("Current Sounds:\n```" + theSounds + "```")
 	elif cmd == 'join':
 		if len(args) > 0:
-			await serverVoices[theServer].joinVoiceChannel(message.content.split(" ", 1)[1], message)
+			await serverVoices[theServer].joinVoiceChannel(message, channelName=' '.join(args[0:]))
 		else:
-			await serverVoices[theServer].joinVoiceChannel(command, message)
+			await serverVoices[theServer].joinVoiceChannel(message)
 	elif cmd == 'currentmaps':
 		await nsohandler.maps(message)
 	elif cmd == 'nextmaps':

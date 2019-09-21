@@ -76,7 +76,7 @@ class voiceServer():
 		cursor.close()
 		db.close()
 
-	async def joinVoiceChannel(self, channelName, message):
+	async def joinVoiceChannel(self, message, channelName=None):
 		id = 0
 		channel = None
 		
