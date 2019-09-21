@@ -131,13 +131,16 @@ async def on_ready():
 
 	print("Doing Startup...")
 	for server in client.guilds:
-		serverVoices[server.id] = vserver.voiceServer(client, mysqlConnect, server.id, soundsDir)
+		#Don't recreate serverVoices on reconnect
+		if server.id not in serverVoices:
+			serverVoices[server.id] = vserver.voiceServer(client, mysqlConnect, server.id, soundsDir)
 
-	commandParser.setMysqlInfo(mysqlConnect)
-	commandParser.setUserid(client.user.id)
-	serverUtils = serverutils.serverUtils(mysqlConnect)
-	nsoTokens = nsotoken.Nsotoken(client, mysqlConnect)
-	nsohandler = nsohandler.nsoHandler(client, mysqlConnect, nsoTokens)
+	if nsohandler == None:
+		commandParser.setMysqlInfo(mysqlConnect)
+		commandParser.setUserid(client.user.id)
+		serverUtils = serverutils.serverUtils(mysqlConnect)
+		nsoTokens = nsotoken.Nsotoken(client, mysqlConnect)
+		nsohandler = nsohandler.nsoHandler(client, mysqlConnect, nsoTokens)
 	scanAdmins(startup=1)
 	print('Done\n------')
 	sys.stdout.flush()
