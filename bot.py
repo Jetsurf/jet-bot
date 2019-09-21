@@ -110,8 +110,8 @@ async def on_guild_role_update(before, after):
 
 @client.event
 async def on_ready():
-	global client, soundsDir, mysqlConnect, serverUtils
-	global nsohandler, nsoTokens, head, url, dev, owners, commandParser
+	global client, soundsDir, mysqlConnect, serverUtils, serverVoices
+	global nsoHandler, nsoTokens, head, url, dev, owners, commandParser
 
 	print('Logged in as,', client.user.name, client.user.id)
 
@@ -135,12 +135,12 @@ async def on_ready():
 		if server.id not in serverVoices:
 			serverVoices[server.id] = vserver.voiceServer(client, mysqlConnect, server.id, soundsDir)
 
-	if nsohandler == None:
+	if nsoHandler == None:
 		commandParser.setMysqlInfo(mysqlConnect)
 		commandParser.setUserid(client.user.id)
 		serverUtils = serverutils.serverUtils(mysqlConnect)
 		nsoTokens = nsotoken.Nsotoken(client, mysqlConnect)
-		nsohandler = nsohandler.nsoHandler(client, mysqlConnect, nsoTokens)
+		nsoHandler = nsohandler.nsoHandler(client, mysqlConnect, nsoTokens)
 	scanAdmins(startup=1)
 	print('Done\n------')
 	sys.stdout.flush()
@@ -186,7 +186,7 @@ test = 0
 @client.event
 async def on_message(message):
 	global serverVoices, serverAdmins, soundsDir, serverUtils
-	global nsohandler, owners, commands, commandParser
+	global nsoHandler, owners, commands, commandParser
 
 	# Filter out bots and system messages
 	if message.author.bot or message.type != discord.MessageType.default:
@@ -270,15 +270,15 @@ async def on_message(message):
 	elif cmd == 'alive':
 		await channel.send("Hey " + message.author.name + ", I'm alive so shut up! :japanese_goblin:")
 	elif cmd == 'rank':
-		await nsohandler.getRanks(message)
+		await nsoHandler.getRanks(message)
 	elif cmd == 'order':
 		await nsohandler.orderGear(message)
 	elif cmd == 'stats':
 		await nsohandler.getStats(message)
 	elif cmd == 'srstats':
-		await nsohandler.getSRStats(message)
+		await nsoHandler.getSRStats(message)
 	elif cmd == 'storedm':
-		await nsohandler.addStoreDM(message)
+		await nsoHandler.addStoreDM(message)
 	elif cmd == 'github':
 		await channel.send('Here is my github page! : https://github.com/Jetsurf/jet-bot')
 	elif cmd == 'support':
@@ -297,15 +297,15 @@ async def on_message(message):
 		else:
 			await serverVoices[theServer].joinVoiceChannel(message)
 	elif cmd == 'currentmaps':
-		await nsohandler.maps(message)
+		await nsoHandler.maps(message)
 	elif cmd == 'nextmaps':
-		await nsohandler.maps(message, offset=min(11, message.content.count('next')))
+		await nsoHandler.maps(message, offset=min(11, message.content.count('next')))
 	elif cmd == 'currentsr':
-		await nsohandler.srParser(message)
+		await nsoHandler.srParser(message)
 	elif cmd == 'splatnetgear':
-		await nsohandler.gearParser(message)
+		await nsoHandler.gearParser(message)
 	elif cmd == 'nextsr':
-		await nsohandler.srParser(message, 1)
+		await nsoHandler.srParser(message, 1)
 	elif (cmd == 'us') or (cmd == 'eu') or (cmd == 'jp'):
 		await setCRole(message)
 	elif serverVoices[theServer].vclient is not None:
@@ -358,8 +358,8 @@ async def cmdMaps(message, args):
 
 	subcommand = args[0].lower()
 	if subcommand == "help":
-		await message.channel.send("maps random [n]: Generate a list of random maps")
-		await message.channel.send("maps stats MAP: Show player stats for MAP")
+		await message.channel.send("**maps random [n]**: Generate a list of random maps\n"
+			"**maps stats MAP**: Show player stats for MAP")
 		return
 	elif subcommand == "list":
 		print("TODO")
@@ -372,7 +372,7 @@ async def cmdMaps(message, args):
 				await message.channel.send(match.errorMessage())
 				return
 			id = match.get().id()
-			await nsohandler.mapParser(message, id)
+			await nsoHandler.mapParser(message, id)
 	elif subcommand == "random":
 		count = 1
 		if len(args) > 1:
@@ -463,7 +463,7 @@ async def cmdWeaps(message, args):
 				await message.channel.send(match.errorMessage())
 				return
 			id = match.get().id()
-			await nsohandler.weaponParser(message, id)
+			await nsoHandler.weaponParser(message, id)
 	elif subcommand == "random":
 		count = 1
 		if len(args) > 1:
