@@ -314,8 +314,11 @@ async def on_message(message):
 		elif cmd == 'leavevoice':
 			await serverVoices[theServer].vclient.disconnect()
 		elif cmd == 'playrandom':
-			if len(command) > 11:
-				await serverVoices[theServer].playRandom(message, int(message.content.split(' ')[1]))
+			if len(args) > 0:
+				if args[0].isdigit():
+					await serverVoices[theServer].playRandom(message, int(args[0]))
+				else:
+					await message.channel.send("Num to play must be a number")
 			else:
 				await serverVoices[theServer].playRandom(message, 1)
 		elif cmd == 'play':

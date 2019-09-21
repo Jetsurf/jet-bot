@@ -299,7 +299,7 @@ class voiceServer():
 			self.play()
 		if numToQueue > 1 and self.source == None:
 			await message.channel.send("Also queued " + str(numToQueue - 1) + " more song(s) from my playlist")
-		else:
+		elif numToQueue > 1:
 			await message.channel.send("Added " + str(numToQueue) + " more song(s) to the queue from my playlist")
 
 	async def addPlaylist(self, message):
