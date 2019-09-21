@@ -113,8 +113,11 @@ class voiceServer():
 		if self.source != None:
 			return
 		
-		source = discord.FFmpegPCMAudio(self.soundsDir + '/' + command[1:] + '.mp3')
-		source = discord.PCMVolumeTransformer(source)
+		try:
+			source = discord.FFmpegPCMAudio(self.soundsDir + '/' + command[1:] + '.mp3')
+			source = discord.PCMVolumeTransformer(source)
+		except:
+			return
 
 		if '!wtfboom' in command or '!johncena' in command or '!ohmygod' in command or "!leeroy" in command:
 			source.volume = .1

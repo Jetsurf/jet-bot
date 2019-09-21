@@ -289,7 +289,7 @@ async def on_message(message):
 		theSounds = theSounds.replace('\n', ', ')
 		await channel.send("Current Sounds:\n```" + theSounds + "```")
 	elif cmd == 'join':
-		if len(message.content) > 6:
+		if len(args) > 0:
 			await serverVoices[theServer].joinVoiceChannel(message.content.split(" ", 1)[1], message)
 		else:
 			await serverVoices[theServer].joinVoiceChannel(command, message)
@@ -338,7 +338,7 @@ async def on_message(message):
 			serverVoices[theServer].source.volume = float(vol / 100)
 		elif cmd == 'queue':
 			await serverVoices[theServer].printQueue(message)
-		elif command.startswith('!'):
+		else:
 			await serverVoices[theServer].playSound(command, message)
 	elif (cmd == 'map') or (cmd == 'maps'):
 		await cmdMaps(message, args)
