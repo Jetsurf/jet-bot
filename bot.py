@@ -284,9 +284,9 @@ async def on_message(message):
 	elif cmd == 'rank':
 		await nsoHandler.getRanks(message)
 	elif cmd == 'order':
-		await nsohandler.orderGear(message)
+		await nsoHandler.orderGear(message)
 	elif cmd == 'stats':
-		await nsohandler.getStats(message)
+		await nsoHandler.getStats(message)
 	elif cmd == 'srstats':
 		await nsoHandler.getSRStats(message)
 	elif cmd == 'storedm':

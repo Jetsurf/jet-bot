@@ -189,7 +189,7 @@ class nsoHandler():
 		else:
 			return False
 
-	def getNSOJSON(self, header, url):
+	async def getNSOJSON(self, message, header, url):
 		stmt = 'SELECT token FROM tokens WHERE clientid = %s'
 		self.cursor.execute(stmt, (str(message.author.id),))
 		Session_token = self.cursor.fetchone()[0].decode('utf-8')
@@ -210,7 +210,7 @@ class nsoHandler():
 			await message.channel.send("You don't have a token setup with me! Please DM me !token with how to get one setup!")
 			return
 
-		thejson = self.getNSOJSON(self.app_head, "https://app.splatoon2.nintendo.net/api/records")
+		thejson = await self.getNSOJSON(message, self.app_head, "https://app.splatoon2.nintendo.net/api/records")
 		if thejson == None:
 			await message.channel.send(message.author.name + " there is a problem with your token")
 			return
@@ -254,23 +254,12 @@ class nsoHandler():
 			await message.channel.send("You don't have a token setup with me! Please DM me !token with how to get one setup!")
 			return
 
-		stmt = 'SELECT token FROM tokens WHERE clientid = %s'
-		self.cursor.execute(stmt, (str(message.author.id),))
-		Session_token = self.cursor.fetchone()[0].decode('utf-8')
-		url = "https://app.splatoon2.nintendo.net/api/records"
-		results_list = requests.get(url, headers=self.app_head, cookies=dict(iksm_session=Session_token))
-		thejson = json.loads(results_list.text)	
-
-		if 'AUTHENTICATION_ERROR' in str(thejson):
-			iksm = await self.nsotoken.do_iksm_refresh(message)
-			results_list = requests.get(url, headers=self.app_head_coop, cookies=dict(iksm_session=iksm))
-			thejson = json.loads(results_list.text)
-
-		try:
-			allmapdata = thejson['records']['stage_stats']
-		except:
+		thejson = await self.getNSOJSON(message, self.app_head, "https://app.splatoon2.nintendo.net/api/records")
+		if thejson == None:
 			await message.channel.send(message.author.name + " there is a problem with your token")
+			return
 
+		allmapdata = thejson['records']['stage_stats']
 		themapdata = None
 		for i in allmapdata:
 			if int(i) == mapid:
@@ -319,25 +308,13 @@ class nsoHandler():
 			await message.channel.send("You don't have a token setup with me! Please DM me !token with how to get one setup!")
 			return
 
-		stmt = 'SELECT token FROM tokens WHERE clientid = %s'
-		self.cursor.execute(stmt, (str(message.author.id),))
-		Session_token = self.cursor.fetchone()[0].decode('utf-8')
-		url = "https://app.splatoon2.nintendo.net/api/records"
-		results_list = requests.get(url, headers=self.app_head, cookies=dict(iksm_session=Session_token))
-		thejson = json.loads(results_list.text)
-
-		if 'AUTHENTICATION_ERROR' in str(thejson):
-			iksm = await self.nsotoken.do_iksm_refresh(message)
-			results_list = requests.get(url, headers=self.app_head_coop, cookies=dict(iksm_session=iksm))
-			thejson = json.loads(results_list.text)
-
-		embed = discord.Embed(colour=0x0004FF)
-		try:
-			name = thejson['records']['player']['nickname']
-		except:
+		thejson = await self.getNSOJSON(message, self.app_head, "https://app.splatoon2.nintendo.net/api/records")
+		if thejson == None:
 			await message.channel.send(message.author.name + " there is a problem with your token")
 			return
 
+		embed = discord.Embed(colour=0x0004FF)
+		name = thejson['records']['player']['nickname']
 		turfinked = thejson['challenges']['total_paint_point_octa'] + thejson['challenges']['total_paint_point']
 		turfsquid = thejson['challenges']['total_paint_point']
 		turfocto = thejson['challenges']['total_paint_point_octa']
@@ -386,26 +363,12 @@ class nsoHandler():
 			await message.channel.send("You don't have a token setup with me! Please DM me !token with how to get one setup!")
 			return
 
-		embed = discord.Embed(colour=0xE5922A)
-		stmt = 'SELECT token FROM tokens WHERE clientid = %s'
-		self.cursor.execute(stmt, (str(message.author.id),))
-		Session_token = self.cursor.fetchone()[0].decode('utf-8')
-		url = "https://app.splatoon2.nintendo.net/api/coop_results"
-		results_list = requests.get(url, headers=self.app_head_coop, cookies=dict(iksm_session=Session_token))
-		thejson = json.loads(results_list.text)
-
-		if 'AUTHENTICATION_ERROR' in str(thejson):
-			print(str(thejson))
-			iksm = await self.nsotoken.do_iksm_refresh(message)
-			results_list = requests.get(url, headers=self.app_head_coop, cookies=dict(iksm_session=iksm))
-			thejson = json.loads(results_list.text)
-
-		try:
-			name = thejson['results'][0]['my_result']['name']
-		except:
+		thejson = await self.getNSOJSON(message, self.app_head_coop, "https://app.splatoon2.nintendo.net/api/coop_results")
+		if thejson == None:
 			await message.channel.send(message.author.name + " there is a problem with your token")
 			return
-			
+
+		name = thejson['results'][0]['my_result']['name']	
 		jobresults = thejson['results']
 		jobcard = thejson['summary']['card']
 		rank = thejson['summary']['stats'][0]['grade']['name']
@@ -459,25 +422,12 @@ class nsoHandler():
 			await message.channel.send("You don't have a token setup with me! Please DM me !token with how to get one setup!")
 			return
 
-		stmt = 'SELECT token FROM tokens WHERE clientid = %s'
-		self.cursor.execute(stmt, (str(message.author.id),))
-		Session_token = self.cursor.fetchone()[0].decode('utf-8')
-		url = "https://app.splatoon2.nintendo.net/api/records"
-		results_list = requests.get(url, headers=self.app_head, cookies=dict(iksm_session=Session_token))
-		thejson = json.loads(results_list.text)
-
-		if 'AUTHENTICATION_ERROR' in str(thejson):
-			print(thejson)
-			iksm = await self.nsotoken.do_iksm_refresh(message)
-			results_list = requests.get(url, headers=self.app_head_coop, cookies=dict(iksm_session=iksm))
-			thejson = json.loads(results_list.text)
-
-		try:
-			name = thejson['records']['player']['nickname']
-		except:
+		thejson = await self.getNSOJSON(message, self.app_head, "https://app.splatoon2.nintendo.net/api/records")
+		if thejson == None:
 			await message.channel.send(message.author.name + " there is a problem with your token")
 			return
 
+		name = thejson['records']['player']['nickname']
 		szrank = thejson['records']['player']['udemae_zones']['name']
 		if szrank == "S+":
 			szrank += str(thejson['records']['player']['udemae_zones']['s_plus_number'])
@@ -523,21 +473,12 @@ class nsoHandler():
 
 		orderID = int(message.content.split(" ", 1)[1])
 
-		url = "https://app.splatoon2.nintendo.net/api/timeline"
-		results_list = requests.get(url, headers=self.app_head, cookies=dict(iksm_session=Session_token))
-		thejson = json.loads(results_list.text)
-
-		if 'AUTHENTICATION_ERROR' in str(thejson):
-			Session_token = await self.nsotoken.do_iksm_refresh(message)
-			results_list = requests.get(url, headers=self.app_head_coop, cookies=dict(iksm_session=Session_token))
-			thejson = json.loads(results_list.text)
-
-		try:
-			self.app_head_shop['x-unique-id'] = thejson['unique_id']
-		except:
+		thejson = await self.getNSOJSON(message, self.app_head, "https://app.splatoon2.nintendo.net/api/timeline")
+		if thejson == None:
 			await message.channel.send(message.author.name + " there is a problem with your token")
 			return
 
+		self.app_head_shop['x-unique-id'] = thejson['unique_id']
 		url = "https://app.splatoon2.nintendo.net/api/onlineshop/merchandises"
 		results_list = requests.get(url, headers=self.app_head, cookies=dict(iksm_session=Session_token))
 		thejson = json.loads(results_list.text)
