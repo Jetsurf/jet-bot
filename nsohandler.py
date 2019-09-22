@@ -690,6 +690,7 @@ class nsoHandler():
 		mykills = int(mystats['kill_count'])
 		myassists = mystats['assist_count']
 		mydeaths = mystats['death_count']
+		mypoints = mystats['game_paint_point']
 		myweapon = mystats['player']['weapon']['name']
 		specials = mystats['special_count']
 		matchname = mystats['player']['nickname']
@@ -703,14 +704,14 @@ class nsoHandler():
         
 		teamstring = ""
 		placedPlayer = False
+		myteam = sorted(myteam, key=lambda i : i['game_paint_point'], reverse=True)
+		enemyteam = sorted(enemyteam, key=lambda i : i['game_paint_point'], reverse=True)
+
 		for i in myteam:
 			tname = i['player']['nickname']
-			if mykills > i['kill_count'] and not placedPlayer:
+			if mypoints > i['game_paint_point'] and not placedPlayer:
 				placedPlayer = True
 				teamstring = teamstring + matchname + " - " + myweapon + " - " + str(mykills) + "/" + str(myassists) + "/" + str(mydeaths) + "/" + str(specials) + "\n"
-			elif (mykills == i['kill_count']) and (myassists > i['assist_count']) and not placedPlayer:
-				placedPlayer = True
-				teamstring = teamstring + matchname + " - " + str(mykills) + "/" + str(myassists) + "/" + str(mydeaths) + "/" + str(specials) + "\n"
 
 			teamstring = teamstring + tname + " - " + i['player']['weapon']['name'] + " - " + str(i['kill_count']) + "/" + str(i['assist_count']) + "/" + str(i['death_count']) + "/" + str(i['special_count']) + "\n"
 
@@ -876,7 +877,7 @@ class nsoHandler():
 			await message.channel.send("**battles last**: Get the stats from the last battle")
 		elif subcommand == "last":
 			if len(args) > 1:
-				if args[1].isdigit() and args[1] < 50 and args[1] > 0:
+				if args[1].isdigit() and int(args[1]) < 50 and int(args[1]) > 0:
 					await self.battleParser(message, num=int(args[1]))
 				else:
 					await message.channel.send("Battle num must be number 1-50")
