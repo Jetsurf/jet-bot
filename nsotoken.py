@@ -55,6 +55,14 @@ class Nsotoken():
 			await message.channel.send("Something went wrong! Tell jetsurf#8514 that something broke!")
 			return False
 
+	def get_iksm_token_mysql(self, userid):
+		stmt = "SELECT token FROM tokens WHERE clientid = %s"
+		self.cursor.execute(stmt, (str(userid),))
+		session_token = self.cursor.fetchall()
+		if len(session_token) == 0:
+			return None
+		return session_token[0][0].decode()
+
 	def get_session_token_mysql(self, userid):
 		stmt = "SELECT session_token FROM tokens WHERE clientid = %s"
 		self.cursor.execute(stmt, (str(userid),))
