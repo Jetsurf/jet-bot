@@ -881,7 +881,7 @@ class nsoHandler():
 			await message.channel.send("**battles last**: Get the stats from the last battle")
 		elif subcommand == "last":
 			if len(args) > 1:
-				if args[1].isdigit():
+				if args[1].isdigit() and args[1] < 50 and args[1] > 0:
 					await self.battleParser(message, num=int(args[1]))
 				else:
 					await message.channel.send("Battle num must be number 1-50")
