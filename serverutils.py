@@ -3,14 +3,36 @@ from mysql.connector.cursor import MySQLCursorPrepared
 import discord
 import asyncio
 import mysqlinfo
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 class serverUtils():
-	def __init__(self, mysqlinfo):
+	def __init__(self, client, mysqlinfo):
 		self.mysqlinfo = mysqlinfo
+		self.client = client
+		self.statusnum = 1
 		self.valid_commands = [ "join", "play", "playrandom", "currentsong", "queue", "stop", "skip", "volume", "sounds", "currentmaps", "nextmaps", "weapon", "weapons",
 							 "currentsr", "nextsr", "splatnetgear", "leavevoice", "storedm", "rank", "stats", "srstats", "order", "github", "help", "map", "maps" ]
 		self.theDB = mysql.connector.connect(host=self.mysqlinfo.host, user=self.mysqlinfo.user, password=self.mysqlinfo.pw, database=self.mysqlinfo.db)
 		self.cursor = self.theDB.cursor(cursor_class=MySQLCursorPrepared)
+		self.scheduler = AsyncIOScheduler()
+		self.scheduler.add_job(self.changeStatus, 'cron', minute='*/5') 
+		self.scheduler.start()
+
+	async def changeStatus(self):
+		status = [ "Use !help for directions!",
+					"{} guilds for {} users",
+					"\U0001F355 \U00002795 \U0001F34D \U000027A1 \U0001F4A9" ]
+
+		if self.statusnum%2 == 0:
+			await self.client.change_presence(status=discord.Status.online, activity=discord.Game(status[0]))
+		elif self.statusnum%3 == 0:
+			theStatus = status[1].format(len(self.client.guilds), len(set(self.client.get_all_members())))
+			await self.client.change_presence(status=discord.Status.online, activity=discord.Activity(name=theStatus, type=discord.ActivityType(3)))
+		elif self.statusnum%101 == 0:
+			await self.client.change_presence(status=discord.Status.online, activity=discord.Game(status[2]))
+			self.statusnum = 0
+
+		self.statusnum += 1
 
 	def checkDM(self, clientid, serverid):
 		stmt = "SELECT COUNT(*) FROM dms WHERE serverid = %s AND clientid = %s"

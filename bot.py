@@ -140,7 +140,7 @@ async def on_ready():
 	if nsoHandler == None:
 		commandParser.setMysqlInfo(mysqlConnect)
 		commandParser.setUserid(client.user.id)
-		serverUtils = serverutils.serverUtils(mysqlConnect)
+		serverUtils = serverutils.serverUtils(client, mysqlConnect)
 		nsoTokens = nsotoken.Nsotoken(client, mysqlConnect)
 		nsoHandler = nsohandler.nsoHandler(client, mysqlConnect, nsoTokens)
 	scanAdmins(startup=1)
