@@ -149,23 +149,35 @@ class nsoHandler():
 		stmt = 'SELECT token FROM tokens WHERE clientid = %s'
 		self.cursor.execute(stmt, (str(message.author.id),))
 		Session_token = self.cursor.fetchone()[0].decode('utf-8')
-		url = "https://app.splatoon2.nintendo.net/api/records"
-		results_list = requests.get(url, headers=self.app_head, cookies=dict(iksm_session=Session_token))
+		if 'base' in message.content:
+			url = "https://app.splatoon2.nintendo.net/api/records"
+			jsontype = 'base'
+			header = self.app_head
+		elif 'sr' in message.content:
+			url = "https://app.splatoon2.nintendo.net/api/coop_results"
+			jsontype = 'sr'
+			header = self.app_head_coop
+		elif 'battle' in message.content:
+			url = "https://app.splatoon2.nintendo.net/api/results"
+			jsontype = 'battle'
+			header = self.app_head
+
+		results_list = requests.get(url, headers=header, cookies=dict(iksm_session=Session_token))
 		thejson = json.loads(results_list.text)	
 
 		if 'AUTHENTICATION_ERROR' in str(thejson):
 			iksm = await self.nsotoken.do_iksm_refresh(message)
-			results_list = requests.get(url, headers=self.app_head_coop, cookies=dict(iksm_session=iksm))
+			results_list = requests.get(url, headers=header, cookies=dict(iksm_session=iksm))
 			thejson = json.loads(results_list.text)
 
-		with open("../tempjson.json", "w") as f:
+		with open("../" + jsontype + ".json", "w") as f:
 			json.dump(thejson, f)
 		
-		with open("../tempjson.json", "r") as f:
+		with open("../" + jsontype + ".json", "r") as f:
 			jsonToSend = discord.File(fp=f)
 			await message.channel.send(file=jsonToSend)
 
-		os.remove("../tempjson.json")
+		os.remove("../" + jsontype + ".json")
 
 	def checkDuplicate(self, id):
 		stmt = "SELECT COUNT(*) FROM tokens WHERE clientid = %s"
