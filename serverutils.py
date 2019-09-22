@@ -23,7 +23,7 @@ class serverUtils():
 					"{} guilds for {} users",
 					"\U0001F355 \U00002795 \U0001F34D \U000027A1 \U0001F4A9" ]
 
-		if self.statusnum&2 == 0:
+		if self.statusnum%2 == 0:
 			await self.client.change_presence(status=discord.Status.online, activity=discord.Game(status[0]))
 		elif self.statusnum%3 == 0:
 			theStatus = status[1].format(len(self.client.guilds), len(set(self.client.get_all_members())))
