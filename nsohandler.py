@@ -6,6 +6,7 @@ import mysqlinfo
 import time
 import requests
 import json
+import os
 import urllib
 import urllib.request
 import nsotoken
@@ -139,6 +140,32 @@ class nsoHandler():
 				theMem = server.get_member(memid)
 				if theMem != None:
 					asyncio.ensure_future(self.handleDM(theMem, theSkill))
+
+	async def getRawJSON(self, message):
+		if not self.checkDuplicate(message.author.id):
+			await message.channel.send("You don't have a token setup with me! Please DM me !token with how to get one setup!")
+			return
+
+		stmt = 'SELECT token FROM tokens WHERE clientid = %s'
+		self.cursor.execute(stmt, (str(message.author.id),))
+		Session_token = self.cursor.fetchone()[0].decode('utf-8')
+		url = "https://app.splatoon2.nintendo.net/api/records"
+		results_list = requests.get(url, headers=self.app_head, cookies=dict(iksm_session=Session_token))
+		thejson = json.loads(results_list.text)	
+
+		if 'AUTHENTICATION_ERROR' in str(thejson):
+			iksm = await self.nsotoken.do_iksm_refresh(message)
+			results_list = requests.get(url, headers=self.app_head_coop, cookies=dict(iksm_session=iksm))
+			thejson = json.loads(results_list.text)
+
+		with open("../tempjson.json", "w") as f:
+			json.dump(thejson, f)
+		
+		with open("../tempjson.json", "r") as f:
+			jsonToSend = discord.File(fp=f)
+			await message.channel.send(file=jsonToSend)
+
+		os.remove("../tempjson.json")
 
 	def checkDuplicate(self, id):
 		stmt = "SELECT COUNT(*) FROM tokens WHERE clientid = %s"
@@ -815,3 +842,6 @@ class nsoHandler():
 				await message.channel.send(out)
 		else:
 			await message.channel.send("Unknown subcommand. Try 'weapons help'")
+
+	async def cmdBattles(self, message, args):
+		print("TODO")

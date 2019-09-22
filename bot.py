@@ -224,6 +224,8 @@ async def on_message(message):
 				await nsoTokens.delete_tokens(message)
 		elif '!storedm' in command:
 			await channel.send("Sorry, for performance reasons, you cannot DM me !storedm :frowning:")
+		elif '!nsojson' in command:
+			await nsoHandler.getRawJSON(message)
 		return
 	else:
 		theServer = message.guild.id
