@@ -6,14 +6,16 @@ import mysqlinfo
 import time
 import requests
 import json
+import os
 import urllib
 import urllib.request
 import nsotoken
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 class nsoHandler():
-	def __init__(self, client, mysqlinfo, nsotoken):
+	def __init__(self, client, mysqlinfo, nsotoken, splatInfo):
 		self.client = client
+		self.splatInfo = splatInfo
 		self.theDB = mysql.connector.connect(host=mysqlinfo.host, user=mysqlinfo.user, password=mysqlinfo.pw, database=mysqlinfo.db)
 		self.cursor = self.theDB.cursor(cursor_class=MySQLCursorPrepared)
 		self.cursor.execute("SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED")
@@ -139,6 +141,48 @@ class nsoHandler():
 				if theMem != None:
 					asyncio.ensure_future(self.handleDM(theMem, theSkill))
 
+	async def getRawJSON(self, message):
+		if not self.checkDuplicate(message.author.id):
+			await message.channel.send("You don't have a token setup with me! Please DM me !token with how to get one setup!")
+			return
+
+		Session_token = self.nsotoken.get_iksm_token_mysql(message.author.id)
+
+		if 'base' in message.content:
+			url = "https://app.splatoon2.nintendo.net/api/records"
+			jsontype = 'base'
+			header = self.app_head
+		elif 'sr' in message.content:
+			url = "https://app.splatoon2.nintendo.net/api/coop_results"
+			jsontype = 'sr'
+			header = self.app_head_coop
+		elif 'fullbattle' in message.content:
+			num = message.content[20:]
+			url = "https://app.splatoon2.nintendo.net/api/results/" + num
+			header = self.app_head
+			jsontype = 'fullbattle' + num
+		elif 'battle' in message.content:
+			url = "https://app.splatoon2.nintendo.net/api/results"
+			jsontype = 'battle'
+			header = self.app_head
+
+		results_list = requests.get(url, headers=header, cookies=dict(iksm_session=Session_token))
+		thejson = json.loads(results_list.text)	
+
+		if 'AUTHENTICATION_ERROR' in str(thejson):
+			iksm = await self.nsotoken.do_iksm_refresh(message)
+			results_list = requests.get(url, headers=header, cookies=dict(iksm_session=iksm))
+			thejson = json.loads(results_list.text)
+
+		with open("../" + jsontype + ".json", "w") as f:
+			json.dump(thejson, f)
+		
+		with open("../" + jsontype + ".json", "r") as f:
+			jsonToSend = discord.File(fp=f)
+			await message.channel.send(file=jsonToSend)
+
+		os.remove("../" + jsontype + ".json")
+
 	def checkDuplicate(self, id):
 		stmt = "SELECT COUNT(*) FROM tokens WHERE clientid = %s"
 		self.cursor.execute(stmt, (str(id),))
@@ -149,28 +193,31 @@ class nsoHandler():
 		else:
 			return False
 
+	async def getNSOJSON(self, message, header, url):
+		Session_token = self.nsotoken.get_iksm_token_mysql(message.author.id)
+		results_list = requests.get(url, headers=header, cookies=dict(iksm_session=Session_token))
+		thejson = json.loads(results_list.text)	
+
+		if 'AUTHENTICATION_ERROR' in str(thejson):
+			iksm = await self.nsotoken.do_iksm_refresh(message)
+			results_list = requests.get(url, headers=header, cookies=dict(iksm_session=iksm))
+			thejson = json.loads(results_list.text)
+			if 'AUTHENTICATION_ERROR' in str(thejson):
+				return None
+
+		return thejson
+
 	async def weaponParser(self, message, weapid):
 		if not self.checkDuplicate(message.author.id):
 			await message.channel.send("You don't have a token setup with me! Please DM me !token with how to get one setup!")
 			return
 
-		stmt = 'SELECT token FROM tokens WHERE clientid = %s'
-		self.cursor.execute(stmt, (str(message.author.id),))
-		Session_token = self.cursor.fetchone()[0].decode('utf-8')
-		url = "https://app.splatoon2.nintendo.net/api/records"
-		results_list = requests.get(url, headers=self.app_head, cookies=dict(iksm_session=Session_token))
-		thejson = json.loads(results_list.text)	
-
-		if 'AUTHENTICATION_ERROR' in str(thejson):
-			iksm = await self.nsotoken.do_iksm_refresh(message)
-			results_list = requests.get(url, headers=self.app_head_coop, cookies=dict(iksm_session=iksm))
-			thejson = json.loads(results_list.text)
-
-		try:
-			weapondata = thejson['records']['weapon_stats']
-		except:
+		thejson = await self.getNSOJSON(message, self.app_head, "https://app.splatoon2.nintendo.net/api/records")
+		if thejson == None:
 			await message.channel.send(message.author.name + " there is a problem with your token")
+			return
 
+		weapondata = thejson['records']['weapon_stats']
 		theweapdata = None
 		gotweap = False
 		for i in weapondata:
@@ -209,23 +256,12 @@ class nsoHandler():
 			await message.channel.send("You don't have a token setup with me! Please DM me !token with how to get one setup!")
 			return
 
-		stmt = 'SELECT token FROM tokens WHERE clientid = %s'
-		self.cursor.execute(stmt, (str(message.author.id),))
-		Session_token = self.cursor.fetchone()[0].decode('utf-8')
-		url = "https://app.splatoon2.nintendo.net/api/records"
-		results_list = requests.get(url, headers=self.app_head, cookies=dict(iksm_session=Session_token))
-		thejson = json.loads(results_list.text)	
-
-		if 'AUTHENTICATION_ERROR' in str(thejson):
-			iksm = await self.nsotoken.do_iksm_refresh(message)
-			results_list = requests.get(url, headers=self.app_head_coop, cookies=dict(iksm_session=iksm))
-			thejson = json.loads(results_list.text)
-
-		try:
-			allmapdata = thejson['records']['stage_stats']
-		except:
+		thejson = await self.getNSOJSON(message, self.app_head, "https://app.splatoon2.nintendo.net/api/records")
+		if thejson == None:
 			await message.channel.send(message.author.name + " there is a problem with your token")
+			return
 
+		allmapdata = thejson['records']['stage_stats']
 		themapdata = None
 		for i in allmapdata:
 			if int(i) == mapid:
@@ -274,25 +310,13 @@ class nsoHandler():
 			await message.channel.send("You don't have a token setup with me! Please DM me !token with how to get one setup!")
 			return
 
-		stmt = 'SELECT token FROM tokens WHERE clientid = %s'
-		self.cursor.execute(stmt, (str(message.author.id),))
-		Session_token = self.cursor.fetchone()[0].decode('utf-8')
-		url = "https://app.splatoon2.nintendo.net/api/records"
-		results_list = requests.get(url, headers=self.app_head, cookies=dict(iksm_session=Session_token))
-		thejson = json.loads(results_list.text)
-
-		if 'AUTHENTICATION_ERROR' in str(thejson):
-			iksm = await self.nsotoken.do_iksm_refresh(message)
-			results_list = requests.get(url, headers=self.app_head_coop, cookies=dict(iksm_session=iksm))
-			thejson = json.loads(results_list.text)
-
-		embed = discord.Embed(colour=0x0004FF)
-		try:
-			name = thejson['records']['player']['nickname']
-		except:
+		thejson = await self.getNSOJSON(message, self.app_head, "https://app.splatoon2.nintendo.net/api/records")
+		if thejson == None:
 			await message.channel.send(message.author.name + " there is a problem with your token")
 			return
 
+		embed = discord.Embed(colour=0x0004FF)
+		name = thejson['records']['player']['nickname']
 		turfinked = thejson['challenges']['total_paint_point_octa'] + thejson['challenges']['total_paint_point']
 		turfsquid = thejson['challenges']['total_paint_point']
 		turfocto = thejson['challenges']['total_paint_point_octa']
@@ -341,26 +365,12 @@ class nsoHandler():
 			await message.channel.send("You don't have a token setup with me! Please DM me !token with how to get one setup!")
 			return
 
-		embed = discord.Embed(colour=0xE5922A)
-		stmt = 'SELECT token FROM tokens WHERE clientid = %s'
-		self.cursor.execute(stmt, (str(message.author.id),))
-		Session_token = self.cursor.fetchone()[0].decode('utf-8')
-		url = "https://app.splatoon2.nintendo.net/api/coop_results"
-		results_list = requests.get(url, headers=self.app_head_coop, cookies=dict(iksm_session=Session_token))
-		thejson = json.loads(results_list.text)
-
-		if 'AUTHENTICATION_ERROR' in str(thejson):
-			print(str(thejson))
-			iksm = await self.nsotoken.do_iksm_refresh(message)
-			results_list = requests.get(url, headers=self.app_head_coop, cookies=dict(iksm_session=iksm))
-			thejson = json.loads(results_list.text)
-
-		try:
-			name = thejson['results'][0]['my_result']['name']
-		except:
+		thejson = await self.getNSOJSON(message, self.app_head_coop, "https://app.splatoon2.nintendo.net/api/coop_results")
+		if thejson == None:
 			await message.channel.send(message.author.name + " there is a problem with your token")
 			return
-			
+
+		name = thejson['results'][0]['my_result']['name']	
 		jobresults = thejson['results']
 		jobcard = thejson['summary']['card']
 		rank = thejson['summary']['stats'][0]['grade']['name']
@@ -414,25 +424,12 @@ class nsoHandler():
 			await message.channel.send("You don't have a token setup with me! Please DM me !token with how to get one setup!")
 			return
 
-		stmt = 'SELECT token FROM tokens WHERE clientid = %s'
-		self.cursor.execute(stmt, (str(message.author.id),))
-		Session_token = self.cursor.fetchone()[0].decode('utf-8')
-		url = "https://app.splatoon2.nintendo.net/api/records"
-		results_list = requests.get(url, headers=self.app_head, cookies=dict(iksm_session=Session_token))
-		thejson = json.loads(results_list.text)
-
-		if 'AUTHENTICATION_ERROR' in str(thejson):
-			print(thejson)
-			iksm = await self.nsotoken.do_iksm_refresh(message)
-			results_list = requests.get(url, headers=self.app_head_coop, cookies=dict(iksm_session=iksm))
-			thejson = json.loads(results_list.text)
-
-		try:
-			name = thejson['records']['player']['nickname']
-		except:
+		thejson = await self.getNSOJSON(message, self.app_head, "https://app.splatoon2.nintendo.net/api/records")
+		if thejson == None:
 			await message.channel.send(message.author.name + " there is a problem with your token")
 			return
 
+		name = thejson['records']['player']['nickname']
 		szrank = thejson['records']['player']['udemae_zones']['name']
 		if szrank == "S+":
 			szrank += str(thejson['records']['player']['udemae_zones']['s_plus_number'])
@@ -468,9 +465,7 @@ class nsoHandler():
 			await message.channel.send("You don't have a token setup with me! Please DM me !token with how to get one setup!")
 			return
 
-		stmt = 'SELECT token FROM tokens WHERE clientid = %s'
-		self.cursor.execute(stmt, (str(message.author.id),))
-		Session_token = self.cursor.fetchone()[0].decode('utf-8')
+		Session_token = self.nsotoken.get_iksm_token_mysql(message.author.id)
 
 		data = self.getJSON("https://splatoon2.ink/data/merchandises.json")
 		gear = data['merchandises']
@@ -478,21 +473,12 @@ class nsoHandler():
 
 		orderID = int(message.content.split(" ", 1)[1])
 
-		url = "https://app.splatoon2.nintendo.net/api/timeline"
-		results_list = requests.get(url, headers=self.app_head, cookies=dict(iksm_session=Session_token))
-		thejson = json.loads(results_list.text)
-
-		if 'AUTHENTICATION_ERROR' in str(thejson):
-			Session_token = await self.nsotoken.do_iksm_refresh(message)
-			results_list = requests.get(url, headers=self.app_head_coop, cookies=dict(iksm_session=Session_token))
-			thejson = json.loads(results_list.text)
-
-		try:
-			self.app_head_shop['x-unique-id'] = thejson['unique_id']
-		except:
+		thejson = await self.getNSOJSON(message, self.app_head, "https://app.splatoon2.nintendo.net/api/timeline")
+		if thejson == None:
 			await message.channel.send(message.author.name + " there is a problem with your token")
 			return
 
+		self.app_head_shop['x-unique-id'] = thejson['unique_id']
 		url = "https://app.splatoon2.nintendo.net/api/onlineshop/merchandises"
 		results_list = requests.get(url, headers=self.app_head, cookies=dict(iksm_session=Session_token))
 		thejson = json.loads(results_list.text)
@@ -679,3 +665,231 @@ class nsoHandler():
 			embed.add_field(name="Time Remaining ", value=str(days) + ' Days, ' + str(hours) + ' Hours, and ' + str(minutes) + ' Minutes')
 
 		await message.channel.send(embed=embed)
+
+	async def battleParser(self, message, num=1):
+		if not self.checkDuplicate(message.author.id):
+			await message.channel.send("You don't have a token setup with me! Please DM me !token with how to get one setup!")
+			return
+
+		recordjson = await self.getNSOJSON(message, self.app_head, "https://app.splatoon2.nintendo.net/api/records")
+		if recordjson == None:
+			await message.channel.send(message.author.name + " there is a problem with your token")
+			return
+
+		battlejson = await self.getNSOJSON(message, self.app_head, "https://app.splatoon2.nintendo.net/api/results")
+
+		accountname = recordjson['records']['player']['nickname']
+		thebattle = battlejson['results'][num - 1]
+		battletype = thebattle['game_mode']['name']
+		battleid = thebattle['battle_number']
+
+		fullbattle = await self.getNSOJSON(message, self.app_head, "https://app.splatoon2.nintendo.net/api/results/" + battleid)
+		enemyteam = fullbattle['other_team_members']
+		myteam = fullbattle['my_team_members']
+		mystats = fullbattle['player_result']
+		mykills = mystats['kill_count'] + mystats['assist_count']
+		myassists = mystats['assist_count']
+		mydeaths = mystats['death_count']
+		mypoints = mystats['game_paint_point']
+		myweapon = mystats['player']['weapon']['name']
+		specials = mystats['special_count']
+		matchname = mystats['player']['nickname']
+		rule = thebattle['rule']['name']
+		mystats = fullbattle['player_result']
+		myresult = thebattle['my_team_result']['name']
+		enemyresult = thebattle['other_team_result']['name']
+
+		embed = discord.Embed(colour=0x0004FF)
+		embed.title = "Stats for " + str(accountname) +"'s last battle - " + str(battletype) + " - " + str(rule) + " (Kills/Deaths/Specials)"
+        
+		teamstring = ""
+		placedPlayer = False
+	
+		if rule == "Turf War":
+			myteam = sorted(myteam, key=lambda i : i['game_paint_point'], reverse=True)
+			enemyteam = sorted(enemyteam, key=lambda i : i['game_paint_point'], reverse=True)
+		else:
+			myteam = sorted(myteam, key=lambda i : i['kill_count'] + i['assist_count'], reverse=True)
+			enemyteam = sorted(enemyteam, key=lambda i : i['kill_count'] + i['assist_count'], reverse=True)
+
+		for i in myteam:
+			tname = i['player']['nickname']
+			if rule == "Turf War" and mypoints > i['game_paint_point'] and not placedPlayer:
+				placedPlayer = True
+				teamstring = teamstring + matchname + " - " + myweapon + " - " + str(mykills) + "(" + str(myassists) + ")/" + str(mydeaths) + "/" + str(specials) + "\n"
+			if rule != "Turf War" and mykills > i['kill_count'] + i['assist_count'] and not placedPlayer:
+				placedPlayer = True
+				teamstring = teamstring + matchname + " - " + myweapon + " - " + str(mykills) + "(" + str(myassists) + ")/" + str(mydeaths) + "/" + str(specials) + "\n"
+			
+			teamstring = teamstring + tname + " - " + i['player']['weapon']['name'] + " - " + str(i['kill_count'] + i['assist_count']) + "(" + str(i['assist_count']) + ")/" + str(i['death_count']) + "/" + str(i['special_count']) + "\n"
+
+		if not placedPlayer:
+			teamstring = teamstring + matchname + " - " + myweapon + " - " + str(mykills) + "(" + str(myassists) + ")/" + str(mydeaths) + "/" + str(specials) + "\n"
+
+		enemystring = ""
+		for i in enemyteam:
+			ename = i['player']['nickname']
+			enemystring = enemystring + ename + " - " + i['player']['weapon']['name'] + " - " + str(i['kill_count'] + i['assist_count']) + "(" + str(i['assist_count']) + ")/" + str(i['death_count']) + "/" + str(i['special_count']) + "\n"
+
+		if 'VICTORY' in myresult:
+			embed.add_field(name=str(matchname) + "'s team - " + str(myresult), value=teamstring, inline=True)
+			embed.add_field(name="Enemy Team - " + str(enemyresult), value=enemystring, inline=True)
+		else:
+			embed.add_field(name="Enemy Team - " + str(enemyresult), value=enemystring, inline=True)
+			embed.add_field(name=str(matchname) + "'s team - " + str(myresult), value=teamstring, inline=True)
+
+		await message.channel.send(embed=embed)
+
+	async def cmdMaps(self, message, args):
+		if len(args) == 0:
+			await message.channel.send("Try 'maps help' for help")
+			return
+
+		subcommand = args[0].lower()
+		if subcommand == "help":
+			await message.channel.send("**maps random [n]**: Generate a list of random maps\n"
+				"**maps stats MAP**: Show player stats for MAP")
+			return
+		elif subcommand == "list":
+			print("TODO")
+			return
+		elif subcommand == "stats":
+			if len(args) > 1:
+				themap = " ".join(args[1:])
+				match = self.splatInfo.matchMaps(themap)
+				if not match.isValid():
+					await message.channel.send(match.errorMessage())
+					return
+				id = match.get().id()
+				await self.mapParser(message, id)
+		elif subcommand == "random":
+			count = 1
+			if len(args) > 1:
+				if not args[1].isdigit():
+					await message.channel.send("Argument to 'maps random' must be numeric")
+					return
+				elif (int(args[1]) < 1) or (int(args[1]) > 10):
+					await message.channel.send("Number of random maps must be within 1..10")
+					return
+				else:
+					count = int(args[1])
+
+			if count == 1:
+				await message.channel.send("Random map: " + self.splatInfo.getRandomMap().name())
+			else:
+				out = "Random maps:\n"
+				for i in range(count):
+					out += "%d: %s\n" % (i + 1, self.splatInfo.getRandomMap().name())
+				await message.channel.send(out)
+		else:
+			await message.channel.send("Unknown subcommand. Try 'maps help'")
+
+	async def cmdWeaps(self, message, args):
+		if len(args) == 0:
+			await message.channel.send("Try 'weapons help' for help")
+			return
+
+		subcommand = args[0].lower()
+		if subcommand == "help":
+			await message.channel.send("**weapons random [n]**: Generate a list of random weapons\n"
+				"**weapons stats WEAPON**: Show player stats for WEAPON\n"
+				"**weapons sub SUB**: Show all weapons with SUB\n"
+				"**weapons special SPECIAL**: Show all weapons with SPECIAL")
+			return
+		elif subcommand == "info":
+			if len(args) > 1:
+				theWeapon = " ".join(args[1:])
+				match = self.splatInfo.matchWeapons(theWeapon)
+				if not match.isValid():
+					await message.channel.send(match.errorMessage())
+					return
+				weap = match.get()
+				embed = discord.Embed(colour=0x0004FF)
+				embed.title = weap.name() + " Info"
+				embed.add_field(name="Sub", value=weap.sub().name(), inline=True)
+				embed.add_field(name="Sepcial", value=weap.special().name(), inline=True)
+				embed.add_field(name="Pts for Special", value=str(weap.specpts), inline=True)
+				embed.add_field(name="Level to Purchase", value=str(weap.level), inline=True)
+				await message.channel.send(embed=embed)
+		elif subcommand == "sub":
+			if len(args) > 1:
+				theSub = " ".join(args[1:])
+				actualSub = self.splatInfo.matchSubweapons(theSub)
+				if not actualSub.isValid():
+					await message.channel.send(actualSub.errorMessage())
+					return
+				weaponsList = self.splatInfo.getWeaponsBySub(actualSub.get())
+				embed = discord.Embed(colour=0x0004FF)
+				embed.title = "Weapons with Subweapon: " + actualSub.get().name()
+				for i in weaponsList:
+					embed.add_field(name=i.name(), value="Special: " + i.special().name() +
+						"\nPts for Special: " + str(i.specpts) +
+						"\nLevel To Purchase: " + str(i.level), inline=True)
+				await message.channel.send(embed=embed)
+		elif subcommand == "special":
+			if len(args) > 1:
+				theSpecial = " ".join(args[1:])
+				actualSpecial = self.splatInfo.matchSpecials(theSpecial)
+				if not actualSpecial.isValid():
+					await message.channel.send(actualSpecial.errorMessage())
+					return
+				weaponsList = self.splatInfo.getWeaponsBySpecial(actualSpecial.get())
+				embed = discord.Embed(colour=0x0004FF)
+				embed.title = "Weapons with Special: " + actualSpecial.get().name()
+				for i in weaponsList:
+					embed.add_field(name=i.name(), value="Subweapon: " + i.sub().name() +
+						"\nPts for Special: " + str(i.specpts) +
+						"\nLevel To Purchase: " + str(i.level), inline=True)
+				await message.channel.send(embed=embed)
+		elif subcommand == "list":
+			print("TODO")
+			return
+		elif subcommand == "stats":
+			if len(args) > 1:
+				theWeapon = " ".join(args[1:])
+				match = self.splatInfo.matchWeapons(theWeapon)
+				if not match.isValid():
+					await message.channel.send(match.errorMessage())
+					return
+				id = match.get().id()
+				await self.weaponParser(message, id)
+		elif subcommand == "random":
+			count = 1
+			if len(args) > 1:
+				if not args[1].isdigit():
+					await message.channel.send("Argument to 'weapons random' must be numeric")
+					return
+				elif (int(args[1]) < 1) or (int(args[1]) > 10):
+					await message.channel.send("Number of random weapons must be within 1..10")
+					return
+				else:
+					count = int(args[1])
+
+			if count == 1:
+				await message.channel.send("Random weapon: " + self.splatInfo.getRandomWeapon().name())
+			else:
+				out = "Random weapons:\n"
+				for i in range(count):
+					out += "%d: %s\n" % (i + 1, self.splatInfo.getRandomWeapon().name())
+				await message.channel.send(out)
+		else:
+			await message.channel.send("Unknown subcommand. Try 'weapons help'")
+
+	async def cmdBattles(self, message, args):
+		if len(args) == 0:
+			await message.channel.send("Try 'battles help' for help")
+			return
+
+		subcommand = args[0].lower()
+		if subcommand == "help":
+			await message.channel.send("**battles last**: Get the stats from the last battle")
+		elif subcommand == "last":
+			if len(args) > 1:
+				if args[1].isdigit() and int(args[1]) < 50 and int(args[1]) > 0:
+					await self.battleParser(message, num=int(args[1]))
+				else:
+					await message.channel.send("Battle num must be number 1-50")
+			else:
+				await self.battleParser(message)
+		else:
+			await message.channel.send("Try 'Unknown subcommand. Try 'battles help'")

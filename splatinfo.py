@@ -74,6 +74,9 @@ class SplatWeapon(SplatMatchItem):
 	def dupid(self):
 		return self._dupid
 
+class SplatSlot(SplatMatchItem):
+	pass
+
 class SplatMatchResult():
 	def __init__(self, type, query, items):
 		self.type  = type
@@ -111,12 +114,14 @@ class SplatInfo():
 		self.initSubweapons()
 		self.initSpecials()
 		self.initWeapons()
+		self.initSlots()
 
 		self.checkSet(self.modes)
 		self.checkSet(self.maps)
 		self.checkSet(self.subweapons)
 		self.checkSet(self.specials)
 		self.checkSet(self.weapons)
+		self.checkSet(self.slots)
 
 	def checkSet(self, set):
 		seenAbbrevs = {}
@@ -405,6 +410,13 @@ class SplatInfo():
 			dupid   = w[7] if (len(w) >= 8) else None
 			self.weapons.append(SplatWeapon(name, abbrevs, self.getSubweaponByName(sub), self.getSpecialByName(special), specpts, level, id, dupid))
 
+	def initSlots(self):
+		self.slots = [
+			SplatSlot("Headgear", ["hat"]),
+			SplatSlot("Clothing", ["shirt"]),
+			SplatSlot("Footwear", ["feet", "shoe", "shoes"]),
+		]
+
 	def matchItems(self, type, set, query):
 		if len(query) == 0:
 			return SplatMatchResult(type, query, [])
@@ -436,6 +448,9 @@ class SplatInfo():
 
 	def matchSubweapons(self, query):
 		return self.matchItems("subweapon", self.subweapons, query)
+
+	def matchSlots(self, query):
+		return self.matchItems("slot", self.slots, query)
 
 	def getItemByName(self, set, name):
 		for i in set:
