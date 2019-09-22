@@ -15,7 +15,7 @@ class serverUtils():
 		self.theDB = mysql.connector.connect(host=self.mysqlinfo.host, user=self.mysqlinfo.user, password=self.mysqlinfo.pw, database=self.mysqlinfo.db)
 		self.cursor = self.theDB.cursor(cursor_class=MySQLCursorPrepared)
 		self.scheduler = AsyncIOScheduler()
-		self.scheduler.add_job(self.changeStatus, 'cron', minute='*') 
+		self.scheduler.add_job(self.changeStatus, 'cron', minute='*/5') 
 		self.scheduler.start()
 
 	async def changeStatus(self):
@@ -31,7 +31,7 @@ class serverUtils():
 		elif self.statusnum%101 == 0
 			await self.client.change_presence(status=discord.Status.online, activity=discord.Game(status[2]))
 			self.statusnum = 0
-			
+
 		self.statusnum += 1
 
 	def checkDM(self, clientid, serverid):
