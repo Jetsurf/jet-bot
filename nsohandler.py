@@ -189,28 +189,33 @@ class nsoHandler():
 		else:
 			return False
 
+	def getNSOJSON(self, header, url):
+		stmt = 'SELECT token FROM tokens WHERE clientid = %s'
+		self.cursor.execute(stmt, (str(message.author.id),))
+		Session_token = self.cursor.fetchone()[0].decode('utf-8')
+		results_list = requests.get(url, headers=header, cookies=dict(iksm_session=Session_token))
+		thejson = json.loads(results_list.text)	
+
+		if 'AUTHENTICATION_ERROR' in str(thejson):
+			iksm = await self.nsotoken.do_iksm_refresh(message)
+			results_list = requests.get(url, headers=self.head, cookies=dict(iksm_session=iksm))
+			thejson = json.loads(results_list.text)
+			if 'AUTHENTICATION_ERROR' in str(thejson):
+				return None
+
+		return thejson
+
 	async def weaponParser(self, message, weapid):
 		if not self.checkDuplicate(message.author.id):
 			await message.channel.send("You don't have a token setup with me! Please DM me !token with how to get one setup!")
 			return
 
-		stmt = 'SELECT token FROM tokens WHERE clientid = %s'
-		self.cursor.execute(stmt, (str(message.author.id),))
-		Session_token = self.cursor.fetchone()[0].decode('utf-8')
-		url = "https://app.splatoon2.nintendo.net/api/records"
-		results_list = requests.get(url, headers=self.app_head, cookies=dict(iksm_session=Session_token))
-		thejson = json.loads(results_list.text)	
-
-		if 'AUTHENTICATION_ERROR' in str(thejson):
-			iksm = await self.nsotoken.do_iksm_refresh(message)
-			results_list = requests.get(url, headers=self.app_head_coop, cookies=dict(iksm_session=iksm))
-			thejson = json.loads(results_list.text)
-
-		try:
-			weapondata = thejson['records']['weapon_stats']
-		except:
+		thejson = self.getNSOJSON(self.app_head, "https://app.splatoon2.nintendo.net/api/records")
+		if thejson == None:
 			await message.channel.send(message.author.name + " there is a problem with your token")
+			return
 
+		weapondata = thejson['records']['weapon_stats']
 		theweapdata = None
 		gotweap = False
 		for i in weapondata:
@@ -720,6 +725,9 @@ class nsoHandler():
 
 		await message.channel.send(embed=embed)
 
+	async def battleParser(self, message, num=1):
+		print("TODO")
+
 	async def cmdMaps(self, message, args):
 		if len(args) == 0:
 			await message.channel.send("Try 'maps help' for help")
@@ -856,4 +864,14 @@ class nsoHandler():
 			await message.channel.send("Unknown subcommand. Try 'weapons help'")
 
 	async def cmdBattles(self, message, args):
-		print("TODO")
+		if len(args) == 0:
+			await message.channel.send("Try 'battles help' for help")
+			return
+
+		subcommand = args[0].lower()
+		if subcommand == "help":
+			await message.channel.send("**battles last**: Get the stats from the last battle")
+		elif subcommand == "last":
+			await self.battleParser(message)
+		else:
+			await message.channel.send("Try 'Unknown subcommand. Try 'battles help'")
