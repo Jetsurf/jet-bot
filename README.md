@@ -89,6 +89,8 @@ The following commands require you to DM the bot with !token and follow the inst
  - `!srstats` : Shows various stats from Salmon Run
  - `!order ID` : The !splatnetgear command gives you 'ID to buy' run this with that ID to place an order in the splatnet store
  - `!map stats` MAP : Pulls stats for a specific map
+ - `!battle last` : Gets stats from the last battle you played
+ - `!battle num NUM` : Gets stats from NUM last battle (1 is last, upto 50)
  - `!weapon stats` WEAPON : Pulls stats for a specific weapon
 
  ### Bot Info Commands
