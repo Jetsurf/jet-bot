@@ -315,6 +315,10 @@ async def on_message(message):
 		await nsoHandler.srParser(message, 1)
 	elif (cmd == 'us') or (cmd == 'eu') or (cmd == 'jp'):
 		await setCRole(message)
+	elif (cmd == 'map') or (cmd == 'maps'):
+		await cmdMaps(message, args)
+	elif (cmd == 'weapon') or (cmd == 'weapons'):
+		await cmdWeaps(message, args)
 	elif serverVoices[theServer].vclient is not None:
 		if cmd == 'currentsong':
 			if serverVoices[theServer].source is not None:
@@ -350,10 +354,6 @@ async def on_message(message):
 			await serverVoices[theServer].printQueue(message)
 		else:
 			await serverVoices[theServer].playSound(command, message)
-	elif (cmd == 'map') or (cmd == 'maps'):
-		await cmdMaps(message, args)
-	elif (cmd == 'weapon') or (cmd == 'weapons'):
-		await cmdWeaps(message, args)
 
 	sys.stdout.flush()
 	sys.stderr.flush()
