@@ -146,9 +146,8 @@ class nsoHandler():
 			await message.channel.send("You don't have a token setup with me! Please DM me !token with how to get one setup!")
 			return
 
-		stmt = 'SELECT token FROM tokens WHERE clientid = %s'
-		self.cursor.execute(stmt, (str(message.author.id),))
-		Session_token = self.cursor.fetchone()[0].decode('utf-8')
+		Session_token = self.nsotoken.get_iksm_token_mysql(message.author.id)
+
 		if 'base' in message.content:
 			url = "https://app.splatoon2.nintendo.net/api/records"
 			jsontype = 'base'
@@ -195,9 +194,7 @@ class nsoHandler():
 			return False
 
 	async def getNSOJSON(self, message, header, url):
-		stmt = 'SELECT token FROM tokens WHERE clientid = %s'
-		self.cursor.execute(stmt, (str(message.author.id),))
-		Session_token = self.cursor.fetchone()[0].decode('utf-8')
+		Session_token = self.nsotoken.get_iksm_token_mysql(message.author.id)
 		results_list = requests.get(url, headers=header, cookies=dict(iksm_session=Session_token))
 		thejson = json.loads(results_list.text)	
 
@@ -468,9 +465,7 @@ class nsoHandler():
 			await message.channel.send("You don't have a token setup with me! Please DM me !token with how to get one setup!")
 			return
 
-		stmt = 'SELECT token FROM tokens WHERE clientid = %s'
-		self.cursor.execute(stmt, (str(message.author.id),))
-		Session_token = self.cursor.fetchone()[0].decode('utf-8')
+		Session_token = self.nsotoken.get_iksm_token_mysql(message.author.id)
 
 		data = self.getJSON("https://splatoon2.ink/data/merchandises.json")
 		gear = data['merchandises']
