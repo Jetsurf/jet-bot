@@ -882,14 +882,17 @@ class nsoHandler():
 
 		subcommand = args[0].lower()
 		if subcommand == "help":
-			await message.channel.send("**battles last**: Get the stats from the last battle")
+			await message.channel.send("**battles last**: Get the stats from the last battle\n"
+				"**num NUM**: Get a battle from the last 50 you have played (1 is most recent)")
 		elif subcommand == "last":
+			await self.battleParser(message)
+		elif subcommand == "num":
 			if len(args) > 1:
 				if args[1].isdigit() and int(args[1]) < 50 and int(args[1]) > 0:
 					await self.battleParser(message, num=int(args[1]))
 				else:
 					await message.channel.send("Battle num must be number 1-50")
 			else:
-				await self.battleParser(message)
+				await message.channel.send("Must provide a number of the battle to get")
 		else:
 			await message.channel.send("Try 'Unknown subcommand. Try 'battles help'")
