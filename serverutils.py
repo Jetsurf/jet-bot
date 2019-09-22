@@ -28,7 +28,7 @@ class serverUtils():
 		elif self.statusnum%3 == 0:
 			theStatus = status[1].format(len(self.client.guilds), len(set(self.client.get_all_members())))
 			await self.client.change_presence(status=discord.Status.online, activity=discord.Activity(name=theStatus, type=discord.ActivityType(3)))
-		elif self.statusnum%101 == 0
+		elif self.statusnum%101 == 0:
 			await self.client.change_presence(status=discord.Status.online, activity=discord.Game(status[2]))
 			self.statusnum = 0
 
