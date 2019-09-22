@@ -895,4 +895,4 @@ class nsoHandler():
 			else:
 				await message.channel.send("Must provide a number of the battle to get")
 		else:
-			await message.channel.send("Try 'Unknown subcommand. Try 'battles help'")
+			await message.channel.send("Unknown subcommand. Try 'battles help'")
