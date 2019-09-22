@@ -59,6 +59,8 @@ class Nsotoken():
 		stmt = "SELECT session_token FROM tokens WHERE clientid = %s"
 		self.cursor.execute(stmt, (str(userid),))
 		session_token = self.cursor.fetchall()
+		if len(session_token) == 0:
+			return None
 		return session_token[0][0].decode()
 
 	async def login(self, message):
