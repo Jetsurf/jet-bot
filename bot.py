@@ -324,6 +324,8 @@ async def on_message(message):
 		await nsoHandler.cmdMaps(message, args)
 	elif (cmd == 'weapon') or (cmd == 'weapons'):
 		await nsoHandler.cmdWeaps(message, args)
+	elif (cmd == 'battle') or (cmd == 'battles'):
+		await nsoHandler.cmdBattles(message, args)
 	elif serverVoices[theServer].vclient is not None:
 		if cmd == 'currentsong':
 			if serverVoices[theServer].source is not None:

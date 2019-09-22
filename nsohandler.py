@@ -157,6 +157,11 @@ class nsoHandler():
 			url = "https://app.splatoon2.nintendo.net/api/coop_results"
 			jsontype = 'sr'
 			header = self.app_head_coop
+		elif 'fullbattle' in message.content:
+			num = message.content[20:]
+			url = "https://app.splatoon2.nintendo.net/api/results/" + num
+			header = self.app_head
+			jsontype = 'fullbattle' + num
 		elif 'battle' in message.content:
 			url = "https://app.splatoon2.nintendo.net/api/results"
 			jsontype = 'battle'
@@ -667,7 +672,67 @@ class nsoHandler():
 		await message.channel.send(embed=embed)
 
 	async def battleParser(self, message, num=1):
-		print("TODO")
+		if not self.checkDuplicate(message.author.id):
+			await message.channel.send("You don't have a token setup with me! Please DM me !token with how to get one setup!")
+			return
+
+		recordjson = await self.getNSOJSON(message, self.app_head, "https://app.splatoon2.nintendo.net/api/records")
+		if recordjson == None:
+			await message.channel.send(message.author.name + " there is a problem with your token")
+			return
+
+		battlejson = await self.getNSOJSON(message, self.app_head, "https://app.splatoon2.nintendo.net/api/results")
+
+		name = recordjson['records']['player']['nickname']
+		thebattle = battlejson['results'][num - 1]
+		battletype = thebattle['game_mode']['name']
+		battleid = thebattle['battle_number']
+
+		fullbattle = await self.getNSOJSON(message, self.app_head, "https://app.splatoon2.nintendo.net/api/results/" + battleid)
+		enemyteam = fullbattle['other_team_members']
+		myteam = fullbattle['my_team_members']
+		mystats = fullbattle['player_result']
+		mykills = int(mystats['kill_count'])
+		myassists = mystats['assist_count']
+		mydeaths = mystats['death_count']
+		myweapon = mystats['player']['weapon']['name']
+		rule = thebattle['rule']['name']
+		mystats = fullbattle['player_result']
+		myresult = thebattle['my_team_result']['name']
+		enemyresult = thebattle['other_team_result']['name']
+
+		embed = discord.Embed(colour=0x0004FF)
+		embed.title = "Stats for " + str(name) +"'s last battle - " + str(battletype) + " - " + str(rule) + " (Kills/Assists/Deaths)"
+
+		teamstring = ""
+		placedPlayer = False
+		for i in myteam:
+			tname = i['player']['nickname']
+			if mykills > i['kill_count']:
+				placedPlayer = True
+				teamstring = teamstring + name + " - " + myweapon + " - " + str(mykills) + "/" + str(myassists) + "/" + str(mydeaths) + "\n"
+			elif (mykills == i['kill_count']) and (myassists > i['assist_count']):
+				placedPlayer = True
+				teamstring = teamstring + name + " - " + str(mykills) + "/" + str(myassists) + "/" + str(mydeaths) + "\n"
+
+			teamstring = teamstring + tname + " - " + i['player']['weapon']['name'] + " - " + str(i['kill_count']) + "/" + str(i['assist_count']) + "/" + str(i['death_count']) + "\n"
+
+		if not placedPlayer:
+			teamstring = teamstring + name + " - " + myweapon + " - " + str(mykills) + "/" + str(myassists) + "/" + str(mydeaths) + "\n"
+
+		enemystring = ""
+		for i in enemyteam:
+			ename = i['player']['nickname']
+			enemystring = enemystring + ename + " - " + i['player']['weapon']['name'] + " - " + str(i['kill_count']) + "/" + str(i['assist_count']) + "/" + str(i['death_count']) + "\n"
+
+		if 'VICTORY' in myresult:
+			embed.add_field(name=str(name) + "'s team - " + str(myresult), value=teamstring, inline=True)
+			embed.add_field(name="Enemy Team - " + str(enemyresult), value=enemystring, inline=True)
+		else:
+			embed.add_field(name="Enemy Team - " + str(enemyresult), value=enemystring, inline=True)
+			embed.add_field(name=str(name) + "'s team - " + str(myresult), value=teamstring, inline=True)
+
+		await message.channel.send(embed=embed)
 
 	async def cmdMaps(self, message, args):
 		if len(args) == 0:
