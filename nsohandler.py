@@ -683,7 +683,7 @@ class nsoHandler():
 
 		battlejson = await self.getNSOJSON(message, self.app_head, "https://app.splatoon2.nintendo.net/api/results")
 
-		name = recordjson['records']['player']['nickname']
+		accountname = recordjson['records']['player']['nickname']
 		thebattle = battlejson['results'][num - 1]
 		battletype = thebattle['game_mode']['name']
 		battleid = thebattle['battle_number']
@@ -696,41 +696,43 @@ class nsoHandler():
 		myassists = mystats['assist_count']
 		mydeaths = mystats['death_count']
 		myweapon = mystats['player']['weapon']['name']
+		specials = mystats['special_count']
+		matchname = mystats['player']['nickname']
 		rule = thebattle['rule']['name']
 		mystats = fullbattle['player_result']
 		myresult = thebattle['my_team_result']['name']
 		enemyresult = thebattle['other_team_result']['name']
 
 		embed = discord.Embed(colour=0x0004FF)
-		embed.title = "Stats for " + str(name) +"'s last battle - " + str(battletype) + " - " + str(rule) + " (Kills/Assists/Deaths)"
-
+		embed.title = "Stats for " + str(accountname) +"'s last battle - " + str(battletype) + " - " + str(rule) + " (Kills/Assists/Deaths/Specials)"
+        
 		teamstring = ""
 		placedPlayer = False
 		for i in myteam:
 			tname = i['player']['nickname']
-			if mykills > i['kill_count']:
+			if mykills > i['kill_count'] and not placedPlayer:
 				placedPlayer = True
-				teamstring = teamstring + name + " - " + myweapon + " - " + str(mykills) + "/" + str(myassists) + "/" + str(mydeaths) + "\n"
-			elif (mykills == i['kill_count']) and (myassists > i['assist_count']):
+				teamstring = teamstring + matchname + " - " + myweapon + " - " + str(mykills) + "/" + str(myassists) + "/" + str(mydeaths) + "/" + str(specials) + "\n"
+			elif (mykills == i['kill_count']) and (myassists > i['assist_count']) and not placedPlayer:
 				placedPlayer = True
-				teamstring = teamstring + name + " - " + str(mykills) + "/" + str(myassists) + "/" + str(mydeaths) + "\n"
+				teamstring = teamstring + matchname + " - " + str(mykills) + "/" + str(myassists) + "/" + str(mydeaths) + "/" + str(specials) + "\n"
 
-			teamstring = teamstring + tname + " - " + i['player']['weapon']['name'] + " - " + str(i['kill_count']) + "/" + str(i['assist_count']) + "/" + str(i['death_count']) + "\n"
+			teamstring = teamstring + tname + " - " + i['player']['weapon']['name'] + " - " + str(i['kill_count']) + "/" + str(i['assist_count']) + "/" + str(i['death_count']) + "/" + str(i['special_count']) + "\n"
 
 		if not placedPlayer:
-			teamstring = teamstring + name + " - " + myweapon + " - " + str(mykills) + "/" + str(myassists) + "/" + str(mydeaths) + "\n"
+			teamstring = teamstring + matchname + " - " + myweapon + " - " + str(mykills) + "/" + str(myassists) + "/" + str(mydeaths) + "/" + str(specials) + "\n"
 
 		enemystring = ""
 		for i in enemyteam:
 			ename = i['player']['nickname']
-			enemystring = enemystring + ename + " - " + i['player']['weapon']['name'] + " - " + str(i['kill_count']) + "/" + str(i['assist_count']) + "/" + str(i['death_count']) + "\n"
+			enemystring = enemystring + ename + " - " + i['player']['weapon']['name'] + " - " + str(i['kill_count']) + "/" + str(i['assist_count']) + "/" + str(i['death_count']) + "/" + str(i['special_count']) + "\n"
 
 		if 'VICTORY' in myresult:
-			embed.add_field(name=str(name) + "'s team - " + str(myresult), value=teamstring, inline=True)
+			embed.add_field(name=str(matchname) + "'s team - " + str(myresult), value=teamstring, inline=True)
 			embed.add_field(name="Enemy Team - " + str(enemyresult), value=enemystring, inline=True)
 		else:
 			embed.add_field(name="Enemy Team - " + str(enemyresult), value=enemystring, inline=True)
-			embed.add_field(name=str(name) + "'s team - " + str(myresult), value=teamstring, inline=True)
+			embed.add_field(name=str(matchname) + "'s team - " + str(myresult), value=teamstring, inline=True)
 
 		await message.channel.send(embed=embed)
 
@@ -878,6 +880,12 @@ class nsoHandler():
 		if subcommand == "help":
 			await message.channel.send("**battles last**: Get the stats from the last battle")
 		elif subcommand == "last":
-			await self.battleParser(message)
+			if len(args) > 1:
+				if args[1].isdigit():
+					await self.battleParser(message, num=int(args[1]))
+				else:
+					await message.channel.send("Battle num must be number 1-50")
+			else:
+				await self.battleParser(message)
 		else:
 			await message.channel.send("Try 'Unknown subcommand. Try 'battles help'")
