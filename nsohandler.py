@@ -200,7 +200,7 @@ class nsoHandler():
 
 		if 'AUTHENTICATION_ERROR' in str(thejson):
 			iksm = await self.nsotoken.do_iksm_refresh(message)
-			results_list = requests.get(url, headers=self.head, cookies=dict(iksm_session=iksm))
+			results_list = requests.get(url, headers=header, cookies=dict(iksm_session=iksm))
 			thejson = json.loads(results_list.text)
 			if 'AUTHENTICATION_ERROR' in str(thejson):
 				return None
@@ -687,7 +687,7 @@ class nsoHandler():
 		enemyteam = fullbattle['other_team_members']
 		myteam = fullbattle['my_team_members']
 		mystats = fullbattle['player_result']
-		mykills = int(mystats['kill_count'])
+		mykills = mystats['kill_count'] + mystats['assist_count']
 		myassists = mystats['assist_count']
 		mydeaths = mystats['death_count']
 		mypoints = mystats['game_paint_point']
@@ -700,28 +700,36 @@ class nsoHandler():
 		enemyresult = thebattle['other_team_result']['name']
 
 		embed = discord.Embed(colour=0x0004FF)
-		embed.title = "Stats for " + str(accountname) +"'s last battle - " + str(battletype) + " - " + str(rule) + " (Kills/Assists/Deaths/Specials)"
+		embed.title = "Stats for " + str(accountname) +"'s last battle - " + str(battletype) + " - " + str(rule) + " (Kills/Deaths/Specials)"
         
 		teamstring = ""
 		placedPlayer = False
-		myteam = sorted(myteam, key=lambda i : i['game_paint_point'], reverse=True)
-		enemyteam = sorted(enemyteam, key=lambda i : i['game_paint_point'], reverse=True)
+	
+		if rule == "Turf War":
+			myteam = sorted(myteam, key=lambda i : i['game_paint_point'], reverse=True)
+			enemyteam = sorted(enemyteam, key=lambda i : i['game_paint_point'], reverse=True)
+		else:
+			myteam = sorted(myteam, key=lambda i : i['kill_count'] + i['assist_count'], reverse=True)
+			enemyteam = sorted(enemyteam, key=lambda i : i['kill_count'] + i['assist_count'], reverse=True)
 
 		for i in myteam:
 			tname = i['player']['nickname']
-			if mypoints > i['game_paint_point'] and not placedPlayer:
+			if rule == "Turf War" and mypoints > i['game_paint_point'] and not placedPlayer:
 				placedPlayer = True
-				teamstring = teamstring + matchname + " - " + myweapon + " - " + str(mykills) + "/" + str(myassists) + "/" + str(mydeaths) + "/" + str(specials) + "\n"
-
-			teamstring = teamstring + tname + " - " + i['player']['weapon']['name'] + " - " + str(i['kill_count']) + "/" + str(i['assist_count']) + "/" + str(i['death_count']) + "/" + str(i['special_count']) + "\n"
+				teamstring = teamstring + matchname + " - " + myweapon + " - " + str(mykills) + "(" + str(myassists) + ")/" + str(mydeaths) + "/" + str(specials) + "\n"
+			if rule != "Turf War" and mykills > i['kill_count'] + i['assist_count'] and not placedPlayer:
+				placedPlayer = True
+				teamstring = teamstring + matchname + " - " + myweapon + " - " + str(mykills) + "(" + str(myassists) + ")/" + str(mydeaths) + "/" + str(specials) + "\n"
+			
+			teamstring = teamstring + tname + " - " + i['player']['weapon']['name'] + " - " + str(i['kill_count'] + i['assist_count']) + "(" + str(i['assist_count']) + ")/" + str(i['death_count']) + "/" + str(i['special_count']) + "\n"
 
 		if not placedPlayer:
-			teamstring = teamstring + matchname + " - " + myweapon + " - " + str(mykills) + "/" + str(myassists) + "/" + str(mydeaths) + "/" + str(specials) + "\n"
+			teamstring = teamstring + matchname + " - " + myweapon + " - " + str(mykills) + "(" + str(myassists) + ")/" + str(mydeaths) + "/" + str(specials) + "\n"
 
 		enemystring = ""
 		for i in enemyteam:
 			ename = i['player']['nickname']
-			enemystring = enemystring + ename + " - " + i['player']['weapon']['name'] + " - " + str(i['kill_count']) + "/" + str(i['assist_count']) + "/" + str(i['death_count']) + "/" + str(i['special_count']) + "\n"
+			enemystring = enemystring + ename + " - " + i['player']['weapon']['name'] + " - " + str(i['kill_count'] + i['assist_count']) + "(" + str(i['assist_count']) + ")/" + str(i['death_count']) + "/" + str(i['special_count']) + "\n"
 
 		if 'VICTORY' in myresult:
 			embed.add_field(name=str(matchname) + "'s team - " + str(myresult), value=teamstring, inline=True)
