@@ -16,13 +16,15 @@ import requests
 import nsotoken
 import aiomysql
 import commandparser
+import serverconfig
 import splatinfo
 from subprocess import call
 from ctypes import *
 
 client = discord.Client()
 splatInfo = splatinfo.SplatInfo()
-commandParser = commandparser.CommandParser()
+commandParser = None
+serverConfig = None
 mysqlConnect = None
 nsoHandler = None
 nsoTokens = None
@@ -138,8 +140,8 @@ async def on_ready():
 			serverVoices[server.id] = vserver.voiceServer(client, mysqlConnect, server.id, soundsDir)
 
 	if nsoHandler == None:
-		commandParser.setMysqlInfo(mysqlConnect)
-		commandParser.setUserid(client.user.id)
+		serverConfig = serverconfig.ServerConfig(mysqlConnect)
+		commandParser = commandparser.CommandParser(mysqlConnect, serverConfig, client.user.id)
 		serverUtils = serverutils.serverUtils(client, mysqlConnect)
 		nsoTokens = nsotoken.Nsotoken(client, mysqlConnect)
 		nsoHandler = nsohandler.nsoHandler(client, mysqlConnect, nsoTokens, splatInfo)
