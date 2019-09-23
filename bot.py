@@ -141,7 +141,8 @@ async def on_ready():
 
 	if nsoHandler == None:
 		serverConfig = serverconfig.ServerConfig(mysqlConnect)
-		commandParser = commandparser.CommandParser(mysqlConnect, serverConfig, client.user.id)
+
+		commandParser = commandparser.CommandParser(serverConfig, client.user.id)
 		serverUtils = serverutils.serverUtils(client, mysqlConnect)
 		nsoTokens = nsotoken.Nsotoken(client, mysqlConnect)
 		nsoHandler = nsohandler.nsoHandler(client, mysqlConnect, nsoTokens, splatInfo)
@@ -254,7 +255,7 @@ async def on_message(message):
 
 	if cmd == "admin":
 		if message.author in serverAdmins[theServer]:
-			if len(args) > 1:
+			if len(args) == 0:
 				#Add admin help messages
 				await message.channel.send("Options for admin commands are playlist, blacklist, dm, prefix")
 			subcommand = args[0].lower()
@@ -275,10 +276,11 @@ async def on_message(message):
 			elif subcommand == 'prefix':
 				if (len(args) == 1):
 					await channel.send("Current command prefix is: " + commandParser.getPrefix(theServer))
-				elif (len(args) != 2) or (len(args[1]) != 1):
-					await channel.send("Usage: ```admin prefix <char>``` where *char* is a single character")
+				elif (len(args) != 2) or (len(args[1]) < 0) or (len(args[1]) > 2):
+					await channel.send("Usage: ```admin prefix <char>``` where *char* is one or two characters")
 				else:
 					commandParser.setPrefix(theServer, args[1])
+					await channel.send("New command prefix is: " + commandParser.getPrefix(theServer))
 		else:
 			await channel.send(message.author.name + " you are not an admin... :cop:")
 	elif cmd == 'alive':
