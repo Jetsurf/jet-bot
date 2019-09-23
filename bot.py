@@ -141,6 +141,7 @@ async def on_ready():
 
 	if nsoHandler == None:
 		serverConfig = serverconfig.ServerConfig(mysqlConnect)
+
 		commandParser = commandparser.CommandParser(serverConfig, client.user.id)
 		serverUtils = serverutils.serverUtils(client, mysqlConnect)
 		nsoTokens = nsotoken.Nsotoken(client, mysqlConnect)

@@ -9,7 +9,7 @@ class ServerConfig():
 
 	def connect(self):
 		if self.db == None:
-			self.db = mysql.connector.connect(host=self.mysqlinfo.host, user=self.mysqlinfo.user, password=self.mysqlinfo.pw, database=self.mysqlinfo.db, charset="utf8")
+			self.db = mysql.connector.connect(host=self.mysqlinfo.host, user=self.mysqlinfo.user, password=self.mysqlinfo.pw, database=self.mysqlinfo.db)
 			self.db.autocommit = True
 		self.db.ping(True, 2, 1)
 		cursor = self.db.cursor(cursor_class=MySQLCursorPrepared)
