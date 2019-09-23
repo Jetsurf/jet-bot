@@ -16,6 +16,8 @@ For these Splatnet2 commands, DM the bot with !token to set this up (!deletetoke
 !srstats : Shows various stats from Salmon Run
 !map stats MAP : Pulls stats for a specific map (Accepts partial names)
 !weapon stats WEAPON : Pulls stats for a specific weapon (Accepts partial names)
+!battle last : Gets stats from the last battle you played
+!battle num NUM : Gets stats from NUM last battle (1 is last, upto 50)
 !order ID : The !splatnetgear command gives "ID to order" run this with that ID to place an order in the store
 *Music
 !join CHANNELNAME : Join a Voice Channel, must be exact Upper/Lower case. If no name is provided, join your current voice channel

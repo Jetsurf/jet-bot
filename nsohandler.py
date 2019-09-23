@@ -200,7 +200,7 @@ class nsoHandler():
 
 		if 'AUTHENTICATION_ERROR' in str(thejson):
 			iksm = await self.nsotoken.do_iksm_refresh(message)
-			results_list = requests.get(url, headers=self.head, cookies=dict(iksm_session=iksm))
+			results_list = requests.get(url, headers=header, cookies=dict(iksm_session=iksm))
 			thejson = json.loads(results_list.text)
 			if 'AUTHENTICATION_ERROR' in str(thejson):
 				return None
@@ -678,7 +678,7 @@ class nsoHandler():
 
 		battlejson = await self.getNSOJSON(message, self.app_head, "https://app.splatoon2.nintendo.net/api/results")
 
-		name = recordjson['records']['player']['nickname']
+		accountname = recordjson['records']['player']['nickname']
 		thebattle = battlejson['results'][num - 1]
 		battletype = thebattle['game_mode']['name']
 		battleid = thebattle['battle_number']
@@ -687,45 +687,56 @@ class nsoHandler():
 		enemyteam = fullbattle['other_team_members']
 		myteam = fullbattle['my_team_members']
 		mystats = fullbattle['player_result']
-		mykills = int(mystats['kill_count'])
+		mykills = mystats['kill_count'] + mystats['assist_count']
 		myassists = mystats['assist_count']
 		mydeaths = mystats['death_count']
+		mypoints = mystats['game_paint_point']
 		myweapon = mystats['player']['weapon']['name']
+		specials = mystats['special_count']
+		matchname = mystats['player']['nickname']
 		rule = thebattle['rule']['name']
 		mystats = fullbattle['player_result']
 		myresult = thebattle['my_team_result']['name']
 		enemyresult = thebattle['other_team_result']['name']
 
 		embed = discord.Embed(colour=0x0004FF)
-		embed.title = "Stats for " + str(name) +"'s last battle - " + str(battletype) + " - " + str(rule) + " (Kills/Assists/Deaths)"
-
+		embed.title = "Stats for " + str(accountname) +"'s last battle - " + str(battletype) + " - " + str(rule) + " (Kills/Deaths/Specials)"
+        
 		teamstring = ""
 		placedPlayer = False
+	
+		if rule == "Turf War":
+			myteam = sorted(myteam, key=lambda i : i['game_paint_point'], reverse=True)
+			enemyteam = sorted(enemyteam, key=lambda i : i['game_paint_point'], reverse=True)
+		else:
+			myteam = sorted(myteam, key=lambda i : i['kill_count'] + i['assist_count'], reverse=True)
+			enemyteam = sorted(enemyteam, key=lambda i : i['kill_count'] + i['assist_count'], reverse=True)
+
 		for i in myteam:
 			tname = i['player']['nickname']
-			if mykills > i['kill_count']:
+			if rule == "Turf War" and mypoints > i['game_paint_point'] and not placedPlayer:
 				placedPlayer = True
-				teamstring = teamstring + name + " - " + myweapon + " - " + str(mykills) + "/" + str(myassists) + "/" + str(mydeaths) + "\n"
-			elif (mykills == i['kill_count']) and (myassists > i['assist_count']):
+				teamstring = teamstring + matchname + " - " + myweapon + " - " + str(mykills) + "(" + str(myassists) + ")/" + str(mydeaths) + "/" + str(specials) + "\n"
+			if rule != "Turf War" and mykills > i['kill_count'] + i['assist_count'] and not placedPlayer:
 				placedPlayer = True
-				teamstring = teamstring + name + " - " + str(mykills) + "/" + str(myassists) + "/" + str(mydeaths) + "\n"
-
-			teamstring = teamstring + tname + " - " + i['player']['weapon']['name'] + " - " + str(i['kill_count']) + "/" + str(i['assist_count']) + "/" + str(i['death_count']) + "\n"
+				teamstring = teamstring + matchname + " - " + myweapon + " - " + str(mykills) + "(" + str(myassists) + ")/" + str(mydeaths) + "/" + str(specials) + "\n"
+			
+			teamstring = teamstring + tname + " - " + i['player']['weapon']['name'] + " - " + str(i['kill_count'] + i['assist_count']) + "(" + str(i['assist_count']) + ")/" + str(i['death_count']) + "/" + str(i['special_count']) + "\n"
 
 		if not placedPlayer:
-			teamstring = teamstring + name + " - " + myweapon + " - " + str(mykills) + "/" + str(myassists) + "/" + str(mydeaths) + "\n"
+			teamstring = teamstring + matchname + " - " + myweapon + " - " + str(mykills) + "(" + str(myassists) + ")/" + str(mydeaths) + "/" + str(specials) + "\n"
 
 		enemystring = ""
 		for i in enemyteam:
 			ename = i['player']['nickname']
-			enemystring = enemystring + ename + " - " + i['player']['weapon']['name'] + " - " + str(i['kill_count']) + "/" + str(i['assist_count']) + "/" + str(i['death_count']) + "\n"
+			enemystring = enemystring + ename + " - " + i['player']['weapon']['name'] + " - " + str(i['kill_count'] + i['assist_count']) + "(" + str(i['assist_count']) + ")/" + str(i['death_count']) + "/" + str(i['special_count']) + "\n"
 
 		if 'VICTORY' in myresult:
-			embed.add_field(name=str(name) + "'s team - " + str(myresult), value=teamstring, inline=True)
+			embed.add_field(name=str(matchname) + "'s team - " + str(myresult), value=teamstring, inline=True)
 			embed.add_field(name="Enemy Team - " + str(enemyresult), value=enemystring, inline=True)
 		else:
 			embed.add_field(name="Enemy Team - " + str(enemyresult), value=enemystring, inline=True)
-			embed.add_field(name=str(name) + "'s team - " + str(myresult), value=teamstring, inline=True)
+			embed.add_field(name=str(matchname) + "'s team - " + str(myresult), value=teamstring, inline=True)
 
 		await message.channel.send(embed=embed)
 
@@ -871,8 +882,17 @@ class nsoHandler():
 
 		subcommand = args[0].lower()
 		if subcommand == "help":
-			await message.channel.send("**battles last**: Get the stats from the last battle")
+			await message.channel.send("**battles last**: Get the stats from the last battle\n"
+				"**num NUM**: Get a battle from the last 50 you have played (1 is most recent)")
 		elif subcommand == "last":
 			await self.battleParser(message)
+		elif subcommand == "num":
+			if len(args) > 1:
+				if args[1].isdigit() and int(args[1]) < 50 and int(args[1]) > 0:
+					await self.battleParser(message, num=int(args[1]))
+				else:
+					await message.channel.send("Battle num must be number 1-50")
+			else:
+				await message.channel.send("Must provide a number of the battle to get")
 		else:
-			await message.channel.send("Try 'Unknown subcommand. Try 'battles help'")
+			await message.channel.send("Unknown subcommand. Try 'battles help'")

@@ -218,14 +218,14 @@ async def on_message(message):
 				sys.exit(0)
 			elif '!cmdreport' in message.content:
 				await serverUtils.report_cmd_totals(message)
+			elif '!nsojson' in command:
+				await nsoHandler.getRawJSON(message)
 		if '!token' in command:
 			await nsoTokens.login(message)
 		elif '!deletetoken' in command:
 				await nsoTokens.delete_tokens(message)
 		elif '!storedm' in command:
 			await channel.send("Sorry, for performance reasons, you cannot DM me !storedm :frowning:")
-		elif '!nsojson' in command:
-			await nsoHandler.getRawJSON(message)
 		return
 	else:
 		theServer = message.guild.id
