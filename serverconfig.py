@@ -9,7 +9,7 @@ class ServerConfig():
 
 	def connect(self):
 		if self.db == None:
-			self.db = mysql.connector.connect(host=self.mysqlinfo.host, user=self.mysqlinfo.user, password=self.mysqlinfo.pw, database=self.mysqlinfo.db)
+			self.db = mysql.connector.connect(host=self.mysqlinfo.host, user=self.mysqlinfo.user, password=self.mysqlinfo.pw, database=self.mysqlinfo.db, charset="utf8")
 			self.db.autocommit = True
 		self.db.ping(True, 2, 1)
 		cursor = self.db.cursor(cursor_class=MySQLCursorPrepared)
@@ -18,7 +18,6 @@ class ServerConfig():
 	def getConfig(self, cursor, serverid):
 		cursor.execute("SELECT config FROM server_config WHERE (serverid = %s)", (serverid,))
 		row = cursor.fetchone()
-		cursor.close()
 		if row == None:
 			return {}  # Blank config
 		return json.loads(row[0].decode("utf-8"))
@@ -26,7 +25,6 @@ class ServerConfig():
 	def setConfig(self, cursor, serverid, config):
 		jsonconfig = json.dumps(config)
 		cursor.execute("REPLACE INTO server_config (serverid, config) VALUES (%s, %s)", (serverid, jsonconfig))
-		cursor.close()
 
 	def getConfigValue(self, serverid, path):
 		cursor = self.connect()
@@ -44,7 +42,6 @@ class ServerConfig():
 		value = config
 		path = path.split(".")
 		for p in path[0:len(path) - 1]:
-			print(p + "\t" + str(type(value[p])))
 			if not p in value:
 				value[p] = {}  # Autovivify
 			elif not isinstance(value[p], dict):

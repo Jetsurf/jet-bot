@@ -3,21 +3,11 @@ import mysql.connector
 from mysql.connector.cursor import MySQLCursorPrepared
 
 class CommandParser():
-	def __init__(self, mysqlinfo, serverConfig, myid):
+	def __init__(self, serverConfig, myid):
 		self.myid         = myid
 		self.db           = None
 		self.prefixes     = None
 		self.serverConfig = serverConfig
-		self.mysqlinfo    = mysqlinfo
-
-	def loadPrefixes(self):
-		cursor = self.connect()
-		cursor.execute("SELECT * FROM command_prefixes")
-		print("Loading command prefixes...")
-		self.prefixes = {}
-		for row in cursor:
-			self.prefixes[row[0]] = row[1].decode("utf-8")
-		cursor.close()
 
 	def setPrefix(self, serverid, prefix):
 		self.serverConfig.setConfigValue(serverid, 'commandparser.prefix', prefix)
@@ -34,10 +24,11 @@ class CommandParser():
 			return None
 
 		prefix = self.getPrefix(serverid)
+		prefixlen = len(prefix)
 
 		# Validate command prefix or mention
-		if message[0] == prefix:
-			pos = 1
+		if (len(message) > prefixlen) and (message[0:prefixlen] == prefix):
+			pos = prefixlen
 		elif (self.myid != None) and (message[0:2] == "<@"):
 			pos = message.find(" ")
 			if pos == -1:
