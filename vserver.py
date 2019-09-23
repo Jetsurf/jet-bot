@@ -263,7 +263,7 @@ class voiceServer():
 			theDB.commit()
 			self.disconnect(theDB, cursor)
 		else:
-			await self.client.send_message(message.channel, "Something went wrong!")
+			await message.channel.send("Something went wrong!")
 
 	async def playRandom(self, message, numToQueue):
 		theDB, cursor = self.connect()
@@ -312,14 +312,14 @@ class voiceServer():
 		elif self.ytPlayer != None:
 			toAdd = self.ytPlayer.url
 		else:
-			await self.client.send_message(message.channel, 'Im not playing anything, pass me a url to add to the playlist')
+			await message.channel.send('Im not playing anything, pass me a url to add to the playlist')
 			return
 		
 		if not self.listCheck(0, toAdd):
 			await self.listAdd(0, toAdd, message)
 			await self.client.add_reaction(message, '👍')
 		else:
-			await self.client.send_message(message.channel, 'That is already in my playlist!')
+			await message.channel.send('That is already in my playlist!')
 
 	async def addBlacklist(self, message):
 		toAdd = ''
@@ -328,11 +328,11 @@ class voiceServer():
 		elif self.ytPlayer != None:
 			toAdd = self.ytplayer.url
 		else:
-			await self.client.send_message(message.channel, 'Im not playing anything, pass me a url to add to the playlist')
+			await message.channel.send('Im not playing anything, pass me a url to add to the playlist')
 			return
 		
 		if not self.listCheck(1, toAdd):
 			await self.listAdd(1, toAdd, message)
 			await self.client.add_reaction(message, '👍')
 		else:
-			await self.client.send_message(message.channel, 'That is already in my blacklist!')
+			await message.channel.send('That is already in my blacklist!')
