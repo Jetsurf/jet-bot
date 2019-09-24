@@ -54,20 +54,26 @@ class serverUtils():
 
 	def getAnnounceChannel(self, serverid):
 		channelid = self.serverConfig.getConfigValue(serverid, 'announcement.channelid')
-		server = discord.utils.get(self.client.guilds, id=serverid)
-		return discord.utils.get(server.channels, id=channelid)
+		if channelid != None:
+			server = discord.utils.get(self.client.guilds, id=serverid)
+			return discord.utils.get(server.channels, id=channelid)
+		else:
+			return None
 
 	async def doAnnouncement(self, message):
 		announcemsg = message.content.split(None, 1)[1]
 		print("Sending announcement: " + announcemsg)
 
 		for guild in self.client.guilds:
-			channelid = self.serverConfig.getConfigValue(guild.id, 'announcement.channelid')
-			if channelid == None:
+			channel = self.getAnnounceChannel(guild.id)
+			if channel == None:
 				continue
 			else:
-				channel = discord.utils.get(guild.channels, id=channelid)
 				await channel.send("ANNOUNCEMENT: " + announcemsg)
+
+	async def stopAnnouncements(self, message):
+		self.serverConfig.removeConfigValue(message.guild.id, "announcement.channelid")
+		await message.channel.send("Your guild is now unsubscribed from receiving announcements")
 
 	def checkDM(self, clientid, serverid):
 		stmt = "SELECT COUNT(*) FROM dms WHERE serverid = %s AND clientid = %s"

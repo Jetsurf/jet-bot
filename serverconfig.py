@@ -38,6 +38,7 @@ class ServerConfig():
 
 	def setConfigValue(self, serverid, path, new):
 		cursor = self.connect()
+		cursor._connection.start_transaction()
 		config = self.getConfig(cursor, serverid)
 		value = config
 		path = path.split(".")
@@ -49,24 +50,29 @@ class ServerConfig():
 			value = value[p]
 		value[path[-1]] = new
 		self.setConfig(cursor, serverid, config)
-		cursor.execute("COMMIT")
+		cursor._connection.commit()
+		#cursor.execute("COMMIT")
 		return
 
 	def removeConfigValue(self, serverid, path):
 		cursor = self.connect()
-		cursor.execute("START TRANSACTION")
+		cursor._connection.start_transaction()
+		#cursor.execute("START TRANSACTION")
 		config = self.getConfig(cursor, serverid)
 		value = config
 		path = path.split(".")
 		for p in path[0:len(path) - 1]:
 			if not p in value:
-				cursor.execute("ROLLBACK")
+				cursor._connection.rollback()
+				#cursor.execute("ROLLBACK")
 				return	# Non-existant parent element in path
 			elif not isinstance(value[p], dict):
-				cursor.execute("ROLLBACK")
+				cursor._connection.rollback()
+				#cursor.execute("ROLLBACK")
 				return  # Parent element in path is not dict
 			value = value[p]
 		del value[path[-1]]
 		self.setConfig(cursor, serverid, config)
-		cursor.execute("COMMIT")
+		cursor._connection.commit()
+		#cursor.execute("COMMIT")
 		return

@@ -280,7 +280,12 @@ async def on_message(message):
 					await serverUtils.setAnnounceChannel(message, args)
 				elif subcommand2 == 'get':
 					channel = serverUtils.getAnnounceChannel(message.guild.id)
-					await message.channel.send("Current announcement channel is: " + channel.name)
+					if channel == None:
+						await message.channel.send("No channel is set to receive announcements")
+					else:
+						await message.channel.send("Current announcement channel is: " + channel.name)
+				elif subcommand2 == 'stop':
+					await serverUtils.stopAnnouncements(message)
 			elif subcommand == 'prefix':
 				if (len(args) == 1):
 					await channel.send("Current command prefix is: " + commandParser.getPrefix(theServer))
