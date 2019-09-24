@@ -646,7 +646,7 @@ class nsoHandler():
 		embed.add_field(name='Weapons', value=theString, inline=False)
 
 		if gotData == 0 and getNext == 0:
-			await self.client.send_message(message.channel, 'No SR Currently Running')
+			await message.channel.send('No SR Currently Running')
 			return
 		elif getNext == 1:
 			timeRemaining = start - theTime

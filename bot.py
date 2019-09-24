@@ -16,13 +16,15 @@ import requests
 import nsotoken
 import aiomysql
 import commandparser
+import serverconfig
 import splatinfo
 from subprocess import call
 from ctypes import *
 
 client = discord.Client()
 splatInfo = splatinfo.SplatInfo()
-commandParser = commandparser.CommandParser()
+commandParser = None
+serverConfig = None
 mysqlConnect = None
 nsoHandler = None
 nsoTokens = None
@@ -138,9 +140,9 @@ async def on_ready():
 			serverVoices[server.id] = vserver.voiceServer(client, mysqlConnect, server.id, soundsDir)
 
 	if nsoHandler == None:
-		commandParser.setMysqlInfo(mysqlConnect)
-		commandParser.setUserid(client.user.id)
-		serverUtils = serverutils.serverUtils(client, mysqlConnect)
+		serverConfig = serverconfig.ServerConfig(mysqlConnect)
+		commandParser = commandparser.CommandParser(serverConfig, client.user.id)
+		serverUtils = serverutils.serverUtils(client, mysqlConnect, serverConfig)
 		nsoTokens = nsotoken.Nsotoken(client, mysqlConnect)
 		nsoHandler = nsohandler.nsoHandler(client, mysqlConnect, nsoTokens, splatInfo)
 	scanAdmins(startup=1)
@@ -220,6 +222,8 @@ async def on_message(message):
 				await serverUtils.report_cmd_totals(message)
 			elif '!nsojson' in command:
 				await nsoHandler.getRawJSON(message)
+			elif '!announce' in command:
+				await serverUtils.doAnnouncement(message)
 		if '!token' in command:
 			await nsoTokens.login(message)
 		elif '!deletetoken' in command:
@@ -252,7 +256,7 @@ async def on_message(message):
 
 	if cmd == "admin":
 		if message.author in serverAdmins[theServer]:
-			if len(args) > 1:
+			if len(args) == 0:
 				#Add admin help messages
 				await message.channel.send("Options for admin commands are playlist, blacklist, dm, prefix")
 			subcommand = args[0].lower()
@@ -270,13 +274,26 @@ async def on_message(message):
 					await serverUtils.addDM(message)
 				elif subcommand2 == 'remove':
 					await serverUtils.removeDM(message)
+			elif subcommand == "announcement":
+				subcommand2 = args[1].lower()
+				if subcommand2 == 'set':
+					await serverUtils.setAnnounceChannel(message, args)
+				elif subcommand2 == 'get':
+					channel = serverUtils.getAnnounceChannel(message.guild.id)
+					if channel == None:
+						await message.channel.send("No channel is set to receive announcements")
+					else:
+						await message.channel.send("Current announcement channel is: " + channel.name)
+				elif subcommand2 == 'stop':
+					await serverUtils.stopAnnouncements(message)
 			elif subcommand == 'prefix':
 				if (len(args) == 1):
 					await channel.send("Current command prefix is: " + commandParser.getPrefix(theServer))
-				elif (len(args) != 2) or (len(args[1]) != 1):
-					await channel.send("Usage: ```admin prefix <char>``` where *char* is a single character")
+				elif (len(args) != 2) or (len(args[1]) < 0) or (len(args[1]) > 2):
+					await channel.send("Usage: ```admin prefix <char>``` where *char* is one or two characters")
 				else:
 					commandParser.setPrefix(theServer, args[1])
+					await channel.send("New command prefix is: " + commandParser.getPrefix(theServer))
 		else:
 			await channel.send(message.author.name + " you are not an admin... :cop:")
 	elif cmd == 'alive':
