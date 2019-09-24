@@ -141,9 +141,8 @@ async def on_ready():
 
 	if nsoHandler == None:
 		serverConfig = serverconfig.ServerConfig(mysqlConnect)
-
 		commandParser = commandparser.CommandParser(serverConfig, client.user.id)
-		serverUtils = serverutils.serverUtils(client, mysqlConnect)
+		serverUtils = serverutils.serverUtils(client, mysqlConnect, serverConfig)
 		nsoTokens = nsotoken.Nsotoken(client, mysqlConnect)
 		nsoHandler = nsohandler.nsoHandler(client, mysqlConnect, nsoTokens, splatInfo)
 	scanAdmins(startup=1)
@@ -223,6 +222,8 @@ async def on_message(message):
 				await serverUtils.report_cmd_totals(message)
 			elif '!nsojson' in command:
 				await nsoHandler.getRawJSON(message)
+			elif '!announce' in command:
+				await serverUtils.doAnnouncement(message)
 		if '!token' in command:
 			await nsoTokens.login(message)
 		elif '!deletetoken' in command:
@@ -273,6 +274,13 @@ async def on_message(message):
 					await serverUtils.addDM(message)
 				elif subcommand2 == 'remove':
 					await serverUtils.removeDM(message)
+			elif subcommand == "announcement":
+				subcommand2 = args[1].lower()
+				if subcommand2 == 'set':
+					await serverUtils.setAnnounceChannel(message, args)
+				elif subcommand2 == 'get':
+					channel = serverUtils.getAnnounceChannel(message.guild.id)
+					await message.channel.send("Current announcement channel is: " + channel.name)
 			elif subcommand == 'prefix':
 				if (len(args) == 1):
 					await channel.send("Current command prefix is: " + commandParser.getPrefix(theServer))
