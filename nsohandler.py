@@ -375,7 +375,7 @@ class nsoHandler():
 		jobcard = thejson['summary']['card']
 		rank = thejson['summary']['stats'][0]['grade']['name']
 		points = thejson['summary']['stats'][0]['grade_point']
-
+		embed = discord.Embed(colour=0xFF9B00)
 		embed.title = name + " - " + rank + " " + str(points) + " - Salmon Run Stats"
 
 		embed.add_field(name="Overall Stats", value="Shifts Worked: " + str(jobcard['job_num']) + '\nTeammates Rescued: ' + str(jobcard['help_total']) + '\nGolden Eggs Collected: ' +
