@@ -6,8 +6,9 @@ import mysqlinfo
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 class serverUtils():
-	def __init__(self, client, mysqlinfo):
+	def __init__(self, client, mysqlinfo, serverconfig):
 		self.mysqlinfo = mysqlinfo
+		self.serverConfig = serverconfig
 		self.client = client
 		self.statusnum = 1
 		self.valid_commands = [ "join", "play", "playrandom", "currentsong", "queue", "stop", "skip", "volume", "sounds", "currentmaps", "nextmaps", "weapon", "weapons",
@@ -33,6 +34,46 @@ class serverUtils():
 			self.statusnum = 0
 
 		self.statusnum += 1
+
+	async def setAnnounceChannel(self, message, args):
+		if len(args) < 2:
+			await message.channel.send("No channel given, please specify a channel")
+			return
+		
+		channelname = args[2].lower()
+		channelid = None
+		for channel in message.guild.channels:
+			if channel.name.lower() == channelname and channel.type == discord.ChannelType.text:
+				channelid = channel.id
+
+		if channelid == None:
+			await message.channel.send("Could not find a channel with name: " + channelname)
+		else:
+			self.serverConfig.setConfigValue(message.guild.id, 'announcement.channelid', channelid)
+			await message.channel.send("Set announcement channel to: " + channelname)
+
+	def getAnnounceChannel(self, serverid):
+		channelid = self.serverConfig.getConfigValue(serverid, 'announcement.channelid')
+		if channelid != None:
+			server = discord.utils.get(self.client.guilds, id=serverid)
+			return discord.utils.get(server.channels, id=channelid)
+		else:
+			return None
+
+	async def doAnnouncement(self, message):
+		announcemsg = message.content.split(None, 1)[1]
+		print("Sending announcement: " + announcemsg)
+
+		for guild in self.client.guilds:
+			channel = self.getAnnounceChannel(guild.id)
+			if channel == None:
+				continue
+			else:
+				await channel.send("ANNOUNCEMENT: " + announcemsg)
+
+	async def stopAnnouncements(self, message):
+		self.serverConfig.removeConfigValue(message.guild.id, "announcement.channelid")
+		await message.channel.send("Your guild is now unsubscribed from receiving announcements")
 
 	def checkDM(self, clientid, serverid):
 		stmt = "SELECT COUNT(*) FROM dms WHERE serverid = %s AND clientid = %s"

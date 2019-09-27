@@ -31,6 +31,7 @@ nsoTokens = None
 serverVoices = {}
 serverAdmins = {}
 serverUtils = None
+doneStartup = False
 token = ''
 owners = []
 dev = 1
@@ -83,10 +84,10 @@ async def setCRole(message):
 
 	await message.add_reaction('👍')
 
-def scanAdmins(startup=0, id=None):
-	global serverAdmins
+def scanAdmins(id=None):
+	global serverAdmins, doneStartup
 
-	if startup == 1:
+	if not doneStartup:
 		for server in client.guilds:
 			serverAdmins[server.id] = []
 			for mem in server.members:
@@ -100,17 +101,27 @@ def scanAdmins(startup=0, id=None):
 							
 @client.event
 async def on_member_update(before, after):
-	if before.guild_permissions.administrator or after.guild_permissions.administrator:
-		scanAdmins(id=before.guild)
+	global serverAdmins, doneStartup
+
+	if not doneStartup:
+		return
+
+	if after.guild_permissions.administrator and after not in serverAdmins[after.guild.id]:
+		serverAdmins[after.guild.id].append(after)
+	elif not after.guild_permissions.administrator and after in serverAdmins[after.guild.id]:
+		serverAdmins[after.guild.id].remove(after)
 
 @client.event
 async def on_guild_role_update(before, after):
-	scanAdmins(id=before.guild)
+	global doneStartup
+
+	if doneStartup:
+		scanAdmins(id=before.guild)
 
 @client.event
 async def on_ready():
 	global client, soundsDir, mysqlConnect, serverUtils, serverVoices, splatInfo
-	global nsoHandler, nsoTokens, head, url, dev, owners, commandParser
+	global nsoHandler, nsoTokens, head, url, dev, owners, commandParser, doneStartup
 
 	print('Logged in as,', client.user.name, client.user.id)
 
@@ -142,11 +153,12 @@ async def on_ready():
 	if nsoHandler == None:
 		serverConfig = serverconfig.ServerConfig(mysqlConnect)
 		commandParser = commandparser.CommandParser(serverConfig, client.user.id)
-		serverUtils = serverutils.serverUtils(client, mysqlConnect)
+		serverUtils = serverutils.serverUtils(client, mysqlConnect, serverConfig)
 		nsoTokens = nsotoken.Nsotoken(client, mysqlConnect)
 		nsoHandler = nsohandler.nsoHandler(client, mysqlConnect, nsoTokens, splatInfo)
-	scanAdmins(startup=1)
+	scanAdmins()
 	print('Done\n------')
+	doneStartup = True
 	sys.stdout.flush()
 	
 @client.event
@@ -222,6 +234,8 @@ async def on_message(message):
 				await serverUtils.report_cmd_totals(message)
 			elif '!nsojson' in command:
 				await nsoHandler.getRawJSON(message)
+			elif '!announce' in command:
+				await serverUtils.doAnnouncement(message)
 		if '!token' in command:
 			await nsoTokens.login(message)
 		elif '!deletetoken' in command:
@@ -272,6 +286,20 @@ async def on_message(message):
 					await serverUtils.addDM(message)
 				elif subcommand2 == 'remove':
 					await serverUtils.removeDM(message)
+			elif subcommand == "announcement":
+				subcommand2 = args[1].lower()
+				if subcommand2 == 'set':
+					await serverUtils.setAnnounceChannel(message, args)
+				elif subcommand2 == 'get':
+					channel = serverUtils.getAnnounceChannel(message.guild.id)
+					if channel == None:
+						await message.channel.send("No channel is set to receive announcements")
+					else:
+						await message.channel.send("Current announcement channel is: " + channel.name)
+				elif subcommand2 == 'stop':
+					await serverUtils.stopAnnouncements(message)
+				else:
+					await message.channel.send("Usage: set CHANNEL, get, or stop")
 			elif subcommand == 'prefix':
 				if (len(args) == 1):
 					await channel.send("Current command prefix is: " + commandParser.getPrefix(theServer))
@@ -352,14 +380,14 @@ async def on_message(message):
 		elif (cmd == 'end') or (cmd == 'stop'):
 			serverVoices[theServer].end()
 		elif cmd == 'volume':
-			vol = int(command.split(' ')[1])
+			vol = command.split(' ')[1]
 			if not vol.isdigit():
 				await message.channel.send("Volume must be a digit 1-60")
 				return
-			if vol > 60:
+			if int(vol) > 60:
 				vol = 60
-			await channel.send("Setting Volume to " + str(vol) + "%")
-			serverVoices[theServer].source.volume = float(vol / 100)
+			await channel.send("Setting Volume to " + vol + "%")
+			serverVoices[theServer].source.volume = float(int(vol) / 100)
 		elif cmd == 'queue':
 			await serverVoices[theServer].printQueue(message)
 		else:

@@ -3,6 +3,7 @@ import mysql.connector
 from mysql.connector.cursor import MySQLCursorPrepared
 
 class CommandParser():
+
 	def __init__(self, serverConfig, myid):
 		self.myid         = myid
 		self.db           = None

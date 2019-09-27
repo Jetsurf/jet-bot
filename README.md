@@ -51,6 +51,9 @@ There are a few admin commands to configure the bot. To run these commands, you 
  - `!admin dm add`: Subscribe to direct DMs on users leaving the server
  - `!admin dm remove`: Unsubscribe from direct DMs on users leaving the server
  - `!admin prefix CHAR`: Change the command prefix character to CHAR
+ - `!admin announcement set CHANNEL` : Sets a chat channel for announcements about restarts/new features from the devs
+ - `!admin announcement get` : Gets the name of the channel that is set to receive announcements
+ - `!admin announcement stop` : Disables announcements from the devs for the server
 
 ### Music Commands
 
