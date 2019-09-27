@@ -18,6 +18,7 @@ import aiomysql
 import commandparser
 import serverconfig
 import splatinfo
+import traceback
 from subprocess import call
 from ctypes import *
 
@@ -167,7 +168,7 @@ async def on_member_remove(member):
 
 	if not doneStartup:
 		return
-		
+
 	for mem in serverAdmins[member.guild.id]:
 		if mem.id != client.user.id and serverUtils.checkDM(mem.id, member.guild.id):
 			await mem.send(member.name + " left " + member.guild.name)
@@ -206,6 +207,14 @@ async def on_guild_remove(server):
 	for mem in owners:
 		await mem.send("I left server: " + server.name + " - I am now in " + str(len(client.guilds)) + " servers with " + str(len(set(client.get_all_members()))) + " total members")
 	sys.stdout.flush()
+
+@client.event
+async def on_error(event, args):
+	exc = sys.exc_info()
+	if exc[0] is discord.errors.Forbidden:
+		return
+	else:
+		raise exc[1]
 
 @client.event
 async def on_message(message):
@@ -409,4 +418,5 @@ print('**********NEW SESSION**********')
 print('Logging into discord')
 
 sys.stdout.flush()
+sys.stderr.flush()
 client.run(token)
