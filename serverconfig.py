@@ -28,12 +28,12 @@ class ServerConfig():
 	def getConfigValue(self, serverid, path):
 		cursor = self.connect()
 		value = self.getConfig(cursor, serverid)
+		self.db.commit()
 		path = path.split(".")
 		for p in path:
 			if not p in value:
 				return None  # No such key
 			value = value[p]
-		self.db.commit()
 		return value
 
 	def setConfigValue(self, serverid, path, new):
