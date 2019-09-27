@@ -7,7 +7,6 @@ class ServerConfig():
 		self.db        = None
 		self.mysqlinfo = mysqlinfo
 		self.db = mysql.connector.connect(host=self.mysqlinfo.host, user=self.mysqlinfo.user, password=self.mysqlinfo.pw, database=self.mysqlinfo.db)
-		self.db.autocommit = True
 		
 	def connect(self):
 		self.db.ping(True, 2, 1)
@@ -38,7 +37,6 @@ class ServerConfig():
 
 	def setConfigValue(self, serverid, path, new):
 		cursor = self.connect()
-		#cursor._connection.start_transaction()
 		config = self.getConfig(cursor, serverid)
 		value = config
 		path = path.split(".")
@@ -56,24 +54,18 @@ class ServerConfig():
 
 	def removeConfigValue(self, serverid, path):
 		cursor = self.connect()
-		#cursor._connection.start_transaction()
-		#cursor.execute("START TRANSACTION")
 		config = self.getConfig(cursor, serverid)
 		value = config
 		path = path.split(".")
 		for p in path[0:len(path) - 1]:
 			if not p in value:
 				cursor._connection.rollback()
-				#cursor.execute("ROLLBACK")
 				return	# Non-existant parent element in path
 			elif not isinstance(value[p], dict):
 				cursor._connection.rollback()
-				#cursor.execute("ROLLBACK")
 				return  # Parent element in path is not dict
 			value = value[p]
 		del value[path[-1]]
 		self.setConfig(cursor, serverid, config)
 		self.db.commit()
-		#cursor._connection.commit()
-		#cursor.execute("COMMIT")
 		return

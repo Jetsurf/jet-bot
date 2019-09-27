@@ -31,6 +31,7 @@ nsoTokens = None
 serverVoices = {}
 serverAdmins = {}
 serverUtils = None
+doneStartup = False
 token = ''
 owners = []
 dev = 1
@@ -83,10 +84,10 @@ async def setCRole(message):
 
 	await message.add_reaction('👍')
 
-def scanAdmins(startup=0, id=None):
-	global serverAdmins
+def scanAdmins(id=None):
+	global serverAdmins, doneStartup
 
-	if startup == 1:
+	if not doneStartup:
 		for server in client.guilds:
 			serverAdmins[server.id] = []
 			for mem in server.members:
@@ -100,7 +101,10 @@ def scanAdmins(startup=0, id=None):
 							
 @client.event
 async def on_member_update(before, after):
-	global serverAdmins
+	global serverAdmins, doneStartup
+
+	if not doneStartup:
+		return
 
 	if after.guild_permissions.administrator and after not in serverAdmins[after.guild.id]:
 		serverAdmins[after.guild.id].append(after)
@@ -109,12 +113,15 @@ async def on_member_update(before, after):
 
 @client.event
 async def on_guild_role_update(before, after):
-	scanAdmins(id=before.guild)
+	global doneStartup
+
+	if doneStartup:
+		scanAdmins(id=before.guild)
 
 @client.event
 async def on_ready():
 	global client, soundsDir, mysqlConnect, serverUtils, serverVoices, splatInfo
-	global nsoHandler, nsoTokens, head, url, dev, owners, commandParser
+	global nsoHandler, nsoTokens, head, url, dev, owners, commandParser, doneStartup
 
 	print('Logged in as,', client.user.name, client.user.id)
 
@@ -149,8 +156,9 @@ async def on_ready():
 		serverUtils = serverutils.serverUtils(client, mysqlConnect, serverConfig)
 		nsoTokens = nsotoken.Nsotoken(client, mysqlConnect)
 		nsoHandler = nsohandler.nsoHandler(client, mysqlConnect, nsoTokens, splatInfo)
-	scanAdmins(startup=1)
+	scanAdmins()
 	print('Done\n------')
+	doneStartup = True
 	sys.stdout.flush()
 	
 @client.event

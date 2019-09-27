@@ -7,13 +7,17 @@ class CommandParser():
 	def __init__(self, serverConfig, myid):
 		self.myid         = myid
 		self.db           = None
-		self.prefixes     = None
+		self.prefixes     = {}
 		self.serverConfig = serverConfig
 
 	def setPrefix(self, serverid, prefix):
+		self.prefixes[serverid] = prefix
 		self.serverConfig.setConfigValue(serverid, 'commandparser.prefix', prefix)
 
 	def getPrefix(self, serverid):
+		if serverid in self.prefixes:
+			return self.prefixes[serverid]
+
 		prefix = self.serverConfig.getConfigValue(serverid, 'commandparser.prefix')
 		if prefix == None:
 			return '!'
