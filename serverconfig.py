@@ -6,13 +6,13 @@ class ServerConfig():
 	def __init__(self, mysqlinfo):
 		self.db        = None
 		self.mysqlinfo = mysqlinfo
-
+		self.db = mysql.connector.connect(host=self.mysqlinfo.host, user=self.mysqlinfo.user, password=self.mysqlinfo.pw, database=self.mysqlinfo.db)
+		self.db.autocommit = True
+		
 	def connect(self):
-		if self.db == None:
-			self.db = mysql.connector.connect(host=self.mysqlinfo.host, user=self.mysqlinfo.user, password=self.mysqlinfo.pw, database=self.mysqlinfo.db)
-			self.db.autocommit = True
 		self.db.ping(True, 2, 1)
 		cursor = self.db.cursor(cursor_class=MySQLCursorPrepared)
+		cursor.execute("SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED")
 		return cursor
 
 	def getConfig(self, cursor, serverid):
@@ -38,7 +38,7 @@ class ServerConfig():
 
 	def setConfigValue(self, serverid, path, new):
 		cursor = self.connect()
-		cursor._connection.start_transaction()
+		#cursor._connection.start_transaction()
 		config = self.getConfig(cursor, serverid)
 		value = config
 		path = path.split(".")
@@ -50,8 +50,8 @@ class ServerConfig():
 			value = value[p]
 		value[path[-1]] = new
 		self.setConfig(cursor, serverid, config)
-		cursor._connection.commit()
-		#cursor.execute("COMMIT")
+		#cursor._connection.commit()
+		self.db.commit()
 		return
 
 	def removeConfigValue(self, serverid, path):
@@ -73,6 +73,7 @@ class ServerConfig():
 			value = value[p]
 		del value[path[-1]]
 		self.setConfig(cursor, serverid, config)
-		cursor._connection.commit()
+		self.db.commit()
+		#cursor._connection.commit()
 		#cursor.execute("COMMIT")
 		return
