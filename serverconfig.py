@@ -33,6 +33,7 @@ class ServerConfig():
 			if not p in value:
 				return None  # No such key
 			value = value[p]
+		self.db.commit()
 		return value
 
 	def setConfigValue(self, serverid, path, new):
@@ -48,7 +49,6 @@ class ServerConfig():
 			value = value[p]
 		value[path[-1]] = new
 		self.setConfig(cursor, serverid, config)
-		#cursor._connection.commit()
 		self.db.commit()
 		return
 
@@ -59,10 +59,10 @@ class ServerConfig():
 		path = path.split(".")
 		for p in path[0:len(path) - 1]:
 			if not p in value:
-				cursor._connection.rollback()
+				self.db.rollback()
 				return	# Non-existant parent element in path
 			elif not isinstance(value[p], dict):
-				cursor._connection.rollback()
+				self.db.rollback()
 				return  # Parent element in path is not dict
 			value = value[p]
 		del value[path[-1]]
