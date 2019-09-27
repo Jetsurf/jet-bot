@@ -79,7 +79,7 @@ class serverUtils():
 		stmt = "SELECT COUNT(*) FROM dms WHERE serverid = %s AND clientid = %s"
 		self.cursor.execute(stmt, (serverid, clientid,))
 		count = self.cursor.fetchone()
-
+		self.theDB.commit()
 		if count[0] > 0:
 			return True
 		else:
@@ -141,6 +141,7 @@ class serverUtils():
 			self.theDB.commit()
 			await message.channel.send("Added " + message.author.name + " to my DM list!")
 		else:
+			self.theDB.rollback()
 			await message.channel.send("Something went wrong!")
 
 	async def removeDM(self, message):
@@ -154,4 +155,5 @@ class serverUtils():
 			self.theDB.commit()
 			await message.channel.send("Removed " + message.author.name + " from my DM list!")
 		else:
+			self.theDB.rollback()
 			await message.channel.send("Something went wrong!")
