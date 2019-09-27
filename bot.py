@@ -290,6 +290,8 @@ async def on_message(message):
 						await message.channel.send("Current announcement channel is: " + channel.name)
 				elif subcommand2 == 'stop':
 					await serverUtils.stopAnnouncements(message)
+				else:
+					await message.channel.send("Usage: set CHANNEL, get, or stop")
 			elif subcommand == 'prefix':
 				if (len(args) == 1):
 					await channel.send("Current command prefix is: " + commandParser.getPrefix(theServer))
