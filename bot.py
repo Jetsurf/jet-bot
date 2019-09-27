@@ -163,8 +163,11 @@ async def on_ready():
 	
 @client.event
 async def on_member_remove(member):
-	global serverAdmins, serverUtils
+	global serverAdmins, serverUtils, doneStartup
 
+	if not doneStartup:
+		return
+		
 	for mem in serverAdmins[member.guild.id]:
 		if mem.id != client.user.id and serverUtils.checkDM(mem.id, member.guild.id):
 			await mem.send(member.name + " left " + member.guild.name)
