@@ -207,10 +207,10 @@ async def on_guild_remove(server):
 @client.event
 async def on_message(message):
 	global serverVoices, serverAdmins, soundsDir, serverUtils
-	global nsoHandler, owners, commands, commandParser
-
-	# Filter out bots and system messages
-	if message.author.bot or message.type != discord.MessageType.default:
+	global nsoHandler, owners, commands, commandParser, doneStartup
+	
+	# Filter out bots and system messages or handling of messages until startup is done
+	if message.author.bot or message.type != discord.MessageType.default or not doneStartup:
 		return
 
 	command = message.content.lower()
