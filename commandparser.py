@@ -20,7 +20,8 @@ class CommandParser():
 
 		prefix = self.serverConfig.getConfigValue(serverid, 'commandparser.prefix')
 		if prefix == None:
-			return '!'
+			prefix = '!'
+		self.prefixes[serverid] = prefix
 		return prefix
 
 	def parse(self, serverid, message):
