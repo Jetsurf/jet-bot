@@ -56,7 +56,7 @@ class ServerConfig():
 
 	def removeConfigValue(self, serverid, path):
 		cursor = self.connect()
-		cursor._connection.start_transaction()
+		#cursor._connection.start_transaction()
 		#cursor.execute("START TRANSACTION")
 		config = self.getConfig(cursor, serverid)
 		value = config
