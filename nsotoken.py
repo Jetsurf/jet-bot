@@ -48,7 +48,6 @@ class Nsotoken():
 		self.cursor.execute(stmt, input)
 		if self.cursor.lastrowid != None:
 			self.theDB.commit()
-			await message.channel.send("Token added, !srstats !stats !ranks and !order will now work! You shouldn't need to run this command again.")
 			return True
 		else:
 			await message.channel.send("Something went wrong! Tell jetsurf#8514 that something broke!")
@@ -121,7 +120,8 @@ class Nsotoken():
 		session_token_code = re.search('session_token_code=(.*)&', accounturl)
 		session_token_code = self.get_session_token(session_token_code.group(0)[19:-1], auth_code_verifier)
 		thetoken = self.get_cookie(session_token_code)
-		await self.addToken(message, str(thetoken), session_token_code)
+		if await self.addToken(message, str(thetoken), session_token_code):
+			await message.channel.send("Token added, !srstats !stats !ranks and !order will now work! You shouldn't need to run this command again.")
 
 	def get_hash(self, id_token, timestamp):
 		version = '1.5.1'
