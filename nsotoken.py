@@ -18,7 +18,7 @@ class Nsotoken():
 		stmt = "SELECT COUNT(*) FROM tokens WHERE clientid = %s"
 		self.cursor.execute(stmt, (str(id),))
 		count = self.cursor.fetchone()
-
+		self.theDB.commit()
 		if count[0] > 0:
 			return True
 		else:
@@ -33,32 +33,32 @@ class Nsotoken():
 			self.theDB.commit()
 			await message.channel.send("Tokens deleted!")
 		else:
+			self.theDB.rollback()
 			await message.channel.send("Something went wrong! Tell jetsurf#8514 that something broke!")
 
 	async def addToken(self, message, token, session_token):
 		print("Adding new iksm: " + str(token))
 		if self.checkDuplicate(str(message.author.id)):
-			print("Updating...")
 			stmt = "UPDATE tokens SET token = %s, session_token = %s WHERE clientid = %s"
 			input = (str(token), str(session_token), str(message.author.id),)
 		else:
-			print("Inserting...")
 			stmt = "INSERT INTO tokens (clientid, token, session_token) VALUES(%s, %s, %s)"
 			input = (str(message.author.id), token, session_token,)
 
 		self.cursor.execute(stmt, input)
 		if self.cursor.lastrowid != None:
-			print("Success!")
 			self.theDB.commit()
 			return True
 		else:
 			await message.channel.send("Something went wrong! Tell jetsurf#8514 that something broke!")
+			self.theDB.rollback()
 			return False
 
 	def get_iksm_token_mysql(self, userid):
 		stmt = "SELECT token FROM tokens WHERE clientid = %s"
 		self.cursor.execute(stmt, (str(userid),))
 		session_token = self.cursor.fetchall()
+		self.theDB.commit()
 		if len(session_token) == 0:
 			return None
 		return session_token[0][0].decode()
@@ -67,6 +67,7 @@ class Nsotoken():
 		stmt = "SELECT session_token FROM tokens WHERE clientid = %s"
 		self.cursor.execute(stmt, (str(userid),))
 		session_token = self.cursor.fetchall()
+		self.theDB.commit()
 		if len(session_token) == 0:
 			return None
 		return session_token[0][0].decode()
@@ -119,8 +120,8 @@ class Nsotoken():
 		session_token_code = re.search('session_token_code=(.*)&', accounturl)
 		session_token_code = self.get_session_token(session_token_code.group(0)[19:-1], auth_code_verifier)
 		thetoken = self.get_cookie(session_token_code)
-		await self.addToken(message, str(thetoken), session_token_code)
-		await message.channel.send("Token added, !srstats !stats !ranks and !order will now work! You shouldn't need to run this command again.")
+		if await self.addToken(message, str(thetoken), session_token_code):
+			await message.channel.send("Token added, !srstats !stats !ranks and !order will now work! You shouldn't need to run this command again.")
 
 	def get_hash(self, id_token, timestamp):
 		version = '1.5.1'
