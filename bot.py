@@ -22,6 +22,7 @@ import splatinfo
 import traceback
 import textwrap
 import io
+import signal
 from contextlib import redirect_stdout
 from subprocess import call
 from ctypes import *
@@ -220,6 +221,9 @@ async def on_error(event, args):
 	else:
 		raise exc[1]
 
+def killEval(signum, frame):
+	raise asyncio.TimeoutError
+
 async def doEval(message):
 	global owners, commandParser
 	newout = io.StringIO()
@@ -246,8 +250,16 @@ async def doEval(message):
 				return
 			func = env['func']
 			try:
+				signal.signal(signal.SIGALRM, killEval)
+				signal.alarm(10)
 				with redirect_stdout(newout):
 					ret = await func()
+				signal.alarm(0)
+			except asyncio.TimeoutError:
+				embed.title = "**TIMEOUT**"
+				embed.add_field(name="TIMEOUT", value="Timeout occured during execution", inline=False)
+				await message.channel.send(embed=embed)
+				return
 			except Exception as err:
 				embed.title = "**ERROR**"
 				embed.add_field(name="Result", value=str(err), inline=False)
