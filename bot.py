@@ -1,8 +1,9 @@
 #!/usr/bin/python3
 
+import sys
+sys.path.append('./modules')
 import discord
 import asyncio
-import sys
 import subprocess
 import json
 import time
@@ -48,7 +49,7 @@ url = ''
 def loadConfig():
 	global token, soundsDir, commands, mysqlConnect, dev, head, url
 	try:
-		with open('./discordbot.json', 'r') as json_config:
+		with open('./config/discordbot.json', 'r') as json_config:
 			configData = json.load(json_config)
 
 		token = configData['token']
@@ -322,8 +323,7 @@ async def on_message(message):
 
 	if cmd == 'eval':
 		await doEval(message)
-
-	if cmd == "admin":
+	elif cmd == "admin":
 		if message.author in serverAdmins[theServer]:
 			if len(args) == 0:
 				#Add admin help messages
@@ -456,8 +456,8 @@ async def on_message(message):
 #Setup
 loadConfig()
 if dev == 0:
-	sys.stdout = open('./discordbot.log', 'a')
-	sys.stderr = open('./discordbot.err', 'a')
+	sys.stdout = open('./logs/discordbot.log', 'a')
+	sys.stderr = open('./logs/discordbot.err', 'a')
 
 print('**********NEW SESSION**********')
 print('Logging into discord')
