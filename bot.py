@@ -237,7 +237,13 @@ async def doEval(message):
 		if '```' in message.content:
 			code = message.content.replace('`', '').replace(prefix + 'eval ', '')
 			theeval = 'async def func(): \n' + textwrap.indent(code, ' ')
-			exec(theeval, env)
+			try:
+				exec(theeval, env)
+			except:
+				embed.title = "**ERROR**"
+				embed.add_field(name="Result", value=str(err), inline=False)
+				await message.channel.send(embed=embed)
+				return
 			func = env['func']
 			try:
 				with redirect_stdout(newout):
@@ -263,7 +269,6 @@ async def doEval(message):
 async def on_message(message):
 	global serverVoices, serverAdmins, soundsDir, serverUtils
 	global nsoHandler, owners, commandParser, doneStartup
-
 
 	# Filter out bots and system messages or handling of messages until startup is done
 	if message.author.bot or message.type != discord.MessageType.default or not doneStartup:
