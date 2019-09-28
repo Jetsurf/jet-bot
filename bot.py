@@ -19,6 +19,9 @@ import commandparser
 import serverconfig
 import splatinfo
 import traceback
+import textwrap
+import io
+from contextlib import redirect_stdout
 from subprocess import call
 from ctypes import *
 
@@ -218,17 +221,27 @@ async def on_error(event, args):
 
 async def doEval(message):
 	global owners, commandParser
+	newout = io.StringIO()
+	env = {
+		'message' : message
+	}
+
+	env.update(globals())
 
 	embed = discord.Embed(colour=0x00FFFF)
 	prefix = commandParser.getPrefix(message.guild.id)
 	if message.author not in owners:
 		await message.channel.send("You are not an owner, this command is limited to my owners only :cop:")
 	else:
+		await message.channel.trigger_typing()
 		if '```' in message.content:
-			code = message.content.replace('`', '')
-			code = code.replace(prefix + 'eval', '')
+			code = message.content.replace('`', '').replace(' ', '', 1).replace(prefix + 'eval', '')
+			theeval = 'async def func(): \n' + textwrap.indent(code, ' ')
+			exec(theeval, env)
+			func = env['func']
 			try:
-				results = eval(code)
+				with redirect_stdout(newout):
+					ret = await func()
 			except Exception as err:
 				embed.title = "**ERROR**"
 				embed.add_field(name="Result", value=str(err), inline=False)
@@ -236,7 +249,12 @@ async def doEval(message):
 				return
 
 			embed.title = "**OUTPUT**"
-			embed.add_field(name="Result", value=results, inline=False)
+			out = newout.getvalue()
+			if (out == ''):
+				embed.add_field(name="Result", value="No Output, but succeeded", inline=False)
+			else:
+				embed.add_field(name="Result", value=out, inline=False)
+
 			await message.channel.send(embed=embed)
 		else:
 			await message.channel.send("Please provide code in a block")
