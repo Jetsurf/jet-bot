@@ -6,8 +6,9 @@ import mysqlinfo
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 class serverUtils():
-	def __init__(self, client, mysqlinfo, serverconfig):
+	def __init__(self, client, mysqlinfo, serverconfig, helpfldr):
 		self.mysqlinfo = mysqlinfo
+		self.helpfldr = helpfldr
 		self.serverConfig = serverconfig
 		self.client = client
 		self.statusnum = 1
@@ -85,30 +86,34 @@ class serverUtils():
 		else:
 			return False
 
-	async def print_help(self, message, commands, prefix):
+	async def print_help(self, message, prefix):
 		embed = discord.Embed(colour=0x2AE5B8)
-		embed.title = "Here is how to control me!"
-		titlenum = 0
+		
+		if 'admin' in message.content:
+			file = self.helpfldr + '/admin.txt'
+		elif 'generalsn' in message.content:
+			file = self.helpfldr + '/basesplatnet.txt'
+		elif 'usersn' in message.content:
+			file = self.helpfldr + '/usersplatnet.txt'
+		elif 'voice' in message.content:
+			file = self.helpfldr + '/voice.txt'
+		else:
+			file = self.helpfldr + '/base.txt'
+
 		theString = ''
 		title = ''
-		with open(commands, 'r') as f:
+		with open(file, 'r') as f:
 			for line in f:
-				if '*' in line and titlenum > 0:
-					embed.add_field(name=title, value=theString, inline=False)
-					title = line[1:]
-					theString = ''
-					titlenum += 1
-				elif titlenum == 0:
-					titlenum += 1
-					title = line[1:]
+				if '*' in line:
+					embed.title = line.replace('*', '')
 				else:
 					if line.startswith('!'):
 						line = line.replace('!', prefix)
 						theString = theString + "**" + line.replace(":", ":**")
 					else:
 						theString = theString + line
-			embed.add_field(name=title, value=theString, inline=False)	
-			embed.set_footer(text="If you want something added or want to report a bug/error, tell jetsurf#8514...")
+			embed.add_field(name='Commands', value=theString, inline=False)	
+			embed.set_footer(text="If you want something added or want to report a bug/error, run " + prefix + "support")
 		await message.channel.send(embed=embed)
 
 	async def report_cmd_totals(self, message):

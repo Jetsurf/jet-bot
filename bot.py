@@ -1,8 +1,9 @@
 #!/usr/bin/python3
 
+import sys
+sys.path.append('./modules')
 import discord
 import asyncio
-import sys
 import subprocess
 import json
 import time
@@ -18,6 +19,10 @@ import aiomysql
 import commandparser
 import serverconfig
 import splatinfo
+import traceback
+import textwrap
+import io
+from contextlib import redirect_stdout
 from subprocess import call
 from ctypes import *
 
@@ -36,20 +41,20 @@ token = ''
 owners = []
 dev = 1
 soundsDir = ''
-commands = ''
+helpfldr = ''
 configData = None
 head = {}
 url = ''
 
 def loadConfig():
-	global token, soundsDir, commands, mysqlConnect, dev, head, url
+	global token, soundsDir, helpfldr, mysqlConnect, dev, head, url
 	try:
-		with open('./discordbot.json', 'r') as json_config:
+		with open('./config/discordbot.json', 'r') as json_config:
 			configData = json.load(json_config)
 
 		token = configData['token']
 		soundsDir = configData['soundsdir']
-		commands = configData['commands']
+		helpfldr = configData['help']
 		try:
 			dbid = configData['discordbotid']
 			dbtoken = configData['discordbottok']
@@ -120,7 +125,7 @@ async def on_guild_role_update(before, after):
 
 @client.event
 async def on_ready():
-	global client, soundsDir, mysqlConnect, serverUtils, serverVoices, splatInfo
+	global client, soundsDir, mysqlConnect, serverUtils, serverVoices, splatInfo, helpfldr
 	global nsoHandler, nsoTokens, head, url, dev, owners, commandParser, doneStartup
 
 	print('Logged in as,', client.user.name, client.user.id)
@@ -153,7 +158,7 @@ async def on_ready():
 	if nsoHandler == None:
 		serverConfig = serverconfig.ServerConfig(mysqlConnect)
 		commandParser = commandparser.CommandParser(serverConfig, client.user.id)
-		serverUtils = serverutils.serverUtils(client, mysqlConnect, serverConfig)
+		serverUtils = serverutils.serverUtils(client, mysqlConnect, serverConfig, helpfldr)
 		nsoTokens = nsotoken.Nsotoken(client, mysqlConnect)
 		nsoHandler = nsohandler.nsoHandler(client, mysqlConnect, nsoTokens, splatInfo)
 	scanAdmins()
@@ -163,7 +168,10 @@ async def on_ready():
 	
 @client.event
 async def on_member_remove(member):
-	global serverAdmins, serverUtils
+	global serverAdmins, serverUtils, doneStartup
+
+	if not doneStartup:
+		return
 
 	for mem in serverAdmins[member.guild.id]:
 		if mem.id != client.user.id and serverUtils.checkDM(mem.id, member.guild.id):
@@ -205,9 +213,60 @@ async def on_guild_remove(server):
 	sys.stdout.flush()
 
 @client.event
+async def on_error(event, args):
+	exc = sys.exc_info()
+	if exc[0] is discord.errors.Forbidden:
+		return
+	else:
+		raise exc[1]
+
+async def doEval(message):
+	global owners, commandParser
+	newout = io.StringIO()
+	env = {
+		'message' : message
+	}
+
+	env.update(globals())
+	embed = discord.Embed(colour=0x00FFFF)
+	prefix = commandParser.getPrefix(message.guild.id)
+	if message.author not in owners:
+		await message.channel.send("You are not an owner, this command is limited to my owners only :cop:")
+	else:
+		await message.channel.trigger_typing()
+		if '```' in message.content:
+			code = message.content.replace('`', '').replace(prefix + 'eval ', '')
+			theeval = 'async def func(): \n' + textwrap.indent(code, ' ')
+			exec(theeval, env)
+			func = env['func']
+			try:
+				with redirect_stdout(newout):
+					ret = await func()
+			except Exception as err:
+				embed.title = "**ERROR**"
+				embed.add_field(name="Result", value=str(err), inline=False)
+				await message.channel.send(embed=embed)
+				return
+
+			embed.title = "**OUTPUT**"
+			out = newout.getvalue()
+			if (out == ''):
+				embed.add_field(name="Result", value="No Output, but succeeded", inline=False)
+			else:
+				embed.add_field(name="Result", value=out, inline=False)
+
+			await message.channel.send(embed=embed)
+		else:
+			await message.channel.send("Please provide code in a block")
+
+@client.event
 async def on_message(message):
 	global serverVoices, serverAdmins, soundsDir, serverUtils
+<<<<<<< HEAD
 	global nsoHandler, owners, commands, commandParser, doneStartup
+=======
+	global nsoHandler, owners, commandParser, doneStartup
+>>>>>>> dev
 	
 	# Filter out bots and system messages or handling of messages until startup is done
 	if message.author.bot or message.type != discord.MessageType.default or not doneStartup:
@@ -249,7 +308,7 @@ async def on_message(message):
 	if command.startswith('!prefix'):
 		await message.channel.send("The command prefix for this server is: " + commandParser.getPrefix(theServer))
 	elif message.content.startswith('!help') and commandParser.getPrefix(theServer) not in '!':
-		await serverUtils.print_help(message, commands, commandParser.getPrefix(theServer))
+		await serverUtils.print_help(message, commandParser.getPrefix(theServer))
 	elif ('pizza' in command and 'pineapple' in command) or ('\U0001F355' in message.content and '\U0001F34D' in message.content):
 		await channel.send('Don\'t ever think pineapple and pizza go together ' + message.author.name + '!!!')		
 
@@ -266,7 +325,9 @@ async def on_message(message):
 	except:
 		print("Failed to increment command... issue with MySQL?")
 
-	if cmd == "admin":
+	if cmd == 'eval':
+		await doEval(message)
+	elif cmd == "admin":
 		if message.author in serverAdmins[theServer]:
 			if len(args) == 0:
 				#Add admin help messages
@@ -327,7 +388,7 @@ async def on_message(message):
 	elif cmd == 'support':
 		await channel.send('Here is a link to my support server: https://discord.gg/TcZgtP5')
 	elif cmd == 'commands' or cmd == 'help':
-		await serverUtils.print_help(message, commands, commandParser.getPrefix(theServer))
+		await serverUtils.print_help(message, commandParser.getPrefix(theServer))
 	elif cmd == 'sounds':
 		theSounds = subprocess.check_output(["ls", soundsDir])
 		theSounds = theSounds.decode("utf-8")
@@ -399,11 +460,12 @@ async def on_message(message):
 #Setup
 loadConfig()
 if dev == 0:
-	sys.stdout = open('./discordbot.log', 'a')
-	sys.stderr = open('./discordbot.err', 'a')
+	sys.stdout = open('./logs/discordbot.log', 'a')
+	sys.stderr = open('./logs/discordbot.err', 'a')
 
 print('**********NEW SESSION**********')
 print('Logging into discord')
 
 sys.stdout.flush()
+sys.stderr.flush()
 client.run(token)

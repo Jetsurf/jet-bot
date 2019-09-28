@@ -1,0 +1,11 @@
+*General Splatnet
+!currentmaps : Displays the current Splatoon 2 Gamemodes/Maps
+!nextmaps : Displays the upcoming Splatoon 2 Gamemodes/Maps (!nextnextmaps displays 2 map rotations from now, etc)
+!currentsr : Displays the current Splatoon 2 Salmon Run Map/Weapons
+!nextsr : Displays the next Splatoon 2 Salmon Run Map/Weapons
+!splatnetgear : Gets all of the current gear for sale on SplatNet
+!storedm ABILITY : DM you when a piece of gear with ABILITY appears in the Splatnet Store (Can't DM me this command)
+!map help : Print help for the maps subcommands
+!weapon help : Print help for the weapons subcommands
+!github : Posts a link to my github page
+!support : Posts an invite link to my support discord guild

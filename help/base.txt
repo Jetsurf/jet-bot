@@ -1,0 +1,5 @@
+*Base Help
+!help admin : Displays help with my admin-only commands
+!help generalsn : Displays help with my general splatnet commands
+!help usersn : Displays help with my commands that fetch stats from Nintendo Switch Online
+!help voice : Displays help with my voice/music commands
