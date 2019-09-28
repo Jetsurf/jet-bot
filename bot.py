@@ -216,6 +216,22 @@ async def on_error(event, args):
 	else:
 		raise exc[1]
 
+async def doEval(message):
+	global owners, commandParser
+
+	prefix = commandParser.getPrefix(message.guild.id)
+	if message.author not in owners:
+		await message.channel.send("You are not an owner, this command is limited to my owners only :cop:")
+	else:
+		if '```' in message.content:
+			code = message.content.replace('`', '')
+			code = code.replace(prefix + 'eval', '')
+			results = eval(code)
+			print("OUTPUT: " + str(results))
+			await message.channel.send('OUTPUT:```' + str(results) + '```')
+		else:
+			await message.channel.send("Please provide code in a block")
+
 @client.event
 async def on_message(message):
 	global serverVoices, serverAdmins, soundsDir, serverUtils
@@ -277,6 +293,9 @@ async def on_message(message):
 		serverUtils.increment_cmd(message, cmd)
 	except:
 		print("Failed to increment command... issue with MySQL?")
+
+	if cmd == 'eval':
+		await doEval(message)
 
 	if cmd == "admin":
 		if message.author in serverAdmins[theServer]:
