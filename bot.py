@@ -219,6 +219,7 @@ async def on_error(event, args):
 async def doEval(message):
 	global owners, commandParser
 
+	embed = discord.Embed(colour=0x00FFFF)
 	prefix = commandParser.getPrefix(message.guild.id)
 	if message.author not in owners:
 		await message.channel.send("You are not an owner, this command is limited to my owners only :cop:")
@@ -226,9 +227,17 @@ async def doEval(message):
 		if '```' in message.content:
 			code = message.content.replace('`', '')
 			code = code.replace(prefix + 'eval', '')
-			results = eval(code)
-			print("OUTPUT: " + str(results))
-			await message.channel.send('OUTPUT:```' + str(results) + '```')
+			try:
+				results = eval(code)
+			except Exception as err:
+				embed.title = "**ERROR**"
+				embed.add_field(name="Result", value=str(err), inline=False)
+				await message.channel.send(embed=embed)
+				return
+
+			embed.title = "**OUTPUT**"
+			embed.add_field(name="Result", value=results, inline=False)
+			await message.channel.send(embed=embed)
 		else:
 			await message.channel.send("Please provide code in a block")
 
