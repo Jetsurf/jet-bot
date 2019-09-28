@@ -227,7 +227,6 @@ async def doEval(message):
 	}
 
 	env.update(globals())
-
 	embed = discord.Embed(colour=0x00FFFF)
 	prefix = commandParser.getPrefix(message.guild.id)
 	if message.author not in owners:
@@ -235,7 +234,7 @@ async def doEval(message):
 	else:
 		await message.channel.trigger_typing()
 		if '```' in message.content:
-			code = message.content.replace('`', '').replace(' ', '', 1).replace(prefix + 'eval', '')
+			code = message.content.replace('`', '').replace(prefix + 'eval ', '')
 			theeval = 'async def func(): \n' + textwrap.indent(code, ' ')
 			exec(theeval, env)
 			func = env['func']
