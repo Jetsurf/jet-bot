@@ -41,20 +41,20 @@ token = ''
 owners = []
 dev = 1
 soundsDir = ''
-commands = ''
+helpfldr = ''
 configData = None
 head = {}
 url = ''
 
 def loadConfig():
-	global token, soundsDir, commands, mysqlConnect, dev, head, url
+	global token, soundsDir, helpfldr, mysqlConnect, dev, head, url
 	try:
 		with open('./config/discordbot.json', 'r') as json_config:
 			configData = json.load(json_config)
 
 		token = configData['token']
 		soundsDir = configData['soundsdir']
-		commands = configData['commands']
+		helpfldr = configData['help']
 		try:
 			dbid = configData['discordbotid']
 			dbtoken = configData['discordbottok']
@@ -125,7 +125,7 @@ async def on_guild_role_update(before, after):
 
 @client.event
 async def on_ready():
-	global client, soundsDir, mysqlConnect, serverUtils, serverVoices, splatInfo
+	global client, soundsDir, mysqlConnect, serverUtils, serverVoices, splatInfo, helpfldr
 	global nsoHandler, nsoTokens, head, url, dev, owners, commandParser, doneStartup
 
 	print('Logged in as,', client.user.name, client.user.id)
@@ -158,7 +158,7 @@ async def on_ready():
 	if nsoHandler == None:
 		serverConfig = serverconfig.ServerConfig(mysqlConnect)
 		commandParser = commandparser.CommandParser(serverConfig, client.user.id)
-		serverUtils = serverutils.serverUtils(client, mysqlConnect, serverConfig)
+		serverUtils = serverutils.serverUtils(client, mysqlConnect, serverConfig, helpfldr)
 		nsoTokens = nsotoken.Nsotoken(client, mysqlConnect)
 		nsoHandler = nsohandler.nsoHandler(client, mysqlConnect, nsoTokens, splatInfo)
 	scanAdmins()
@@ -262,7 +262,7 @@ async def doEval(message):
 @client.event
 async def on_message(message):
 	global serverVoices, serverAdmins, soundsDir, serverUtils
-	global nsoHandler, owners, commands, commandParser, doneStartup
+	global nsoHandler, owners, commandParser, doneStartup
 	
 	# Filter out bots and system messages or handling of messages until startup is done
 	if message.author.bot or message.type != discord.MessageType.default or not doneStartup:
@@ -304,7 +304,7 @@ async def on_message(message):
 	if command.startswith('!prefix'):
 		await message.channel.send("The command prefix for this server is: " + commandParser.getPrefix(theServer))
 	elif message.content.startswith('!help') and commandParser.getPrefix(theServer) not in '!':
-		await serverUtils.print_help(message, commands, commandParser.getPrefix(theServer))
+		await serverUtils.print_help(message, commandParser.getPrefix(theServer))
 	elif ('pizza' in command and 'pineapple' in command) or ('\U0001F355' in message.content and '\U0001F34D' in message.content):
 		await channel.send('Don\'t ever think pineapple and pizza go together ' + message.author.name + '!!!')		
 
@@ -384,7 +384,7 @@ async def on_message(message):
 	elif cmd == 'support':
 		await channel.send('Here is a link to my support server: https://discord.gg/TcZgtP5')
 	elif cmd == 'commands' or cmd == 'help':
-		await serverUtils.print_help(message, commands, commandParser.getPrefix(theServer))
+		await serverUtils.print_help(message, commandParser.getPrefix(theServer))
 	elif cmd == 'sounds':
 		theSounds = subprocess.check_output(["ls", soundsDir])
 		theSounds = theSounds.decode("utf-8")

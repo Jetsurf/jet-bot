@@ -1,9 +1,9 @@
 {
-	"token"		: "",
-	"soundsdir"	: "",
-	"commands"	: "",
+	"token"			: "",
+	"soundsdir"		: "",
+	"help"			: "",
 	"mysql_host"	: "",
 	"mysql_user"	: "",
-	"mysql_pw"	: "",
-	"mysql_db"	: ""
+	"mysql_pw"		: "",
+	"mysql_db"		: ""
 }
