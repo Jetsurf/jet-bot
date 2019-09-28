@@ -239,7 +239,7 @@ async def doEval(message):
 			theeval = 'async def func(): \n' + textwrap.indent(code, ' ')
 			try:
 				exec(theeval, env)
-			except:
+			except Exception as err:
 				embed.title = "**ERROR**"
 				embed.add_field(name="Result", value=str(err), inline=False)
 				await message.channel.send(embed=embed)
