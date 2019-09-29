@@ -232,6 +232,10 @@ async def doEval(message):
 	}
 
 	env.update(globals())
+	env.pop('token')
+	env.pop('mysqlConnect')
+	env.pop('nsoTokens')
+	print(str(env))
 	embed = discord.Embed(colour=0x00FFFF)
 	prefix = commandParser.getPrefix(message.guild.id)
 	if message.author not in owners:
@@ -244,7 +248,7 @@ async def doEval(message):
 			try:
 				exec(theeval, env)
 			except Exception as err:
-				embed.title = "**ERROR**"
+				embed.title = "**ERROR IN EXEC SETUP**"
 				embed.add_field(name="Result", value=str(err), inline=False)
 				await message.channel.send(embed=embed)
 				return
@@ -261,10 +265,12 @@ async def doEval(message):
 				await message.channel.send(embed=embed)
 				return
 			except Exception as err:
-				embed.title = "**ERROR**"
+				embed.title = "**ERROR IN EXECUTION**"
 				embed.add_field(name="Result", value=str(err), inline=False)
 				await message.channel.send(embed=embed)
 				return
+			finally:
+				signal.alarm(0)
 
 			embed.title = "**OUTPUT**"
 			out = newout.getvalue()
