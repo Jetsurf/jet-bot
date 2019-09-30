@@ -17,7 +17,7 @@ class nsoHandler():
 		self.sqlBroker = mysqlHandler
 		self.app_timezone_offset = str(int((time.mktime(time.gmtime()) - time.mktime(time.localtime()))/60))
 		self.scheduler = AsyncIOScheduler()
-		self.scheduler.add_job(self.doStoreDM, 'cron', hour="*/2", minute='5') 
+		self.scheduler.add_job(self.doStoreDM, 'cron', minute='*')#hour="*/2", minute='5') 
 		self.scheduler.start()
 		self.nsotoken = nsotoken
 		self.app_head = {
@@ -81,6 +81,7 @@ class nsoHandler():
 		count = await cur.fetchone()
 		if count[0] > 0:
 			await message.channel.send("You already will be DM'ed when gear with " + ability + " appears in the store!")
+			await self.sqlBroker.close(con)
 			return
 
 		stmt = 'INSERT INTO storedms (clientid, serverid, ability) VALUES(%s, %s, %s)'
@@ -107,11 +108,11 @@ class nsoHandler():
 			return
 
 		if 'no' in resp.content.lower():
-			cur = self.sqlBroker.connect()
+			cur = await self.sqlBroker.connect()
 			stmt = 'DELETE FROM storedms WHERE clientid = %s AND ability = %s'
 			print("Removing " + theMem.name + " from DM's")
 			await cur.execute(stmt, (theMem.id, theSkill,))
-			self.sqlBroker.commit(cur)
+			await self.sqlBroker.commit(cur)
 			await theMem.send("Ok, I won't DM you again when gear with " + theSkill + " appears in the shop.")
 		else:
 			print("Keeping " + theMem.name + " in DM's")
