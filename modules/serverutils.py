@@ -70,15 +70,15 @@ class serverUtils():
 				await channel.send("ANNOUNCEMENT: " + announcemsg)
 
 	async def stopAnnouncements(self, message):
-		self.serverConfig.removeConfigValue(message.guild.id, "announcement.channelid")
+		await self.serverConfig.removeConfigValue(message.guild.id, "announcement.channelid")
 		await message.channel.send("Your guild is now unsubscribed from receiving announcements")
 
 	async def checkDM(self, clientid, serverid):
-		cur = self.sqlBroker.connect()
+		cur = await self.sqlBroker.connect()
 		stmt = "SELECT COUNT(*) FROM dms WHERE serverid = %s AND clientid = %s"
 		await cur.execute(stmt, (serverid, clientid,))
 		count = await cur.fetchone()
-		self.sqlBroker.close(cur)
+		await self.sqlBroker.close(cur)
 		if count[0] > 0:
 			return True
 		else:
