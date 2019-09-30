@@ -227,15 +227,11 @@ def killEval(signum, frame):
 async def doEval(message):
 	global owners, commandParser
 	newout = io.StringIO()
-	env = {
-		'message' : message
-	}
-
+	env = { 'message' : message	}
 	env.update(globals())
 	env.pop('token')
 	env.pop('mysqlConnect')
 	env.pop('nsoTokens')
-	print(str(env))
 	embed = discord.Embed(colour=0x00FFFF)
 	prefix = commandParser.getPrefix(message.guild.id)
 	if message.author not in owners:
