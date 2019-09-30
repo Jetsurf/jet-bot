@@ -129,7 +129,8 @@ class nsoHandler():
 		stmt = "SELECT clientid,serverid FROM storedms WHERE ability = %s"
 		await cur.execute(stmt, (theSkill,))
 		toDM = await cur.fetchall()
-
+		await self.sqlBroker.close(cur)
+		
 		for id in range(len(toDM)):
 			memid = toDM[id][0]
 			servid = toDM[id][1]
@@ -140,8 +141,6 @@ class nsoHandler():
 				theMem = server.get_member(memid)
 				if theMem != None:
 					asyncio.ensure_future(self.handleDM(theMem, theSkill))
-
-		await self.sqlBroker.close(cur)
 
 	async def getRawJSON(self, message):
 		if not await self.checkDuplicate(message.author.id):

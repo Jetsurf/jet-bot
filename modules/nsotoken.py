@@ -35,7 +35,6 @@ class Nsotoken():
 
 	async def addToken(self, message, token, session_token):
 		cur = await self.sqlBroker.connect()
-		print("Adding new iksm: " + str(token))
 		if await self.checkDuplicate(str(message.author.id), cur):
 			stmt = "UPDATE tokens SET token = %s, session_token = %s WHERE clientid = %s"
 			input = (str(token), str(session_token), str(message.author.id),)
@@ -48,7 +47,6 @@ class Nsotoken():
 			await self.sqlBroker.commit(cur)
 			return True
 		else:
-			await message.channel.send("Something went wrong! Tell jetsurf#8514 that something broke!")
 			await self.sqlBroker.rollback(cur)
 			return False
 
@@ -122,6 +120,8 @@ class Nsotoken():
 		thetoken = self.get_cookie(session_token_code)
 		if await self.addToken(message, str(thetoken), session_token_code):
 			await message.channel.send("Token added, !srstats !stats !ranks and !order will now work! You shouldn't need to run this command again.")
+		else:
+			await message.channel.send("Something went wrong! Tell jetsurf#8514 that something broke!")
 
 	def get_hash(self, id_token, timestamp):
 		version = '1.5.1'

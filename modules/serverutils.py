@@ -12,7 +12,6 @@ class serverUtils():
 		self.statusnum = 1
 		self.valid_commands = [ "join", "play", "playrandom", "currentsong", "queue", "stop", "skip", "volume", "sounds", "currentmaps", "nextmaps", "weapon", "weapons",
 							 "currentsr", "nextsr", "splatnetgear", "leavevoice", "storedm", "rank", "stats", "srstats", "order", "github", "help", "map", "maps", "battle", "battles"]
-		self.sqlBroker = mysqlhandler
 		self.scheduler = AsyncIOScheduler()
 		self.scheduler.add_job(self.changeStatus, 'cron', minute='*/5') 
 		self.scheduler.start()

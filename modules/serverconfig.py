@@ -39,8 +39,8 @@ class ServerConfig():
 				value[p] = {}  # Overwrite scalar with dict
 			value = value[p]
 		value[path[-1]] = new
-		self.setConfig(cursor, serverid, config)
-		self.sqlBroker.commit(cursor)
+		await self.setConfig(cursor, serverid, config)
+		await self.sqlBroker.commit(cursor)
 		return
 
 	async def removeConfigValue(self, serverid, path):
