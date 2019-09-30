@@ -43,7 +43,6 @@ owners = []
 dev = 1
 soundsDir = ''
 helpfldr = ''
-configData = None
 head = {}
 url = ''
 

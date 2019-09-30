@@ -229,7 +229,7 @@ class voiceServer():
 
 		stmt = stmt + "WHERE serverid = %s AND url = %s"
 		await cur.execute(stmt, (self.server, theURL,))
-		count = await cursor.fetchone()
+		count = await cur.fetchone()
 		await self.sqlBroker.close(cur)
 		if count[0] > 0:
 			return True
@@ -248,7 +248,7 @@ class voiceServer():
 		stmt = stmt + "(serverid, url) VALUES(%s, %s)"
 		input = (self.server, toAdd,)
 		await cur.execute(stmt, input)
-		if cursor.lastrowid != None:
+		if cur.lastrowid != None:
 			await self.sqlBroker.commit(cur)
 		else:
 			await self.sqlBroker.rollback(cur)
@@ -306,7 +306,7 @@ class voiceServer():
 		
 		if not await self.listCheck(0, toAdd):
 			await self.listAdd(0, toAdd, message)
-			await self.client.add_reaction(message, '👍')
+			await message.add_reaction(message, '👍')
 		else:
 			await message.channel.send('That is already in my playlist!')
 
@@ -322,6 +322,6 @@ class voiceServer():
 		
 		if not await self.listCheck(1, toAdd):
 			await self.listAdd(1, toAdd, message)
-			await self.client.add_reaction(message, '👍')
+			await message.add_reaction(message, '👍')
 		else:
 			await message.channel.send('That is already in my blacklist!')
