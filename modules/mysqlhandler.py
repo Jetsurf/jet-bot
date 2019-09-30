@@ -3,15 +3,16 @@ import aiomysql
 
 class mysqlHandler():
 	def __init__(self, host, user, pw, db):
-		self.host = host
-		self.user = user
-		self.pw = pw
-		self.db = db
+		self.__host = host
+		self.__user = user
+		self.__pw = pw
+		self.__db = db
 		self.pool = None
+		self.contime = {}
 		self.cons = {}
 
 	async def startUp(self):
-		self.pool = await aiomysql.create_pool(host=self.host, port=3306, user=self.user, password=self.pw, db=self.db)
+		self.pool = await aiomysql.create_pool(host=self.__host, port=3306, user=self.__user, password=self.__pw, db=self.__db)
 		print("MYSQL: Created connection pool")
 
 	async def connect(self):

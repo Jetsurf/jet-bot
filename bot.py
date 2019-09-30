@@ -234,10 +234,10 @@ async def doEval(message):
 	env = { 'message' : message	}
 	env.update(globals())
 	env.pop('token')
-	env.pop('mysqlConnect')
+	env.pop('mysqlHandler')
 	env.pop('nsoTokens')
 	embed = discord.Embed(colour=0x00FFFF)
-	prefix = commandParser.getPrefix(message.guild.id)
+	prefix = await commandParser.getPrefix(message.guild.id)
 	if message.author not in owners:
 		await message.channel.send("You are not an owner, this command is limited to my owners only :cop:")
 	else:

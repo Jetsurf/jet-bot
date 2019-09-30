@@ -17,7 +17,7 @@ class nsoHandler():
 		self.sqlBroker = mysqlHandler
 		self.app_timezone_offset = str(int((time.mktime(time.gmtime()) - time.mktime(time.localtime()))/60))
 		self.scheduler = AsyncIOScheduler()
-		self.scheduler.add_job(self.doStoreDM, 'cron', minute='*')#hour="*/2", minute='5') 
+		self.scheduler.add_job(self.doStoreDM, 'cron', hour="*/2", minute='5') 
 		self.scheduler.start()
 		self.nsotoken = nsotoken
 		self.app_head = {
@@ -130,7 +130,7 @@ class nsoHandler():
 		await cur.execute(stmt, (theSkill,))
 		toDM = await cur.fetchall()
 		await self.sqlBroker.close(cur)
-		
+
 		for id in range(len(toDM)):
 			memid = toDM[id][0]
 			servid = toDM[id][1]
