@@ -127,7 +127,7 @@ class nsoHandler():
 
 		stmt = "SELECT clientid,serverid FROM storedms WHERE ability = %s"
 		await cur.execute(stmt, (theSkill,))
-		toDM = self.cursor.fetchall()
+		toDM = await cur.fetchall()
 
 		for id in range(len(toDM)):
 			memid = toDM[id][0]
