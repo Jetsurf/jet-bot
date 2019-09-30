@@ -1,6 +1,4 @@
 import re
-import mysql.connector
-from mysql.connector.cursor import MySQLCursorPrepared
 
 class CommandParser():
 
@@ -10,26 +8,26 @@ class CommandParser():
 		self.prefixes     = {}
 		self.serverConfig = serverConfig
 
-	def setPrefix(self, serverid, prefix):
+	async def setPrefix(self, serverid, prefix):
 		self.prefixes[serverid] = prefix
-		self.serverConfig.setConfigValue(serverid, 'commandparser.prefix', prefix)
+		await self.serverConfig.setConfigValue(serverid, 'commandparser.prefix', prefix)
 
-	def getPrefix(self, serverid):
+	async def getPrefix(self, serverid):
 		if serverid in self.prefixes:
 			return self.prefixes[serverid]
 
-		prefix = self.serverConfig.getConfigValue(serverid, 'commandparser.prefix')
+		prefix = await self.serverConfig.getConfigValue(serverid, 'commandparser.prefix')
 		if prefix == None:
 			prefix = '!'
 		self.prefixes[serverid] = prefix
 		return prefix
 
-	def parse(self, serverid, message):
+	async def parse(self, serverid, message):
 		# Ignore zero-length messages. This can happen if there is no text but attached pictures.
 		if len(message) == 0:
 			return None
 
-		prefix = self.getPrefix(serverid)
+		prefix = await self.getPrefix(serverid)
 		prefixlen = len(prefix)
 
 		# Validate command prefix or mention

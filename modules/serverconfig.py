@@ -1,34 +1,25 @@
 import json
-import mysql.connector
-from mysql.connector.cursor import MySQLCursorPrepared
 
 class ServerConfig():
-	def __init__(self, mysqlinfo):
+	def __init__(self, mysqlhandler):
 		self.db        = None
-		self.mysqlinfo = mysqlinfo
-		self.db = mysql.connector.connect(host=self.mysqlinfo.host, user=self.mysqlinfo.user, password=self.mysqlinfo.pw, database=self.mysqlinfo.db)
+		self.sqlBroker = mysqlhandler
 		
-	def connect(self):
-		self.db.ping(True, 2, 1)
-		cursor = self.db.cursor(cursor_class=MySQLCursorPrepared)
-		cursor.execute("SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED")
-		return cursor
-
-	def getConfig(self, cursor, serverid):
-		cursor.execute("SELECT config FROM server_config WHERE (serverid = %s)", (serverid,))
-		row = cursor.fetchone()
+	async def getConfig(self, cursor, serverid):
+		await cursor.execute("SELECT config FROM server_config WHERE (serverid = %s)", (serverid,))
+		row = await cursor.fetchone()
 		if row == None:
 			return {}  # Blank config
-		return json.loads(row[0].decode("utf-8"))
+		return json.loads(row[0])
 
-	def setConfig(self, cursor, serverid, config):
+	async def setConfig(self, cursor, serverid, config):
 		jsonconfig = json.dumps(config)
-		cursor.execute("REPLACE INTO server_config (serverid, config) VALUES (%s, %s)", (serverid, jsonconfig))
+		await cursor.execute("REPLACE INTO server_config (serverid, config) VALUES (%s, %s)", (serverid, jsonconfig))
 
-	def getConfigValue(self, serverid, path):
-		cursor = self.connect()
-		value = self.getConfig(cursor, serverid)
-		self.db.commit()
+	async def getConfigValue(self, serverid, path):
+		cursor = await self.sqlBroker.connect()
+		value = await self.getConfig(cursor, serverid)
+		await self.sqlBroker.commit(cursor)
 		path = path.split(".")
 		for p in path:
 			if not p in value:
@@ -36,9 +27,9 @@ class ServerConfig():
 			value = value[p]
 		return value
 
-	def setConfigValue(self, serverid, path, new):
-		cursor = self.connect()
-		config = self.getConfig(cursor, serverid)
+	async def setConfigValue(self, serverid, path, new):
+		cursor = await self.sqlBroker.connect()
+		config = await self.getConfig(cursor, serverid)
 		value = config
 		path = path.split(".")
 		for p in path[0:len(path) - 1]:
@@ -49,23 +40,23 @@ class ServerConfig():
 			value = value[p]
 		value[path[-1]] = new
 		self.setConfig(cursor, serverid, config)
-		self.db.commit()
+		self.sqlBroker.commit(cursor)
 		return
 
-	def removeConfigValue(self, serverid, path):
-		cursor = self.connect()
-		config = self.getConfig(cursor, serverid)
+	async def removeConfigValue(self, serverid, path):
+		cursor = await self.sqlBroker.connect()
+		config = await self.getConfig(cursor, serverid)
 		value = config
 		path = path.split(".")
 		for p in path[0:len(path) - 1]:
 			if not p in value:
-				self.db.rollback()
+				await self.sqlBroker.rollback(cursor)
 				return	# Non-existant parent element in path
 			elif not isinstance(value[p], dict):
-				self.db.rollback()
+				await self.sqlBroker.rollback(cursor)
 				return  # Parent element in path is not dict
 			value = value[p]
 		del value[path[-1]]
-		self.setConfig(cursor, serverid, config)
-		self.db.commit()
+		await self.setConfig(cursor, serverid, config)
+		await self.sqlBroker.commit(cursor)
 		return

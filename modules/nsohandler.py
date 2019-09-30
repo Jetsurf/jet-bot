@@ -1,8 +1,6 @@
-import mysql.connector
-from mysql.connector.cursor import MySQLCursorPrepared
 import discord
 import asyncio
-import mysqlinfo
+import mysqlhandler
 import time
 import requests
 import json
@@ -13,12 +11,10 @@ import nsotoken
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 class nsoHandler():
-	def __init__(self, client, mysqlinfo, nsotoken, splatInfo):
+	def __init__(self, client, mysqlHandler, nsotoken, splatInfo):
 		self.client = client
 		self.splatInfo = splatInfo
-		self.theDB = mysql.connector.connect(host=mysqlinfo.host, user=mysqlinfo.user, password=mysqlinfo.pw, database=mysqlinfo.db)
-		self.cursor = self.theDB.cursor(cursor_class=MySQLCursorPrepared)
-		self.cursor.execute("SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED")
+		self.sqlBroker = mysqlHandler
 		self.app_timezone_offset = str(int((time.mktime(time.gmtime()) - time.mktime(time.localtime()))/60))
 		self.scheduler = AsyncIOScheduler()
 		self.scheduler.add_job(self.doStoreDM, 'cron', hour="*/2", minute='5') 
@@ -79,16 +75,17 @@ class nsoHandler():
 			await message.channel.send('The ablility you gave doesn\'t exist!\nValid Abilities are: ' + abilitiesStr)
 			return
 
+		cur = await self.sqlBroker.connect()
 		stmt = "SELECT COUNT(*) FROM storedms WHERE clientid = %s AND ability = %s"
-		self.cursor.execute(stmt, (str(message.author.id), ability,))
-		count = self.cursor.fetchone()
+		await cur.execute(stmt, (str(message.author.id), ability,))
+		count = await cur.fetchone()
 		if count[0] > 0:
 			await message.channel.send("You already will be DM'ed when gear with " + ability + " appears in the store!")
 			return
 
 		stmt = 'INSERT INTO storedms (clientid, serverid, ability) VALUES(%s, %s, %s)'
-		self.cursor.execute(stmt, (str(message.author.id), str(message.guild.id), ability,))
-		self.theDB.commit()
+		await cur.execute(stmt, (str(message.author.id), str(message.guild.id), ability,))
+		await self.sqlBroker.commit(cur)
 		await message.channel.send("Added you to recieve a DM when gear with " + ability + " appears in the shop!")
 
 	async def handleDM(self, theMem, theSkill):
@@ -110,16 +107,18 @@ class nsoHandler():
 			return
 
 		if 'no' in resp.content.lower():
+			cur = self.sqlBroker.connect()
 			stmt = 'DELETE FROM storedms WHERE clientid = %s AND ability = %s'
 			print("Removing " + theMem.name + " from DM's")
-			self.cursor.execute(stmt, (theMem.id, theSkill,))
-			self.theDB.commit()	
+			await cur.execute(stmt, (theMem.id, theSkill,))
+			self.sqlBroker.commit(cur)
 			await theMem.send("Ok, I won't DM you again when gear with " + theSkill + " appears in the shop.")
 		else:
 			print("Keeping " + theMem.name + " in DM's")
 			await theMem.send("Didn't see no in your message. I'll DM you again when gear with " + theSkill + " appears in the shop!")
 
 	async def doStoreDM(self):
+		cur = await self.sqlBroker.connect()
 		data = self.getJSON("https://splatoon2.ink/data/merchandises.json")
 		theGear = data['merchandises'][5]
 
@@ -127,7 +126,7 @@ class nsoHandler():
 		print("Doing Store DM! Checking " + theSkill)
 
 		stmt = "SELECT clientid,serverid FROM storedms WHERE ability = %s"
-		self.cursor.execute(stmt, (theSkill,))
+		await cur.execute(stmt, (theSkill,))
 		toDM = self.cursor.fetchall()
 
 		for id in range(len(toDM)):
@@ -141,12 +140,14 @@ class nsoHandler():
 				if theMem != None:
 					asyncio.ensure_future(self.handleDM(theMem, theSkill))
 
+		await self.sqlBroker.close(cur)
+
 	async def getRawJSON(self, message):
-		if not self.checkDuplicate(message.author.id):
+		if not await self.checkDuplicate(message.author.id):
 			await message.channel.send("You don't have a token setup with me! Please DM me !token with how to get one setup!")
 			return
 
-		Session_token = self.nsotoken.get_iksm_token_mysql(message.author.id)
+		Session_token = await self.nsotoken.get_iksm_token_mysql(message.author.id)
 
 		if 'base' in message.content:
 			url = "https://app.splatoon2.nintendo.net/api/records"
@@ -183,18 +184,19 @@ class nsoHandler():
 
 		os.remove("../" + jsontype + ".json")
 
-	def checkDuplicate(self, id):
+	async def checkDuplicate(self, id):
+		cur = await self.sqlBroker.connect()
 		stmt = "SELECT COUNT(*) FROM tokens WHERE clientid = %s"
-		self.cursor.execute(stmt, (str(id),))
-		count = self.cursor.fetchone()
-
+		await cur.execute(stmt, (str(id),))
+		count = await cur.fetchone()
+		await self.sqlBroker.close(cur)
 		if count[0] > 0:
 			return True
 		else:
 			return False
 
 	async def getNSOJSON(self, message, header, url):
-		Session_token = self.nsotoken.get_iksm_token_mysql(message.author.id)
+		Session_token = await self.nsotoken.get_iksm_token_mysql(message.author.id)
 		results_list = requests.get(url, headers=header, cookies=dict(iksm_session=Session_token))
 		thejson = json.loads(results_list.text)	
 
@@ -208,7 +210,7 @@ class nsoHandler():
 		return thejson
 
 	async def weaponParser(self, message, weapid):
-		if not self.checkDuplicate(message.author.id):
+		if not await self.checkDuplicate(message.author.id):
 			await message.channel.send("You don't have a token setup with me! Please DM me !token with how to get one setup!")
 			return
 
@@ -252,7 +254,7 @@ class nsoHandler():
 		await message.channel.send(embed=embed)
 
 	async def mapParser(self, message, mapid):
-		if not self.checkDuplicate(message.author.id):
+		if not await self.checkDuplicate(message.author.id):
 			await message.channel.send("You don't have a token setup with me! Please DM me !token with how to get one setup!")
 			return
 
@@ -306,7 +308,7 @@ class nsoHandler():
 		await message.channel.send(embed=embed)
 
 	async def getStats(self, message):
-		if not self.checkDuplicate(message.author.id):
+		if not await self.checkDuplicate(message.author.id):
 			await message.channel.send("You don't have a token setup with me! Please DM me !token with how to get one setup!")
 			return
 
@@ -361,7 +363,7 @@ class nsoHandler():
 		await message.channel.send(embed=embed)
 
 	async def getSRStats(self, message):
-		if not self.checkDuplicate(message.author.id):
+		if not await self.checkDuplicate(message.author.id):
 			await message.channel.send("You don't have a token setup with me! Please DM me !token with how to get one setup!")
 			return
 
@@ -420,7 +422,7 @@ class nsoHandler():
 		await message.channel.send(embed=embed)
 
 	async def getRanks(self, message):
-		if not self.checkDuplicate(message.author.id):
+		if not await self.checkDuplicate(message.author.id):
 			await message.channel.send("You don't have a token setup with me! Please DM me !token with how to get one setup!")
 			return
 
@@ -461,11 +463,11 @@ class nsoHandler():
 		return data
 
 	async def orderGear(self, message):
-		if not self.checkDuplicate(message.author.id):
+		if not await self.checkDuplicate(message.author.id):
 			await message.channel.send("You don't have a token setup with me! Please DM me !token with how to get one setup!")
 			return
 
-		Session_token = self.nsotoken.get_iksm_token_mysql(message.author.id)
+		Session_token = await self.nsotoken.get_iksm_token_mysql(message.author.id)
 
 		data = self.getJSON("https://splatoon2.ink/data/merchandises.json")
 		gear = data['merchandises']
@@ -667,7 +669,7 @@ class nsoHandler():
 		await message.channel.send(embed=embed)
 
 	async def battleParser(self, message, num=1):
-		if not self.checkDuplicate(message.author.id):
+		if not await self.checkDuplicate(message.author.id):
 			await message.channel.send("You don't have a token setup with me! Please DM me !token with how to get one setup!")
 			return
 
