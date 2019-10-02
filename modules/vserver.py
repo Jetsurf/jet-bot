@@ -285,7 +285,6 @@ class voiceServer():
 				continue
 
 			self.ytQueue.put(tempPlayer)
-
 			if self.source == None and self.vclient != None:
 				await message.channel.send("Playing : " + x[toPlay[0] - 1][0])
 			self.play()
@@ -306,7 +305,7 @@ class voiceServer():
 		
 		if not await self.listCheck(0, toAdd):
 			await self.listAdd(0, toAdd, message)
-			await message.add_reaction(message, '👍')
+			await message.add_reaction('👍')
 		else:
 			await message.channel.send('That is already in my playlist!')
 
@@ -322,6 +321,6 @@ class voiceServer():
 		
 		if not await self.listCheck(1, toAdd):
 			await self.listAdd(1, toAdd, message)
-			await message.add_reaction(message, '👍')
+			await message.add_reaction('👍')
 		else:
 			await message.channel.send('That is already in my blacklist!')

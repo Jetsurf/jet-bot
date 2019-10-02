@@ -12,7 +12,7 @@ class mysqlHandler():
 		self.cons = {}
 
 	async def startUp(self):
-		self.pool = await aiomysql.create_pool(host=self.__host, port=3306, user=self.__user, password=self.__pw, db=self.__db)
+		self.pool = await aiomysql.create_pool(host=self.__host, port=3306, user=self.__user, password=self.__pw, db=self.__db, maxsize=25)
 		print("MYSQL: Created connection pool")
 
 	async def connect(self):
@@ -34,6 +34,9 @@ class mysqlHandler():
 	async def rollback(self, cur):
 		await self.cons[hash(cur)].rollback()
 		await self.close(cur)
+
+	async def printCons(self, message):
+		await message.channel.send("MySQL Connections: " + str(self.cons))
 
 	async def getConnection(self, cur):
 		return self.cursors[hash(cur)]
