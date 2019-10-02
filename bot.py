@@ -165,7 +165,7 @@ async def on_member_remove(member):
 		return
 
 	for mem in serverAdmins[member.guild.id]:
-		if mem.id != client.user.id and serverUtils.checkDM(mem.id, member.guild.id):
+		if mem.id != client.user.id and await serverUtils.checkDM(mem.id, member.guild.id):
 			await mem.send(member.name + " left " + member.guild.name)
 			
 @client.event
