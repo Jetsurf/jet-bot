@@ -2,36 +2,23 @@
 
 import sys
 sys.path.append('./modules')
-import discord
-import asyncio
-import subprocess
-import json
-import time
-import vserver
-import mysqlinfo
-import serverutils
-import nsohandler
-import urllib
-import urllib.request
-import requests
-import nsotoken
-import aiomysql
-import commandparser
-import serverconfig
-import splatinfo
-import traceback
-import textwrap
-import io
-import signal
+#Base Stuffs
+import discord, asyncio, subprocess, json, time
+#DBL Posting
+import urllib, urllib.request, requests
+#Our Classes
+import nsotoken, commandparser, serverconfig, splatinfo
+import vserver, mysqlhandler, serverutils, nsohandler
+#Eval
+import traceback, textwrap, io, signal
 from contextlib import redirect_stdout
 from subprocess import call
-from ctypes import *
 
 client = discord.Client()
 splatInfo = splatinfo.SplatInfo()
 commandParser = None
 serverConfig = None
-mysqlConnect = None
+mysqlHandler = None
 nsoHandler = None
 nsoTokens = None
 serverVoices = {}
@@ -43,12 +30,11 @@ owners = []
 dev = 1
 soundsDir = ''
 helpfldr = ''
-configData = None
 head = {}
 url = ''
 
 def loadConfig():
-	global token, soundsDir, helpfldr, mysqlConnect, dev, head, url
+	global token, soundsDir, helpfldr, mysqlHandler, dev, head, url
 	try:
 		with open('./config/discordbot.json', 'r') as json_config:
 			configData = json.load(json_config)
@@ -65,7 +51,7 @@ def loadConfig():
 		except:
 			print('No ID/Token for discordbots.org, skipping')
 
-		mysqlConnect = mysqlinfo.mysqlInfo(configData['mysql_host'], configData['mysql_user'], configData['mysql_pw'], configData['mysql_db'])
+		mysqlHandler = mysqlhandler.mysqlHandler(configData['mysql_host'], configData['mysql_user'], configData['mysql_pw'], configData['mysql_db'])
 
 		print('Config Loaded')
 	except Exception as e:
@@ -126,22 +112,22 @@ async def on_guild_role_update(before, after):
 
 @client.event
 async def on_ready():
-	global client, soundsDir, mysqlConnect, serverUtils, serverVoices, splatInfo, helpfldr
+	global client, soundsDir, mysqlHandler, serverUtils, serverVoices, splatInfo, helpfldr
 	global nsoHandler, nsoTokens, head, url, dev, owners, commandParser, doneStartup
 
-	print('Logged in as,', client.user.name, client.user.id)
-
-	#Get owners from Discord team api
-	print("Loading owners...")
-	theapp = await client.application_info()
-	ownerids = [x.id for x in theapp.team.members]
-	for mem in client.get_all_members():
-		if mem.id in ownerids:
-			owners.append(mem)
-		if len(owners) == len(ownerids):
-			break;
-
-	await client.change_presence(status=discord.Status.online, activity=discord.Game("Use !help for directions!"))
+	if not doneStartup:
+		print('Logged in as,', client.user.name, client.user.id)
+		#Get owners from Discord team api
+		print("Loading owners...")
+		theapp = await client.application_info()
+		ownerids = [x.id for x in theapp.team.members]
+		for mem in client.get_all_members():
+			if mem.id in ownerids:
+				owners.append(mem)
+			if len(owners) == len(ownerids):
+				break;
+	else:
+		print('RECONNECT TO DISCORD')
 
 	if dev == 0:
 		print('I am in ' + str(len(client.guilds)) + ' servers, posting to discordbots.org')
@@ -150,20 +136,24 @@ async def on_ready():
 	else:	
 		print('I am in ' + str(len(client.guilds)) + ' servers')
 
-	print("Doing Startup...")
-	for server in client.guilds:
-		#Don't recreate serverVoices on reconnect
-		if server.id not in serverVoices:
-			serverVoices[server.id] = vserver.voiceServer(client, mysqlConnect, server.id, soundsDir)
+	if not doneStartup:
+		print("Doing Startup...")
+		for server in client.guilds:
+			#Don't recreate serverVoices on reconnect
+			if server.id not in serverVoices:
+				serverVoices[server.id] = vserver.voiceServer(client, mysqlHandler, server.id, soundsDir)
 
-	if nsoHandler == None:
-		serverConfig = serverconfig.ServerConfig(mysqlConnect)
+		serverConfig = serverconfig.ServerConfig(mysqlHandler)
 		commandParser = commandparser.CommandParser(serverConfig, client.user.id)
-		serverUtils = serverutils.serverUtils(client, mysqlConnect, serverConfig, helpfldr)
-		nsoTokens = nsotoken.Nsotoken(client, mysqlConnect)
-		nsoHandler = nsohandler.nsoHandler(client, mysqlConnect, nsoTokens, splatInfo)
-	scanAdmins()
-	print('Done\n------')
+		serverUtils = serverutils.serverUtils(client, mysqlHandler, serverConfig, helpfldr)
+		nsoTokens = nsotoken.Nsotoken(client, mysqlHandler)
+		nsoHandler = nsohandler.nsoHandler(client, mysqlHandler, nsoTokens, splatInfo)
+		scanAdmins()
+		await mysqlHandler.startUp()
+		print('Done\n------')
+		await client.change_presence(status=discord.Status.online, activity=discord.Game("Use !help for directions!"))
+	else:
+		print('Finished reconnect')
 	doneStartup = True
 	sys.stdout.flush()
 	
@@ -180,9 +170,9 @@ async def on_member_remove(member):
 			
 @client.event
 async def on_guild_join(server):
-	global serverVoices, head, url, dev, owners
+	global serverVoices, head, url, dev, owners, mysqlHandler
 	print("I joined server: " + server.name)
-	serverVoices[server.id] = vserver.voiceServer(client, mysqlConnect, server.id, soundsDir)
+	serverVoices[server.id] = vserver.voiceServer(client, mysqlHandler, server.id, soundsDir)
 	scanAdmins(id=server)
 
 	if dev == 0:
@@ -227,13 +217,13 @@ def killEval(signum, frame):
 async def doEval(message):
 	global owners, commandParser
 	newout = io.StringIO()
-	env = {
-		'message' : message
-	}
-
+	env = { 'message' : message	}
 	env.update(globals())
+	env.pop('token')
+	env.pop('mysqlHandler')
+	env.pop('nsoTokens')
 	embed = discord.Embed(colour=0x00FFFF)
-	prefix = commandParser.getPrefix(message.guild.id)
+	prefix = await commandParser.getPrefix(message.guild.id)
 	if message.author not in owners:
 		await message.channel.send("You are not an owner, this command is limited to my owners only :cop:")
 	else:
@@ -244,7 +234,7 @@ async def doEval(message):
 			try:
 				exec(theeval, env)
 			except Exception as err:
-				embed.title = "**ERROR**"
+				embed.title = "**ERROR IN EXEC SETUP**"
 				embed.add_field(name="Result", value=str(err), inline=False)
 				await message.channel.send(embed=embed)
 				return
@@ -261,10 +251,12 @@ async def doEval(message):
 				await message.channel.send(embed=embed)
 				return
 			except Exception as err:
-				embed.title = "**ERROR**"
+				embed.title = "**ERROR IN EXECUTION**"
 				embed.add_field(name="Result", value=str(err), inline=False)
 				await message.channel.send(embed=embed)
 				return
+			finally:
+				signal.alarm(0)
 
 			embed.title = "**OUTPUT**"
 			out = newout.getvalue()
@@ -279,7 +271,7 @@ async def doEval(message):
 
 @client.event
 async def on_message(message):
-	global serverVoices, serverAdmins, soundsDir, serverUtils
+	global serverVoices, serverAdmins, soundsDir, serverUtils, mysqlHandler
 	global nsoHandler, owners, commandParser, doneStartup
 
 	# Filter out bots and system messages or handling of messages until startup is done
@@ -299,6 +291,7 @@ async def on_message(message):
 				await channel.send("I am in: " + str(numServers) + " servers\n" + serverNames)
 			elif '!restart' in message.content:
 				await channel.send("Going to restart!")
+				await mysqlHandler.close_pool()
 				await client.close()
 				sys.stderr.flush()
 				sys.stdout.flush()
@@ -319,14 +312,16 @@ async def on_message(message):
 	else:
 		theServer = message.guild.id
 
+	prefix = await commandParser.getPrefix(theServer)
+
 	if command.startswith('!prefix'):
-		await message.channel.send("The command prefix for this server is: " + commandParser.getPrefix(theServer))
-	elif message.content.startswith('!help') and commandParser.getPrefix(theServer) not in '!':
-		await serverUtils.print_help(message, commandParser.getPrefix(theServer))
+		await message.channel.send("The command prefix for this server is: " + prefix)
+	elif message.content.startswith('!help') and prefix not in '!':
+		await serverUtils.print_help(message, prefix)
 	elif ('pizza' in command and 'pineapple' in command) or ('\U0001F355' in message.content and '\U0001F34D' in message.content):
 		await channel.send('Don\'t ever think pineapple and pizza go together ' + message.author.name + '!!!')		
 
-	parsed = commandParser.parse(theServer, message.content)
+	parsed = await commandParser.parse(theServer, message.content)
 	if parsed == None:
 		return
 
@@ -335,12 +330,14 @@ async def on_message(message):
 
 	#Don't just fail if command count can't be incremented
 	try:
-		serverUtils.increment_cmd(message, cmd)
+		await serverUtils.increment_cmd(message, cmd)
 	except:
 		print("Failed to increment command... issue with MySQL?")
 
 	if cmd == 'eval':
 		await doEval(message)
+	elif cmd == 'getcons' and message.author in owners:
+		await mysqlHandler.printCons(message)
 	elif cmd == "admin":
 		if message.author in serverAdmins[theServer]:
 			if len(args) == 0:
@@ -366,7 +363,7 @@ async def on_message(message):
 				if subcommand2 == 'set':
 					await serverUtils.setAnnounceChannel(message, args)
 				elif subcommand2 == 'get':
-					channel = serverUtils.getAnnounceChannel(message.guild.id)
+					channel = await serverUtils.getAnnounceChannel(message.guild.id)
 					if channel == None:
 						await message.channel.send("No channel is set to receive announcements")
 					else:
@@ -377,12 +374,12 @@ async def on_message(message):
 					await message.channel.send("Usage: set CHANNEL, get, or stop")
 			elif subcommand == 'prefix':
 				if (len(args) == 1):
-					await channel.send("Current command prefix is: " + commandParser.getPrefix(theServer))
+					await channel.send("Current command prefix is: " + prefix)
 				elif (len(args) != 2) or (len(args[1]) < 0) or (len(args[1]) > 2):
 					await channel.send("Usage: ```admin prefix <char>``` where *char* is one or two characters")
 				else:
 					commandParser.setPrefix(theServer, args[1])
-					await channel.send("New command prefix is: " + commandParser.getPrefix(theServer))
+					await channel.send("New command prefix is: " + await commandParser.getPrefix(theServer))
 		else:
 			await channel.send(message.author.name + " you are not an admin... :cop:")
 	elif cmd == 'alive':
@@ -402,7 +399,7 @@ async def on_message(message):
 	elif cmd == 'support':
 		await channel.send('Here is a link to my support server: https://discord.gg/TcZgtP5')
 	elif cmd == 'commands' or cmd == 'help':
-		await serverUtils.print_help(message, commandParser.getPrefix(theServer))
+		await serverUtils.print_help(message, prefix)
 	elif cmd == 'sounds':
 		theSounds = subprocess.check_output(["ls", soundsDir])
 		theSounds = theSounds.decode("utf-8")

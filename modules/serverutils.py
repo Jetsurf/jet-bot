@@ -1,21 +1,17 @@
-import mysql.connector
-from mysql.connector.cursor import MySQLCursorPrepared
 import discord
 import asyncio
-import mysqlinfo
+import mysqlhandler
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 class serverUtils():
-	def __init__(self, client, mysqlinfo, serverconfig, helpfldr):
-		self.mysqlinfo = mysqlinfo
+	def __init__(self, client, mysqlhandler, serverconfig, helpfldr):
+		self.sqlBroker = mysqlhandler
 		self.helpfldr = helpfldr
 		self.serverConfig = serverconfig
 		self.client = client
 		self.statusnum = 1
 		self.valid_commands = [ "join", "play", "playrandom", "currentsong", "queue", "stop", "skip", "volume", "sounds", "currentmaps", "nextmaps", "weapon", "weapons",
 							 "currentsr", "nextsr", "splatnetgear", "leavevoice", "storedm", "rank", "stats", "srstats", "order", "github", "help", "map", "maps", "battle", "battles"]
-		self.theDB = mysql.connector.connect(host=self.mysqlinfo.host, user=self.mysqlinfo.user, password=self.mysqlinfo.pw, database=self.mysqlinfo.db)
-		self.cursor = self.theDB.cursor(cursor_class=MySQLCursorPrepared)
 		self.scheduler = AsyncIOScheduler()
 		self.scheduler.add_job(self.changeStatus, 'cron', minute='*/5') 
 		self.scheduler.start()
@@ -53,8 +49,8 @@ class serverUtils():
 			self.serverConfig.setConfigValue(message.guild.id, 'announcement.channelid', channelid)
 			await message.channel.send("Set announcement channel to: " + channelname)
 
-	def getAnnounceChannel(self, serverid):
-		channelid = self.serverConfig.getConfigValue(serverid, 'announcement.channelid')
+	async def getAnnounceChannel(self, serverid):
+		channelid = await self.serverConfig.getConfigValue(serverid, 'announcement.channelid')
 		if channelid != None:
 			server = discord.utils.get(self.client.guilds, id=serverid)
 			return discord.utils.get(server.channels, id=channelid)
@@ -66,21 +62,22 @@ class serverUtils():
 		print("Sending announcement: " + announcemsg)
 
 		for guild in self.client.guilds:
-			channel = self.getAnnounceChannel(guild.id)
+			channel = await self.getAnnounceChannel(guild.id)
 			if channel == None:
 				continue
 			else:
 				await channel.send("ANNOUNCEMENT: " + announcemsg)
 
 	async def stopAnnouncements(self, message):
-		self.serverConfig.removeConfigValue(message.guild.id, "announcement.channelid")
+		await self.serverConfig.removeConfigValue(message.guild.id, "announcement.channelid")
 		await message.channel.send("Your guild is now unsubscribed from receiving announcements")
 
-	def checkDM(self, clientid, serverid):
+	async def checkDM(self, clientid, serverid):
+		cur = await self.sqlBroker.connect()
 		stmt = "SELECT COUNT(*) FROM dms WHERE serverid = %s AND clientid = %s"
-		self.cursor.execute(stmt, (serverid, clientid,))
-		count = self.cursor.fetchone()
-		self.theDB.commit()
+		await cur.execute(stmt, (serverid, clientid,))
+		count = await cur.fetchone()
+		await self.sqlBroker.close(cur)
 		if count[0] > 0:
 			return True
 		else:
@@ -119,34 +116,38 @@ class serverUtils():
 	async def report_cmd_totals(self, message):
 		embed = discord.Embed(colour=0x00FFF3)
 		embed.title = "Command Totals"
-		
+		cur = await self.sqlBroker.connect()
+
 		for cmd in self.valid_commands:
 			stmt = "SELECT IFNULL(SUM(count), 0) FROM commandcounts WHERE (command = %s)"
-			self.cursor.execute(stmt, (cmd,))
-			count = self.cursor.fetchone()
-			embed.add_field(name=cmd, value=str(count[0].decode()), inline=True)
+			await cur.execute(stmt, (cmd,))
+			count = await cur.fetchone()
+			embed.add_field(name=cmd, value=str(count[0]), inline=True)
+		await self.sqlBroker.close(cur)
 		await message.channel.send(embed=embed)
 
-	def increment_cmd(self, message, cmd):
+	async def increment_cmd(self, message, cmd):
 		if cmd not in self.valid_commands:
 			return
 
+		cur = await self.sqlBroker.connect()
 		stmt = "INSERT INTO commandcounts (serverid, command, count) VALUES (%s, %s, 1) ON DUPLICATE KEY UPDATE count = count + 1;"
-		self.cursor.execute(stmt, (message.guild.id, cmd,))
-		self.theDB.commit()
+		await cur.execute(stmt, (message.guild.id, cmd,))
+		await self.sqlBroker.commit(cur)
 
 	async def addDM(self, message):
 		if self.checkDM(message.author.id, message.guild.id):
 			await message.channel.send("You are already in my list of people to DM")
 			return
 
+		cur = await self.sqlBroker.connect()
 		stmt = "INSERT INTO dms(serverid, clientid) values(%s, %s)"
-		self.cursor.execute(stmt, (message.guild.id, message.author.id,))
-		if self.cursor.lastrowid != None:
-			self.theDB.commit()
+		await cur.execute(stmt, (message.guild.id, message.author.id,))
+		if cur.lastrowid != None:
+			await self.sqlBroker.commit(cur)
 			await message.channel.send("Added " + message.author.name + " to my DM list!")
 		else:
-			self.theDB.rollback()
+			await self.sqlBroker.rollback(cur)
 			await message.channel.send("Something went wrong!")
 
 	async def removeDM(self, message):
@@ -154,11 +155,12 @@ class serverUtils():
 			await message.channel.send("You aren't in my list of people to DM")
 			return
 
+		cur = await self.sqlBroker.connect()
 		stmt = "DELETE FROM dms WHERE serverid = %s AND clientid = %s"
-		self.cursor.execute(stmt, (message.guild.id, str(message.author.id),))
+		await cur.execute(stmt, (message.guild.id, str(message.author.id),))
 		if self.cursor.lastrowid != None:
-			self.theDB.commit()
+			await self.sqlBroker.commit(cur)
 			await message.channel.send("Removed " + message.author.name + " from my DM list!")
 		else:
-			self.theDB.rollback()
+			await self.sqlBroker.rollback(cur)
 			await message.channel.send("Something went wrong!")

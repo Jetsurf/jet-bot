@@ -1,76 +1,72 @@
 from __future__ import print_function
-import mysql.connector
-from mysql.connector.cursor import MySQLCursorPrepared
-import mysqlinfo
-import requests, json, re, sys
+import mysqlhandler, nsohandler
+import requests, json, re, sys, uuid, time
 import os, base64, hashlib, random, string
-import uuid, time
-import nsohandler
 
 class Nsotoken():
-	def __init__(self, client, mysqlinfo):
+	def __init__(self, client, mysqlhandler):
 		self.client = client
 		self.session = requests.Session()
-		self.theDB = mysql.connector.connect(host=mysqlinfo.host, user=mysqlinfo.user, password=mysqlinfo.pw, database=mysqlinfo.db)
-		self.cursor = self.theDB.cursor(cursor_class=MySQLCursorPrepared)
+		self.sqlBroker = mysqlhandler
 
-	def checkDuplicate(self, id):
+	async def checkDuplicate(self, id, cur):
 		stmt = "SELECT COUNT(*) FROM tokens WHERE clientid = %s"
-		self.cursor.execute(stmt, (str(id),))
-		count = self.cursor.fetchone()
-		self.theDB.commit()
+		await cur.execute(stmt, (str(id),))
+		count = await cur.fetchone()
 		if count[0] > 0:
 			return True
 		else:
 			return False
 
 	async def delete_tokens(self, message):
+		cur = await self.sqlBroker.connect()
 		print("Deleting token")
 		stmt = "DELETE FROM tokens WHERE clientid = %s"
 		input = (message.author.id,)
-		self.cursor.execute(stmt, input)
-		if self.cursor.lastrowid != None:
-			self.theDB.commit()
+		await cur.execute(stmt, input)
+		if cur.lastrowid != None:
+			self.sqlBroker.commit(cur)
 			await message.channel.send("Tokens deleted!")
 		else:
-			self.theDB.rollback()
+			self.sqlBroker.rollback(cur)
 			await message.channel.send("Something went wrong! Tell jetsurf#8514 that something broke!")
 
 	async def addToken(self, message, token, session_token):
-		print("Adding new iksm: " + str(token))
-		if self.checkDuplicate(str(message.author.id)):
+		cur = await self.sqlBroker.connect()
+		if await self.checkDuplicate(str(message.author.id), cur):
 			stmt = "UPDATE tokens SET token = %s, session_token = %s WHERE clientid = %s"
 			input = (str(token), str(session_token), str(message.author.id),)
 		else:
 			stmt = "INSERT INTO tokens (clientid, token, session_token) VALUES(%s, %s, %s)"
 			input = (str(message.author.id), token, session_token,)
 
-		self.cursor.execute(stmt, input)
-		if self.cursor.lastrowid != None:
-			self.theDB.commit()
+		await cur.execute(stmt, input)
+		if cur.lastrowid != None:
+			await self.sqlBroker.commit(cur)
 			return True
 		else:
-			await message.channel.send("Something went wrong! Tell jetsurf#8514 that something broke!")
-			self.theDB.rollback()
+			await self.sqlBroker.rollback(cur)
 			return False
 
-	def get_iksm_token_mysql(self, userid):
+	async def get_iksm_token_mysql(self, userid):
+		cur = await self.sqlBroker.connect()
 		stmt = "SELECT token FROM tokens WHERE clientid = %s"
-		self.cursor.execute(stmt, (str(userid),))
-		session_token = self.cursor.fetchall()
-		self.theDB.commit()
+		await cur.execute(stmt, (str(userid),))
+		session_token = await cur.fetchall()
+		await self.sqlBroker.commit(cur)
 		if len(session_token) == 0:
 			return None
-		return session_token[0][0].decode()
+		return session_token[0][0]
 
-	def get_session_token_mysql(self, userid):
+	async def get_session_token_mysql(self, userid):
+		cur = await self.sqlBroker.connect()
 		stmt = "SELECT session_token FROM tokens WHERE clientid = %s"
-		self.cursor.execute(stmt, (str(userid),))
-		session_token = self.cursor.fetchall()
-		self.theDB.commit()
+		await cur.execute(stmt, (str(userid),))
+		session_token = await cur.fetchall()
+		await self.sqlBroker.commit(cur)
 		if len(session_token) == 0:
 			return None
-		return session_token[0][0].decode()
+		return session_token[0][0]
 
 	async def login(self, message):
 		auth_state = base64.urlsafe_b64encode(os.urandom(36))
@@ -122,6 +118,8 @@ class Nsotoken():
 		thetoken = self.get_cookie(session_token_code)
 		if await self.addToken(message, str(thetoken), session_token_code):
 			await message.channel.send("Token added, !srstats !stats !ranks and !order will now work! You shouldn't need to run this command again.")
+		else:
+			await message.channel.send("Something went wrong! Tell jetsurf#8514 that something broke!")
 
 	def get_hash(self, id_token, timestamp):
 		version = '1.5.1'
@@ -131,7 +129,7 @@ class Nsotoken():
 		return json.loads(api_response.text)["hash"]
 
 	async def do_iksm_refresh(self, message):
-		session_token = self.get_session_token_mysql(message.author.id)
+		session_token = await self.get_session_token_mysql(message.author.id)
 		await message.channel.trigger_typing()
 		iksm = self.get_cookie(session_token)
 		await self.addToken(message, str(iksm), session_token)

@@ -1,15 +1,8 @@
-import discord
-import queue
-import asyncio
-import sys
-import requests
-import urllib
-import urllib.request
-import mysql.connector
-import copy
-import youtube_dl
-import traceback
-from mysql.connector.cursor import MySQLCursorPrepared
+import discord, asyncio
+import queue, sys
+import requests, urllib, urllib.request, copy
+import youtube_dl, traceback
+import mysqlhandler
 from bs4 import BeautifulSoup
 from random import randint
 
@@ -58,23 +51,14 @@ class YTDLSource(discord.PCMVolumeTransformer):
         return cls(discord.FFmpegPCMAudio(filename, **ffmpeg_options, before_options='-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5'), data=data)
 
 class voiceServer():
-	def __init__(self, client, mysqlinfo, id, soundsDir):
+	def __init__(self, client, mysqlhandler, id, soundsDir):
 		self.client = client
 		self.server = id
 		self.vclient = None
 		self.ytQueue = queue.Queue()
 		self.source = None
 		self.soundsDir = soundsDir
-		self.mysqlinfo = mysqlinfo
-
-	def connect(self):
-		theDB = mysql.connector.connect(host=self.mysqlinfo.host, user=self.mysqlinfo.user, password=self.mysqlinfo.pw, database=self.mysqlinfo.db)
-		cursor = theDB.cursor(cursor_class=MySQLCursorPrepared)
-		return theDB, cursor
-
-	def disconnect(self, db, cursor):
-		cursor.close()
-		db.close()
+		self.sqlBroker = mysqlhandler
 
 	async def joinVoiceChannel(self, message, channelName=None):
 		id = 0
@@ -229,8 +213,8 @@ class voiceServer():
 				print(traceback.format_exc())
 				await message.channel.send("Sorry, I can't play that, give this info to jetsurf: " + str(e))
 
-	def listCheck(self, theList, theURL):
-		theDB, cursor = self.connect()
+	async def listCheck(self, theList, theURL):
+		cur = await self.sqlBroker.connect()
 		stmt = "SELECT COUNT(*) FROM "
 
 		if theList == 0:
@@ -239,16 +223,16 @@ class voiceServer():
 			stmt = stmt + "blacklist "
 
 		stmt = stmt + "WHERE serverid = %s AND url = %s"
-		cursor.execute(stmt, (self.server, theURL,))
-		count = cursor.fetchone()
-		self.disconnect(theDB, cursor)
+		await cur.execute(stmt, (self.server, theURL,))
+		count = await cur.fetchone()
+		await self.sqlBroker.commit(cur)
 		if count[0] > 0:
 			return True
 		else:
 			return False
 
 	async def listAdd(self, theList, toAdd, message):
-		theDB, cursor = self.connect()
+		cur = await self.sqlBroker.connect()
 		stmt = "INSERT INTO "
 
 		if theList == 0:
@@ -258,21 +242,21 @@ class voiceServer():
 
 		stmt = stmt + "(serverid, url) VALUES(%s, %s)"
 		input = (self.server, toAdd,)
-		cursor.execute(stmt, input)
-		if cursor.lastrowid != None:
-			theDB.commit()
-			self.disconnect(theDB, cursor)
+		await cur.execute(stmt, input)
+		if cur.lastrowid != None:
+			await self.sqlBroker.commit(cur)
 		else:
+			await self.sqlBroker.rollback(cur)
 			await message.channel.send("Something went wrong!")
 
 	async def playRandom(self, message, numToQueue):
-		theDB, cursor = self.connect()
+		cur = await self.sqlBroker.connect()
 		toPlay = []
 		tempPlayer = None
 		stmt = "SELECT url FROM playlist WHERE serverid = %s"
-		cursor.execute(stmt, (self.server,))
-		x = cursor.fetchall()
-		self.disconnect(theDB, cursor)
+		await cur.execute(stmt, (self.server,))
+		x = await cur.fetchall()
+		await self.sqlBroker.close(cur)
 
 		if len(x) == 0:
 			await message.channel.send("You have nothing added to your playlist, use !admin playlist URL to add songs!")
@@ -289,16 +273,15 @@ class voiceServer():
 					toPlay.append(numToPlay)
 					break
 			try:
-				tempPlayer = await YTDLSource.from_url(x[numToPlay - 1][0].decode('utf-8'))
+				tempPlayer = await YTDLSource.from_url(x[numToPlay - 1][0])
 			except Exception as e:
-				print("ERROR: Failure on song " + x[numToPlay - 1][0].decode('utf-8') + " " + str(e))
+				print("ERROR: Failure on song " + x[numToPlay - 1][0] + " " + str(e))
 				sys.stdout.flush()
 				continue
 
 			self.ytQueue.put(tempPlayer)
-
 			if self.source == None and self.vclient != None:
-				await message.channel.send("Playing : " + x[toPlay[0] - 1][0].decode('utf-8'))
+				await message.channel.send("Playing : " + x[toPlay[0] - 1][0])
 			self.play()
 		if numToQueue > 1 and self.source == None:
 			await message.channel.send("Also queued " + str(numToQueue - 1) + " more song(s) from my playlist")
@@ -315,9 +298,9 @@ class voiceServer():
 			await message.channel.send('Im not playing anything, pass me a url to add to the playlist')
 			return
 		
-		if not self.listCheck(0, toAdd):
+		if not await self.listCheck(0, toAdd):
 			await self.listAdd(0, toAdd, message)
-			await self.client.add_reaction(message, '👍')
+			await message.add_reaction('👍')
 		else:
 			await message.channel.send('That is already in my playlist!')
 
@@ -331,8 +314,8 @@ class voiceServer():
 			await message.channel.send('Im not playing anything, pass me a url to add to the playlist')
 			return
 		
-		if not self.listCheck(1, toAdd):
+		if not await self.listCheck(1, toAdd):
 			await self.listAdd(1, toAdd, message)
-			await self.client.add_reaction(message, '👍')
+			await message.add_reaction('👍')
 		else:
 			await message.channel.send('That is already in my blacklist!')
