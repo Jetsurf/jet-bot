@@ -349,7 +349,7 @@ async def on_message(message):
 
 	if cmd == 'eval':
 		await doEval(message)
-	elif cmd == 'getcons':
+	elif cmd == 'getcons' and message.author in owners:
 		await mysqlHandler.printCons(message)
 	elif cmd == "admin":
 		if message.author in serverAdmins[theServer]:
