@@ -1,9 +1,7 @@
 from __future__ import print_function
-import mysqlhandler
-import requests, json, re, sys
+import mysqlhandler, nsohandler
+import requests, json, re, sys, uuid, time
 import os, base64, hashlib, random, string
-import uuid, time
-import nsohandler
 
 class Nsotoken():
 	def __init__(self, client, mysqlhandler):
@@ -55,7 +53,7 @@ class Nsotoken():
 		stmt = "SELECT token FROM tokens WHERE clientid = %s"
 		await cur.execute(stmt, (str(userid),))
 		session_token = await cur.fetchall()
-		await self.sqlBroker.close(cur)
+		await self.sqlBroker.commit(cur)
 		if len(session_token) == 0:
 			return None
 		return session_token[0][0]
@@ -65,7 +63,7 @@ class Nsotoken():
 		stmt = "SELECT session_token FROM tokens WHERE clientid = %s"
 		await cur.execute(stmt, (str(userid),))
 		session_token = await cur.fetchall()
-		await self.sqlBroker.close(cur)
+		await self.sqlBroker.commit(cur)
 		if len(session_token) == 0:
 			return None
 		return session_token[0][0]

@@ -225,7 +225,7 @@ class voiceServer():
 		stmt = stmt + "WHERE serverid = %s AND url = %s"
 		await cur.execute(stmt, (self.server, theURL,))
 		count = await cur.fetchone()
-		await self.sqlBroker.close(cur)
+		await self.sqlBroker.commit(cur)
 		if count[0] > 0:
 			return True
 		else:
