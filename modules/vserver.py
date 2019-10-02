@@ -1,13 +1,7 @@
-import discord
-import queue
-import asyncio
-import sys
-import requests
-import urllib
-import urllib.request
-import copy
-import youtube_dl
-import traceback
+import discord, asyncio
+import queue, sys
+import requests, urllib, urllib.request, copy
+import youtube_dl, traceback
 import mysqlhandler
 from bs4 import BeautifulSoup
 from random import randint

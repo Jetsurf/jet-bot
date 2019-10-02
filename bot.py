@@ -2,26 +2,15 @@
 
 import sys
 sys.path.append('./modules')
-import discord
-import asyncio
-import subprocess
-import json
-import time
-import vserver
-import mysqlhandler
-import serverutils
-import nsohandler
-import urllib
-import urllib.request
-import requests
-import nsotoken
-import commandparser
-import serverconfig
-import splatinfo
-import traceback
-import textwrap
-import io
-import signal
+#Base Stuffs
+import discord, asyncio, subprocess, json, time
+#DBL Posting
+import urllib, urllib.request, requests
+#Our Classes
+import nsotoken, commandparser, serverconfig, splatinfo
+import vserver, mysqlhandler, serverutils, nsohandler
+#Eval
+import traceback, textwrap, io, signal
 from contextlib import redirect_stdout
 from subprocess import call
 

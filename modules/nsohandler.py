@@ -1,13 +1,8 @@
-import discord
-import asyncio
-import mysqlhandler
-import time
-import requests
-import json
-import os
-import urllib
-import urllib.request
-import nsotoken
+import discord, asyncio
+import mysqlhandler, nsotoken
+import time, requests
+import json, os
+import urllib, urllib.request
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 class nsoHandler():
