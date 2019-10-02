@@ -15,7 +15,6 @@ import urllib
 import urllib.request
 import requests
 import nsotoken
-import aiomysql
 import commandparser
 import serverconfig
 import splatinfo
@@ -25,7 +24,6 @@ import io
 import signal
 from contextlib import redirect_stdout
 from subprocess import call
-from ctypes import *
 
 client = discord.Client()
 splatInfo = splatinfo.SplatInfo()
