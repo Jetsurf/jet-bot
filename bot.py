@@ -205,9 +205,14 @@ async def on_guild_remove(server):
 
 @client.event
 async def on_error(event, args):
+	global mysqlHandler
 	exc = sys.exc_info()
 	if exc[0] is discord.errors.Forbidden:
 		return
+	elif exc[0] is pymysql.err.OperationalError:
+		cur = args['cur']
+		mysqlHandler.close(cur)
+		print("MYSQL: Disconnect from server, terminating connection", file=sys.stderr)
 	else:
 		raise exc[1]
 
