@@ -13,7 +13,11 @@ class nsoHandler():
 		self.app_timezone_offset = str(int((time.mktime(time.gmtime()) - time.mktime(time.localtime()))/60))
 		self.scheduler = AsyncIOScheduler()
 		self.scheduler.add_job(self.doStoreDM, 'cron', hour="*/2", minute='5') 
+		self.scheduler.add_job(self.updateS2JSON, 'cron', hour="*/2", minute='0')
 		self.scheduler.start()
+		self.mapJSON = None
+		self.storeJSON = None
+		self.srJSON= None
 		self.nsotoken = nsotoken
 		self.app_head = {
 			'Host': 'app.splatoon2.nintendo.net',
@@ -48,6 +52,23 @@ class nsoHandler():
 			'Accept-Encoding': 'gzip, deflate',
 			'Accept-Language': 'en-us'
 		}
+
+	async def updateS2JSON(self):
+		print("S2JSON CACHE: Updating...")
+		storeurl = 'https://splatoon2.ink/data/merchandises.json'
+		req = urllib.request.Request(storeurl, headers={ 'User-Agent' : 'jet-bot/1.0 (discord:jetsurf#8514)' })
+		response = urllib.request.urlopen(req)
+		self.storeJSON = json.loads(response.read().decode())
+
+		mapsurl = 'https://splatoon2.ink/data/schedules.json'
+		req = urllib.request.Request(mapsurl, headers={ 'User-Agent' : 'jet-bot/1.0 (discord:jetsurf#8514)' })
+		response = urllib.request.urlopen(req)
+		self.mapsJSON = json.loads(response.read().decode())
+
+		srurl = 'https://splatoon2.ink/data/coop-schedules.json'
+		req = urllib.request.Request(srurl, headers={ 'User-Agent' : 'jet-bot/1.0 (discord:jetsurf#8514)' })
+		response = urllib.request.urlopen(req)
+		self.srJSON = json.loads(response.read().decode())
 
 	async def addStoreDM(self, message):
 		abilities = { 'Bomb Defense Up DX',	'Haunt', 'Sub Power Up', 'Ink Resistance Up', 'Swim Speed Up', 'Special Charge Up', 'Main Power Up', 'Ink Recovery Up', 'Respawn Punisher',
@@ -451,12 +472,6 @@ class nsoHandler():
 		embed.add_field(name="Clam Blitz", value=cbrank, inline=True)
 		await message.channel.send(embed=embed)
 
-	def getJSON(self, url):
-		req = urllib.request.Request(url, headers={ 'User-Agent' : 'Magic!' })
-		response = urllib.request.urlopen(req)
-		data = json.loads(response.read().decode())
-		return data
-
 	async def orderGear(self, message):
 		if not await self.checkDuplicate(message.author.id):
 			await message.channel.send("You don't have a token setup with me! Please DM me !token with how to get one setup!")
@@ -464,8 +479,7 @@ class nsoHandler():
 
 		Session_token = await self.nsotoken.get_iksm_token_mysql(message.author.id)
 
-		data = self.getJSON("https://splatoon2.ink/data/merchandises.json")
-		gear = data['merchandises']
+		gear = self.storeJSON['merchandises']
 		embed = discord.Embed(colour=0xF9FC5F)
 
 		orderID = int(message.content.split(" ", 1)[1])
@@ -516,8 +530,7 @@ class nsoHandler():
 
 	async def gearParser(self, message):
 		theTime = int(time.mktime(time.gmtime()))
-		data = self.getJSON("https://splatoon2.ink/data/merchandises.json")
-		gear = data['merchandises']
+		gear = self.storeJSON['merchandises']
 		embed = discord.Embed(colour=0xF9FC5F)
 		embed.title = "Current Splatnet Gear For Sale"
 		theString = ''
@@ -557,10 +570,9 @@ class nsoHandler():
 
 	async def maps(self, message, offset=0):
 		theTime = int(time.mktime(time.gmtime()))
-		data = self.getJSON("https://splatoon2.ink/data/schedules.json")
-		trfWar = data['regular']
-		ranked = data['gachi']
-		league = data['league']
+		trfWar = self.mapsJSON['regular']
+		ranked = self.mapsJSON['gachi']
+		league = self.mapsJSON['league']
 		embed = discord.Embed(colour=0x3FFF33)
 
 		if offset == 0:
@@ -602,8 +614,7 @@ class nsoHandler():
 
 	async def srParser(self, message, getNext=0):
 		theTime = int(time.mktime(time.gmtime()))
-		data = self.getJSON("https://splatoon2.ink/data/coop-schedules.json")
-		currentSR = data['details']
+		currentSR = self.srJSON['details']
 		gotData = 0
 		start = 0
 		end = 0

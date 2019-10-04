@@ -5,7 +5,7 @@ sys.path.append('./modules')
 #Base Stuffs
 import discord, asyncio, subprocess, json, time
 #DBL Posting
-import urllib, urllib.request, requests
+import urllib, urllib.request, requests, pymysql
 #Our Classes
 import nsotoken, commandparser, serverconfig, splatinfo
 import vserver, mysqlhandler, serverutils, nsohandler
@@ -148,6 +148,7 @@ async def on_ready():
 		serverUtils = serverutils.serverUtils(client, mysqlHandler, serverConfig, helpfldr)
 		nsoTokens = nsotoken.Nsotoken(client, mysqlHandler)
 		nsoHandler = nsohandler.nsoHandler(client, mysqlHandler, nsoTokens, splatInfo)
+		await nsoHandler.updateS2JSON()
 		scanAdmins()
 		await mysqlHandler.startUp()
 		print('Done\n------')
@@ -204,13 +205,13 @@ async def on_guild_remove(server):
 	sys.stdout.flush()
 
 @client.event
-async def on_error(event, args):
+async def on_error(event, *args, **kwargs):
 	global mysqlHandler
 	exc = sys.exc_info()
 	if exc[0] is discord.errors.Forbidden:
 		return
 	elif exc[0] is pymysql.err.OperationalError:
-		cur = args['cur']
+		cur = kwargs.get('cur')
 		mysqlHandler.close(cur)
 		print("MYSQL: Disconnect from server, terminating connection", file=sys.stderr)
 	else:
