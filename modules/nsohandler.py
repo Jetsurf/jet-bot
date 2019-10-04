@@ -13,7 +13,7 @@ class nsoHandler():
 		self.app_timezone_offset = str(int((time.mktime(time.gmtime()) - time.mktime(time.localtime()))/60))
 		self.scheduler = AsyncIOScheduler()
 		self.scheduler.add_job(self.doStoreDM, 'cron', hour="*/2", minute='5') 
-		self.scheduler.add_job(self.updateS2JSON, 'cron', hour="*/2", minute='0')
+		self.scheduler.add_job(self.updateS2JSON, 'cron', hour="*/2", minute='0', second='15')
 		self.scheduler.start()
 		self.mapJSON = None
 		self.storeJSON = None
@@ -54,19 +54,18 @@ class nsoHandler():
 		}
 
 	async def updateS2JSON(self):
+		useragent = { 'User-Agent' : 'jet-bot/1.0 (discord:jetsurf#8514)' }
 		print("S2JSON CACHE: Updating...")
-		storeurl = 'https://splatoon2.ink/data/merchandises.json'
-		req = urllib.request.Request(storeurl, headers={ 'User-Agent' : 'jet-bot/1.0 (discord:jetsurf#8514)' })
+		#Do store JSON update
+		req = urllib.request.Request('https://splatoon2.ink/data/merchandises.json', headers=useragent)
 		response = urllib.request.urlopen(req)
 		self.storeJSON = json.loads(response.read().decode())
-
-		mapsurl = 'https://splatoon2.ink/data/schedules.json'
-		req = urllib.request.Request(mapsurl, headers={ 'User-Agent' : 'jet-bot/1.0 (discord:jetsurf#8514)' })
+		#Do maps JSON update
+		req = urllib.request.Request('https://splatoon2.ink/data/schedules.json', headers=useragent)
 		response = urllib.request.urlopen(req)
 		self.mapsJSON = json.loads(response.read().decode())
-
-		srurl = 'https://splatoon2.ink/data/coop-schedules.json'
-		req = urllib.request.Request(srurl, headers={ 'User-Agent' : 'jet-bot/1.0 (discord:jetsurf#8514)' })
+		#Do sr JSON update
+		req = urllib.request.Request('https://splatoon2.ink/data/coop-schedules.json', headers=useragent)
 		response = urllib.request.urlopen(req)
 		self.srJSON = json.loads(response.read().decode())
 
@@ -136,8 +135,7 @@ class nsoHandler():
 
 	async def doStoreDM(self):
 		cur = await self.sqlBroker.connect()
-		data = self.getJSON("https://splatoon2.ink/data/merchandises.json")
-		theGear = data['merchandises'][5]
+		theGear = self.storeJSON['merchandises'][5]
 
 		theSkill = theGear['skill']['name'].lower()
 		print("Doing Store DM! Checking " + theSkill)
