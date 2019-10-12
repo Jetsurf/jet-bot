@@ -787,6 +787,18 @@ class nsoHandler():
 				for i in range(count):
 					out += "%d: %s\n" % (i + 1, self.splatInfo.getRandomMap().name())
 				await message.channel.send(out)
+		elif "callout" in subcommand:
+			themap = self.splatInfo.matchMaps(" ".join(args[1:]))
+			if not themap.isValid():
+				await message.channel.send(themap.errorMessage())
+				return
+
+			shortname = themap.get().shortname().lower().replace(" ", "-")
+			url = "http://crmea.de/images/bot/callouts/" + shortname + ".png"
+			embed = discord.Embed(colour=0x0004FF)
+			embed.set_image(url=url)
+			await message.channel.send(embed=embed)
+			#print("NAME: " + shortname + " URL " + url)
 		else:
 			await message.channel.send("Unknown subcommand. Try 'maps help'")
 
