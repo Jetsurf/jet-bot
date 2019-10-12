@@ -754,7 +754,8 @@ class nsoHandler():
 		subcommand = args[0].lower()
 		if subcommand == "help":
 			await message.channel.send("**maps random [n]**: Generate a list of random maps\n"
-				"**maps stats MAP**: Show player stats for MAP")
+				"**maps stats MAP**: Show player stats for MAP\n"
+				"**maps callout MAP**: Show callouts for MAP")
 			return
 		elif subcommand == "list":
 			print("TODO")

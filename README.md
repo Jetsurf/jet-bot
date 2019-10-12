@@ -78,6 +78,7 @@ There are a few admin commands to configure the bot. To run these commands, you 
  - `!splatnetgear` : Gets all of the current gear for sale on SplatNet
  - `!storedm` ABILITY : DM's you when a piece of gear with ABILITY appears in the store (only once, can't DM the bot with this)
  - `!map random NUM` : Generates a list of random maps (1-10, NUM is optional for just 1 random map)
+ - `!map callout MAP` : Provides a map with callout locations
  - `!weapon random NUM` : Generates a list of random weapons (1-10, NUM is optional for just 1 random weapon)
  - `!weapon info WEAP` : Gets Sub/Special/Level/Points for special for WEAP
  - `!weapon sub SUB` : Gets all weapons with the subweapon SUB
