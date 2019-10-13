@@ -157,7 +157,7 @@ class voiceServer():
 
 	async def setupPlay(self, message):
 		if 'https://' in message.content:
-			if self.listCheck(1, message.content.split(' ')[1]):
+			if await self.listCheck(1, message.content.split(' ')[1]):
 				print(message.author.name + " tried to play a blacklisted video")
 				await message.channel.send("Sorry, I can't play that")
 				return
@@ -196,7 +196,7 @@ class voiceServer():
 				else:
 					await message.channel.send("Don't know where to search, try !play youtube SEARCH or !play soundcloud SEARCH")
 					return
-				if self.listCheck(1, theURL):
+				if await self.listCheck(1, theURL):
 					print(message.author.name + " tried to play a blacklisted video")
 					await message.channel.send("Sorry, I can't play that")
 					return
