@@ -252,11 +252,11 @@ class Nsotoken():
 			'Accept-Encoding': 'gzip'
 		}
 		parameter = {
-			'id': 5741031244955648,
-			'f':                 flapg_app["f"],
-			'registrationToken': flapg_app["p1"],
-			'timestamp':         flapg_app["p2"],
-			'requestId':         flapg_app["p3"]
+			'id':					5741031244955648,
+			'f':					flapg_app["f"],
+			'registrationToken':	flapg_app["p1"],
+			'timestamp':			flapg_app["p2"],
+			'requestId':			flapg_app["p3"]
 		}
 
 		body = {}

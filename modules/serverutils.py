@@ -136,7 +136,7 @@ class serverUtils():
 		await self.sqlBroker.commit(cur)
 
 	async def addDM(self, message):
-		if self.checkDM(message.author.id, message.guild.id):
+		if await self.checkDM(message.author.id, message.guild.id):
 			await message.channel.send("You are already in my list of people to DM")
 			return
 
