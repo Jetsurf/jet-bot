@@ -136,7 +136,7 @@ class serverUtils():
 		await self.sqlBroker.commit(cur)
 
 	async def addDM(self, message):
-		if self.checkDM(message.author.id, message.guild.id):
+		if await self.checkDM(message.author.id, message.guild.id):
 			await message.channel.send("You are already in my list of people to DM")
 			return
 
@@ -151,7 +151,7 @@ class serverUtils():
 			await message.channel.send("Something went wrong!")
 
 	async def removeDM(self, message):
-		if not self.checkDM(message.author.id, message.guild.id):
+		if not await self.checkDM(message.author.id, message.guild.id):
 			await message.channel.send("You aren't in my list of people to DM")
 			return
 
