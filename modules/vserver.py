@@ -176,7 +176,7 @@ class voiceServer():
 					url = "https://youtube.com/results?search_query=" + query
 					response = urllib.request.urlopen(url)
 					html = response.read()
-					soup = BeautifulSoup(html, "lxml")
+					soup = BeautifulSoup(html, "html5lib")
 					vid =  soup.find_all(attrs={'class':'yt-uix-tile-link'})
 					if len(vid) == 0:
 						await message.channel.send("No videos found")
