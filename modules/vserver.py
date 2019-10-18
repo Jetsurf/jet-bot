@@ -172,6 +172,7 @@ class voiceServer():
 		else:
 			try:
 				if 'youtube' in message.content.lower():
+					await message.channel.trigger_typing()
 					query = urllib.request.pathname2url(' '.join(message.content.split()[2:]))
 					url = "https://youtube.com/results?search_query=" + query
 					response = urllib.request.urlopen(url)
@@ -186,6 +187,7 @@ class voiceServer():
 					else:	
 						theURL = "https://youtube.com" + vid[0]['href']
 				elif 'soundcloud' in message.content.lower():
+					await message.channel.trigger_typing()
 					query = ' '.join(message.content.split()[2:])
 					url = "https://soundcloud.com/search/sounds?q=" + query
 					response = requests.get(url)
@@ -201,12 +203,12 @@ class voiceServer():
 					await message.channel.send("Sorry, I can't play that")
 					return
 
+				tempPlayer = await YTDLSource.from_url(theURL)
 				if self.ytQueue.empty() and self.source == None:
 					await message.channel.send("Playing : " + theURL)
 				else:
 					await message.channel.send("Queued : " + theURL)
 				print("Playing: " + theURL)
-				tempPlayer = await YTDLSource.from_url(theURL)
 				self.ytQueue.put(tempPlayer)
 				self.play()
 			except Exception as e:
