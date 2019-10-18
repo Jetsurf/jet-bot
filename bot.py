@@ -457,7 +457,7 @@ async def on_message(message):
 			await serverVoices[theServer].stop(message)
 		elif (cmd == 'end') or (cmd == 'stop'):
 			serverVoices[theServer].end()
-		elif cmd == 'volume':
+		elif cmd == 'volume' or cmd == 'vol':
 			vol = command.split(' ')[1]
 			if not vol.isdigit():
 				await message.channel.send("Volume must be a digit 1-60")

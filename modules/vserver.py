@@ -176,7 +176,7 @@ class voiceServer():
 					url = "https://youtube.com/results?search_query=" + query
 					response = urllib.request.urlopen(url)
 					html = response.read()
-					soup = BeautifulSoup(html, "lxml")
+					soup = BeautifulSoup(html, "html5lib")
 					vid =  soup.find_all(attrs={'class':'yt-uix-tile-link'})
 					if len(vid) == 0:
 						await message.channel.send("No videos found")
@@ -292,8 +292,8 @@ class voiceServer():
 		toAdd = ''
 		if 'https' in message.content:
 			toAdd = message.content.split(' ', 2)[2]
-		elif self.sourcer != None:
-			toAdd = self.source.url
+		elif self.source != None:
+			toAdd = self.source.yturl
 		else:
 			await message.channel.send('Im not playing anything, pass me a url to add to the playlist')
 			return
@@ -309,7 +309,7 @@ class voiceServer():
 		if 'https' in message.content:
 			toAdd = message.content.split(' ', 2)[2]
 		elif self.source != None:
-			toAdd = self.source.url
+			toAdd = self.source.yturl
 		else:
 			await message.channel.send('Im not playing anything, pass me a url to add to the playlist')
 			return
