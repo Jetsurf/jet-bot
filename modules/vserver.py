@@ -189,7 +189,7 @@ class voiceServer():
 					query = ' '.join(message.content.split()[2:])
 					url = "https://soundcloud.com/search/sounds?q=" + query
 					response = requests.get(url)
-					soup = BeautifulSoup(response.text, "lxml")
+					soup = BeautifulSoup(response.text, "html5lib")
 					song = soup.find("h2")
 					song = song.a.get("href")
 					theURL = "https://soundcloud.com" + song
