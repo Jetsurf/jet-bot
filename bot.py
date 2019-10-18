@@ -443,6 +443,7 @@ async def on_message(message):
 				await channel.send('I\'m not playing anything.')
 		elif cmd == 'leavevoice':
 			await serverVoices[theServer].vclient.disconnect()
+			serverVoices[theServer].vclient = None
 		elif cmd == 'playrandom':
 			if len(args) > 0:
 				if args[0].isdigit():
