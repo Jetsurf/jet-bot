@@ -292,8 +292,8 @@ class voiceServer():
 		toAdd = ''
 		if 'https' in message.content:
 			toAdd = message.content.split(' ', 2)[2]
-		elif self.sourcer != None:
-			toAdd = self.source.url
+		elif self.source != None:
+			toAdd = self.source.yturl
 		else:
 			await message.channel.send('Im not playing anything, pass me a url to add to the playlist')
 			return
@@ -309,7 +309,7 @@ class voiceServer():
 		if 'https' in message.content:
 			toAdd = message.content.split(' ', 2)[2]
 		elif self.source != None:
-			toAdd = self.source.url
+			toAdd = self.source.yturl
 		else:
 			await message.channel.send('Im not playing anything, pass me a url to add to the playlist')
 			return
