@@ -10,8 +10,13 @@ class serverUtils():
 		self.serverConfig = serverconfig
 		self.client = client
 		self.statusnum = 1
-		self.valid_commands = [ "join", "play", "playrandom", "currentsong", "queue", "stop", "skip", "volume", "sounds", "currentmaps", "nextmaps", "weapon", "weapons",
-							 "currentsr", "nextsr", "splatnetgear", "leavevoice", "storedm", "rank", "stats", "srstats", "order", "github", "help", "map", "maps", "battle", "battles"]
+		self.valid_commands = {
+			'base'		: 		[ "help", "github", "support" ],
+			'base_sn' 	: 		[ "currentmaps", "nextmaps", "nextsr", "currentsr", "splatnetgear", "storedm" ],
+			'user_sn'	:		[ "rank", "stats", "srstats", "order" ],
+			'hybrid_sn' : 		[ "weapon", "weapons","map", "maps", "battle", "battles" ],
+			'voice' 	:	 	[ "join", "play", "playrandom", "currentsong", "queue", "stop", "skip", "volume", "sounds", "leavevoice" ]
+		}
 		self.scheduler = AsyncIOScheduler()
 		self.scheduler.add_job(self.changeStatus, 'cron', minute='*/5') 
 		self.scheduler.start()
@@ -118,16 +123,19 @@ class serverUtils():
 		embed.title = "Command Totals"
 		cur = await self.sqlBroker.connect()
 
-		for cmd in self.valid_commands:
-			stmt = "SELECT IFNULL(SUM(count), 0) FROM commandcounts WHERE (command = %s)"
-			await cur.execute(stmt, (cmd,))
-			count = await cur.fetchone()
-			embed.add_field(name=cmd, value=str(count[0]), inline=True)
+		for cmd_set in self.valid_commands:
+			theString = ""
+			for cmd in self.valid_commands[cmd_set]:
+				stmt = "SELECT IFNULL(SUM(count), 0) FROM commandcounts WHERE (command = %s)"
+				await cur.execute(stmt, (cmd,))
+				count = await cur.fetchone()
+				theString = theString + "**" + cmd + "** : " + str(count[0]) + "\n"
+			embed.add_field(name="**" + cmd_set + "**", value=theString, inline=True)
 		await self.sqlBroker.close(cur)
 		await message.channel.send(embed=embed)
 
 	async def increment_cmd(self, message, cmd):
-		if cmd not in self.valid_commands:
+		if cmd not in self.valid_commands['base'] or cmd not in self.valid_commands['base_sn'] or cmd not in self.valid_commands['user_sn'] or cmd not in self.valid_commands['hybrid_sn'] or cmd not in self.valid_commands['voice']:
 			return
 
 		cur = await self.sqlBroker.connect()
