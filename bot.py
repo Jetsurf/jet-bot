@@ -384,7 +384,7 @@ async def on_message(message):
 				elif (len(args) != 2) or (len(args[1]) < 0) or (len(args[1]) > 2):
 					await channel.send("Usage: ```admin prefix <char>``` where *char* is one or two characters")
 				else:
-					commandParser.setPrefix(theServer, args[1])
+					await commandParser.setPrefix(theServer, args[1])
 					await channel.send("New command prefix is: " + await commandParser.getPrefix(theServer))
 		else:
 			await channel.send(message.author.name + " you are not an admin... :cop:")
