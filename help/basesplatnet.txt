@@ -7,5 +7,4 @@
 !storedm ABILITY : DM you when a piece of gear with ABILITY appears in the Splatnet Store (Can't DM me this command)
 !map help : Print help for the maps subcommands
 !weapon help : Print help for the weapons subcommands
-!github : Posts a link to my github page
-!support : Posts an invite link to my support discord guild
+
