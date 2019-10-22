@@ -135,7 +135,7 @@ class serverUtils():
 		await message.channel.send(embed=embed)
 
 	async def increment_cmd(self, message, cmd):
-		if cmd not in self.valid_commands['base'] or cmd not in self.valid_commands['base_sn'] or cmd not in self.valid_commands['user_sn'] or cmd not in self.valid_commands['hybrid_sn'] or cmd not in self.valid_commands['voice']:
+		if cmd not in self.valid_commands['base'] and cmd not in self.valid_commands['base_sn'] and cmd not in self.valid_commands['user_sn'] and cmd not in self.valid_commands['hybrid_sn'] and cmd not in self.valid_commands['voice']:
 			return
 
 		cur = await self.sqlBroker.connect()
