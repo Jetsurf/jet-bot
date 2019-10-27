@@ -93,12 +93,12 @@ class voiceServer():
 			source.volume = .5
 			self.vclient.play(source)
 
-	async def playSound(self, command, message):
+	async def playSound(self, command):
 		if self.source != None or self.vclient == None:
 			return
 		
 		try:
-			source = discord.FFmpegPCMAudio(self.soundsDir + '/' + command[2:] + '.mp3')
+			source = discord.FFmpegPCMAudio(self.soundsDir + '/' + command + '.mp3')
 			source = discord.PCMVolumeTransformer(source)
 		except:
 			return

@@ -474,7 +474,7 @@ async def on_message(message):
 		elif cmd == 'queue':
 			await serverVoices[theServer].printQueue(message)
 		else:
-			await serverVoices[theServer].playSound(command, message)
+			await serverVoices[theServer].playSound(cmd)
 
 	sys.stdout.flush()
 	sys.stderr.flush()
