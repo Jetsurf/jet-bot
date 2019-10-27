@@ -93,7 +93,7 @@ class voiceServer():
 			source.volume = .5
 			self.vclient.play(source)
 
-	async def playSound(self, command, message):
+	async def playSound(self, command):
 		if self.source != None or self.vclient == None:
 			return
 		
