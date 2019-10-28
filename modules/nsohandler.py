@@ -711,8 +711,11 @@ class nsoHandler():
 		else:
 			myrank = None
 
-		embed.title = "Stats for " + str(accountname) +"'s last battle - " + str(battletype) + " - " + str(rule) + " (Kills/Deaths/Specials)"
-        
+		if num == 1:
+			embed.title = "Stats for " + str(accountname) +"'s last battle - " + str(battletype) + " - " + str(rule) + " (Kills/Deaths/Specials)"
+		else:
+			embed.title = "Stats for " + str(accountname) +"'s battle " + str(num) + " matches ago - " + str(battletype) + " - " + str(rule) + " (Kills/Deaths/Specials)"
+
 		teamstring = ""
 		placedPlayer = False
 	
@@ -925,7 +928,7 @@ class nsoHandler():
 			await self.battleParser(message)
 		elif subcommand == "num":
 			if len(args) > 1:
-				if args[1].isdigit() and int(args[1]) < 50 and int(args[1]) > 0:
+				if args[1].isdigit() and int(args[1]) <= 50 and int(args[1]) > 0:
 					await self.battleParser(message, num=int(args[1]))
 				else:
 					await message.channel.send("Battle num must be number 1-50")
