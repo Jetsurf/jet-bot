@@ -682,6 +682,7 @@ class nsoHandler():
 			await message.channel.send(message.author.name + " there is a problem with your token")
 			return
 
+		embed = discord.Embed(colour=0x0004FF)
 		battlejson = await self.getNSOJSON(message, self.app_head, "https://app.splatoon2.nintendo.net/api/results")
 
 		accountname = recordjson['records']['player']['nickname']
@@ -705,7 +706,11 @@ class nsoHandler():
 		myresult = thebattle['my_team_result']['name']
 		enemyresult = thebattle['other_team_result']['name']
 
-		embed = discord.Embed(colour=0x0004FF)
+		if 'udemae' in mystats['player']:
+			myrank = mystats['player']['udemae']['name']
+		else:
+			myrank = None
+
 		embed.title = "Stats for " + str(accountname) +"'s last battle - " + str(battletype) + " - " + str(rule) + " (Kills/Deaths/Specials)"
         
 		teamstring = ""
@@ -722,12 +727,22 @@ class nsoHandler():
 			tname = i['player']['nickname']
 			if rule == "Turf War" and mypoints > i['game_paint_point'] and not placedPlayer:
 				placedPlayer = True
-				teamstring = teamstring + matchname + " - " + myweapon + " - " + str(mykills) + "(" + str(myassists) + ")/" + str(mydeaths) + "/" + str(specials) + "\n"
+				if myrank == None:
+					teamstring = teamstring + matchname + " - " + myweapon + " - " + str(mykills) + "(" + str(myassists) + ")/" + str(mydeaths) + "/" + str(specials) + "\n"
+				else:
+					teamstring = teamstring + matchname + " - " + myrank + ' - ' + myweapon + " - " + str(mykills) + "(" + str(myassists) + ")/" + str(mydeaths) + "/" + str(specials) + "\n"
 			if rule != "Turf War" and mykills > i['kill_count'] + i['assist_count'] and not placedPlayer:
 				placedPlayer = True
-				teamstring = teamstring + matchname + " - " + myweapon + " - " + str(mykills) + "(" + str(myassists) + ")/" + str(mydeaths) + "/" + str(specials) + "\n"
+				if myrank == None:
+					teamstring = teamstring + matchname + " - " + myweapon + " - " + str(mykills) + "(" + str(myassists) + ")/" + str(mydeaths) + "/" + str(specials) + "\n"
+				else:
+					teamstring = teamstring + matchname + " - " + myrank + ' - ' + myweapon + " - " + str(mykills) + "(" + str(myassists) + ")/" + str(mydeaths) + "/" + str(specials) + "\n"
 			
-			teamstring = teamstring + tname + " - " + i['player']['weapon']['name'] + " - " + str(i['kill_count'] + i['assist_count']) + "(" + str(i['assist_count']) + ")/" + str(i['death_count']) + "/" + str(i['special_count']) + "\n"
+			if 'udemae' in i['player']:
+				teamstring = teamstring + tname + " - " + i['player']['udemae']['name'] + " - " + i['player']['weapon']['name'] + ' - ' + str(i['kill_count'] + i['assist_count']) + "(" + str(i['assist_count']) + ")/" + str(i['death_count']) + "/" + str(i['special_count']) + "\n"
+			else:
+				teamstring = teamstring + tname + " - " + i['player']['weapon']['name'] + " - " + str(i['kill_count'] + i['assist_count']) + "(" + str(i['assist_count']) + ")/" + str(i['death_count']) + "/" + str(i['special_count']) + "\n"
+
 
 		if not placedPlayer:
 			teamstring = teamstring + matchname + " - " + myweapon + " - " + str(mykills) + "(" + str(myassists) + ")/" + str(mydeaths) + "/" + str(specials) + "\n"
@@ -735,7 +750,10 @@ class nsoHandler():
 		enemystring = ""
 		for i in enemyteam:
 			ename = i['player']['nickname']
-			enemystring = enemystring + ename + " - " + i['player']['weapon']['name'] + " - " + str(i['kill_count'] + i['assist_count']) + "(" + str(i['assist_count']) + ")/" + str(i['death_count']) + "/" + str(i['special_count']) + "\n"
+			if 'udemae' in i['player']:
+				enemystring = enemystring + ename + " - " + i['player']['udemae']['name'] + " - " + i['player']['weapon']['name'] + ' - ' + str(i['kill_count'] + i['assist_count']) + "(" + str(i['assist_count']) + ")/" + str(i['death_count']) + "/" + str(i['special_count']) + "\n"
+			else:
+				enemystring = enemystring + ename + " - " + i['player']['weapon']['name'] + " - " + str(i['kill_count'] + i['assist_count']) + "(" + str(i['assist_count']) + ")/" + str(i['death_count']) + "/" + str(i['special_count']) + "\n"
 
 		if 'VICTORY' in myresult:
 			embed.add_field(name=str(matchname) + "'s team - " + str(myresult), value=teamstring, inline=True)

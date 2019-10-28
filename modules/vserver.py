@@ -103,9 +103,9 @@ class voiceServer():
 		except:
 			return
 
-		if '!wtfboom' in command or '!johncena' in command or '!ohmygod' in command or "!leeroy" in command:
+		if 'wtfboom' in command or 'johncena' in command or 'ohmygod' in command or 'leeroy' in command:
 			source.volume = .1
-		elif '!whosaidthat' in command or '!chrishansen' in command or '!sotasty' in command:
+		elif 'whosaidthat' in command or 'chrishansen' in command or 'sotasty' in command:
 			source.volume = .4
 		else:
 			source.volume = .25
