@@ -1,0 +1,7 @@
+discord.py>=1.3.0a0
+pymysql
+aiomysql
+apscheduler
+youtube_dl
+bs4
+pynacl
