@@ -42,13 +42,16 @@ class SplatSubweapon(SplatMatchItem):
 class SplatSpecial(SplatMatchItem):
 	pass
 
+class SplatWeaponType(SplatMatchItem):
+	pass
+
 class SplatWeapon(SplatMatchItem):
-	def __init__(self, name, abbrevs, weapclass, sub, special, specpts, level, id, dupid):
+	def __init__(self, name, abbrevs, type, sub, special, specpts, level, id, dupid):
+		self._type    = type
 		self._sub     = sub
 		self._special = special
-		self.level   = level
-		self.specpts = specpts
-		self._weapclass = weapclass
+		self.level    = level
+		self.specpts  = specpts
 		self._id      = id
 		self._dupid   = dupid
 		super().__init__(name, abbrevs)
@@ -59,8 +62,8 @@ class SplatWeapon(SplatMatchItem):
 	def id(self):
 		return self._id
 
-	def weapclass(self):
-		return self._weapclass
+	def type(self):
+		return self._type
 
 	def special(self):
 		return self._special
@@ -117,6 +120,7 @@ class SplatInfo():
 		self.initMaps()
 		self.initSubweapons()
 		self.initSpecials()
+		self.initWeaponTypes()
 		self.initWeapons()
 		self.initSlots()
 
@@ -124,6 +128,7 @@ class SplatInfo():
 		self.checkSet(self.maps)
 		self.checkSet(self.subweapons)
 		self.checkSet(self.specials)
+		self.checkSet(self.weapontypes)
 		self.checkSet(self.weapons)
 		self.checkSet(self.slots)
 
@@ -206,6 +211,18 @@ class SplatInfo():
 			SplatSpecial("Sting Ray",             ["sr"]),
 			SplatSpecial("Tenta Missiles",        ["tm"]),
 			SplatSpecial("Ultra Stamp",           ["us", "hammer"]),
+		]
+
+	def initWeaponTypes(self):
+		self.weapontypes = [
+			SplatWeaponType("Shooter", ["s"]),
+			SplatWeaponType("Blaster", ["bl"]),
+			SplatWeaponType("Roller", ["r"]),
+			SplatWeaponType("Charger", ["c", "sniper"]),
+			SplatWeaponType("Slosher", ["sl", "bucket"]),
+			SplatWeaponType("Splatling", ["sp", "gatling"]),
+			SplatWeaponType("Dualies", ["d"]),
+			SplatWeaponType("Brella", ["br", "u", "umbrella", "brolly"]),
 		]
 
 	def initWeapons(self):
@@ -404,16 +421,16 @@ class SplatInfo():
 
 		self.weapons = []
 		for w in data:
-			name      = w[0]
-			abbrevs   = w[1]
-			weapclass = w[2]
-			sub       = w[3]
-			special   = w[4]
-			specpts   = w[5]
-			level     = w[6]
-			id        = w[7]
-			dupid     = w[8] if (len(w) >= 9) else None
-			self.weapons.append(SplatWeapon(name, abbrevs, weapclass, self.getSubweaponByName(sub), self.getSpecialByName(special), specpts, level, id, dupid))
+			name    = w[0]
+			abbrevs = w[1]
+			type    = w[2]
+			sub     = w[3]
+			special = w[4]
+			specpts = w[5]
+			level   = w[6]
+			id      = w[7]
+			dupid   = w[8] if (len(w) >= 9) else None
+			self.weapons.append(SplatWeapon(name, abbrevs, self.getWeaponTypeByName(type), self.getSubweaponByName(sub), self.getSpecialByName(special), specpts, level, id, dupid))
 
 	def initSlots(self):
 		self.slots = [
@@ -472,11 +489,17 @@ class SplatInfo():
 	def getWeaponByName(self, name):
 		return self.getItemByName(self.weapons, name)
 
+	def getWeaponTypeByName(self, name):
+		return self.getItemByName(self.weapontypes, name)
+
 	def getWeaponsBySpecial(self, special):
 		return list(filter(lambda w: w.special() == special, self.weapons))
 
 	def getWeaponsBySub(self, sub):
 		return list(filter(lambda w: w.sub() == sub, self.weapons))
+
+	def getWeaponsByType(self, type):
+		return list(filter(lambda w: w.type() == type, self.weapons))
 
 	def getSpecialByName(self, name):
 		return self.getItemByName(self.specials, name)
@@ -487,3 +510,18 @@ class SplatInfo():
 	def getRandomWeapon(self):
 		weapons = list(filter(lambda w: w.dupid() == None, self.weapons))  # Get only non-duplicate weapons
 		return random.choice(weapons)
+
+	def getAllSpecials(self):
+		return self.specials
+
+	def getAllSubweapons(self):
+		return self.subweapons
+
+	def getAllWeapons(self):
+		return self.weapons
+
+	def getAllWeaponTypes(self):
+		return self.weapontypes
+
+	def getAllMaps(self):
+		return self.maps
