@@ -793,11 +793,13 @@ class nsoHandler():
 		if subcommand == "help":
 			await message.channel.send("**maps random [n]**: Generate a list of random maps\n"
 				"**maps stats MAP**: Show player stats for MAP\n"
-				"**maps callout MAP**: Show callouts for MAP")
-			return
+				"**maps callout MAP**: Show callouts for MAP\n"
+				"**maps list: Lists all maps with abreviations")
 		elif subcommand == "list":
-			print("TODO")
-			return
+			embed = discord.Embed(colour=0xF9FC5F)
+			embed.title = "Maps List"
+			embed.add_field(name="Maps (abreviation)", value=", ".join(map(lambda item: item.format(), self.splatInfo.getAllMaps())), inline=False)
+			await message.channel.send(embed=embed)
 		elif subcommand == "stats":
 			if len(args) > 1:
 				themap = " ".join(args[1:])
