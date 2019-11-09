@@ -105,15 +105,7 @@ class nsoHandler():
 		await message.channel.send("Added you to recieve a DM when gear with " + ability + " appears in the shop!")
 
 	async def handleDM(self, theMem, theGear, theSkill):
-		embed = discord.Embed(colour=0xF9FC5F)
-		embed.title = "Gear with " + theSkill + " is in the shop!"
-		embed.set_thumbnail(url='https://splatoon2.ink/assets/splatnet' + theGear['gear']['image'])
-		embed.add_field(name="Brand", value=theGear['gear']['brand']['name'], inline=True)
-		embed.add_field(name="Name", value=theGear['gear']['name'], inline=True)
-		embed.add_field(name="Type", value=theGear['kind'], inline=True)
-		embed.add_field(name="Available Sub Slots", value=theGear['gear']['rarity'], inline=True)
-		embed.add_field(name="Price", value=theGear['price'], inline=True)
-		embed.add_field(name="Directions", value="Respond with yes to order, no to stop recieving notifications (within the next two hours)", inline=False)
+		embed = self.makeGearEmbed(theGear, "Gear with " + theSkill + " has appeared in the shop!", "Respond with 'order' to order, or 'stop' to stop recieving notifications (within the next two hours)")
 		await theMem.send(embed=embed)
 		print('Messaged ' + theMem.name)
 
@@ -131,18 +123,18 @@ class nsoHandler():
 			await theMem.send("Didn't get a message from you, I'll DM you again when gear with " + theSkill + " appears in the shop!")
 			return
 
-		if 'no' in resp.content.lower():
+		if 'stop' in resp.content.lower():
 			cur = await self.sqlBroker.connect()
 			stmt = 'DELETE FROM storedms WHERE clientid = %s AND ability = %s'
 			print("Removing " + theMem.name + " from DM's")
 			await cur.execute(stmt, (theMem.id, theSkill,))
 			await self.sqlBroker.commit(cur)
 			await theMem.send("Ok, I won't DM you again when gear with " + theSkill + " appears in the shop.")
-		elif 'yes' in resp.content.lower():
+		elif 'order' in resp.content.lower():
 			await self.orderGear(resp, order=5)
 		else:
 			print("Keeping " + theMem.name + " in DM's")
-			await theMem.send("Didn't see yes or no in your message. I'll DM you again when gear with " + theSkill + " appears in the shop!")
+			await theMem.send("Didn't get a message from you about gear. I'll DM you again when gear with " + theSkill + " appears in the shop!")
 
 	async def doStoreDM(self):
 		cur = await self.sqlBroker.connect()
@@ -481,10 +473,35 @@ class nsoHandler():
 		embed.add_field(name="Clam Blitz", value=cbrank, inline=True)
 		await message.channel.send(embed=embed)
 
+	def makeGearEmbed(self, gear, title, dirs):
+		embed = discord.Embed(colour=0xF9FC5F)
+		embed.title = title
+		embed.set_thumbnail(url='https://splatoon2.ink/assets/splatnet' + gear['gear']['image'])
+		embed.add_field(name="Brand", value=gear['gear']['brand']['name'], inline=True)
+		embed.add_field(name="Name", value=gear['gear']['name'], inline=True)
+		embed.add_field(name="Type", value=gear['gear']['kind'], inline=True)
+		embed.add_field(name="Available Sub Slots", value=gear['gear']['rarity'], inline=True)
+		embed.add_field(name="Price", value=gear['price'], inline=True)
+		embed.add_field(name="Directions", value=dirs, inline=False)
+		return embed
+
 	async def orderGear(self, message, order=-1):
-		if not await self.checkDuplicate(message.author.id):
+		await message.channel.trigger_typing()
+
+		def check(m):
+			return m.author == message.author and m.channel == message.channel
+
+		if not await self.checkDuplicate(message.author.id) and order == -1:
 			await message.channel.send("You don't have a token setup with me! Please DM me !token with how to get one setup!")
 			return
+		elif not await self.checkDuplicate(message.author.id) and order != -1:
+			await message.channel.send("You don't have a token setup with me, would you like to set one up now? (Yes/No)")
+			resp = await self.client.wait_for('message', check=check)
+			if resp.content.lower() == "yes":
+				await self.nsotoken.login(message, flag=1)
+			else:
+				await message.channel.send("Ok! If you want to setup a token to order in the future, DM me !token")
+				return
 
 		Session_token = await self.nsotoken.get_iksm_token_mysql(message.author.id)
 		gear = self.storeJSON['merchandises']
@@ -504,17 +521,15 @@ class nsoHandler():
 		results_list = requests.get(url, headers=self.app_head, cookies=dict(iksm_session=Session_token))
 		thejson = json.loads(results_list.text)
 		gearToBuy = thejson['merchandises'][orderID]
-		gearToBuyName = thejson['merchandises'][orderID]['gear']['name']
-
-		def check(m):
-			return m.author == message.author and m.channel == message.channel
 
 		if order == -1:
-			await message.channel.send(message.author.name + " - do you want to order " + gearToBuyName + "? Respond with yes to buy!")
+			embed = self.makeGearEmbed(gearToBuy, message.author.name + ' - Order gear?', "Respond with 'yes' to replace your order, 'no' to cancel")
+			await message.channel.send(embed=embed)
 			confirm = await self.client.wait_for('message', check=check)
 		else:
 			confirm = message
 
+		await message.channel.trigger_typing()
 		if 'yes' in confirm.content.lower() or order != -1:
 			url = 'https://app.splatoon2.nintendo.net/api/onlineshop/order/' + gearToBuy['id']
 			response = requests.post(url, headers=self.app_head_shop, cookies=dict(iksm_session=Session_token))
@@ -522,8 +537,9 @@ class nsoHandler():
 
 			if '200' not in str(response):
 				ordered = thejson['ordered_info']
+				embed = self.makeGearEmbed(ordered, message.author.name + ", you already have an item on order!", "Respond with 'yes' to replace your order, 'no' to cancel")
+				await message.channel.send(embed=embed)
 
-				await message.channel.send(message.author.name + " you already have " + ordered['gear']['name'] + " ordered, respond back yes to confirm you want to replace this order!")
 				confirm = await self.client.wait_for('message', check=check)
 				if 'yes' in confirm.content.lower():
 					url = 'https://app.splatoon2.nintendo.net/api/onlineshop/order/' + gearToBuy['id']
@@ -903,7 +919,7 @@ class nsoHandler():
 				await message.channel.send(embed=embed)
 		elif subcommand == "list":
 			if len(args) > 1:
-				t = self.splatInfo.getWeaponTypeByName(args[1])
+				t = self.splatInfo.getWeaponType(args[1])
 				weaps = self.splatInfo.getWeaponsByType(t)
 				weapString = ""
 				for w in weaps:
@@ -912,6 +928,8 @@ class nsoHandler():
 				embed.title = "Weapons List"
 				await message.channel.send(weapString)
 				#embed.add_field(name=t.name(), value=)
+			else:
+				await message.channel.send("Need a type to search, types are Shooter, Blaster, Roller, Charger, Slosher, Splatling, Brella, ")
 			return
 		elif subcommand == "stats":
 			if len(args) > 1:

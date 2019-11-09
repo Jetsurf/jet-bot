@@ -25,11 +25,11 @@ class Nsotoken():
 		input = (message.author.id,)
 		await cur.execute(stmt, input)
 		if cur.lastrowid != None:
-			self.sqlBroker.commit(cur)
+			await self.sqlBroker.commit(cur)
 			await message.channel.send("Tokens deleted!")
 		else:
-			self.sqlBroker.rollback(cur)
-			await message.channel.send("Something went wrong! Tell jetsurf#8514 that something broke!")
+			await self.sqlBroker.rollback(cur)
+			await message.channel.send("Something went wrong! If you want to report this, join my support discord and let the devs know what you were doing!")
 
 	async def addToken(self, message, token, session_token):
 		cur = await self.sqlBroker.connect()
@@ -68,7 +68,7 @@ class Nsotoken():
 			return None
 		return session_token[0][0]
 
-	async def login(self, message):
+	async def login(self, message, flag=-1):
 		auth_state = base64.urlsafe_b64encode(os.urandom(36))
 		auth_code_verifier = base64.urlsafe_b64encode(os.urandom(32))
 		auth_cv_hash = hashlib.sha256()
@@ -116,10 +116,13 @@ class Nsotoken():
 		session_token_code = re.search('session_token_code=(.*)&', accounturl)
 		session_token_code = self.get_session_token(session_token_code.group(0)[19:-1], auth_code_verifier)
 		thetoken = self.get_cookie(session_token_code)
-		if await self.addToken(message, str(thetoken), session_token_code):
+		success = await self.addToken(message, str(thetoken), session_token_code)
+		if success and flag == -1:
 			await message.channel.send("Token added, !srstats !stats !ranks and !order will now work! You shouldn't need to run this command again.")
+		elif success and flag == 1:
+			await message.channel.send("Token added! Ordering...")
 		else:
-			await message.channel.send("Something went wrong! Tell jetsurf#8514 that something broke!")
+			await message.channel.send("Something went wrong! Join my support discord and report that something broke!")
 
 	def get_hash(self, id_token, timestamp):
 		version = '1.5.1'
