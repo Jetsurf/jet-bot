@@ -222,7 +222,8 @@ class SplatInfo():
 			SplatWeaponType("Slosher", ["sl", "bucket"]),
 			SplatWeaponType("Splatling", ["sp", "gatling"]),
 			SplatWeaponType("Dualies", ["d"]),
-			SplatWeaponType("Brella", ["br", "u", "umbrella", "brolly"]),
+			SplatWeaponType("Brella", ["bre", "u", "umbrella", "brolly"]),
+			SplatWeaponType("Brush", ["bru"]),
 		]
 
 	def initWeapons(self):
@@ -461,6 +462,9 @@ class SplatInfo():
 
 	def matchMaps(self, query):
 		return self.matchItems("map", self.maps, query)
+
+	def matchWeaponType(self, query):
+		return self.matchItems("weapontype", self.weapontypes, query)
 
 	def matchWeapons(self, query):
 		return self.matchItems("weapon", self.weapons, query)
