@@ -790,7 +790,6 @@ class nsoHandler():
 				enemystring += " - " + i['player']['udemae']['name']
 			
 			enemystring += " - " + i['player']['weapon']['name'] + " - " + str(i['kill_count'] + i['assist_count']) + "(" + str(i['assist_count']) + ")/" + str(i['death_count']) + "/" + str(i['special_count']) + "\n"
-
 		if 'VICTORY' in myresult:
 			embed.add_field(name=str(matchname) + "'s team - " + str(myresult), value=teamstring, inline=True)
 			embed.add_field(name="Enemy Team - " + str(enemyresult), value=enemystring, inline=True)

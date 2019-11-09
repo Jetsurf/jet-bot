@@ -4,4 +4,4 @@ aiomysql
 apscheduler
 youtube_dl
 bs4
-
+pynacl
