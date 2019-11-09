@@ -794,7 +794,7 @@ class nsoHandler():
 			await message.channel.send("**maps random [n]**: Generate a list of random maps\n"
 				"**maps stats MAP**: Show player stats for MAP\n"
 				"**maps callout MAP**: Show callouts for MAP\n"
-				"**maps list: Lists all maps with abbreviations")
+				"**maps list**: Lists all maps with abbreviations")
 		elif subcommand == "list":
 			embed = discord.Embed(colour=0xF9FC5F)
 			embed.title = "Maps List"
@@ -853,6 +853,7 @@ class nsoHandler():
 			await message.channel.send("**weapons random [n]**: Generate a list of random weapons\n"
 				"**weapons stats WEAPON**: Show player stats for WEAPON\n"
 				"**weapons sub SUB**: Show all weapons with SUB\n"
+				"**weapons list TYPE**: Shows all weapons of TYPE\n"
 				"**weapons special SPECIAL**: Show all weapons with SPECIAL")
 			return
 		elif subcommand == "info":
@@ -901,7 +902,16 @@ class nsoHandler():
 						"\nLevel To Purchase: " + str(i.level), inline=True)
 				await message.channel.send(embed=embed)
 		elif subcommand == "list":
-			print("TODO")
+			if len(args) > 1:
+				t = self.splatInfo.getWeaponTypeByName(args[1])
+				weaps = self.splatInfo.getWeaponsByType(t)
+				weapString = ""
+				for w in weaps:
+					weapString += w.name()
+				embed = discord.Embed(colour=0x0004FF)
+				embed.title = "Weapons List"
+				await message.channel.send(weapString)
+				#embed.add_field(name=t.name(), value=)
 			return
 		elif subcommand == "stats":
 			if len(args) > 1:
