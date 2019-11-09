@@ -168,7 +168,7 @@ class voiceServer():
 				await message.add_reaction('👍')
 			except Exception as e:
 				print(str(e))
-				await message.channel.send("Sorry, I can't play that, give this info to jetsurf: " + str(e))
+				await message.channel.send("Sorry, I can't play that, you can report the following in my support discord: " + str(e))
 		else:
 			try:
 				if 'youtube' in message.content.lower():
@@ -213,7 +213,7 @@ class voiceServer():
 				self.play()
 			except Exception as e:
 				print(traceback.format_exc())
-				await message.channel.send("Sorry, I can't play that, give this info to jetsurf: " + str(e))
+				await message.channel.send("Sorry, I can't play that, you can report the following in my support discord: " + str(e))
 
 	async def listCheck(self, theList, theURL):
 		cur = await self.sqlBroker.connect()

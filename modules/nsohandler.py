@@ -104,8 +104,9 @@ class nsoHandler():
 		await self.sqlBroker.commit(cur)
 		await message.channel.send("Added you to recieve a DM when gear with " + ability + " appears in the shop!")
 
-	async def handleDM(self, theMem, theSkill):
-		await theMem.send("Gear with " + theSkill + " has appeared in the shop! Respond with no within the next 2 hours to stop receiving notifications!")
+	async def handleDM(self, theMem, theGear, theSkill):
+		embed = self.makeGearEmbed(theGear, "Gear with " + theSkill + " has appeared in the shop!", "Respond with 'order' to order, or 'stop' to stop recieving notifications (within the next two hours)")
+		await theMem.send(embed=embed)
 		print('Messaged ' + theMem.name)
 
 		def check1(m):
@@ -122,16 +123,18 @@ class nsoHandler():
 			await theMem.send("Didn't get a message from you, I'll DM you again when gear with " + theSkill + " appears in the shop!")
 			return
 
-		if 'no' in resp.content.lower():
+		if 'stop' in resp.content.lower():
 			cur = await self.sqlBroker.connect()
 			stmt = 'DELETE FROM storedms WHERE clientid = %s AND ability = %s'
 			print("Removing " + theMem.name + " from DM's")
 			await cur.execute(stmt, (theMem.id, theSkill,))
 			await self.sqlBroker.commit(cur)
 			await theMem.send("Ok, I won't DM you again when gear with " + theSkill + " appears in the shop.")
+		elif 'order' in resp.content.lower():
+			await self.orderGear(resp, order=5)
 		else:
 			print("Keeping " + theMem.name + " in DM's")
-			await theMem.send("Didn't see no in your message. I'll DM you again when gear with " + theSkill + " appears in the shop!")
+			await theMem.send("Didn't get a message from you about gear. I'll DM you again when gear with " + theSkill + " appears in the shop!")
 
 	async def doStoreDM(self):
 		cur = await self.sqlBroker.connect()
@@ -154,7 +157,7 @@ class nsoHandler():
 					continue
 				theMem = server.get_member(memid)
 				if theMem != None:
-					asyncio.ensure_future(self.handleDM(theMem, theSkill))
+					asyncio.ensure_future(self.handleDM(theMem, theGear, theSkill))
 
 	async def getRawJSON(self, message):
 		if not await self.checkDuplicate(message.author.id):
@@ -470,17 +473,43 @@ class nsoHandler():
 		embed.add_field(name="Clam Blitz", value=cbrank, inline=True)
 		await message.channel.send(embed=embed)
 
-	async def orderGear(self, message):
-		if not await self.checkDuplicate(message.author.id):
+	def makeGearEmbed(self, gear, title, dirs):
+		embed = discord.Embed(colour=0xF9FC5F)
+		embed.title = title
+		embed.set_thumbnail(url='https://splatoon2.ink/assets/splatnet' + gear['gear']['image'])
+		embed.add_field(name="Brand", value=gear['gear']['brand']['name'], inline=True)
+		embed.add_field(name="Name", value=gear['gear']['name'], inline=True)
+		embed.add_field(name="Type", value=gear['gear']['kind'], inline=True)
+		embed.add_field(name="Available Sub Slots", value=gear['gear']['rarity'], inline=True)
+		embed.add_field(name="Price", value=gear['price'], inline=True)
+		embed.add_field(name="Directions", value=dirs, inline=False)
+		return embed
+
+	async def orderGear(self, message, order=-1):
+		await message.channel.trigger_typing()
+
+		def check(m):
+			return m.author == message.author and m.channel == message.channel
+
+		if not await self.checkDuplicate(message.author.id) and order == -1:
 			await message.channel.send("You don't have a token setup with me! Please DM me !token with how to get one setup!")
 			return
+		elif not await self.checkDuplicate(message.author.id) and order != -1:
+			await message.channel.send("You don't have a token setup with me, would you like to set one up now? (Yes/No)")
+			resp = await self.client.wait_for('message', check=check)
+			if resp.content.lower() == "yes":
+				await self.nsotoken.login(message, flag=1)
+			else:
+				await message.channel.send("Ok! If you want to setup a token to order in the future, DM me !token")
+				return
 
 		Session_token = await self.nsotoken.get_iksm_token_mysql(message.author.id)
-
 		gear = self.storeJSON['merchandises']
-		embed = discord.Embed(colour=0xF9FC5F)
 
-		orderID = int(message.content.split(" ", 1)[1])
+		if order != -1:
+			orderID = order
+		else:
+			orderID = int(message.content.split(" ", 1)[1])
 
 		thejson = await self.getNSOJSON(message, self.app_head, "https://app.splatoon2.nintendo.net/api/timeline")
 		if thejson == None:
@@ -492,23 +521,25 @@ class nsoHandler():
 		results_list = requests.get(url, headers=self.app_head, cookies=dict(iksm_session=Session_token))
 		thejson = json.loads(results_list.text)
 		gearToBuy = thejson['merchandises'][orderID]
-		gearToBuyName = thejson['merchandises'][orderID]['gear']['name']
-		await message.channel.send(message.author.name + " - do you want to order " + gearToBuyName + "? Respond with yes to buy!")
 
-		def check(m):
-			return m.author == message.author and m.channel == message.channel
+		if order == -1:
+			embed = self.makeGearEmbed(gearToBuy, message.author.name + ' - Order gear?', "Respond with 'yes' to replace your order, 'no' to cancel")
+			await message.channel.send(embed=embed)
+			confirm = await self.client.wait_for('message', check=check)
+		else:
+			confirm = message
 
-		confirm = await self.client.wait_for('message', check=check)
-
-		if 'yes' in confirm.content.lower():
+		await message.channel.trigger_typing()
+		if 'yes' in confirm.content.lower() or order != -1:
 			url = 'https://app.splatoon2.nintendo.net/api/onlineshop/order/' + gearToBuy['id']
 			response = requests.post(url, headers=self.app_head_shop, cookies=dict(iksm_session=Session_token))
 			responsejson = json.loads(response.text)
 
 			if '200' not in str(response):
 				ordered = thejson['ordered_info']
+				embed = self.makeGearEmbed(ordered, message.author.name + ", you already have an item on order!", "Respond with 'yes' to replace your order, 'no' to cancel")
+				await message.channel.send(embed=embed)
 
-				await message.channel.send(message.author.name + " you already have " + ordered['gear']['name'] + " ordered, respond back yes to confirm you want to replace this order!")
 				confirm = await self.client.wait_for('message', check=check)
 				if 'yes' in confirm.content.lower():
 					url = 'https://app.splatoon2.nintendo.net/api/onlineshop/order/' + gearToBuy['id']
@@ -551,13 +582,13 @@ class nsoHandler():
 			timeRemaining = timeRemaining % 3600
 			minutes = int(timeRemaining / 60)
 
-			theString = theString + '	 ID to order: ' + str(j) + '\n'
-			theString = theString + '    Skill      : ' + str(skill['name']) + '\n'
-			theString = theString + '    Common Sub : ' + str(commonSub) + '\n'
-			theString = theString + '    Subs       : ' + str(slots) + '\n'
-			theString = theString + '    Type       : ' + eqKind + '\n'
-			theString = theString + '    Price      : ' + str(price) + '\n'
-			theString = theString + '    Time Left  : ' + str(hours) + ' Hours and ' + str(minutes) + ' minutes'
+			theString += '	 ID to order: ' + str(j) + '\n'
+			theString += '    Skill      : ' + str(skill['name']) + '\n'
+			theString += '    Common Sub : ' + str(commonSub) + '\n'
+			theString += '    Subs       : ' + str(slots) + '\n'
+			theString += '    Type       : ' + eqKind + '\n'
+			theString += '    Price      : ' + str(price) + '\n'
+			theString += '    Time Left  : ' + str(hours) + ' Hours and ' + str(minutes) + ' minutes'
 
 			embed.add_field(name=eqName + ' : ' + eqBrand, value=theString, inline=False)
 
@@ -711,9 +742,13 @@ class nsoHandler():
 		else:
 			myrank = None
 
-		embed.title = "Stats for " + str(accountname) +"'s last battle - " + str(battletype) + " - " + str(rule) + " (Kills/Deaths/Specials)"
-        
+		if num == 1:
+			embed.title = "Stats for " + str(accountname) +"'s last battle - " + str(battletype) + " - " + str(rule) + " (Kills/Deaths/Specials)"
+		else:
+			embed.title = "Stats for " + str(accountname) +"'s battle " + str(num) + " matches ago - " + str(battletype) + " - " + str(rule) + " (Kills/Deaths/Specials)"
+
 		teamstring = ""
+		enemystring = ""
 		placedPlayer = False
 	
 		if rule == "Turf War":
@@ -727,34 +762,34 @@ class nsoHandler():
 			tname = i['player']['nickname']
 			if rule == "Turf War" and mypoints > i['game_paint_point'] and not placedPlayer:
 				placedPlayer = True
-				if myrank == None:
-					teamstring = teamstring + matchname + " - " + myweapon + " - " + str(mykills) + "(" + str(myassists) + ")/" + str(mydeaths) + "/" + str(specials) + "\n"
-				else:
-					teamstring = teamstring + matchname + " - " + myrank + ' - ' + myweapon + " - " + str(mykills) + "(" + str(myassists) + ")/" + str(mydeaths) + "/" + str(specials) + "\n"
+				teamstring += matchname
+				if myrank != None:
+					teamstring += " - " + myrank
+				teamstring += " - " + myweapon + " - " + str(mykills) + "(" + str(myassists) + ")/" + str(mydeaths) + "/" + str(specials) + "\n"
 			if rule != "Turf War" and mykills > i['kill_count'] + i['assist_count'] and not placedPlayer:
 				placedPlayer = True
-				if myrank == None:
-					teamstring = teamstring + matchname + " - " + myweapon + " - " + str(mykills) + "(" + str(myassists) + ")/" + str(mydeaths) + "/" + str(specials) + "\n"
-				else:
-					teamstring = teamstring + matchname + " - " + myrank + ' - ' + myweapon + " - " + str(mykills) + "(" + str(myassists) + ")/" + str(mydeaths) + "/" + str(specials) + "\n"
+				teamstring += matchname
+				if myrank != None:
+					teamstring += " - " + myrank
+				teamstring += " - " + myweapon + " - " + str(mykills) + "(" + str(myassists) + ")/" + str(mydeaths) + "/" + str(specials) + "\n"
 			
+			teamstring += tname
 			if 'udemae' in i['player']:
-				teamstring = teamstring + tname + " - " + i['player']['udemae']['name'] + " - " + i['player']['weapon']['name'] + ' - ' + str(i['kill_count'] + i['assist_count']) + "(" + str(i['assist_count']) + ")/" + str(i['death_count']) + "/" + str(i['special_count']) + "\n"
-			else:
-				teamstring = teamstring + tname + " - " + i['player']['weapon']['name'] + " - " + str(i['kill_count'] + i['assist_count']) + "(" + str(i['assist_count']) + ")/" + str(i['death_count']) + "/" + str(i['special_count']) + "\n"
-
+				teamstring += " - " + i['player']['udemae']['name']
+			teamstring += " - " + i['player']['weapon']['name'] + " - " + str(i['kill_count'] + i['assist_count']) + "(" + str(i['assist_count']) + ")/" + str(i['death_count']) + "/" + str(i['special_count']) + "\n"
 
 		if not placedPlayer:
-			teamstring = teamstring + matchname + " - " + myweapon + " - " + str(mykills) + "(" + str(myassists) + ")/" + str(mydeaths) + "/" + str(specials) + "\n"
+			if myrank != None:
+				teamstring += " - " + myrank
+			teamstring += " - " + myweapon + " - " + str(mykills) + "(" + str(myassists) + ")/" + str(mydeaths) + "/" + str(specials) + "\n"
 
-		enemystring = ""
 		for i in enemyteam:
 			ename = i['player']['nickname']
+			enemystring += ename
 			if 'udemae' in i['player']:
-				enemystring = enemystring + ename + " - " + i['player']['udemae']['name'] + " - " + i['player']['weapon']['name'] + ' - ' + str(i['kill_count'] + i['assist_count']) + "(" + str(i['assist_count']) + ")/" + str(i['death_count']) + "/" + str(i['special_count']) + "\n"
-			else:
-				enemystring = enemystring + ename + " - " + i['player']['weapon']['name'] + " - " + str(i['kill_count'] + i['assist_count']) + "(" + str(i['assist_count']) + ")/" + str(i['death_count']) + "/" + str(i['special_count']) + "\n"
-
+				enemystring += " - " + i['player']['udemae']['name']
+			
+			enemystring += " - " + i['player']['weapon']['name'] + " - " + str(i['kill_count'] + i['assist_count']) + "(" + str(i['assist_count']) + ")/" + str(i['death_count']) + "/" + str(i['special_count']) + "\n"
 		if 'VICTORY' in myresult:
 			embed.add_field(name=str(matchname) + "'s team - " + str(myresult), value=teamstring, inline=True)
 			embed.add_field(name="Enemy Team - " + str(enemyresult), value=enemystring, inline=True)
@@ -773,11 +808,13 @@ class nsoHandler():
 		if subcommand == "help":
 			await message.channel.send("**maps random [n]**: Generate a list of random maps\n"
 				"**maps stats MAP**: Show player stats for MAP\n"
-				"**maps callout MAP**: Show callouts for MAP")
-			return
+				"**maps callout MAP**: Show callouts for MAP\n"
+				"**maps list**: Lists all maps with abbreviations")
 		elif subcommand == "list":
-			print("TODO")
-			return
+			embed = discord.Embed(colour=0xF9FC5F)
+			embed.title = "Maps List"
+			embed.add_field(name="Maps (abbreviation)", value=", ".join(map(lambda item: item.format(), self.splatInfo.getAllMaps())), inline=False)
+			await message.channel.send(embed=embed)
 		elif subcommand == "stats":
 			if len(args) > 1:
 				themap = " ".join(args[1:])
@@ -817,7 +854,6 @@ class nsoHandler():
 			embed = discord.Embed(colour=0x0004FF)
 			embed.set_image(url=url)
 			await message.channel.send(embed=embed)
-			#print("NAME: " + shortname + " URL " + url)
 		else:
 			await message.channel.send("Unknown subcommand. Try 'maps help'")
 
@@ -831,6 +867,7 @@ class nsoHandler():
 			await message.channel.send("**weapons random [n]**: Generate a list of random weapons\n"
 				"**weapons stats WEAPON**: Show player stats for WEAPON\n"
 				"**weapons sub SUB**: Show all weapons with SUB\n"
+				"**weapons list TYPE**: Shows all weapons of TYPE\n"
 				"**weapons special SPECIAL**: Show all weapons with SPECIAL")
 			return
 		elif subcommand == "info":
@@ -879,7 +916,22 @@ class nsoHandler():
 						"\nLevel To Purchase: " + str(i.level), inline=True)
 				await message.channel.send(embed=embed)
 		elif subcommand == "list":
-			print("TODO")
+			if len(args) > 1:
+				t = self.splatInfo.matchWeaponType(args[1])
+				if not t.isValid():
+					await message.channel.send("I don't know of any weapontype named " + args[1] + ". Try command 'weapons list' for a list.")
+					return
+
+				weaps = self.splatInfo.getWeaponsByType(t.get())
+				embed = discord.Embed(colour=0x0004FF)
+				weapString = ""
+				for w in weaps:
+					weapString += w.name() + '\n'
+				embed.title = "Weapons List"
+				embed.add_field(name=t.get().name() + 's', value=weapString, inline=False)
+				await message.channel.send(embed=embed)
+			else:
+				await message.channel.send("Need a type to search, types are Shooter, Blaster, Roller, Charger, Slosher, Splatling, and Brella, ")
 			return
 		elif subcommand == "stats":
 			if len(args) > 1:
@@ -925,7 +977,7 @@ class nsoHandler():
 			await self.battleParser(message)
 		elif subcommand == "num":
 			if len(args) > 1:
-				if args[1].isdigit() and int(args[1]) < 50 and int(args[1]) > 0:
+				if args[1].isdigit() and int(args[1]) <= 50 and int(args[1]) > 0:
 					await self.battleParser(message, num=int(args[1]))
 				else:
 					await message.channel.send("Battle num must be number 1-50")

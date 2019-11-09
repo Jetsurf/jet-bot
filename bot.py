@@ -58,24 +58,6 @@ def loadConfig():
 		print('Failed to load config: ' + str(e))
 		quit(1)
 
-async def setCRole(message):
-	us = discord.utils.get(message.guild.roles, name='Americas')
-	eu = discord.utils.get(message.guild.roles, name='Europe')
-	jp = discord.utils.get(message.guild.roles, name='Japan/Asia')
-
-	await message.author.remove_roles(us)
-	await message.author.remove_roles(eu)
-	await message.author.remove_roles(jp)
-
-	if message.content.startswith('!us'):
-		await message.author.add_roles(us)
-	elif message.content.startswith('!eu'):
-		await message.author.add_roles(eu)
-	elif message.content.startswith('!jp'):
-		await message.author.add_roles(jp)
-
-	await message.add_reaction('👍')
-
 def scanAdmins(id=None):
 	global serverAdmins, doneStartup
 
@@ -205,19 +187,24 @@ async def on_guild_remove(server):
 	sys.stdout.flush()
 
 @client.event
+async def on_voice_state_update(mem, before, after):
+	global client, serverVoices, mysqlHandler, soundsDir
+	if mem.id == client.user.id and after.channel == None:
+		print("Disconnect, recreating vserver for " + str(before.channel.guild.id))
+		serverVoices[before.channel.guild.id] = vserver.voiceServer(client, mysqlHandler, before.channel.guild.id, soundsDir)
+		sys.stdout.flush()
+
+@client.event
 async def on_error(event, *args, **kwargs):
 	global mysqlHandler, serverVoices
 	exc = sys.exc_info()
 	if exc[0] is discord.errors.Forbidden:
 		return
 	elif exc[0] is pymysql.err.OperationalError:
+		##THIS DOES NOT WORK
 		cur = args.get('cur')
 		mysqlHandler.close(cur)
 		print("MYSQL: Disconnect from server, terminating connection", file=sys.stderr)
-	elif exc[0] is discord.errors.ClientException and str(exc[1]) == "Not connected to voice.":
-		serverVoices[args[0].guild.id].vclient = None
-		serverVoices[args[0].guild.id].source = None
-		print("Disconnected from voice... setting to none")
 	else:
 		raise exc[1]
 
@@ -431,8 +418,6 @@ async def on_message(message):
 		await nsoHandler.gearParser(message)
 	elif cmd == 'nextsr':
 		await nsoHandler.srParser(message, 1)
-	elif (cmd == 'us') or (cmd == 'eu') or (cmd == 'jp'):
-		await setCRole(message)
 	elif (cmd == 'map') or (cmd == 'maps'):
 		await nsoHandler.cmdMaps(message, args)
 	elif (cmd == 'weapon') or (cmd == 'weapons'):
