@@ -717,6 +717,7 @@ class nsoHandler():
 			embed.title = "Stats for " + str(accountname) +"'s battle " + str(num) + " matches ago - " + str(battletype) + " - " + str(rule) + " (Kills/Deaths/Specials)"
 
 		teamstring = ""
+		enemystring = ""
 		placedPlayer = False
 	
 		#This is a mess, clean me up
@@ -731,33 +732,34 @@ class nsoHandler():
 			tname = i['player']['nickname']
 			if rule == "Turf War" and mypoints > i['game_paint_point'] and not placedPlayer:
 				placedPlayer = True
-				if myrank == None:
-					teamstring = teamstring + matchname + " - " + myweapon + " - " + str(mykills) + "(" + str(myassists) + ")/" + str(mydeaths) + "/" + str(specials) + "\n"
-				else:
-					teamstring = teamstring + matchname + " - " + myrank + ' - ' + myweapon + " - " + str(mykills) + "(" + str(myassists) + ")/" + str(mydeaths) + "/" + str(specials) + "\n"
+				teamstring += matchname
+				if myrank != None:
+					teamstring += " - " + myrank
+				teamstring += " - " + myweapon + " - " + str(mykills) + "(" + str(myassists) + ")/" + str(mydeaths) + "/" + str(specials) + "\n"
 			if rule != "Turf War" and mykills > i['kill_count'] + i['assist_count'] and not placedPlayer:
 				placedPlayer = True
-				if myrank == None:
-					teamstring = teamstring + matchname + " - " + myweapon + " - " + str(mykills) + "(" + str(myassists) + ")/" + str(mydeaths) + "/" + str(specials) + "\n"
-				else:
-					teamstring = teamstring + matchname + " - " + myrank + ' - ' + myweapon + " - " + str(mykills) + "(" + str(myassists) + ")/" + str(mydeaths) + "/" + str(specials) + "\n"
+				teamstring += matchname
+				if myrank != None:
+					teamstring += " - " + myrank
+				teamstring += " - " + myweapon + " - " + str(mykills) + "(" + str(myassists) + ")/" + str(mydeaths) + "/" + str(specials) + "\n"
 			
+			teamstring += tname
 			if 'udemae' in i['player']:
-				teamstring = teamstring + tname + " - " + i['player']['udemae']['name'] + " - " + i['player']['weapon']['name'] + ' - ' + str(i['kill_count'] + i['assist_count']) + "(" + str(i['assist_count']) + ")/" + str(i['death_count']) + "/" + str(i['special_count']) + "\n"
-			else:
-				teamstring = teamstring + tname + " - " + i['player']['weapon']['name'] + " - " + str(i['kill_count'] + i['assist_count']) + "(" + str(i['assist_count']) + ")/" + str(i['death_count']) + "/" + str(i['special_count']) + "\n"
-
+				teamstring += " - " + i['player']['udemae']['name']
+			teamstring += " - " + i['player']['weapon']['name'] + " - " + str(i['kill_count'] + i['assist_count']) + "(" + str(i['assist_count']) + ")/" + str(i['death_count']) + "/" + str(i['special_count']) + "\n"
 
 		if not placedPlayer:
-			teamstring = teamstring + matchname + " - " + myweapon + " - " + str(mykills) + "(" + str(myassists) + ")/" + str(mydeaths) + "/" + str(specials) + "\n"
+			if myrank != None:
+				teamstring += " - " + myrank
+			teamstring += " - " + myweapon + " - " + str(mykills) + "(" + str(myassists) + ")/" + str(mydeaths) + "/" + str(specials) + "\n"
 
-		enemystring = ""
 		for i in enemyteam:
 			ename = i['player']['nickname']
+			enemystring += ename
 			if 'udemae' in i['player']:
-				enemystring = enemystring + ename + " - " + i['player']['udemae']['name'] + " - " + i['player']['weapon']['name'] + ' - ' + str(i['kill_count'] + i['assist_count']) + "(" + str(i['assist_count']) + ")/" + str(i['death_count']) + "/" + str(i['special_count']) + "\n"
-			else:
-				enemystring = enemystring + ename + " - " + i['player']['weapon']['name'] + " - " + str(i['kill_count'] + i['assist_count']) + "(" + str(i['assist_count']) + ")/" + str(i['death_count']) + "/" + str(i['special_count']) + "\n"
+				enemystring += " - " + i['player']['udemae']['name']
+			
+			enemystring += " - " + i['player']['weapon']['name'] + " - " + str(i['kill_count'] + i['assist_count']) + "(" + str(i['assist_count']) + ")/" + str(i['death_count']) + "/" + str(i['special_count']) + "\n"
 
 		if 'VICTORY' in myresult:
 			embed.add_field(name=str(matchname) + "'s team - " + str(myresult), value=teamstring, inline=True)
