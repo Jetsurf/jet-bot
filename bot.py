@@ -205,19 +205,23 @@ async def on_guild_remove(server):
 	sys.stdout.flush()
 
 @client.event
+async def on_voice_state_update(mem, before, after):
+	global client, serverVoices, mysqlHandler, soundsDir
+	if mem.id == client.user.id and after.channel == None:
+		print("Disconnect, recreating vserver for " + str(before.channel.guild.id))
+		vserver.voiceServer(client, mysqlHandler, before.channel.guild.id, soundsDir)
+
+@client.event
 async def on_error(event, *args, **kwargs):
 	global mysqlHandler, serverVoices
 	exc = sys.exc_info()
 	if exc[0] is discord.errors.Forbidden:
 		return
 	elif exc[0] is pymysql.err.OperationalError:
+		##THIS DOES NOT WORK
 		cur = args.get('cur')
 		mysqlHandler.close(cur)
 		print("MYSQL: Disconnect from server, terminating connection", file=sys.stderr)
-	elif exc[0] is discord.errors.ClientException and str(exc[1]) == "Not connected to voice.":
-		serverVoices[args[0].guild.id].vclient = None
-		serverVoices[args[0].guild.id].source = None
-		print("Disconnected from voice... setting to none")
 	else:
 		raise exc[1]
 
