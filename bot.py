@@ -209,7 +209,8 @@ async def on_voice_state_update(mem, before, after):
 	global client, serverVoices, mysqlHandler, soundsDir
 	if mem.id == client.user.id and after.channel == None:
 		print("Disconnect, recreating vserver for " + str(before.channel.guild.id))
-		vserver.voiceServer(client, mysqlHandler, before.channel.guild.id, soundsDir)
+		serverVoices[before.channel.guild.id] = vserver.voiceServer(client, mysqlHandler, before.channel.guild.id, soundsDir)
+		sys.stdout.flush()
 
 @client.event
 async def on_error(event, *args, **kwargs):
