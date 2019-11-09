@@ -104,8 +104,17 @@ class nsoHandler():
 		await self.sqlBroker.commit(cur)
 		await message.channel.send("Added you to recieve a DM when gear with " + ability + " appears in the shop!")
 
-	async def handleDM(self, theMem, theSkill):
-		await theMem.send("Gear with " + theSkill + " has appeared in the shop! Respond with no within the next 2 hours to stop receiving notifications!")
+	async def handleDM(self, theMem, theGear, theSkill):
+		embed = discord.Embed(colour=0xF9FC5F)
+		embed.title = "Gear with " + theSkill + " is in the shop!"
+		embed.set_thumbnail(url='https://splatoon2.ink/assets/splatnet' + theGear['gear']['image'])
+		embed.add_field(title="Brand", value=theGear['brand']['name'], inline=True)
+		embed.add_field(title="Name", value=theGear['gear']['name'], inline=True)
+		embed.add_field(title="Type", value=theGear['kind'], inline=True)
+		embed.add_field(title="Available Sub Slots", value=theGear['rarity'], inline=True)
+		embed.add_field(title="Price", value=theGear['price'], inline=True)
+		embed.add_field(title="Directions", value="Respond with yes to order, no to stop recieving notifications (within the next two hours)", inline=False)
+		await theMem.send(embed=embed)
 		print('Messaged ' + theMem.name)
 
 		def check1(m):
@@ -129,9 +138,11 @@ class nsoHandler():
 			await cur.execute(stmt, (theMem.id, theSkill,))
 			await self.sqlBroker.commit(cur)
 			await theMem.send("Ok, I won't DM you again when gear with " + theSkill + " appears in the shop.")
+		elif 'yes' in resp.content.lower():
+
 		else:
 			print("Keeping " + theMem.name + " in DM's")
-			await theMem.send("Didn't see no in your message. I'll DM you again when gear with " + theSkill + " appears in the shop!")
+			await theMem.send("Didn't see yes or no in your message. I'll DM you again when gear with " + theSkill + " appears in the shop!")
 
 	async def doStoreDM(self):
 		cur = await self.sqlBroker.connect()
@@ -154,7 +165,7 @@ class nsoHandler():
 					continue
 				theMem = server.get_member(memid)
 				if theMem != None:
-					asyncio.ensure_future(self.handleDM(theMem, theSkill))
+					asyncio.ensure_future(self.handleDM(theMem, theGear, theSkill))
 
 	async def getRawJSON(self, message):
 		if not await self.checkDuplicate(message.author.id):
@@ -470,7 +481,7 @@ class nsoHandler():
 		embed.add_field(name="Clam Blitz", value=cbrank, inline=True)
 		await message.channel.send(embed=embed)
 
-	async def orderGear(self, message):
+	async def orderGear(self, message, order=-1):
 		if not await self.checkDuplicate(message.author.id):
 			await message.channel.send("You don't have a token setup with me! Please DM me !token with how to get one setup!")
 			return
@@ -480,27 +491,31 @@ class nsoHandler():
 		gear = self.storeJSON['merchandises']
 		embed = discord.Embed(colour=0xF9FC5F)
 
-		orderID = int(message.content.split(" ", 1)[1])
+		if order != -1:
+			orderID = order
+		else:
+			orderID = int(message.content.split(" ", 1)[1])
 
 		thejson = await self.getNSOJSON(message, self.app_head, "https://app.splatoon2.nintendo.net/api/timeline")
 		if thejson == None:
 			await message.channel.send(message.author.name + " there is a problem with your token")
 			return
 
-		self.app_head_shop['x-unique-id'] = thejson['unique_id']
-		url = "https://app.splatoon2.nintendo.net/api/onlineshop/merchandises"
-		results_list = requests.get(url, headers=self.app_head, cookies=dict(iksm_session=Session_token))
-		thejson = json.loads(results_list.text)
-		gearToBuy = thejson['merchandises'][orderID]
-		gearToBuyName = thejson['merchandises'][orderID]['gear']['name']
-		await message.channel.send(message.author.name + " - do you want to order " + gearToBuyName + "? Respond with yes to buy!")
+		if order == -1:
+			self.app_head_shop['x-unique-id'] = thejson['unique_id']
+			url = "https://app.splatoon2.nintendo.net/api/onlineshop/merchandises"
+			results_list = requests.get(url, headers=self.app_head, cookies=dict(iksm_session=Session_token))
+			thejson = json.loads(results_list.text)
+			gearToBuy = thejson['merchandises'][orderID]
+			gearToBuyName = thejson['merchandises'][orderID]['gear']['name']
+			await message.channel.send(message.author.name + " - do you want to order " + gearToBuyName + "? Respond with yes to buy!")
 
-		def check(m):
-			return m.author == message.author and m.channel == message.channel
+			def check(m):
+				return m.author == message.author and m.channel == message.channel
 
-		confirm = await self.client.wait_for('message', check=check)
+			confirm = await self.client.wait_for('message', check=check)
 
-		if 'yes' in confirm.content.lower():
+		if 'yes' in confirm.content.lower() or order != -1:
 			url = 'https://app.splatoon2.nintendo.net/api/onlineshop/order/' + gearToBuy['id']
 			response = requests.post(url, headers=self.app_head_shop, cookies=dict(iksm_session=Session_token))
 			responsejson = json.loads(response.text)
@@ -551,13 +566,13 @@ class nsoHandler():
 			timeRemaining = timeRemaining % 3600
 			minutes = int(timeRemaining / 60)
 
-			theString = theString + '	 ID to order: ' + str(j) + '\n'
-			theString = theString + '    Skill      : ' + str(skill['name']) + '\n'
-			theString = theString + '    Common Sub : ' + str(commonSub) + '\n'
-			theString = theString + '    Subs       : ' + str(slots) + '\n'
-			theString = theString + '    Type       : ' + eqKind + '\n'
-			theString = theString + '    Price      : ' + str(price) + '\n'
-			theString = theString + '    Time Left  : ' + str(hours) + ' Hours and ' + str(minutes) + ' minutes'
+			theString += '	 ID to order: ' + str(j) + '\n'
+			theString += '    Skill      : ' + str(skill['name']) + '\n'
+			theString += '    Common Sub : ' + str(commonSub) + '\n'
+			theString += '    Subs       : ' + str(slots) + '\n'
+			theString += '    Type       : ' + eqKind + '\n'
+			theString += '    Price      : ' + str(price) + '\n'
+			theString += '    Time Left  : ' + str(hours) + ' Hours and ' + str(minutes) + ' minutes'
 
 			embed.add_field(name=eqName + ' : ' + eqBrand, value=theString, inline=False)
 
