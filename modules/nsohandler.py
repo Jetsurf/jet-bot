@@ -855,7 +855,6 @@ class nsoHandler():
 			embed = discord.Embed(colour=0x0004FF)
 			embed.set_image(url=url)
 			await message.channel.send(embed=embed)
-			#print("NAME: " + shortname + " URL " + url)
 		else:
 			await message.channel.send("Unknown subcommand. Try 'maps help'")
 
@@ -919,17 +918,21 @@ class nsoHandler():
 				await message.channel.send(embed=embed)
 		elif subcommand == "list":
 			if len(args) > 1:
-				t = self.splatInfo.getWeaponType(args[1])
-				weaps = self.splatInfo.getWeaponsByType(t)
+				t = self.splatInfo.matchWeaponType(args[1])
+				if not t.isValid():
+					await message.channel.send("I don't know of any weapontype named " + args[1] + ". Try command 'weapons list' for a list.")
+					return
+
+				weaps = self.splatInfo.getWeaponsByType(t.get())
+				embed = discord.Embed(colour=0x0004FF)
 				weapString = ""
 				for w in weaps:
-					weapString += w.name()
-				embed = discord.Embed(colour=0x0004FF)
+					weapString += w.name() + '\n'
 				embed.title = "Weapons List"
-				await message.channel.send(weapString)
-				#embed.add_field(name=t.name(), value=)
+				embed.add_field(name=t.get().name() + 's', value=weapString, inline=False)
+				await message.channel.send(embed=embed)
 			else:
-				await message.channel.send("Need a type to search, types are Shooter, Blaster, Roller, Charger, Slosher, Splatling, Brella, ")
+				await message.channel.send("Need a type to search, types are Shooter, Blaster, Roller, Charger, Slosher, Splatling, and Brella, ")
 			return
 		elif subcommand == "stats":
 			if len(args) > 1:
