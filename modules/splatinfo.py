@@ -322,8 +322,8 @@ class SplatInfo():
 			["N-Zap 83", ["nz83"], "Shooter", "Sprinkler",    "Ink Storm",      180,	19, 62],
 
 			["Octobrush",         ["ob", "weeb machine"],  "Brush", "Autobomb",     "Inkjet",         180,	10,	1110],
-			["Octobrush Nouveau", ["obn"], "Squid Beakon", "Brush", "Tenta Missiles", 170,	15,	1111],
-			["Kensa Octobrush",   ["kob"], "Suction Bomb", "Brush", "Ultra Stamp",    180,	20,	1112],
+			["Octobrush Nouveau", ["obn"],                 "Brush", "Squid Beakon", "Tenta Missiles", 170,	15,	1111],
+			["Kensa Octobrush",   ["kob"],                 "Brush", "Suction Bomb", "Ultra Stamp",    180,	20,	1112],
 
 			["Mini Splatling",       ["ms"],          "Splatling", "Burst Bomb",   "Tenta Missiles", 180,	23, 4000],
 			["Zink Mini Splatling",  ["zms", "zini"], "Splatling", "Curling Bomb", "Ink Storm",      200,	26, 4001],
