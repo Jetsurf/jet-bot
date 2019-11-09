@@ -720,7 +720,6 @@ class nsoHandler():
 		enemystring = ""
 		placedPlayer = False
 	
-		#This is a mess, clean me up
 		if rule == "Turf War":
 			myteam = sorted(myteam, key=lambda i : i['game_paint_point'], reverse=True)
 			enemyteam = sorted(enemyteam, key=lambda i : i['game_paint_point'], reverse=True)
