@@ -58,24 +58,6 @@ def loadConfig():
 		print('Failed to load config: ' + str(e))
 		quit(1)
 
-async def setCRole(message):
-	us = discord.utils.get(message.guild.roles, name='Americas')
-	eu = discord.utils.get(message.guild.roles, name='Europe')
-	jp = discord.utils.get(message.guild.roles, name='Japan/Asia')
-
-	await message.author.remove_roles(us)
-	await message.author.remove_roles(eu)
-	await message.author.remove_roles(jp)
-
-	if message.content.startswith('!us'):
-		await message.author.add_roles(us)
-	elif message.content.startswith('!eu'):
-		await message.author.add_roles(eu)
-	elif message.content.startswith('!jp'):
-		await message.author.add_roles(jp)
-
-	await message.add_reaction('👍')
-
 def scanAdmins(id=None):
 	global serverAdmins, doneStartup
 
@@ -436,8 +418,6 @@ async def on_message(message):
 		await nsoHandler.gearParser(message)
 	elif cmd == 'nextsr':
 		await nsoHandler.srParser(message, 1)
-	elif (cmd == 'us') or (cmd == 'eu') or (cmd == 'jp'):
-		await setCRole(message)
 	elif (cmd == 'map') or (cmd == 'maps'):
 		await nsoHandler.cmdMaps(message, args)
 	elif (cmd == 'weapon') or (cmd == 'weapons'):
