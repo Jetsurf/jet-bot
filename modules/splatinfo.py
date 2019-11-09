@@ -43,11 +43,12 @@ class SplatSpecial(SplatMatchItem):
 	pass
 
 class SplatWeapon(SplatMatchItem):
-	def __init__(self, name, abbrevs, sub, special, specpts, level, id, dupid):
+	def __init__(self, name, abbrevs, weapclass, sub, special, specpts, level, id, dupid):
 		self._sub     = sub
 		self._special = special
 		self.level   = level
 		self.specpts = specpts
+		self._weapclass = weapclass
 		self._id      = id
 		self._dupid   = dupid
 		super().__init__(name, abbrevs)
@@ -57,6 +58,9 @@ class SplatWeapon(SplatMatchItem):
 
 	def id(self):
 		return self._id
+
+	def weapclass(self):
+		return self._weapclass
 
 	def special(self):
 		return self._special
@@ -409,7 +413,7 @@ class SplatInfo():
 			level     = w[6]
 			id        = w[7]
 			dupid     = w[8] if (len(w) >= 9) else None
-			self.weapons.append(SplatWeapon(name, abbrevs, self.getSubweaponByName(sub), self.getSpecialByName(special), specpts, level, id, dupid))
+			self.weapons.append(SplatWeapon(name, abbrevs, weapclass, self.getSubweaponByName(sub), self.getSpecialByName(special), specpts, level, id, dupid))
 
 	def initSlots(self):
 		self.slots = [
