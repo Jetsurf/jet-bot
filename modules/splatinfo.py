@@ -239,7 +239,7 @@ class SplatInfo():
 			["Aerospray RG", ["arg", "aerorg"], "Shooter", "Sprinkler",    "Baller",                	170,	28,	31],
 			["Aerospray PG", ["apg", "aeropg"], "Shooter", "Burst Bomb",   "Booyah Bomb",           	180,	29,	32],
 
-			["Ballpoint Splatling",         ["bp", "bps"], "Splatling",   "Toxic Mist",   "Inkjet",    200,	25, 4030],
+			["Ballpoint Splatling",         ["bp", "bps"],   "Splatling",   "Toxic Mist",   "Inkjet",    200,	25, 4030],
 			["Ballpoint Splatling Nouveau", ["bpn", "bpsn"], "Splatling", "Squid Beakon", "Ink Storm", 190,	28, 4031],
 
 			["Bamboozler 14 Mk I",   ["bb1", "bamboo1", "boozler1"], "Charger", "Curling Bomb", "Tenta Missiles",      180,	18, 2050],
