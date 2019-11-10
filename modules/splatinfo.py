@@ -239,7 +239,7 @@ class SplatInfo():
 			["Aerospray RG", ["arg", "aerorg"], "Shooter", "Sprinkler",    "Baller",                	170,	28,	31],
 			["Aerospray PG", ["apg", "aeropg"], "Shooter", "Burst Bomb",   "Booyah Bomb",           	180,	29,	32],
 
-			["Ballpoint Splatling",         ["bp", "bps"], "Splatling",   "Toxic Mist",   "Inkjet",    200,	25, 4030],
+			["Ballpoint Splatling",         ["bp", "bps"],   "Splatling",   "Toxic Mist",   "Inkjet",    200,	25, 4030],
 			["Ballpoint Splatling Nouveau", ["bpn", "bpsn"], "Splatling", "Squid Beakon", "Ink Storm", 190,	28, 4031],
 
 			["Bamboozler 14 Mk I",   ["bb1", "bamboo1", "boozler1"], "Charger", "Curling Bomb", "Tenta Missiles",      180,	18, 2050],
@@ -322,8 +322,8 @@ class SplatInfo():
 			["N-Zap 83", ["nz83"], "Shooter", "Sprinkler",    "Ink Storm",      180,	19, 62],
 
 			["Octobrush",         ["ob", "weeb machine"],  "Brush", "Autobomb",     "Inkjet",         180,	10,	1110],
-			["Octobrush Nouveau", ["obn"], "Squid Beakon", "Brush", "Tenta Missiles", 170,	15,	1111],
-			["Kensa Octobrush",   ["kob"], "Suction Bomb", "Brush", "Ultra Stamp",    180,	20,	1112],
+			["Octobrush Nouveau", ["obn"],                 "Brush", "Squid Beakon", "Tenta Missiles", 170,	15,	1111],
+			["Kensa Octobrush",   ["kob"],                 "Brush", "Suction Bomb", "Ultra Stamp",    180,	20,	1112],
 
 			["Mini Splatling",       ["ms"],          "Splatling", "Burst Bomb",   "Tenta Missiles", 180,	23, 4000],
 			["Zink Mini Splatling",  ["zms", "zini"], "Splatling", "Curling Bomb", "Ink Storm",      200,	26, 4001],
