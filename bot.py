@@ -191,6 +191,12 @@ async def on_voice_state_update(mem, before, after):
 	global client, serverVoices, mysqlHandler, soundsDir
 	if mem.id == client.user.id and after.channel == None:
 		print("Disconnect, recreating vserver for " + str(before.channel.guild.id))
+		try:
+			if serverVoices[before.channel.guild.id].vclient == None:
+				await serverVoices[before.channel.guild.id].vclient.disconnect()
+		except:
+			print("Issue in voice disconnect?? Recreating anyway")
+			
 		serverVoices[before.channel.guild.id] = vserver.voiceServer(client, mysqlHandler, before.channel.guild.id, soundsDir)
 		sys.stdout.flush()
 
@@ -384,7 +390,7 @@ async def on_message(message):
 	elif cmd == 'rank':
 		await nsoHandler.getRanks(message)
 	elif cmd == 'order':
-		await nsoHandler.orderGear(message)
+		await nsoHandler.orderGear(message, args=args)
 	elif cmd == 'stats':
 		await nsoHandler.getStats(message)
 	elif cmd == 'srstats':
