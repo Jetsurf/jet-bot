@@ -60,14 +60,15 @@ class voiceServer():
 		self.soundsDir = soundsDir
 		self.sqlBroker = mysqlhandler
 
-	async def joinVoiceChannel(self, message, channelName=None):
+	async def joinVoiceChannel(self, message, args):
 		id = 0
 		channel = None
 		
 		if message.author.voice != None:
 			channel = message.author.voice.channel
 
-		if len(message.content) > 6:
+		if len(args) > 0:
+			channelName = str(' '.join(args[0:]))
 			server = message.guild
 			for channel in server.voice_channels:
 				if channel.name == channelName:
@@ -75,13 +76,18 @@ class voiceServer():
 					break
 			if id is not 0:
 				if self.vclient != None:
-					await self.vclient.disconnect()
+					#Make sure on_voice_state_update doesn't interfere
+					tmpvclient = self.vclient
+					self.vclient = None
+					await tmpvclient.disconnect()
 				self.vclient = await channel.connect()
 			else:
 				await message.channel.send("I could not join channel " + str(channelName))
 		elif channel != None:
 			if self.vclient != None:
-				await self.vclient.disconnect()
+				tmpvclient = self.vclient
+				self.vclient = None
+				await tmpvclient.disconnect()
 			self.vclient = await channel.connect()
 		else:
 			await message.channel.send("Cannot join a channel, either be in a channel or specify which channel to join")

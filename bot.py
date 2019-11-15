@@ -189,15 +189,27 @@ async def on_guild_remove(server):
 @client.event
 async def on_voice_state_update(mem, before, after):
 	global client, serverVoices, mysqlHandler, soundsDir
+
+	#Don't do anything if we weren't previously connected
+	if before.channel != None:
+		server = before.channel.guild.id
+	else:
+		return
+
+	#Don't do checks if bot is attempting reconnects on its own
+	if serverVoices[server].vclient == None:
+		return
+	#Check for forced disconnects
 	if mem.id == client.user.id and after.channel == None:
 		print("Disconnect, recreating vserver for " + str(before.channel.guild.id))
 		try:
-			if serverVoices[before.channel.guild.id].vclient == None:
-				await serverVoices[before.channel.guild.id].vclient.disconnect()
-		except:
+			if serverVoices[server].vclient == None:
+				await serverVoices[server].vclient.disconnect()
+		except Exception as e:
+			print(traceback.format_exc())
 			print("Issue in voice disconnect?? Recreating anyway")
-			
-		serverVoices[before.channel.guild.id] = vserver.voiceServer(client, mysqlHandler, before.channel.guild.id, soundsDir)
+
+		serverVoices[server] = vserver.voiceServer(client, mysqlHandler, before.channel.guild.id, soundsDir)
 		sys.stdout.flush()
 
 @client.event
@@ -411,9 +423,9 @@ async def on_message(message):
 		await channel.send("Current Sounds:\n```" + theSounds + "```")
 	elif cmd == 'join':
 		if len(args) > 0:
-			await serverVoices[theServer].joinVoiceChannel(message, channelName=' '.join(args[0:]))
+			await serverVoices[theServer].joinVoiceChannel(message, args)
 		else:
-			await serverVoices[theServer].joinVoiceChannel(message)
+			await serverVoices[theServer].joinVoiceChannel(message, args)
 	elif cmd == 'currentmaps':
 		await nsoHandler.maps(message)
 	elif cmd == 'nextmaps':
