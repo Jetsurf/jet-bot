@@ -114,8 +114,16 @@ class Nsotoken():
 
 		await message.channel.trigger_typing()
 		session_token_code = re.search('session_token_code=(.*)&', accounturl)
+		if session_token_code == None:
+			print("Issue with account url: " + str(accounturl))
+			await message.channel.send("Error in account url. Issue is logged, but you can report this in my support guild")
+			return
 		session_token_code = self.get_session_token(session_token_code.group(0)[19:-1], auth_code_verifier)
 		thetoken = self.get_cookie(session_token_code)
+		if thetoken == None:
+			await message.channel.send("Error in getting iksm. Issue is logged, but you can report this happened in my support guild")
+			return
+
 		success = await self.addToken(message, str(thetoken), session_token_code)
 		if success and flag == -1:
 			await message.channel.send("Token added, !srstats !stats !ranks and !order will now work! You shouldn't need to run this command again.")
@@ -126,7 +134,7 @@ class Nsotoken():
 
 	def get_hash(self, id_token, timestamp):
 		version = '1.5.1'
-		api_app_head = { 'User-Agent': "splatnet2statink/{}".format(version) }
+		api_app_head = { 'User-Agent': "splatnet2statink/" + version }
 		api_body = { 'naIdToken': id_token, 'timestamp': timestamp }
 		api_response = requests.post("https://elifessler.com/s2s/api/gen2", headers=api_app_head, data=api_body)
 		return json.loads(api_response.text)["hash"]
@@ -135,6 +143,9 @@ class Nsotoken():
 		session_token = await self.get_session_token_mysql(message.author.id)
 		await message.channel.trigger_typing()
 		iksm = self.get_cookie(session_token)
+		if iksm == None:
+			await message.channel.send("Error getting token, I have logged this for my owners")
+			return
 		await self.addToken(message, str(iksm), session_token)
 		return iksm
 
@@ -144,7 +155,6 @@ class Nsotoken():
 			'Accept-Language': 'en-US',
 			'Accept':          'application/json',
 			'Content-Type':    'application/x-www-form-urlencoded',
-			'Content-Length':  '540',
 			'Host':            'accounts.nintendo.com',
 			'Connection':      'Keep-Alive',
 			'Accept-Encoding': 'gzip'
@@ -156,7 +166,11 @@ class Nsotoken():
 		}
 
 		r = self.session.post('https://accounts.nintendo.com/connect/1.0.0/api/session_token', headers=head, data=body)
-		return json.loads(r.text)["session_token"]
+		if '200' not in str(r):
+			print("ERROR IN SESSION TOKEN: " + str(r.text))
+			return None
+		else:
+			return json.loads(r.text)["session_token"]
 
 	def call_flapg(self, id_token, guid, timestamp):
 		api_app_head = {
@@ -168,8 +182,12 @@ class Nsotoken():
 			'x-iid':   ''.join([random.choice(string.ascii_letters + string.digits) for n in range(8)])
 		}
 		api_response = requests.get("https://flapg.com/ika2/api/login", headers=api_app_head)
-		f = json.loads(api_response.text)
-		return f
+		if '200' not in str(api_response):
+			print("ERROR IN FLAPGAPI: " + str(api_response))
+			return None
+		else:
+			f = json.loads(api_response.text)
+			return f
 
 	def get_cookie(self, session_token):
 		timestamp = int(time.time())
@@ -193,6 +211,10 @@ class Nsotoken():
 
 		r = requests.post("https://accounts.nintendo.com/connect/1.0.0/api/token", headers=head, json=body)
 		id_response = json.loads(r.text)
+		if '200' not in str(r):
+			print("NSO ERROR IN API TOKEN: " + str(id_response))
+			return
+
 		head = {
 			'User-Agent': 'OnlineLounge/1.5.2 NASDKAPI Android',
 			'Accept-Language': 'en-US',
@@ -205,6 +227,10 @@ class Nsotoken():
 
 		r = requests.get("https://api.accounts.nintendo.com/2.0.0/users/me", headers=head)
 		user_info = json.loads(r.text)
+		if '200' not in str(r):
+			print("NSO ERROR IN USER LOGIN: " + str(user_info))
+			return
+
 		head = {
 			'Host': 'api-lp1.znc.srv.nintendo.net',
 			'Accept-Language': 'en-US',
@@ -221,6 +247,9 @@ class Nsotoken():
 
 		idToken = id_response["id_token"]
 		flapg_response = self.call_flapg(idToken, guid, timestamp)
+		if flapg_response == None:
+			return None
+
 		flapg_nso = flapg_response["login_nso"]
 		flapg_app = flapg_response["login_app"]
 		
@@ -241,7 +270,10 @@ class Nsotoken():
 
 		r = requests.post("https://api-lp1.znc.srv.nintendo.net/v1/Account/Login", headers=head, json=body)
 		splatoon_token = json.loads(r.text)
-		print(str(splatoon_token))
+		if '200' not in str(r):
+			print("NSO ERROR IN LOGIN: " + str(splatoon_token))
+			return None
+
 		head = {
 			'Host': 'api-lp1.znc.srv.nintendo.net',
 			'User-Agent': 'com.nintendo.znca/1.5.2 (Android/7.1.2)',
@@ -267,6 +299,9 @@ class Nsotoken():
 
 		r = requests.post("https://api-lp1.znc.srv.nintendo.net/v2/Game/GetWebServiceToken", headers=head, json=body)
 		token = json.loads(r.text)
+		if '200' not in str(r):
+			print("NSO ERROR IN GETWEBSERVICETOKEN: " + str(token))
+			return None
 
 		head = {
 			'Host': 'app.splatoon2.nintendo.net',
@@ -283,5 +318,9 @@ class Nsotoken():
 		}
 
 		r = requests.get("https://app.splatoon2.nintendo.net/?lang=en-US", headers=head)
-		print("Got a token!")
-		return r.cookies["iksm_session"]
+		if '200' not in str(r):
+			print("ERROR IN GETTING IKSM: " + str(r.text))
+			return None
+		else:
+			print("Got a token!")
+			return r.cookies["iksm_session"]

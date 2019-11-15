@@ -485,7 +485,7 @@ class nsoHandler():
 		embed.add_field(name="Directions", value=dirs, inline=False)
 		return embed
 
-	async def orderGear(self, message, order=-1):
+	async def orderGear(self, message, args=None, order=-1):
 		await message.channel.trigger_typing()
 
 		def check(m):
@@ -508,8 +508,15 @@ class nsoHandler():
 
 		if order != -1:
 			orderID = order
+		elif args != None:
+			if args[0].isdigit() and int(args[0]) <= 5 and int(args[0]) >= 0:
+				orderID = args[0]
+			else:
+				await message.channel.send("I need an item to order, please use 'ID to order' from splatnetgear!")
+				return
 		else:
-			orderID = int(message.content.split(" ", 1)[1])
+			await message.channel.send("Order called improperly! Please report this to my support discord!")
+			return
 
 		thejson = await self.getNSOJSON(message, self.app_head, "https://app.splatoon2.nintendo.net/api/timeline")
 		if thejson == None:
@@ -520,7 +527,8 @@ class nsoHandler():
 		url = "https://app.splatoon2.nintendo.net/api/onlineshop/merchandises"
 		results_list = requests.get(url, headers=self.app_head, cookies=dict(iksm_session=Session_token))
 		thejson = json.loads(results_list.text)
-		gearToBuy = thejson['merchandises'][orderID]
+
+		gearToBuy = thejson['merchandises'][int(orderID)]
 
 		if order == -1:
 			embed = self.makeGearEmbed(gearToBuy, message.author.name + ' - Order gear?', "Respond with 'yes' to replace your order, 'no' to cancel")
