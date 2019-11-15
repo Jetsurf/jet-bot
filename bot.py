@@ -195,7 +195,6 @@ async def on_voice_state_update(mem, before, after):
 		server = before.channel.guild.id
 	else:
 		return
-
 	#Don't do checks if bot is attempting reconnects on its own
 	if serverVoices[server].vclient == None:
 		return
@@ -209,7 +208,7 @@ async def on_voice_state_update(mem, before, after):
 			print(traceback.format_exc())
 			print("Issue in voice disconnect?? Recreating anyway")
 
-		serverVoices[server] = vserver.voiceServer(client, mysqlHandler, before.channel.guild.id, soundsDir)
+		serverVoices[server] = vserver.voiceServer(client, mysqlHandler, server, soundsDir)
 		sys.stdout.flush()
 
 @client.event
