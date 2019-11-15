@@ -121,7 +121,7 @@ class Nsotoken():
 		session_token_code = self.get_session_token(session_token_code.group(0)[19:-1], auth_code_verifier)
 		thetoken = self.get_cookie(session_token_code)
 		if thetoken == None:
-			await message.channel("Error in getting iksm. Issue is logged, but you can report this happened in my support guild")
+			await message.channel.send("Error in getting iksm. Issue is logged, but you can report this happened in my support guild")
 			return
 
 		success = await self.addToken(message, str(thetoken), session_token_code)
@@ -143,6 +143,9 @@ class Nsotoken():
 		session_token = await self.get_session_token_mysql(message.author.id)
 		await message.channel.trigger_typing()
 		iksm = self.get_cookie(session_token)
+		if iksm == None:
+			await message.channel.send("Error getting token, I have logged this for my owners")
+			return
 		await self.addToken(message, str(iksm), session_token)
 		return iksm
 
@@ -152,7 +155,6 @@ class Nsotoken():
 			'Accept-Language': 'en-US',
 			'Accept':          'application/json',
 			'Content-Type':    'application/x-www-form-urlencoded',
-			'Content-Length':  '540',
 			'Host':            'accounts.nintendo.com',
 			'Connection':      'Keep-Alive',
 			'Accept-Encoding': 'gzip'
@@ -164,8 +166,8 @@ class Nsotoken():
 		}
 
 		r = self.session.post('https://accounts.nintendo.com/connect/1.0.0/api/session_token', headers=head, data=body)
-		if '200' not in r:
-			print("Error in session_token: " + str(r.text))
+		if '200' not in str(r):
+			print("ERROR IN SESSION TOKEN: " + str(r.text))
 			return None
 		else:
 			return json.loads(r.text)["session_token"]
@@ -209,7 +211,7 @@ class Nsotoken():
 
 		r = requests.post("https://accounts.nintendo.com/connect/1.0.0/api/token", headers=head, json=body)
 		id_response = json.loads(r.text)
-		if '200' not in r:
+		if '200' not in str(r):
 			print("NSO ERROR IN API TOKEN: " + str(id_response))
 			return
 
@@ -225,7 +227,7 @@ class Nsotoken():
 
 		r = requests.get("https://api.accounts.nintendo.com/2.0.0/users/me", headers=head)
 		user_info = json.loads(r.text)
-		if '200' not in r:
+		if '200' not in str(r):
 			print("NSO ERROR IN USER LOGIN: " + str(user_info))
 			return
 
@@ -268,7 +270,7 @@ class Nsotoken():
 
 		r = requests.post("https://api-lp1.znc.srv.nintendo.net/v1/Account/Login", headers=head, json=body)
 		splatoon_token = json.loads(r.text)
-		if '200' not in r:
+		if '200' not in str(r):
 			print("NSO ERROR IN LOGIN: " + str(splatoon_token))
 			return None
 
