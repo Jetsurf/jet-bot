@@ -480,7 +480,9 @@ class nsoHandler():
 		embed.add_field(name="Brand", value=gear['gear']['brand']['name'], inline=True)
 		embed.add_field(name="Name", value=gear['gear']['name'], inline=True)
 		embed.add_field(name="Type", value=gear['gear']['kind'], inline=True)
+		embed.add_field(name="Main Ability", value=gear['skill']['name'], inline=True)
 		embed.add_field(name="Available Sub Slots", value=gear['gear']['rarity'], inline=True)
+		embed.add_field(name="Common Ability", value=gear['gear']['brand']['frequent_skill']['name'], inline=True)
 		embed.add_field(name="Price", value=gear['price'], inline=True)
 		embed.add_field(name="Directions", value=dirs, inline=False)
 		return embed
@@ -503,9 +505,6 @@ class nsoHandler():
 				await message.channel.send("Ok! If you want to setup a token to order in the future, DM me !token")
 				return
 
-		Session_token = await self.nsotoken.get_iksm_token_mysql(message.author.id)
-		gear = self.storeJSON['merchandises']
-
 		if order != -1:
 			orderID = order
 		elif args != None:
@@ -523,47 +522,52 @@ class nsoHandler():
 			await message.channel.send(message.author.name + " there is a problem with your token")
 			return
 
-		self.app_head_shop['x-unique-id'] = thejson['unique_id']
-		url = "https://app.splatoon2.nintendo.net/api/onlineshop/merchandises"
-		results_list = requests.get(url, headers=self.app_head, cookies=dict(iksm_session=Session_token))
-		thejson = json.loads(results_list.text)
+		tmp_app_head_shop = self.app_head_shop
+		tmp_app_head_shop['x-unique-id'] = thejson['unique_id']
 
+		thejson = await self.getNSOJSON(message, self.app_head, "https://app.splatoon2.nintendo.net/api/onlineshop/merchandises")
 		gearToBuy = thejson['merchandises'][int(orderID)]
+		orderedFlag = 'ordered_info' in thejson
 
 		if order == -1:
-			embed = self.makeGearEmbed(gearToBuy, message.author.name + ' - Order gear?', "Respond with 'yes' to replace your order, 'no' to cancel")
+			embed = self.makeGearEmbed(gearToBuy, message.author.name + ' - Order gear?', "Respond with 'yes' to place your order, 'no' to cancel")
 			await message.channel.send(embed=embed)
 			confirm = await self.client.wait_for('message', check=check)
 		else:
 			confirm = message
 
 		await message.channel.trigger_typing()
-		if 'yes' in confirm.content.lower() or order != -1:
-			url = 'https://app.splatoon2.nintendo.net/api/onlineshop/order/' + gearToBuy['id']
-			response = requests.post(url, headers=self.app_head_shop, cookies=dict(iksm_session=Session_token))
-			responsejson = json.loads(response.text)
-
-			if '200' not in str(response):
-				ordered = thejson['ordered_info']
-				embed = self.makeGearEmbed(ordered, message.author.name + ", you already have an item on order!", "Respond with 'yes' to replace your order, 'no' to cancel")
-				await message.channel.send(embed=embed)
-
-				confirm = await self.client.wait_for('message', check=check)
-				if 'yes' in confirm.content.lower():
-					url = 'https://app.splatoon2.nintendo.net/api/onlineshop/order/' + gearToBuy['id']
-					payload = { "override" : 1 }
-					response = requests.post(url, headers=self.app_head_shop, cookies=dict(iksm_session=Session_token), data=payload)
-
-					if '200' not in str(response):
-						await message.channel.send(message.author.name + "  - failed to order")
-					else:
-						await message.channel.send(message.author.name + " - ordered!")
-				else:
-					await message.channel.send(message.author.name + " - order canceled")
-			else:
+		if ('yes' in confirm.content.lower() or order != -1) and not orderedFlag:
+			if await self.postNSOStore(message, gearToBuy['id'], tmp_app_head_shop):
 				await message.channel.send(message.author.name + " - ordered!")
+			else:
+				await message.channel.send(message.author.name + "  - failed to order")
+		elif ('yes' in confirm.content.lower() or order != -1) and orderedFlag:
+			ordered = thejson['ordered_info']
+			embed = self.makeGearEmbed(ordered, message.author.name + ", you already have an item on order!", "Respond with 'yes' to replace your order, 'no' to cancel")
+			await message.channel.send(embed=embed)
+			confirm = await self.client.wait_for('message', check=check)
+			if 'yes' in confirm.content.lower():
+				if await self.postNSOStore(message, gearToBuy['id'], tmp_app_head_shop, override=True):
+					await message.channel.send(message.author.name + " - ordered!")
+				else:
+					await message.channel.send(message.author.name + "  - failed to order")
+			else:
+				await message.channel.send(message.author.name + " - order canceled")			
 		else:
 			await message.channel.send(message.author.name + " - order canceled")
+
+	async def postNSOStore(self, message, gid, app_head, override=False):
+		iksm = await self.nsotoken.get_iksm_token_mysql(message.author.id)
+		url = 'https://app.splatoon2.nintendo.net/api/onlineshop/order/' + gid
+		if override:
+			payload = { "override" : 1 }
+			response = requests.post(url, headers=app_head, cookies=dict(iksm_session=iksm), data=payload)
+		else:
+			response = requests.post(url, headers=app_head, cookies=dict(iksm_session=iksm))
+		resp = json.loads(response.text)
+
+		return '200' in str(resp):
 
 	async def gearParser(self, message):
 		theTime = int(time.mktime(time.gmtime()))
