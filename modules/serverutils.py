@@ -51,7 +51,7 @@ class serverUtils():
 		if channelid == None:
 			await message.channel.send("Could not find a channel with name: " + channelname)
 		else:
-			self.serverConfig.setConfigValue(message.guild.id, 'announcement.channelid', channelid)
+			await self.serverConfig.setConfigValue(message.guild.id, 'announcement.channelid', channelid)
 			await message.channel.send("Set announcement channel to: " + channelname)
 
 	async def getAnnounceChannel(self, serverid):
