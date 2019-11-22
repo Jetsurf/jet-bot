@@ -522,9 +522,6 @@ class nsoHandler():
 			await message.channel.send(message.author.name + " there is a problem with your token")
 			return
 
-		tmp_app_head_shop = self.app_head_shop
-		tmp_app_head_shop['x-unique-id'] = thejson['unique_id']
-
 		thejson = await self.getNSOJSON(message, self.app_head, "https://app.splatoon2.nintendo.net/api/onlineshop/merchandises")
 		gearToBuy = thejson['merchandises'][int(orderID)]
 		orderedFlag = 'ordered_info' in thejson
