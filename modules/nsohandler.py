@@ -526,7 +526,6 @@ class nsoHandler():
 		tmp_app_head_shop['x-unique-id'] = thejson['unique_id']
 
 		thejson = await self.getNSOJSON(message, self.app_head, "https://app.splatoon2.nintendo.net/api/onlineshop/merchandises")
-		print(str(thejson))
 		gearToBuy = thejson['merchandises'][int(orderID)]
 		orderedFlag = 'ordered_info' in thejson
 
