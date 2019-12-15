@@ -352,10 +352,9 @@ async def on_message(message):
 		await doEval(message)
 	elif cmd == 'getcons' and message.author in owners:
 		await mysqlHandler.printCons(message)
-	elif cmd == "admin":
+	elif cmd == 'admin':
 		if message.author in serverAdmins[theServer]:
 			if len(args) == 0:
-				#Add admin help messages
 				await message.channel.send("Options for admin commands are playlist, blacklist, dm, prefix")
 				await serverUtils.print_help(message, prefix)
 				return
@@ -467,6 +466,9 @@ async def on_message(message):
 		elif (cmd == 'end') or (cmd == 'stop'):
 			serverVoices[theServer].end()
 		elif cmd == 'volume' or cmd == 'vol':
+			if len(command.split(' ')) < 2:
+				await message.channel.send("Need a value to set volume to!")
+				return
 			vol = command.split(' ')[1]
 			if not vol.isdigit():
 				await message.channel.send("Volume must be a digit 1-60")
