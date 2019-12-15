@@ -80,10 +80,13 @@ async def on_member_update(before, after):
 	if not doneStartup:
 		return
 
-	if after.guild_permissions.administrator and after not in serverAdmins[after.guild.id]:
-		serverAdmins[after.guild.id].append(after)
-	elif not after.guild_permissions.administrator and after in serverAdmins[after.guild.id]:
-		serverAdmins[after.guild.id].remove(after)
+	try:
+		if after.guild_permissions.administrator and after not in serverAdmins[after.guild.id]:
+			serverAdmins[after.guild.id].append(after)
+		elif not after.guild_permissions.administrator and after in serverAdmins[after.guild.id]:
+			serverAdmins[after.guild.id].remove(after)
+	except:
+		print("Startup not done... ignoring...")
 
 @client.event
 async def on_guild_role_update(before, after):
