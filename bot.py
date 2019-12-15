@@ -357,6 +357,8 @@ async def on_message(message):
 			if len(args) == 0:
 				#Add admin help messages
 				await message.channel.send("Options for admin commands are playlist, blacklist, dm, prefix")
+				await serverUtils.print_help(message, prefix)
+				return
 			subcommand = args[0].lower()
 			if subcommand == 'playlist':
 				await serverVoices[theServer].addPlaylist(message)
