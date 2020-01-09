@@ -521,6 +521,8 @@ class nsoHandler():
 		if thejson == None:
 			await message.channel.send(message.author.name + " there is a problem with your token")
 			return
+		tmp_app_head_shop = self.app_head_shop
+		tmp_app_head_shop['x-unique-id'] = thejson['unique_id']
 
 		thejson = await self.getNSOJSON(message, self.app_head, "https://app.splatoon2.nintendo.net/api/onlineshop/merchandises")
 		gearToBuy = thejson['merchandises'][int(orderID)]
@@ -564,7 +566,7 @@ class nsoHandler():
 			response = requests.post(url, headers=app_head, cookies=dict(iksm_session=iksm))
 		resp = json.loads(response.text)
 
-		return '200' in str(resp)
+		return '200' in str(response)
 
 	async def gearParser(self, message):
 		theTime = int(time.mktime(time.gmtime()))
