@@ -508,10 +508,13 @@ class nsoHandler():
 		if order != -1:
 			orderID = order
 		elif args != None:
-			if args[0].isdigit() and int(args[0]) <= 5 and int(args[0]) >= 0:
+			if len(args) == 0:
+				await message.channel.send("I need an item to order, please use 'ID to order' from splatnetgear!")
+				return
+			elif args[0].isdigit() and int(args[0]) <= 5 and int(args[0]) >= 0:
 				orderID = args[0]
 			else:
-				await message.channel.send("I need an item to order, please use 'ID to order' from splatnetgear!")
+				await message.channel.send("I didn't quite understand that, please use 'ID to order' from splatnetgear!")
 				return
 		else:
 			await message.channel.send("Order called improperly! Please report this to my support discord!")
