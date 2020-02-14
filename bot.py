@@ -80,13 +80,10 @@ async def on_member_update(before, after):
 	if not doneStartup:
 		return
 
-	try:
-		if after.guild_permissions.administrator and after not in serverAdmins[after.guild.id]:
-			serverAdmins[after.guild.id].append(after)
-		elif not after.guild_permissions.administrator and after in serverAdmins[after.guild.id]:
-			serverAdmins[after.guild.id].remove(after)
-	except:
-		print("Startup not done... ignoring...")
+	if after.guild_permissions.administrator and after not in serverAdmins[after.guild.id]:
+		serverAdmins[after.guild.id].append(after)
+	elif not after.guild_permissions.administrator and after in serverAdmins[after.guild.id]:
+		serverAdmins[after.guild.id].remove(after)
 
 @client.event
 async def on_guild_role_update(before, after):
@@ -169,7 +166,7 @@ async def on_guild_join(server):
 		print('I am now in ' + str(len(client.guilds)) + ' servers')
 
 	for mem in owners:
-		await mem.send("I joined server: " + server.name + " - I am now in " + str(len(client.guilds)) + " servers with " + str(len(set(client.get_all_members()))) + " total members")
+		await mem.send("I joined server: " + server.name + " with " + str(len(server.members)) + " members - I am now in " + str(len(client.guilds)) + " servers with " + str(len(set(client.get_all_members()))) + " total members")
 	sys.stdout.flush()
 
 @client.event
