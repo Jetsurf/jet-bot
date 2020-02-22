@@ -69,17 +69,18 @@ class nsoHandler():
 		response = urllib.request.urlopen(req)
 		self.srJSON = json.loads(response.read().decode())
 
-	async def addStoreDM(self, message):
+	async def addStoreDM(self, message, args):
 		abilities = { 'Bomb Defense Up DX',	'Haunt', 'Sub Power Up', 'Ink Resistance Up', 'Swim Speed Up', 'Special Charge Up', 'Main Power Up', 'Ink Recovery Up', 'Respawn Punisher',
 						'Quick Super Jump', 'Drop Roller', 'Ink Saver (Main)', 'Ink Saver (Sub)', 'Last-Ditch Effort', 'Ninja Squid', 'Object Shredder', 'Opening Gambit',
 						'Quick Respawn', 'Run Speed Up', 'Special Power Up', 'Special Saver', 'Stealth Jump', 'Sub Power Up', 'Swim Speed Up', 'Tenacity', 'Thermal Ink', 'Comeback' }
-		abilitiesStr = str(abilities)
-		abilitiesStr = abilitiesStr.replace('\'', '')
-		abilitiesStr = abilitiesStr.replace('{', '')
-		abilitiesStr = abilitiesStr.replace('}', '')
+		abilitiesStr = str(abilities).replace('\'', '').replace('{', '').replace('}', '')
 
-		ability = message.content.split(' ', 1)[1].lower()
-		
+		if len(args) == 0:
+			await message.channel.send("I need an ability to be able to DM you when it appears in the shop! Here are the options: " + abilitiesStr)
+			return
+
+		ability = str(args[0:]).replace('\'', '').replace('[', '').replace(']', '').replace(',', '').lower()
+
 		flag = False
 		for i in abilities:
 			if ability == i.lower():
@@ -98,6 +99,15 @@ class nsoHandler():
 			await message.channel.send("You already will be DM'ed when gear with " + ability + " appears in the store!")
 			await self.sqlBroker.close(con)
 			return
+		else:
+			def check2(m):
+				return m.author == message.author and m.channel == message.channel
+
+			await message.channel.send(message.author.name + " do you want me to DM you when gear with " + ability + " appears in the shop? (Respond Yes/No)")
+			resp = await self.client.wait_for('message', check=check2)
+			if 'yes' not in resp.content.lower():
+				await message.channel.send("Ok!")
+				return
 
 		stmt = 'INSERT INTO storedms (clientid, serverid, ability) VALUES(%s, %s, %s)'
 		await cur.execute(stmt, (str(message.author.id), str(message.guild.id), ability,))

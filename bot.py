@@ -408,7 +408,7 @@ async def on_message(message):
 	elif cmd == 'srstats':
 		await nsoHandler.getSRStats(message)
 	elif cmd == 'storedm':
-		await nsoHandler.addStoreDM(message)
+		await nsoHandler.addStoreDM(message, args)
 	elif cmd == 'github':
 		await channel.send('Here is my github page! : https://github.com/Jetsurf/jet-bot')
 	elif cmd == 'support':
