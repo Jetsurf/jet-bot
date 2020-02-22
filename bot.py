@@ -190,6 +190,9 @@ async def on_guild_remove(server):
 async def on_voice_state_update(mem, before, after):
 	global client, serverVoices, mysqlHandler, soundsDir
 
+	#Don't care if during startup
+	if not doneStartup:
+		return
 	#Don't do anything if we weren't previously connected
 	if before.channel != None:
 		server = before.channel.guild.id
