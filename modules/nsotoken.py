@@ -2,6 +2,7 @@ from __future__ import print_function
 import mysqlhandler, nsohandler
 import requests, json, re, sys, uuid, time
 import os, base64, hashlib, random, string
+from datetime import datetime
 
 class Nsotoken():
 	def __init__(self, client, mysqlhandler):
@@ -32,13 +33,16 @@ class Nsotoken():
 			await message.channel.send("Something went wrong! If you want to report this, join my support discord and let the devs know what you were doing!")
 
 	async def addToken(self, message, token, session_token):
+		now = datetime.now()
+		formatted_date = now.strftime('%Y-%m-%d %H:%M:%S')
+
 		cur = await self.sqlBroker.connect()
 		if await self.checkDuplicate(str(message.author.id), cur):
-			stmt = "UPDATE tokens SET token = %s, session_token = %s WHERE clientid = %s"
-			input = (str(token), str(session_token), str(message.author.id),)
+			stmt = "UPDATE tokens SET token = %s, session_token = %s, iksm_time = %s WHERE clientid = %s"
+			input = (str(token), str(session_token), formatted_date, str(message.author.id),)
 		else:
-			stmt = "INSERT INTO tokens (clientid, token, session_token) VALUES(%s, %s, %s)"
-			input = (str(message.author.id), token, session_token,)
+			stmt = "INSERT INTO tokens (clientid, iksm_time, token, session_time, session_token) VALUES(%s, %s, %s, %s, %s)"
+			input = (str(message.author.id), formatted_date, token, formatted_date, session_token,)
 
 		await cur.execute(stmt, input)
 		if cur.lastrowid != None:
