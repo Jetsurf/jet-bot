@@ -137,10 +137,11 @@ class Nsotoken():
 			await message.channel.send("Something went wrong! Join my support discord and report that something broke!")
 
 	def get_hash(self, id_token, timestamp):
-		version = '1.5.1'
+		version = '1.5.4'
 		api_app_head = { 'User-Agent': "splatnet2statink/" + version }
 		api_body = { 'naIdToken': id_token, 'timestamp': timestamp }
 		api_response = requests.post("https://elifessler.com/s2s/api/gen2", headers=api_app_head, data=api_body)
+		print("S2API RESPONSE: " + str(api_response))
 		return json.loads(api_response.text)["hash"]
 
 	async def do_iksm_refresh(self, message):
@@ -155,7 +156,7 @@ class Nsotoken():
 
 	def get_session_token(self, session_token_code, auth_code_verifier):
 		head = {
-			'User-Agent':      'OnlineLounge/1.5.2 NASDKAPI Android',
+			'User-Agent':      'OnlineLounge/1.6.1.2 NASDKAPI Android',
 			'Accept-Language': 'en-US',
 			'Accept':          'application/json',
 			'Content-Type':    'application/x-www-form-urlencoded',
@@ -176,21 +177,21 @@ class Nsotoken():
 		else:
 			return json.loads(r.text)["session_token"]
 
-	def call_flapg(self, id_token, guid, timestamp):
+	def call_flapg(self, id_token, guid, timestamp, login):
 		api_app_head = {
 			'x-token': id_token,
 			'x-time':  str(timestamp),
 			'x-guid':  guid,
 			'x-hash':  self.get_hash(id_token, timestamp),
-			'x-ver':   '2',
-			'x-iid':   ''.join([random.choice(string.ascii_letters + string.digits) for n in range(8)])
+			'x-ver':   '3',
+			'x-iid':   login
 		}
-		api_response = requests.get("https://flapg.com/ika2/api/login", headers=api_app_head)
+		api_response = requests.get("https://flapg.com/ika2/api/login?public", headers=api_app_head)
 		if '200' not in str(api_response):
 			print("ERROR IN FLAPGAPI: " + str(api_response))
 			return None
 		else:
-			f = json.loads(api_response.text)
+			f = json.loads(api_response.text)["result"]
 			return f
 
 	def get_cookie(self, session_token):
@@ -205,7 +206,7 @@ class Nsotoken():
 			'Content-Length': '439',
 			'Accept': 'application/json',
 			'Connection': 'Keep-Alive',
-			'User-Agent': 'OnlineLounge/1.5.2 NASDKAPI Android'
+			'User-Agent': 'OnlineLounge/1.6.1.2 NASDKAPI Android'
 		}
 		body = {
 			'client_id': '71b963c1b7b6d119',
@@ -220,7 +221,7 @@ class Nsotoken():
 			return
 
 		head = {
-			'User-Agent': 'OnlineLounge/1.5.2 NASDKAPI Android',
+			'User-Agent': 'OnlineLounge/1.6.1.2 NASDKAPI Android',
 			'Accept-Language': 'en-US',
 			'Accept': 'application/json',
 			'Authorization': 'Bearer ' + id_response["access_token"],
@@ -238,9 +239,9 @@ class Nsotoken():
 		head = {
 			'Host': 'api-lp1.znc.srv.nintendo.net',
 			'Accept-Language': 'en-US',
-			'User-Agent': 'com.nintendo.znca/1.5.2 (Android/7.1.2)',
+			'User-Agent': 'com.nintendo.znca/1.6.1 (Android/7.1.2)',
 			'Accept': 'application/json',
-			'X-ProductVersion': '1.5.2',
+			'X-ProductVersion': '1.6.1.2',
 			'Content-Type': 'application/json; charset=utf-8',
 			'Connection': 'Keep-Alive',
 			'Authorization': 'Bearer',
@@ -249,25 +250,21 @@ class Nsotoken():
 			'Accept-Encoding': 'gzip'
 		}
 
-		idToken = id_response["id_token"]
-		flapg_response = self.call_flapg(idToken, guid, timestamp)
-		if flapg_response == None:
+		idToken = id_response["access_token"]
+		flapg_nso = self.call_flapg(idToken, guid, timestamp, "nso")
+		
+		if flapg_nso == None:
+			print("ERROR IN FLAPGAPI NSO CALL")
 			return None
-
-		flapg_nso = flapg_response["login_nso"]
-		flapg_app = flapg_response["login_app"]
 		
 		parameter = {
 			'f':          flapg_nso["f"],
 			'naIdToken':  flapg_nso["p1"],
 			'timestamp':  flapg_nso["p2"],
 			'requestId':  flapg_nso["p3"],
-			'naIdToken': idToken,
 			'naCountry': user_info["country"],
 			'naBirthday': user_info["birthday"],
-			'language': user_info["language"],
-			'requestId': guid,
-			'timestamp': timestamp
+			'language': user_info["language"]
 		}
 		body = {}
 		body["parameter"] = parameter
@@ -278,11 +275,17 @@ class Nsotoken():
 			print("NSO ERROR IN LOGIN: " + str(splatoon_token))
 			return None
 
+		idToken = splatoon_token["result"]["webApiServerCredential"]["accessToken"]
+		flapg_app = self.call_flapg(idToken, guid, timestamp, "app")
+		if flapg_app == None:
+			print("ERROR IN FLAPGAPI APP CALL")
+			return None
+
 		head = {
 			'Host': 'api-lp1.znc.srv.nintendo.net',
-			'User-Agent': 'com.nintendo.znca/1.5.2 (Android/7.1.2)',
+			'User-Agent': 'com.nintendo.znca/1.6.1 (Android/7.1.2)',
 			'Accept': 'application/json',
-			'X-ProductVersion': '1.5.2',
+			'X-ProductVersion': '1.6.1.2',
 			'Content-Type': 'application/json; charset=utf-8',
 			'Connection': 'Keep-Alive',
 			'Authorization': 'Bearer ' + splatoon_token["result"]["webApiServerCredential"]["accessToken"],
