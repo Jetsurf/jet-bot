@@ -35,14 +35,32 @@ class Nsotoken():
 	async def addToken(self, message, token, session_token):
 		now = datetime.now()
 		formatted_date = now.strftime('%Y-%m-%d %H:%M:%S')
-
+		ac_g = str(token.get('ac_g'))
+		ac_p = str(token.get('ac_p'))
+		s2 = str(token.get('s2'))
 		cur = await self.sqlBroker.connect()
+		print("GTOKEN " + ac_g)
+		print("SESSION " + session_token)
 		if await self.checkDuplicate(str(message.author.id), cur):
-			stmt = "UPDATE tokens SET token = %s, session_token = %s, iksm_time = %s WHERE clientid = %s"
-			input = (str(token), str(session_token), formatted_date, str(message.author.id),)
+			if ac_g != None and s2 != None:
+				stmt = "UPDATE tokens SET token = %s, gtoken = %s, park_session = %s, session_token = %s, iksm_time = %s WHERE clientid = %s"
+				input = (s2, ac_g, ac_p, str(session_token), formatted_date, str(message.author.id),)
+			elif ac_g != None:
+				stmt = "UPDATE tokens SET gtoken = %s, park_session = %s, session_token = %s, iksm_time = %s WHERE clientid = %s"
+				input = (ac_g, ac_p, str(session_token), formatted_date, str(message.author.id),)
+			elif s2 != None:
+				stmt = "UPDATE tokens SET token = %s, session_token = %s, iksm_time = %s WHERE clientid = %s"
+				input = (s2, str(session_token), formatted_date, str(message.author.id),)
 		else:
-			stmt = "INSERT INTO tokens (clientid, iksm_time, token, session_time, session_token) VALUES(%s, %s, %s, %s, %s)"
-			input = (str(message.author.id), formatted_date, token, formatted_date, session_token,)
+			if ac_g != None and s2 != None:
+				stmt = "INSERT INTO tokens (clientid, iksm_time, token, gtoken, park_session, session_time, session_token) VALUES(%s, %s, %s, %s, %s)"
+				input = (str(message.author.id), formatted_date, s2, ac_g, ac_p, formatted_date, str(session_token),)
+			elif s2 != None:
+				stmt = "INSERT INTO tokens (clientid, iksm_time, token, session_time, session_token) VALUES(%s, %s, %s, %s, %s)"
+				input = (str(message.author.id), formatted_date, s2, formatted_date, str(session_token),)
+			elif ac_g != None:
+				stmt = "INSERT INTO tokens (clientid, iksm_time, gtoken, park_session, session_time, session_token) VALUES(%s, %s, %s, %s, %s)"
+				input = (str(message.author.id), formatted_date, ac_g, ac_p, formatted_date, str(session_token),)
 
 		await cur.execute(stmt, input)
 		if cur.lastrowid != None:
@@ -61,6 +79,16 @@ class Nsotoken():
 		if len(session_token) == 0:
 			return None
 		return session_token[0][0]
+
+	async def get_ac_mysql(self, userid):
+		cur = await self.sqlBroker.connect()
+		stmt = "SELECT gtoken, park_session FROM tokens WHERE clientid = %s"
+		await cur.execute(stmt, (str(userid),))
+		session_token = await cur.fetchall()
+		await self.sqlBroker.commit(cur)
+		if len(session_token) == 0:
+			return None
+		return session_token[0]
 
 	async def get_session_token_mysql(self, userid):
 		cur = await self.sqlBroker.connect()
@@ -123,12 +151,13 @@ class Nsotoken():
 			await message.channel.send("Error in account url. Issue is logged, but you can report this in my support guild")
 			return
 		session_token_code = self.get_session_token(session_token_code.group(0)[19:-1], auth_code_verifier)
-		thetoken = self.get_cookie(session_token_code)
-		if thetoken == None:
-			await message.channel.send("Error in getting iksm. Issue is logged, but you can report this happened in my support guild")
+		thetokens = self.setup_nso(session_token_code)
+		print("RETURN: " + str(thetokens))
+		if thetokens.get('s2') == None or thetokens.get('ac_g') == None:
+			await message.channel.send("Error in getting Game Service Tokens. This can be due to you not owning Splatoon 2/Animal Crossing or something else went wrong. The error is logged either way.")
 			return
 
-		success = await self.addToken(message, str(thetoken), session_token_code)
+		success = await self.addToken(message, thetokens, session_token_code)
 		if success and flag == -1:
 			await message.channel.send("Token added, !srstats !stats !ranks and !order will now work! You shouldn't need to run this command again.")
 		elif success and flag == 1:
@@ -142,16 +171,34 @@ class Nsotoken():
 		api_body = { 'naIdToken': id_token, 'timestamp': timestamp }
 		api_response = requests.post("https://elifessler.com/s2s/api/gen2", headers=api_app_head, data=api_body)
 		print("S2API RESPONSE: " + str(api_response))
-		return json.loads(api_response.text)["hash"]
+
+		if '429' in str(api_response):
+			print("FLAPGAPI: RATE LIMITED")
+			return None
+		elif '200' not in str(api_response):
+			print("ERROR IN FLAPGAPI CALL")
+			return None
+		else:
+			return json.loads(api_response.text)["hash"]
 
 	async def do_iksm_refresh(self, message):
 		session_token = await self.get_session_token_mysql(message.author.id)
 		await message.channel.trigger_typing()
-		iksm = self.get_cookie(session_token)
+		iksm = self.setup_nso(session_token)
 		if iksm == None:
 			await message.channel.send("Error getting token, I have logged this for my owners")
 			return
-		await self.addToken(message, str(iksm), session_token)
+		await self.addToken(message, iksm, session_token)
+		return iksm['s2']
+
+	async def do_ac_refresh(self, message):
+		session_token = await self.get_session_token_mysql(message.author.id)
+		await message.channel.trigger_typing()
+		iksm = self.setup_nso(session_token, 'ac')
+		if iksm == None:
+			await message.channel.send("Error getting token, I have logged this for my owners")
+			return
+		await self.addToken(message, iksm, session_token)
 		return iksm
 
 	def get_session_token(self, session_token_code, auth_code_verifier):
@@ -194,7 +241,7 @@ class Nsotoken():
 			f = json.loads(api_response.text)["result"]
 			return f
 
-	def get_cookie(self, session_token):
+	def setup_nso(self, session_token, game='s2'):
 		timestamp = int(time.time())
 		guid = str(uuid.uuid4())
 
@@ -294,15 +341,34 @@ class Nsotoken():
 			'Accept-Encoding': 'gzip'
 		}
 		parameter = {
-			'id':					5741031244955648,
+			#'id':					5741031244955648,
 			'f':					flapg_app["f"],
 			'registrationToken':	flapg_app["p1"],
 			'timestamp':			flapg_app["p2"],
 			'requestId':			flapg_app["p3"]
 		}
 
+		if game == 'ac':
+			parameter['id'] = 4953919198265344
+		else:
+			parameter['id'] = 5741031244955648
+
 		body = {}
 		body["parameter"] = parameter
+
+		r = requests.post("https://api-lp1.znc.srv.nintendo.net/v1/Game/ListWebServices", headers=head, json=body)
+		games = json.loads(r.text)
+		print("DEBUG: GAME SERVICES: " + str(games))
+		S2 = False
+		AC = False
+
+		for i in games['result']:
+			if "Animal Crossing: New Horizons" in i['name']:
+				print("Getting AC service token")
+				AC = True
+			if "Splatoon 2" in i['name']:
+				print("Getting S2 service token")
+				S2 = True
 
 		r = requests.post("https://api-lp1.znc.srv.nintendo.net/v2/Game/GetWebServiceToken", headers=head, json=body)
 		token = json.loads(r.text)
@@ -311,7 +377,7 @@ class Nsotoken():
 			return None
 
 		head = {
-			'Host': 'app.splatoon2.nintendo.net',
+			'Host': 'placeholder',
 			'X-IsAppAnalyticsOptedIn': 'false',
 			'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
 			'Accept-Encoding': 'gzip,deflate',
@@ -324,10 +390,35 @@ class Nsotoken():
 			'X-Requested-With': 'com.nintendo.znca'
 		}
 
-		r = requests.get("https://app.splatoon2.nintendo.net/?lang=en-US", headers=head)
-		if '200' not in str(r):
-			print("ERROR IN GETTING IKSM: " + str(r.text))
-			return None
+		keys = {}
+
+		if game == 'ac':
+			head['Host'] = 'web.sd.lp1.acbaa.srv.nintendo.net'
+			r = requests.get("https://web.sd.lp1.acbaa.srv.nintendo.net/?lang=en-US&na_country=US&na_lang=en-US", headers=head)
+			if r.cookies['_gtoken'] == None:
+				print("ERROR IN GETTING AC _GTOKEN: " + str(r.text))
+				return None
+			else:
+				print("Got a AC token, getting park_session")
+				gtoken = r.cookies["_gtoken"]
+				head['Referer'] = "https://web.sd.lp1.acbaa.srv.nintendo.net/?lang=en-US&na_country=US&na_lang=en-US"
+				r = requests.post("https://web.sd.lp1.acbaa.srv.nintendo.net/api/sd/v1/auth_token", headers=head, cookies=dict(_gtoken=gtoken))
+				if r.cookies['_park_session'] == None:
+					print("ERROR GETTING AC _PARK_SESSION")
+				else:
+					keys['ac_g'] = gtoken
+					keys['ac_p'] = r.cookies['_park_session']
+					print("Got AC _park_session!")
+
 		else:
-			print("Got a token!")
-			return r.cookies["iksm_session"]
+			head['Host'] = 'app.splatoon2.nintendo.net'
+			r = requests.get("https://app.splatoon2.nintendo.net/?lang=en-US", headers=head)
+			if '200' not in str(r):
+				print("ERROR IN GETTING IKSM: " + str(r.text))
+				return None
+			else:
+				print("Got a S2 token!")
+				keys['s2'] = r.cookies["iksm_session"]
+
+		print("KEYS RETURNING: " + str(keys))
+		return keys

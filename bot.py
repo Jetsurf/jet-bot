@@ -8,7 +8,7 @@ import discord, asyncio, subprocess, json, time
 import urllib, urllib.request, requests, pymysql
 #Our Classes
 import nsotoken, commandparser, serverconfig, splatinfo
-import vserver, mysqlhandler, serverutils, nsohandler
+import vserver, mysqlhandler, serverutils, nsohandler, achandler
 #Eval
 import traceback, textwrap, io, signal
 from contextlib import redirect_stdout
@@ -24,6 +24,7 @@ nsoTokens = None
 serverVoices = {}
 serverAdmins = {}
 serverUtils = None
+acHandler = None
 doneStartup = False
 token = ''
 owners = []
@@ -95,7 +96,7 @@ async def on_guild_role_update(before, after):
 @client.event
 async def on_ready():
 	global client, soundsDir, mysqlHandler, serverUtils, serverVoices, splatInfo, helpfldr
-	global nsoHandler, nsoTokens, head, url, dev, owners, commandParser, doneStartup
+	global nsoHandler, nsoTokens, head, url, dev, owners, commandParser, doneStartup, acHandler
 
 	if not doneStartup:
 		print('Logged in as,', client.user.name, client.user.id)
@@ -130,6 +131,7 @@ async def on_ready():
 		serverUtils = serverutils.serverUtils(client, mysqlHandler, serverConfig, helpfldr)
 		nsoTokens = nsotoken.Nsotoken(client, mysqlHandler)
 		nsoHandler = nsohandler.nsoHandler(client, mysqlHandler, nsoTokens, splatInfo)
+		acHandler = achandler.acHandler(client, mysqlHandler, nsoTokens)
 		await nsoHandler.updateS2JSON()
 		scanAdmins()
 		await mysqlHandler.startUp()
@@ -289,7 +291,7 @@ async def doEval(message):
 @client.event
 async def on_message(message):
 	global serverVoices, serverAdmins, soundsDir, serverUtils, mysqlHandler
-	global nsoHandler, owners, commandParser, doneStartup
+	global nsoHandler, owners, commandParser, doneStartup, acHandler
 
 	# Filter out bots and system messages or handling of messages until startup is done
 	if message.author.bot or message.type != discord.MessageType.default or not doneStartup:
@@ -412,6 +414,8 @@ async def on_message(message):
 		await nsoHandler.getSRStats(message)
 	elif cmd == 'storedm':
 		await nsoHandler.addStoreDM(message, args)
+	elif cmd == 'passport':
+		await acHandler.passport(message)
 	elif cmd == 'github':
 		await channel.send('Here is my github page! : https://github.com/Jetsurf/jet-bot')
 	elif cmd == 'support':
