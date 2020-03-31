@@ -62,12 +62,12 @@ class acHandler():
 
 		if '401' in str(r):
 			tokens = await self.nsotoken.do_ac_refresh(message)
-			if tokens == None:
-				await message.channel.send("There was an issue getting your Animal Crossing tokens. This could be you don't own the game or you haven't setup NookLink. If you have the game and setup NookLink, please report this issue.")
+			if tokens == None:			
 				return
-			gtoken = tokens[0]
-			parktoken = tokens[1]
-			bearer = tokens[2]
+
+			gtoken = tokens['ac_g']
+			parktoken = tokens['ac_p']
+			bearer = tokens['ac_p']
 
 			if gtokenFlag:
 				self.user_cookie['_gtoken'] = gtoken

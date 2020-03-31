@@ -81,6 +81,7 @@ class Nsotoken():
 		await self.sqlBroker.commit(cur)
 		if len(session_token) == 0:
 			return None
+
 		return session_token[0]
 
 	async def get_session_token_mysql(self, userid):
