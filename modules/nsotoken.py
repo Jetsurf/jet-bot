@@ -32,35 +32,28 @@ class Nsotoken():
 			await self.sqlBroker.rollback(cur)
 			await message.channel.send("Something went wrong! If you want to report this, join my support discord and let the devs know what you were doing!")
 
-	async def addToken(self, message, token, session_token):
+	async def addToken(self, message, token, session_token, session_only=False):
 		now = datetime.now()
 		formatted_date = now.strftime('%Y-%m-%d %H:%M:%S')
+
 		ac_g = str(token.get('ac_g'))
 		ac_p = str(token.get('ac_p'))
+		ac_b = str(token.get('ac_b'))
 		s2 = str(token.get('s2'))
+
 		cur = await self.sqlBroker.connect()
-		print("GTOKEN " + ac_g)
-		print("SESSION " + session_token)
-		if await self.checkDuplicate(str(message.author.id), cur):
-			if ac_g != None and s2 != None:
-				stmt = "UPDATE tokens SET token = %s, gtoken = %s, park_session = %s, session_token = %s, iksm_time = %s WHERE clientid = %s"
-				input = (s2, ac_g, ac_p, str(session_token), formatted_date, str(message.author.id),)
-			elif ac_g != None:
-				stmt = "UPDATE tokens SET gtoken = %s, park_session = %s, session_token = %s, iksm_time = %s WHERE clientid = %s"
+
+		if await self.checkDuplicate(str(message.author.id), cur) and not session_only:
+			if ac_g != None:
+				stmt = "UPDATE tokens SET gtoken = %s, park_session = %s, ac_bearer = %s, session_token = %s, iksm_time = %s WHERE clientid = %s"
 				input = (ac_g, ac_p, str(session_token), formatted_date, str(message.author.id),)
 			elif s2 != None:
 				stmt = "UPDATE tokens SET token = %s, session_token = %s, iksm_time = %s WHERE clientid = %s"
 				input = (s2, str(session_token), formatted_date, str(message.author.id),)
 		else:
-			if ac_g != None and s2 != None:
-				stmt = "INSERT INTO tokens (clientid, iksm_time, token, gtoken, park_session, session_time, session_token) VALUES(%s, %s, %s, %s, %s)"
-				input = (str(message.author.id), formatted_date, s2, ac_g, ac_p, formatted_date, str(session_token),)
-			elif s2 != None:
-				stmt = "INSERT INTO tokens (clientid, iksm_time, token, session_time, session_token) VALUES(%s, %s, %s, %s, %s)"
-				input = (str(message.author.id), formatted_date, s2, formatted_date, str(session_token),)
-			elif ac_g != None:
-				stmt = "INSERT INTO tokens (clientid, iksm_time, gtoken, park_session, session_time, session_token) VALUES(%s, %s, %s, %s, %s)"
-				input = (str(message.author.id), formatted_date, ac_g, ac_p, formatted_date, str(session_token),)
+			stmt = "INSERT INTO tokens (clientid, session_time, session_token) VALUES(%s, %s, %s)"
+			input = (str(message.author.id), formatted_date, str(session_token),)
+
 
 		await cur.execute(stmt, input)
 		if cur.lastrowid != None:
@@ -82,7 +75,7 @@ class Nsotoken():
 
 	async def get_ac_mysql(self, userid):
 		cur = await self.sqlBroker.connect()
-		stmt = "SELECT gtoken, park_session FROM tokens WHERE clientid = %s"
+		stmt = "SELECT gtoken, park_session, ac_bearer FROM tokens WHERE clientid = %s"
 		await cur.execute(stmt, (str(userid),))
 		session_token = await cur.fetchall()
 		await self.sqlBroker.commit(cur)
@@ -151,15 +144,15 @@ class Nsotoken():
 			await message.channel.send("Error in account url. Issue is logged, but you can report this in my support guild")
 			return
 		session_token_code = self.get_session_token(session_token_code.group(0)[19:-1], auth_code_verifier)
-		thetokens = self.setup_nso(session_token_code)
-		print("RETURN: " + str(thetokens))
-		if thetokens.get('s2') == None or thetokens.get('ac_g') == None:
-			await message.channel.send("Error in getting Game Service Tokens. This can be due to you not owning Splatoon 2/Animal Crossing or something else went wrong. The error is logged either way.")
-			return
+		#thetokens = self.setup_nso(session_token_code)
 
-		success = await self.addToken(message, thetokens, session_token_code)
+		#if thetokens.get('s2') == None or thetokens.get('ac_g') == None:
+		#	await message.channel.send("Error in getting Game Service Tokens. This can be due to you not owning Splatoon 2/Animal Crossing or something else went wrong. The error is logged either way.")
+		#	return
+
+		success = await self.addToken(message, {}, session_token_code, True)
 		if success and flag == -1:
-			await message.channel.send("Token added, !srstats !stats !ranks and !order will now work! You shouldn't need to run this command again.")
+			await message.channel.send("Token added, NSO commands will now work! You shouldn't need to run this command again.")
 		elif success and flag == 1:
 			await message.channel.send("Token added! Ordering...")
 		else:
@@ -173,10 +166,10 @@ class Nsotoken():
 		print("S2API RESPONSE: " + str(api_response))
 
 		if '429' in str(api_response):
-			print("FLAPGAPI: RATE LIMITED")
+			print("stat.ink: RATE LIMITED")
 			return None
 		elif '200' not in str(api_response):
-			print("ERROR IN FLAPGAPI CALL")
+			print("ERROR IN stat.ink CALL")
 			return None
 		else:
 			return json.loads(api_response.text)["hash"]
@@ -194,12 +187,12 @@ class Nsotoken():
 	async def do_ac_refresh(self, message):
 		session_token = await self.get_session_token_mysql(message.author.id)
 		await message.channel.trigger_typing()
-		iksm = self.setup_nso(session_token, 'ac')
-		if iksm == None:
-			await message.channel.send("Error getting token, I have logged this for my owners")
+		keys = self.setup_nso(session_token, 'ac')
+		if keys == None:
+			await message.channel.send("There was an issue getting your Animal Crossing tokens. This could be you don't own the game or you haven't setup NookLink. If you have the game and setup NookLink, please report this issue.")
 			return
-		await self.addToken(message, iksm, session_token)
-		return iksm
+		await self.addToken(message, keys, session_token)
+		return keys
 
 	def get_session_token(self, session_token_code, auth_code_verifier):
 		head = {
@@ -401,14 +394,23 @@ class Nsotoken():
 			else:
 				print("Got a AC token, getting park_session")
 				gtoken = r.cookies["_gtoken"]
-				head['Referer'] = "https://web.sd.lp1.acbaa.srv.nintendo.net/?lang=en-US&na_country=US&na_lang=en-US"
-				r = requests.post("https://web.sd.lp1.acbaa.srv.nintendo.net/api/sd/v1/auth_token", headers=head, cookies=dict(_gtoken=gtoken))
-				if r.cookies['_park_session'] == None:
-					print("ERROR GETTING AC _PARK_SESSION")
+
+				r = requests.get('https://web.sd.lp1.acbaa.srv.nintendo.net/api/sd/v1/users', headers=head, cookies=dict(_gtoken=gtoken))
+				thejson = json.loads(r.text)
+				if thejson['users']:
+					head['Referer'] = "https://web.sd.lp1.acbaa.srv.nintendo.net/?lang=en-US&na_country=US&na_lang=en-US"
+					r = requests.post("https://web.sd.lp1.acbaa.srv.nintendo.net/api/sd/v1/auth_token", headers=head, data=dict(userId=thejson['users'][0]['id']), cookies=dict(_gtoken=gtoken))
+					bearer = json.loads(r.text)
+					if r.cookies['_park_session'] == None or 'token' not in bearer:
+						print("ERROR GETTING AC _PARK_SESSION/BEARER")
+						return None
+					else:
+						keys['ac_g'] = gtoken
+						keys['ac_p'] = r.cookies['_park_session']
+						keys['ac_b'] = bearer['token']
+						print("Got AC _park_session and bearer!")
 				else:
-					keys['ac_g'] = gtoken
-					keys['ac_p'] = r.cookies['_park_session']
-					print("Got AC _park_session!")
+					return None
 
 		else:
 			head['Host'] = 'app.splatoon2.nintendo.net'
@@ -420,5 +422,4 @@ class Nsotoken():
 				print("Got a S2 token!")
 				keys['s2'] = r.cookies["iksm_session"]
 
-		print("KEYS RETURNING: " + str(keys))
 		return keys

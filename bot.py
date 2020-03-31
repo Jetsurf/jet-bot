@@ -291,7 +291,7 @@ async def doEval(message):
 @client.event
 async def on_message(message):
 	global serverVoices, serverAdmins, soundsDir, serverUtils, mysqlHandler
-	global nsoHandler, owners, commandParser, doneStartup, acHandler
+	global nsoHandler, owners, commandParser, doneStartup, acHandler, nsoTokens
 
 	# Filter out bots and system messages or handling of messages until startup is done
 	if message.author.bot or message.type != discord.MessageType.default or not doneStartup:
@@ -315,6 +315,9 @@ async def on_message(message):
 				sys.stderr.flush()
 				sys.stdout.flush()
 				sys.exit(0)
+			elif '!acrefresh' in message.content:
+				keys = await nsoTokens.do_ac_refresh(message)
+				print("KEY CHECK: " + str(keys))
 			elif '!cmdreport' in message.content:
 				await serverUtils.report_cmd_totals(message)
 			elif '!nsojson' in command:
