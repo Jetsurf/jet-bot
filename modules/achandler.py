@@ -111,3 +111,4 @@ class acHandler():
 		embed.add_field(name="NPC's (Name - Birthday)", value=npcstring, inline=True)
 
 		await message.channel.send(embed=embed)
+		print("Got a passport!")
