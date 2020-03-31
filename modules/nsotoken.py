@@ -46,7 +46,7 @@ class Nsotoken():
 		if await self.checkDuplicate(str(message.author.id), cur) and not session_only:
 			if ac_g != None:
 				stmt = "UPDATE tokens SET gtoken = %s, park_session = %s, ac_bearer = %s, session_token = %s, iksm_time = %s WHERE clientid = %s"
-				input = (ac_g, ac_p, str(session_token), formatted_date, str(message.author.id),)
+				input = (ac_g, ac_p, ac_b, str(session_token), formatted_date, str(message.author.id),)
 			elif s2 != None:
 				stmt = "UPDATE tokens SET token = %s, session_token = %s, iksm_time = %s WHERE clientid = %s"
 				input = (s2, str(session_token), formatted_date, str(message.author.id),)
@@ -144,11 +144,6 @@ class Nsotoken():
 			await message.channel.send("Error in account url. Issue is logged, but you can report this in my support guild")
 			return
 		session_token_code = self.get_session_token(session_token_code.group(0)[19:-1], auth_code_verifier)
-		#thetokens = self.setup_nso(session_token_code)
-
-		#if thetokens.get('s2') == None or thetokens.get('ac_g') == None:
-		#	await message.channel.send("Error in getting Game Service Tokens. This can be due to you not owning Splatoon 2/Animal Crossing or something else went wrong. The error is logged either way.")
-		#	return
 
 		success = await self.addToken(message, {}, session_token_code, True)
 		if success and flag == -1:
@@ -334,7 +329,6 @@ class Nsotoken():
 			'Accept-Encoding': 'gzip'
 		}
 		parameter = {
-			#'id':					5741031244955648,
 			'f':					flapg_app["f"],
 			'registrationToken':	flapg_app["p1"],
 			'timestamp':			flapg_app["p2"],
@@ -348,20 +342,6 @@ class Nsotoken():
 
 		body = {}
 		body["parameter"] = parameter
-
-		r = requests.post("https://api-lp1.znc.srv.nintendo.net/v1/Game/ListWebServices", headers=head, json=body)
-		games = json.loads(r.text)
-		print("DEBUG: GAME SERVICES: " + str(games))
-		S2 = False
-		AC = False
-
-		for i in games['result']:
-			if "Animal Crossing: New Horizons" in i['name']:
-				print("Getting AC service token")
-				AC = True
-			if "Splatoon 2" in i['name']:
-				print("Getting S2 service token")
-				S2 = True
 
 		r = requests.post("https://api-lp1.znc.srv.nintendo.net/v2/Game/GetWebServiceToken", headers=head, json=body)
 		token = json.loads(r.text)
@@ -384,7 +364,6 @@ class Nsotoken():
 		}
 
 		keys = {}
-
 		if game == 'ac':
 			head['Host'] = 'web.sd.lp1.acbaa.srv.nintendo.net'
 			r = requests.get("https://web.sd.lp1.acbaa.srv.nintendo.net/?lang=en-US&na_country=US&na_lang=en-US", headers=head)
