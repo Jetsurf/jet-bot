@@ -93,6 +93,7 @@ class acHandler():
 		profilepic = requests.get(user['image'])
 		profileid = re.search('(?<=user_profile/).*(?=\?)', user['image']).group()
 
+		#This is hard coded for now, if you care enough, this assumes you have a https (yes s, its needed by discord) setup to host from the directory
 		open('/var/www/db-files/acprofiles/' + str(profileid) + ".jpg", 'wb').write(profilepic.content)
 
 		embed = discord.Embed(colour=0x0004FF)
