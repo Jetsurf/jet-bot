@@ -70,14 +70,16 @@ class acHandler():
 			bearer = tokens['ac_p']
 
 			if gtokenFlag:
-				self.user_cookie['_gtoken'] = gtoken
+				self.user_gcookie['_gtoken'] = gtoken
+				results_list = requests.get(url, headers=header, cookies=self.user_gcookie)
+				thejson = json.loads(results_list.text)
 			else:
 				self.user_pcookie['_gtoken'] = gtoken
 				self.user_pcookie['_park_session'] = parktoken
 				self.user_auth_app_head['Authorization'] = "Bearer " + bearer
-
-			results_list = requests.get(url, headers=header, cookies=self.user_cookie)
-			thejson = json.loads(results_list.text)
+				results_list = requests.get(url, headers=header, cookies=self.user_pcookie)
+				thejson = json.loads(results_list.text)
+				
 			if '401' in str(r):
 				print("FAILURE TO RENEW AC TOKENS")
 				return None
