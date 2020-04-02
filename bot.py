@@ -485,8 +485,9 @@ async def on_message(message):
 				return
 			if int(vol) > 60:
 				vol = 60
-			await channel.send("Setting Volume to " + str(vol) + "%")
-			serverVoices[theServer].source.volume = float(int(vol) / 100)
+			if serverVoices[theServer].source != None:
+				await channel.send("Setting Volume to " + str(vol) + "%")
+				serverVoices[theServer].source.volume = float(int(vol) / 100)
 		elif cmd == 'queue':
 			await serverVoices[theServer].printQueue(message)
 		else:
