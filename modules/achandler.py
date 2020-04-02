@@ -88,7 +88,10 @@ class acHandler():
 
 	async def passport(self, message):
 		userjson = await self.getNSOJSON(message, self.user_app_head, 'https://web.sd.lp1.acbaa.srv.nintendo.net/api/sd/v1/users')
-		user = userjson['users'][0]
+		if userjson == None:
+			return
+		else:
+			user = userjson['users'][0]
 
 		detaileduser = await self.getNSOJSON(message, self.user_auth_app_head, 'https://web.sd.lp1.acbaa.srv.nintendo.net/api/sd/v1/users/' + user['id'] + '/profile?language=en-US')
 		landjson = await self.getNSOJSON(message, self.user_auth_app_head, 'https://web.sd.lp1.acbaa.srv.nintendo.net/api/sd/v1/lands/' + user['land']['id'] + '/profile?language=en-US')

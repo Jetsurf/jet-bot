@@ -163,32 +163,34 @@ class Nsotoken():
 
 		if '429' in str(api_response):
 			print("stat.ink: RATE LIMITED")
-			return None
+			return 429
 		elif '200' not in str(api_response):
 			print("ERROR IN stat.ink CALL")
 			return None
 		else:
 			return json.loads(api_response.text)["hash"]
 
-	async def do_iksm_refresh(self, message):
+	async def do_iksm_refresh(self, message, game='s2'):
 		session_token = await self.get_session_token_mysql(message.author.id)
 		await message.channel.trigger_typing()
-		iksm = self.setup_nso(session_token)
-		if iksm == None:
+		keys = self.setup_nso(session_token)
+		
+		if keys == 404 or keys == 429:
+			await message.channel.send("Temporary issue with NSO logins. Please try again in a few minutes")
+			return None
+		if keys == None:
 			await message.channel.send("Error getting token, I have logged this for my owners")
-			return
+			return None
+
 		await self.addToken(message, iksm, session_token)
-		return iksm['s2']
+
+		if game is 's2':
+			return keys['s2']
+		else:
+			return keys
 
 	async def do_ac_refresh(self, message):
-		session_token = await self.get_session_token_mysql(message.author.id)
-		await message.channel.trigger_typing()
-		keys = self.setup_nso(session_token, 'ac')
-		if keys == None:
-			await message.channel.send("There was an issue getting your Animal Crossing tokens. This could be you don't own the game or you haven't setup NookLink. If you have the game and setup NookLink, please report this issue.")
-			return
-		await self.addToken(message, keys, session_token)
-		return keys
+		return await self.do_iksm_refresh(message, 'ac')
 
 	def get_session_token(self, session_token_code, auth_code_verifier):
 		head = {
@@ -223,12 +225,14 @@ class Nsotoken():
 			'x-iid':   login
 		}
 		api_response = requests.get("https://flapg.com/ika2/api/login?public", headers=api_app_head)
-		if '200' not in str(api_response):
+		if '404' in str(api_response):
+			print("ISSUE WITH FLAPG - 404")
+			return 404
+		elif '200' not in str(api_response):
 			print("ERROR IN FLAPGAPI: " + str(api_response))
 			return None
 		else:
-			f = json.loads(api_response.text)["result"]
-			return f
+			return json.loads(api_response.text)["result"]
 
 	def setup_nso(self, session_token, game='s2'):
 		timestamp = int(time.time())
@@ -289,7 +293,9 @@ class Nsotoken():
 		idToken = id_response["access_token"]
 		flapg_nso = self.call_flapg(idToken, guid, timestamp, "nso")
 		
-		if flapg_nso == None:
+		if flapg_nso == 404 or flapg_nso == 429:
+			return flapg_nso
+		elif flapg_nso == None:
 			print("ERROR IN FLAPGAPI NSO CALL")
 			return None
 		
