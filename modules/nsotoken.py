@@ -173,7 +173,7 @@ class Nsotoken():
 	async def do_iksm_refresh(self, message, game='s2'):
 		session_token = await self.get_session_token_mysql(message.author.id)
 		await message.channel.trigger_typing()
-		keys = self.setup_nso(session_token)
+		keys = self.setup_nso(session_token, game)
 		
 		if keys == 404 or keys == 429:
 			await message.channel.send("Temporary issue with NSO logins. Please try again in a few minutes")
@@ -182,7 +182,7 @@ class Nsotoken():
 			await message.channel.send("Error getting token, I have logged this for my owners")
 			return None
 
-		await self.addToken(message, iksm, session_token)
+		await self.addToken(message, keys, session_token)
 
 		if game is 's2':
 			return keys['s2']

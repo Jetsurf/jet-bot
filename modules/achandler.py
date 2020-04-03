@@ -61,7 +61,7 @@ class acHandler():
 			thejson = json.loads(r.text)
 
 		if '401' in str(r):
-			tokens = await self.nsotoken.do_ac_refresh(message)
+			tokens = await self.nsotoken.do_iksm_refresh(message, 'ac')
 			if tokens == None:			
 				return
 
@@ -104,6 +104,7 @@ class acHandler():
 		embed = discord.Embed(colour=0x0004FF)
 		embed.title = str(user['name']) + "'s Passport - Animal Crossing New Horizons"
 		embed.set_thumbnail(url='https://db-files.crmea.de/acprofiles/' + str(profileid) + '.jpg')
+		print("PROFILE: " + str(profileid))
 		embed.add_field(name='Title', value=str(detaileduser['mHandleName']), inline=True)
 		embed.add_field(name='Comment', value=str(detaileduser['mComment']), inline=True)
 		embed.add_field(name='Birthday', value=str(detaileduser['mTimeStamp']['month']) + '/' + str(detaileduser['mTimeStamp']['day']) + '/' + str(detaileduser['mTimeStamp']['year']), inline=True)
