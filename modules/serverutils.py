@@ -99,6 +99,8 @@ class serverUtils():
 			file = self.helpfldr + '/usersplatnet.txt'
 		elif 'voice' in message.content:
 			file = self.helpfldr + '/voice.txt'
+		elif 'ac' in message.content:
+			file = self.helpfldr + '/ac.txt'
 		else:
 			file = self.helpfldr + '/base.txt'
 
