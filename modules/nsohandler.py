@@ -874,7 +874,7 @@ class nsoHandler():
 				return
 
 			shortname = themap.get().shortname().lower().replace(" ", "-")
-			url = "http://crmea.de/images/bot/callouts/" + shortname + ".png"
+			url = "http://db-files.crmea.de/images/bot/callouts/" + shortname + ".png"
 			embed = discord.Embed(colour=0x0004FF)
 			embed.set_image(url=url)
 			await message.channel.send(embed=embed)

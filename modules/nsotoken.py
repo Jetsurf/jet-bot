@@ -32,17 +32,28 @@ class Nsotoken():
 			await self.sqlBroker.rollback(cur)
 			await message.channel.send("Something went wrong! If you want to report this, join my support discord and let the devs know what you were doing!")
 
-	async def addToken(self, message, token, session_token):
+	async def addToken(self, message, token, session_token, session_only=False):
 		now = datetime.now()
 		formatted_date = now.strftime('%Y-%m-%d %H:%M:%S')
 
+		ac_g = str(token.get('ac_g'))
+		ac_p = str(token.get('ac_p'))
+		ac_b = str(token.get('ac_b'))
+		s2 = str(token.get('s2'))
+
 		cur = await self.sqlBroker.connect()
-		if await self.checkDuplicate(str(message.author.id), cur):
-			stmt = "UPDATE tokens SET token = %s, session_token = %s, iksm_time = %s WHERE clientid = %s"
-			input = (str(token), str(session_token), formatted_date, str(message.author.id),)
+
+		if await self.checkDuplicate(str(message.author.id), cur) and not session_only:
+			if ac_g != None:
+				stmt = "UPDATE tokens SET gtoken = %s, park_session = %s, ac_bearer = %s, session_token = %s, iksm_time = %s WHERE clientid = %s"
+				input = (ac_g, ac_p, ac_b, str(session_token), formatted_date, str(message.author.id),)
+			elif s2 != None:
+				stmt = "UPDATE tokens SET token = %s, session_token = %s, iksm_time = %s WHERE clientid = %s"
+				input = (s2, str(session_token), formatted_date, str(message.author.id),)
 		else:
-			stmt = "INSERT INTO tokens (clientid, iksm_time, token, session_time, session_token) VALUES(%s, %s, %s, %s, %s)"
-			input = (str(message.author.id), formatted_date, token, formatted_date, session_token,)
+			stmt = "INSERT INTO tokens (clientid, session_time, session_token) VALUES(%s, %s, %s)"
+			input = (str(message.author.id), formatted_date, str(session_token),)
+
 
 		await cur.execute(stmt, input)
 		if cur.lastrowid != None:
@@ -61,6 +72,17 @@ class Nsotoken():
 		if len(session_token) == 0:
 			return None
 		return session_token[0][0]
+
+	async def get_ac_mysql(self, userid):
+		cur = await self.sqlBroker.connect()
+		stmt = "SELECT gtoken, park_session, ac_bearer FROM tokens WHERE clientid = %s"
+		await cur.execute(stmt, (str(userid),))
+		session_token = await cur.fetchall()
+		await self.sqlBroker.commit(cur)
+		if len(session_token) == 0:
+			return None
+
+		return session_token[0]
 
 	async def get_session_token_mysql(self, userid):
 		cur = await self.sqlBroker.connect()
@@ -123,14 +145,10 @@ class Nsotoken():
 			await message.channel.send("Error in account url. Issue is logged, but you can report this in my support guild")
 			return
 		session_token_code = self.get_session_token(session_token_code.group(0)[19:-1], auth_code_verifier)
-		thetoken = self.get_cookie(session_token_code)
-		if thetoken == None:
-			await message.channel.send("Error in getting iksm. Issue is logged, but you can report this happened in my support guild")
-			return
 
-		success = await self.addToken(message, str(thetoken), session_token_code)
+		success = await self.addToken(message, {}, session_token_code, True)
 		if success and flag == -1:
-			await message.channel.send("Token added, !srstats !stats !ranks and !order will now work! You shouldn't need to run this command again.")
+			await message.channel.send("Token added, NSO commands will now work! You shouldn't need to run this command again.")
 		elif success and flag == 1:
 			await message.channel.send("Token added! Ordering...")
 		else:
@@ -142,17 +160,37 @@ class Nsotoken():
 		api_body = { 'naIdToken': id_token, 'timestamp': timestamp }
 		api_response = requests.post("https://elifessler.com/s2s/api/gen2", headers=api_app_head, data=api_body)
 		print("S2API RESPONSE: " + str(api_response))
-		return json.loads(api_response.text)["hash"]
 
-	async def do_iksm_refresh(self, message):
+		if '429' in str(api_response):
+			print("stat.ink: RATE LIMITED")
+			return 429
+		elif '200' not in str(api_response):
+			print("ERROR IN stat.ink CALL")
+			return None
+		else:
+			return json.loads(api_response.text)["hash"]
+
+	async def do_iksm_refresh(self, message, game='s2'):
 		session_token = await self.get_session_token_mysql(message.author.id)
 		await message.channel.trigger_typing()
-		iksm = self.get_cookie(session_token)
-		if iksm == None:
+		keys = self.setup_nso(session_token, game)
+		
+		if keys == 404 or keys == 429:
+			await message.channel.send("Temporary issue with NSO logins. Please try again in a few minutes")
+			return None
+		if keys == None:
 			await message.channel.send("Error getting token, I have logged this for my owners")
-			return
-		await self.addToken(message, str(iksm), session_token)
-		return iksm
+			return None
+
+		await self.addToken(message, keys, session_token)
+
+		if game is 's2':
+			return keys['s2']
+		else:
+			return keys
+
+	async def do_ac_refresh(self, message):
+		return await self.do_iksm_refresh(message, 'ac')
 
 	def get_session_token(self, session_token_code, auth_code_verifier):
 		head = {
@@ -187,14 +225,16 @@ class Nsotoken():
 			'x-iid':   login
 		}
 		api_response = requests.get("https://flapg.com/ika2/api/login?public", headers=api_app_head)
-		if '200' not in str(api_response):
+		if '404' in str(api_response):
+			print("ISSUE WITH FLAPG - 404")
+			return 404
+		elif '200' not in str(api_response):
 			print("ERROR IN FLAPGAPI: " + str(api_response))
 			return None
 		else:
-			f = json.loads(api_response.text)["result"]
-			return f
+			return json.loads(api_response.text)["result"]
 
-	def get_cookie(self, session_token):
+	def setup_nso(self, session_token, game='s2'):
 		timestamp = int(time.time())
 		guid = str(uuid.uuid4())
 
@@ -253,7 +293,9 @@ class Nsotoken():
 		idToken = id_response["access_token"]
 		flapg_nso = self.call_flapg(idToken, guid, timestamp, "nso")
 		
-		if flapg_nso == None:
+		if flapg_nso == 404 or flapg_nso == 429:
+			return flapg_nso
+		elif flapg_nso == None:
 			print("ERROR IN FLAPGAPI NSO CALL")
 			return None
 		
@@ -294,12 +336,16 @@ class Nsotoken():
 			'Accept-Encoding': 'gzip'
 		}
 		parameter = {
-			'id':					5741031244955648,
 			'f':					flapg_app["f"],
 			'registrationToken':	flapg_app["p1"],
 			'timestamp':			flapg_app["p2"],
 			'requestId':			flapg_app["p3"]
 		}
+
+		if game == 'ac':
+			parameter['id'] = 4953919198265344
+		else:
+			parameter['id'] = 5741031244955648
 
 		body = {}
 		body["parameter"] = parameter
@@ -311,7 +357,7 @@ class Nsotoken():
 			return None
 
 		head = {
-			'Host': 'app.splatoon2.nintendo.net',
+			'Host': 'placeholder',
 			'X-IsAppAnalyticsOptedIn': 'false',
 			'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
 			'Accept-Encoding': 'gzip,deflate',
@@ -324,10 +370,42 @@ class Nsotoken():
 			'X-Requested-With': 'com.nintendo.znca'
 		}
 
-		r = requests.get("https://app.splatoon2.nintendo.net/?lang=en-US", headers=head)
-		if '200' not in str(r):
-			print("ERROR IN GETTING IKSM: " + str(r.text))
-			return None
+		keys = {}
+		if game == 'ac':
+			head['Host'] = 'web.sd.lp1.acbaa.srv.nintendo.net'
+			r = requests.get("https://web.sd.lp1.acbaa.srv.nintendo.net/?lang=en-US&na_country=US&na_lang=en-US", headers=head)
+			if r.cookies['_gtoken'] == None:
+				print("ERROR IN GETTING AC _GTOKEN: " + str(r.text))
+				return None
+			else:
+				print("Got a AC token, getting park_session")
+				gtoken = r.cookies["_gtoken"]
+
+				r = requests.get('https://web.sd.lp1.acbaa.srv.nintendo.net/api/sd/v1/users', headers=head, cookies=dict(_gtoken=gtoken))
+				thejson = json.loads(r.text)
+				if thejson['users']:
+					head['Referer'] = "https://web.sd.lp1.acbaa.srv.nintendo.net/?lang=en-US&na_country=US&na_lang=en-US"
+					r = requests.post("https://web.sd.lp1.acbaa.srv.nintendo.net/api/sd/v1/auth_token", headers=head, data=dict(userId=thejson['users'][0]['id']), cookies=dict(_gtoken=gtoken))
+					bearer = json.loads(r.text)
+					if r.cookies['_park_session'] == None or 'token' not in bearer:
+						print("ERROR GETTING AC _PARK_SESSION/BEARER")
+						return None
+					else:
+						keys['ac_g'] = gtoken
+						keys['ac_p'] = r.cookies['_park_session']
+						keys['ac_b'] = bearer['token']
+						print("Got AC _park_session and bearer!")
+				else:
+					return None
+
 		else:
-			print("Got a token!")
-			return r.cookies["iksm_session"]
+			head['Host'] = 'app.splatoon2.nintendo.net'
+			r = requests.get("https://app.splatoon2.nintendo.net/?lang=en-US", headers=head)
+			if '200' not in str(r):
+				print("ERROR IN GETTING IKSM: " + str(r.text))
+				return None
+			else:
+				print("Got a S2 token!")
+				keys['s2'] = r.cookies["iksm_session"]
+
+		return keys
