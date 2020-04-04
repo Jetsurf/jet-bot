@@ -36,20 +36,21 @@ class Nsotoken():
 		now = datetime.now()
 		formatted_date = now.strftime('%Y-%m-%d %H:%M:%S')
 
-		ac_g = str(token.get('ac_g'))
-		ac_p = str(token.get('ac_p'))
-		ac_b = str(token.get('ac_b'))
-		s2 = str(token.get('s2'))
+		ac_g = token.get('ac_g')
+		ac_p = token.get('ac_p')
+		ac_b = token.get('ac_b')
+		s2 = token.get('s2')
 
 		cur = await self.sqlBroker.connect()
 
 		if await self.checkDuplicate(str(message.author.id), cur) and not session_only:
 			if ac_g != None:
 				stmt = "UPDATE tokens SET gtoken = %s, park_session = %s, ac_bearer = %s, session_token = %s, iksm_time = %s WHERE clientid = %s"
-				input = (ac_g, ac_p, ac_b, str(session_token), formatted_date, str(message.author.id),)
+				input = (str(ac_g), str(ac_p), str(ac_b), str(session_token), formatted_date, str(message.author.id),)
 			elif s2 != None:
+				print("Updating S2 token + " + s2)
 				stmt = "UPDATE tokens SET token = %s, session_token = %s, iksm_time = %s WHERE clientid = %s"
-				input = (s2, str(session_token), formatted_date, str(message.author.id),)
+				input = (str(s2), str(session_token), formatted_date, str(message.author.id),)
 		else:
 			stmt = "INSERT INTO tokens (clientid, session_time, session_token) VALUES(%s, %s, %s)"
 			input = (str(message.author.id), formatted_date, str(session_token),)
@@ -397,7 +398,6 @@ class Nsotoken():
 						print("Got AC _park_session and bearer!")
 				else:
 					return None
-
 		else:
 			head['Host'] = 'app.splatoon2.nintendo.net'
 			r = requests.get("https://app.splatoon2.nintendo.net/?lang=en-US", headers=head)
