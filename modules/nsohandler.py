@@ -210,22 +210,18 @@ class nsoHandler():
 					abilFlag = False
 					branFlag = False
 					gearFlag = False
+					string = "You have multiple flags from this item to notify you on, which of the following would you like to remove? ("
 					for i in fields:
 						if i[0] != None:
 							abilFlag = True
+							string+=theSkill + "/"
 						if i[1] != None:
 							branFlag = True
+							string+=theBrand + "/"
 						if i[2] != None:
 							gearFlag = True
-
-					string = "You have multiple flags from this item to notify you on, which of the following would you like to remove? ("
-					if abilFlag:
-						string+=theSkill + "/"
-					if branFlag:
-						string+=theBrand + "/"
-					if gearFlag:
-						string+=theType + "/"
-
+							string+=theType + "/"
+			
 					string+= "all/quit to stop removing DM triggers)"
 
 					await theMem.send(string)
@@ -256,11 +252,11 @@ class nsoHandler():
 						await theMem.send("Ok removed you from all flags to be DM'ed on associated with this item")
 						break
 					elif confirm.content.lower() == 'quit':
-						await theMem.send("Ok, done removing DM flags!")
+						await theMem.send("Ok, removing all DM flags on this item!")
 						break
 					else:
 						await theMem.send("Didn't understand that")
-						
+
 					if not abilFlag and not branFlag and not gearFlag:
 						await theMem.send("Ok, no more flags on this item to DM you on!")
 						break
