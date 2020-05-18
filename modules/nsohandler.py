@@ -252,7 +252,7 @@ class nsoHandler():
 						await theMem.send("Ok removed you from all flags to be DM'ed on associated with this item")
 						break
 					elif confirm.content.lower() == 'quit':
-						await theMem.send("Ok, removing all DM flags on this item!")
+						await theMem.send("Ok, stopping removal of DM flags!")
 						break
 					else:
 						await theMem.send("Didn't understand that")
