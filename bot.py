@@ -358,6 +358,8 @@ async def on_message(message):
 		await doEval(message)
 	elif cmd == 'getcons' and message.author in owners:
 		await mysqlHandler.printCons(message)
+	elif cmd == 'storejson' and message.author in owners:
+		await nsoHandler.getStoreJSON(message)
 	elif cmd == 'admin':
 		if message.author in serverAdmins[theServer]:
 			if len(args) == 0:

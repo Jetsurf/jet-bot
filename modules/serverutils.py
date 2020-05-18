@@ -13,7 +13,7 @@ class serverUtils():
 		self.valid_commands = {
 			'base'		: 		[ "help", "github", "support" ],
 			'base_sn' 	: 		[ "currentmaps", "nextmaps", "nextsr", "currentsr", "splatnetgear", "storedm" ],
-			'user_sn'	:		[ "rank", "stats", "srstats", "order" ],
+			'user_sn'	:		[ "rank", "stats", "srstats", "order", "passport" ],
 			'hybrid_sn' : 		[ "weapon", "weapons","map", "maps", "battle", "battles" ],
 			'voice' 	:	 	[ "join", "play", "playrandom", "currentsong", "queue", "stop", "skip", "volume", "sounds", "leavevoice" ]
 		}
