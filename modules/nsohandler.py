@@ -70,50 +70,101 @@ class nsoHandler():
 		self.srJSON = json.loads(response.read().decode())
 
 	async def addStoreDM(self, message, args):
-		abilities = { 'Bomb Defense Up DX',	'Haunt', 'Sub Power Up', 'Ink Resistance Up', 'Swim Speed Up', 'Special Charge Up', 'Main Power Up', 'Ink Recovery Up', 'Respawn Punisher',
-						'Quick Super Jump', 'Drop Roller', 'Ink Saver (Main)', 'Ink Saver (Sub)', 'Last-Ditch Effort', 'Ninja Squid', 'Object Shredder', 'Opening Gambit',
-						'Quick Respawn', 'Run Speed Up', 'Special Power Up', 'Special Saver', 'Stealth Jump', 'Sub Power Up', 'Swim Speed Up', 'Tenacity', 'Thermal Ink', 'Comeback' }
-		abilitiesStr = str(abilities).replace('\'', '').replace('{', '').replace('}', '')
-
 		if len(args) == 0:
 			await message.channel.send("I need an ability to be able to DM you when it appears in the shop! Here are the options: " + abilitiesStr)
 			return
 
-		ability = str(args[0:]).replace('\'', '').replace('[', '').replace(']', '').replace(',', '').lower()
+		term = " ".join(args).lower()
 
 		flag = False
-		for i in abilities:
-			if ability == i.lower():
-				flag = True
-				break;
 
+		#Search Abilities
+		if flag != True: #Pre-emptive for adding in pure gear
+			match1 = self.splatInfo.matchAbilities(term)			
+			if match1.isValid():
+				flag = True
+				term = match1.get().name()
+
+		#Search brands
+		if flag != True:
+			match2 = self.splatInfo.matchBrands(term)
+			if match2.isValid():
+				flag = True
+				term = match2.get().name()
+
+		#Search Items
+		if flag != True:
+			match3 = self.splatInfo.matchGear(term)
+			if match3.isValid():
+				flag = True
+				term = match3.get().name()
+	
 		if not flag:
-			await message.channel.send('The ablility you gave doesn\'t exist!\nValid Abilities are: ' + abilitiesStr)
+			if len(match1.items) + len(match2.items) + len(match3.items) < 1:
+				await message.channel.send("Didn't find any partial matches for you. Search for Abilities/Gear Brand/Gear Name!")
+				return
+
+			embed = discord.Embed(colour=0xF9FC5F)
+			embed.title = "Did you mean?"
+
+			if len(match1.items) > 0:
+				embed.add_field(name="Abilities", value=", ".join(map(lambda item: item.name(), match1.items)), inline=False)
+			if len(match2.items) > 0:
+				embed.add_field(name="Brands", value=", ".join(map(lambda item: item.name(), match2.items)), inline=False)
+			if len(match3.items) > 0:
+				embed.add_field(name="Gear", value=", ".join(map(lambda item: item.name(), match3.items)), inline=False)
+
+			await message.channel.send(embed=embed)
 			return
 
 		cur = await self.sqlBroker.connect()
-		stmt = "SELECT COUNT(*) FROM storedms WHERE clientid = %s AND ability = %s"
-		await cur.execute(stmt, (str(message.author.id), ability,))
+
+		if match1.isValid():
+			stmt = "SELECT COUNT(*) FROM storedms WHERE clientid = %s AND ability = %s"
+		elif match2.isValid():
+			stmt = "SELECT COUNT(*) FROM storedms WHERE clientid = %s AND brand = %s"
+		else:
+			stmt = "SELECT COUNT(*) FROM storedms WHERE clientid = %s AND gearname = %s"
+
+		await cur.execute(stmt, (str(message.author.id), term,))
 		count = await cur.fetchone()
 		if count[0] > 0:
-			await message.channel.send("You already will be DM'ed when gear with " + ability + " appears in the store!")
+			await message.channel.send("You already will be DM'ed when gear with " + term + " appears in the store!")
 			await self.sqlBroker.close(con)
 			return
 		else:
 			def check2(m):
 				return m.author == message.author and m.channel == message.channel
 
-			await message.channel.send(message.author.name + " do you want me to DM you when gear with " + ability + " appears in the shop? (Respond Yes/No)")
+			if match1.isValid():
+				await message.channel.send(message.author.name + " do you want me to DM you when gear with ability " + term + " appears in the shop? (Respond Yes/No)")
+			elif match2.isValid():
+				await message.channel.send(message.author.name + " do you want me to DM you when gear by brand " + term + " appears in the shop? (Respond Yes/No)")
+			else:
+				await message.channel.send(message.author.name + " do you want me to DM you when " + term + " appears in the shop? (Respond Yes/No)")
+
 			resp = await self.client.wait_for('message', check=check2)
 			if 'yes' not in resp.content.lower():
 				await message.channel.send("Ok!")
 				return
 
-		stmt = 'INSERT INTO storedms (clientid, serverid, ability) VALUES(%s, %s, %s)'
-		await cur.execute(stmt, (str(message.author.id), str(message.guild.id), ability,))
-		await self.sqlBroker.commit(cur)
-		await message.channel.send("Added you to recieve a DM when gear with " + ability + " appears in the shop!")
+		if match1.isValid():
+			stmt = 'INSERT INTO storedms (clientid, serverid, ability) VALUES(%s, %s, %s)'
+		elif match2.isValid():
+			stmt = 'INSERT INTO storedms (clientid, serverid, brand) VALUES(%s, %s, %s)'
+		else:
+			stmt = 'INSERT INTO storedms (clientid, serverid, gearname) VALUES(%s, %s, %s)'
 
+		await cur.execute(stmt, (str(message.author.id), str(message.guild.id), term,))
+		await self.sqlBroker.commit(cur)
+
+		if match1.isValid():
+			await message.channel.send("Added you to recieve a DM when gear with " + term + " appears in the shop!")
+		elif match2.isValid():
+			await message.channel.send("Added you to recieve a DM when gear by brand " + term + " appears in the shop!")
+		else:
+			await message.channel.send("Added you to recieve a DM when " + term + " appears in the shop!")
+		
 	async def handleDM(self, theMem, theGear, theSkill):
 		embed = self.makeGearEmbed(theGear, "Gear with " + theSkill + " has appeared in the shop!", "Respond with 'order' to order, or 'stop' to stop recieving notifications (within the next two hours)")
 		await theMem.send(embed=embed)
