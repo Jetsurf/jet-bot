@@ -151,7 +151,7 @@ class nsoHandler():
 
 			resp = await self.client.wait_for('message', check=check2)
 			if 'yes' not in resp.content.lower():
-				await message.channel.send("Ok!")
+				await message.channel.send("Ok, I haven't added you to receive a DM.")
 				return
 
 		if match1.isValid():
