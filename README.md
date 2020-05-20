@@ -48,8 +48,8 @@ There are a few admin commands to configure the bot. To run these commands, you 
 
  - `!admin playlist URL`: Add the given URL to the `!playrandom` playlist
  - `!admin blacklist URL`: Prevent the video at the URL from ever being played
- - `!admin dm add`: Subscribe to direct DMs on users leaving the server
- - `!admin dm remove`: Unsubscribe from direct DMs on users leaving the server
+ - `!admin dm add`: Subscribe to DMs on users leaving the server
+ - `!admin dm remove`: Unsubscribe from DMs on users leaving the server
  - `!admin prefix CHAR`: Change the command prefix character to CHAR
  - `!admin announcement set CHANNEL` : Sets a chat channel for announcements about restarts/new features from the devs
  - `!admin announcement get` : Gets the name of the channel that is set to receive announcements
@@ -76,7 +76,7 @@ There are a few admin commands to configure the bot. To run these commands, you 
  - `!currentsr` : Displays the current Splatoon 2 Salmon Run Map/Weapons
  - `!nextsr` : Displays the next Splatoon 2 Salmon Run Map/Weapons
  - `!splatnetgear` : Gets all of the current gear for sale on SplatNet
- - `!storedm` ABILITY : DM's you when a piece of gear with ABILITY appears in the store (only once, can't DM the bot with this)
+ - `!storedm` ABILITY/GEAR/BRAND : DM's you when a piece of gear with ABILITY, made by BRAND, or is item GEAR (supports all items in the game) appears in the store. Suggests when using partial terms. Can't DM the bot with this
  - `!map random NUM` : Generates a list of random maps (1-10, NUM is optional for just 1 random map)
  - `!map callout MAP` : Provides a map with callout locations
  - `!weapon random NUM` : Generates a list of random weapons (1-10, NUM is optional for just 1 random weapon)

@@ -70,52 +70,122 @@ class nsoHandler():
 		self.srJSON = json.loads(response.read().decode())
 
 	async def addStoreDM(self, message, args):
-		abilities = { 'Bomb Defense Up DX',	'Haunt', 'Sub Power Up', 'Ink Resistance Up', 'Swim Speed Up', 'Special Charge Up', 'Main Power Up', 'Ink Recovery Up', 'Respawn Punisher',
-						'Quick Super Jump', 'Drop Roller', 'Ink Saver (Main)', 'Ink Saver (Sub)', 'Last-Ditch Effort', 'Ninja Squid', 'Object Shredder', 'Opening Gambit',
-						'Quick Respawn', 'Run Speed Up', 'Special Power Up', 'Special Saver', 'Stealth Jump', 'Sub Power Up', 'Swim Speed Up', 'Tenacity', 'Thermal Ink', 'Comeback' }
-		abilitiesStr = str(abilities).replace('\'', '').replace('{', '').replace('}', '')
-
 		if len(args) == 0:
 			await message.channel.send("I need an ability to be able to DM you when it appears in the shop! Here are the options: " + abilitiesStr)
 			return
 
-		ability = str(args[0:]).replace('\'', '').replace('[', '').replace(']', '').replace(',', '').lower()
+		term = " ".join(args).lower()
 
 		flag = False
-		for i in abilities:
-			if ability == i.lower():
-				flag = True
-				break;
 
+		#Search Abilities
+		if flag != True: #Pre-emptive for adding in pure gear
+			match1 = self.splatInfo.matchAbilities(term)			
+			if match1.isValid():
+				flag = True
+				term = match1.get().name()
+
+		#Search brands
+		if flag != True:
+			match2 = self.splatInfo.matchBrands(term)
+			if match2.isValid():
+				flag = True
+				term = match2.get().name()
+
+		#Search Items
+		match3 = None
+		if flag != True:
+			match3 = self.splatInfo.matchGear(term)
+			if match3.isValid():
+				flag = True
+				term = match3.get().name()
+	
 		if not flag:
-			await message.channel.send('The ablility you gave doesn\'t exist!\nValid Abilities are: ' + abilitiesStr)
+			if len(match1.items) + len(match2.items) + len(match3.items) < 1:
+				await message.channel.send("Didn't find any partial matches for you. Search for Abilities/Gear Brand/Gear Name!")
+				return
+
+			embed = discord.Embed(colour=0xF9FC5F)
+			embed.title = "Did you mean?"
+
+			if len(match1.items) > 0:
+				embed.add_field(name="Abilities", value=", ".join(map(lambda item: item.name(), match1.items)), inline=False)
+			if len(match2.items) > 0:
+				embed.add_field(name="Brands", value=", ".join(map(lambda item: item.name(), match2.items)), inline=False)
+			if len(match3.items) > 0:
+				embed.add_field(name="Gear", value=", ".join(map(lambda item: item.name(), match3.items)), inline=False)
+
+			await message.channel.send(embed=embed)
 			return
 
+		if match3 != None:
+			if match3.isValid() and match3.get().price() == 0:
+				await message.channel.send(match3.get().name() + " won't appear on the store. Here is where to get it: " + match3.get().source())
+				return
+
 		cur = await self.sqlBroker.connect()
-		stmt = "SELECT COUNT(*) FROM storedms WHERE clientid = %s AND ability = %s"
-		await cur.execute(stmt, (str(message.author.id), ability,))
+
+		if match1.isValid():
+			stmt = "SELECT COUNT(*) FROM storedms WHERE clientid = %s AND ability = %s"
+		elif match2.isValid():
+			stmt = "SELECT COUNT(*) FROM storedms WHERE clientid = %s AND brand = %s"
+		else:
+			stmt = "SELECT COUNT(*) FROM storedms WHERE clientid = %s AND gearname = %s"
+
+		await cur.execute(stmt, (str(message.author.id), term,))
 		count = await cur.fetchone()
 		if count[0] > 0:
-			await message.channel.send("You already will be DM'ed when gear with " + ability + " appears in the store!")
-			await self.sqlBroker.close(con)
+			if match1.isValid():
+				await message.channel.send("You will already be DM'ed when gear with ability " + term + " appears in the shop? (Respond Yes/No)")
+			elif match2.isValid():
+				await message.channel.send("You will already be DM'ed when gear by brand " + term + " appears in the shop? (Respond Yes/No)")
+			else:
+				await message.channel.send("You will already be DM'ed when " + term + " appears in the shop? (Respond Yes/No)")
+
+			await self.sqlBroker.close(cur)
 			return
 		else:
 			def check2(m):
 				return m.author == message.author and m.channel == message.channel
 
-			await message.channel.send(message.author.name + " do you want me to DM you when gear with " + ability + " appears in the shop? (Respond Yes/No)")
+			if match1.isValid():
+				await message.channel.send(message.author.name + " do you want me to DM you when gear with ability " + term + " appears in the shop? (Respond Yes/No)")
+			elif match2.isValid():
+				await message.channel.send(message.author.name + " do you want me to DM you when gear by brand " + term + " appears in the shop? (Respond Yes/No)")
+			else:
+				await message.channel.send(message.author.name + " do you want me to DM you when " + term + " appears in the shop? (Respond Yes/No)")
+
 			resp = await self.client.wait_for('message', check=check2)
 			if 'yes' not in resp.content.lower():
-				await message.channel.send("Ok!")
+				await message.channel.send("Ok, I haven't added you to receive a DM.")
 				return
 
-		stmt = 'INSERT INTO storedms (clientid, serverid, ability) VALUES(%s, %s, %s)'
-		await cur.execute(stmt, (str(message.author.id), str(message.guild.id), ability,))
-		await self.sqlBroker.commit(cur)
-		await message.channel.send("Added you to recieve a DM when gear with " + ability + " appears in the shop!")
+		if match1.isValid():
+			stmt = 'INSERT INTO storedms (clientid, serverid, ability) VALUES(%s, %s, %s)'
+		elif match2.isValid():
+			stmt = 'INSERT INTO storedms (clientid, serverid, brand) VALUES(%s, %s, %s)'
+		else:
+			stmt = 'INSERT INTO storedms (clientid, serverid, gearname) VALUES(%s, %s, %s)'
 
-	async def handleDM(self, theMem, theGear, theSkill):
-		embed = self.makeGearEmbed(theGear, "Gear with " + theSkill + " has appeared in the shop!", "Respond with 'order' to order, or 'stop' to stop recieving notifications (within the next two hours)")
+		await cur.execute(stmt, (str(message.author.id), str(message.guild.id), term,))
+		await self.sqlBroker.commit(cur)
+
+		if match1.isValid():
+			await message.channel.send("Added you to recieve a DM when gear with " + term + " appears in the shop!")
+		elif match2.isValid():
+			await message.channel.send("Added you to recieve a DM when gear by brand " + term + " appears in the shop!")
+		else:
+			await message.channel.send("Added you to recieve a DM when " + term + " appears in the shop!")
+		
+	async def handleDM(self, theMem, theGear):
+		def checkDM(m):
+			return m.author.id == theMem.id and m.guild == None
+
+		theSkill = theGear['skill']['name']
+		theType = theGear['gear']['name']
+		theBrand = theGear['gear']['brand']['name']
+
+		embed = self.makeGearEmbed(theGear, "Gear you wanted to be notified about has appeared in the shop!", "Respond with 'order' to order, or 'stop' to stop recieving notifications (within the next two hours)")
 		await theMem.send(embed=embed)
 		print('Messaged ' + theMem.name)
 
@@ -129,33 +199,139 @@ class nsoHandler():
 		try:	
 			resp = await self.client.wait_for('message', timeout=7100, check=check1)
 		except:
+			#No response
 			print("TIMEOUT: Keeping " + theMem.name + " in DM's")
-			await theMem.send("Didn't get a message from you, I'll DM you again when gear with " + theSkill + " appears in the shop!")
+			stmt = 'SELECT ability, brand, gearname FROM storedms WHERE (clientid = %s) AND ((ability = %s) OR (brand = %s) OR (gearname = %s))'
+			await cur.execute(stmt, (theMem.id, theSkill, theBrand, theType, ))
+			fields = await cur.fetchall()
+			string = "Didn't get a message from you. The item I notified you about will be on the store for another 10 hours. I'll DM you again when gear with "
+			for i in fields:
+				if i[0] != None:
+					string+=theSkill + ", "
+				if i[1] != None:
+					string+=theBrand + ", "
+				if i[2] != None:
+					string+=theType + ", "
+
+			string = "".join(string.rsplit(", ", 1)) + " appears in the shop"
+			string = " or ".join(string.rsplit(", ", 1))
+			await theMem.send(string)
 			return
 
 		if 'stop' in resp.content.lower():
 			cur = await self.sqlBroker.connect()
-			stmt = 'DELETE FROM storedms WHERE clientid = %s AND ability = %s'
-			print("Removing " + theMem.name + " from DM's")
-			await cur.execute(stmt, (theMem.id, theSkill,))
-			await self.sqlBroker.commit(cur)
-			await theMem.send("Ok, I won't DM you again when gear with " + theSkill + " appears in the shop.")
+			stmt = "SELECT COUNT(*) FROM storedms WHERE (clientid = %s) AND ((ability = %s) OR (brand = %s) OR (gearname = %s))"
+			await cur.execute(stmt, (theMem.id, theSkill, theBrand, theType, ))
+			count = await cur.fetchone()
+			if count[0] > 1:
+				while True:
+					stmt = 'SELECT ability, brand, gearname FROM storedms WHERE (clientid = %s) AND ((ability = %s) OR (brand = %s) OR (gearname = %s))'
+					await cur.execute(stmt, (theMem.id, theSkill, theBrand, theType, ))
+					fields = await cur.fetchall()
+					abilFlag = False
+					branFlag = False
+					gearFlag = False
+					string = "You have multiple flags from this item to notify you on, which of the following would you like to remove? ("
+					for i in fields:
+						if i[0] != None:
+							abilFlag = True
+							string+=theSkill + "/"
+						if i[1] != None:
+							branFlag = True
+							string+=theBrand + "/"
+						if i[2] != None:
+							gearFlag = True
+							string+=theType + "/"
+			
+					string+= "all/quit to stop removing DM triggers)"
+
+					await theMem.send(string)
+					try:
+						confirm = await self.client.wait_for('message', timeout=5, check=checkDM)
+					except:
+						await theMem.send("Didn't get a response from you on DM flags")
+						break
+					if confirm.content.lower() == theSkill.lower() and abilFlag:
+						stmt = 'DELETE FROM storedms WHERE (clientid = %s) AND (ability = %s)'
+						await cur.execute(stmt, (theMem.id, theSkill, ))
+						abilFlag = False
+						await theMem.send("Ok, removed you from being DM'ed when gear with ability " + theSkill + " appears in the shop!")
+					elif confirm.content.lower() == theBrand.lower() and branFlag:
+						stmt = 'DELETE FROM storedms WHERE (clientid = %s) AND (brand = %s)'
+						await cur.execute(stmt, (theMem.id, theBrand, ))
+						branFlag = False
+						await theMem.send("Ok, removed you from being DM'ed when gear by brand " + theBrand + " appears in the shop!")
+					elif confirm.content.lower() == theType.lower() and abilFlag:
+						stmt = 'DELETE FROM storedms WHERE (clientid = %s) AND (gearname = %s)'
+						await cur.execute(stmt, (theMem.id, theType, ))
+						await self.sqlBroker.commit(cur)
+						gearFlag = False
+						await theMem.send("Ok, removed you from being DM'ed when " + theAbility + " appears in the shop!")
+					elif confirm.content.lower() == 'all':
+						stmt = 'DELETE FROM storedms WHERE (clientid = %s) AND ((ability = %s) OR (brand = %s) OR (gearname = %s))'
+						await cur.execute(stmt, (theMem.id, theSkill, theBrand, theType, ))
+						await theMem.send("Ok removed you from all flags to be DM'ed on associated with this item")
+						break
+					elif confirm.content.lower() == 'quit':
+						await theMem.send("Ok, stopping removal of DM flags!")
+						break
+					else:
+						await theMem.send("Didn't understand that")
+
+					if not abilFlag and not branFlag and not gearFlag:
+						await theMem.send("Ok, no more flags on this item to DM you on!")
+						break
+				await self.sqlBroker.commit(cur)
+			else:
+				stmt = 'SELECT ability, brand, gearname FROM storedms WHERE (clientid = %s) AND ((ability = %s) OR (brand = %s) OR (gearname = %s))'
+				await cur.execute(stmt, (theMem.id, theSkill, theBrand, theType, ))
+				fields = await cur.fetchone()
+				if fields[0] != None:
+					await theMem.send("Ok, I won't DM you again when gear with ability " + theSkill + " appears in the shop.")
+				elif fields[1] != None:
+					await theMem.send("Ok, I won't DM you again when gear by " + theBrand  + " appears in the shop.")
+				else:
+					await theMem.send("Ok, I won't DM you again when " + theType + " appears in the shop.")
+
+				stmt = 'DELETE FROM storedms WHERE (clientid = %s) AND ((ability = %s) OR (brand = %s) OR (gearname = %s))'
+
+				await cur.execute(stmt, (theMem.id, theSkill, theBrand, theType, ))
+				await self.sqlBroker.commit(cur)
+				
 		elif 'order' in resp.content.lower():
 			await self.orderGear(resp, order=5)
 		else:
+			#Response but nothing understood
 			print("Keeping " + theMem.name + " in DM's")
-			await theMem.send("Didn't get a message from you about gear. I'll DM you again when gear with " + theSkill + " appears in the shop!")
+			stmt = 'SELECT ability, brand, gearname FROM storedms WHERE (clientid = %s) AND ((ability = %s) OR (brand = %s) OR (gearname = %s))'
+			await cur.execute(stmt, (theMem.id, theSkill, theBrand, theType, ))
+			fields = await cur.fetchall()
+			string = "Didn't understand that. The item I notified you about will be on the store for another 10 hours. I'll DM you again when gear with "
+			for i in fields:
+				if i[0] != None:
+					string+=theSkill + ", "
+				if i[1] != None:
+					string+=theBrand + ", "
+				if i[2] != None:
+					string+=theType + ", "
+
+			string = "".join(string.rsplit(", ", 1)) + " appears in the shop"
+			string = " or ".join(string.rsplit(", ", 1))
+			await theMem.send(string)
 
 	async def doStoreDM(self):
 		cur = await self.sqlBroker.connect()
 		theGear = self.storeJSON['merchandises'][5]
 
-		theSkill = theGear['skill']['name'].lower()
-		print("Doing Store DM! Checking " + theSkill)
+		theSkill = theGear['skill']['name']
+		theType = theGear['gear']['name']
+		theBrand = theGear['gear']['brand']['name']
+		print("Doing Store DM! Checking " + theType + ' Brand: ' + theBrand + ' Ability: ' + theSkill)
 
-		stmt = "SELECT clientid,serverid FROM storedms WHERE ability = %s"
-		await cur.execute(stmt, (theSkill,))
+		stmt = "SELECT DISTINCT clientid,serverid FROM storedms WHERE (ability = %s) OR (brand = %s) OR (gearname = %s)"
+		await cur.execute(stmt, (theSkill, theBrand, theType,))
 		toDM = await cur.fetchall()
+		print("DM TEST: " + str(toDM))
 		await self.sqlBroker.close(cur)
 
 		for id in range(len(toDM)):
@@ -167,7 +343,11 @@ class nsoHandler():
 					continue
 				theMem = server.get_member(memid)
 				if theMem != None:
-					asyncio.ensure_future(self.handleDM(theMem, theGear, theSkill))
+					asyncio.ensure_future(self.handleDM(theMem, theGear))
+
+	async def getStoreJSON(self, message):
+		theGear = self.storeJSON['merchandises'][5]
+		await message.channel.send('```' + str(theGear) + '```')
 
 	async def getRawJSON(self, message):
 		if not await self.checkDuplicate(message.author.id):
