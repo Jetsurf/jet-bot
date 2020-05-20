@@ -281,7 +281,21 @@ class nsoHandler():
 			await self.orderGear(resp, order=5)
 		else:
 			print("Keeping " + theMem.name + " in DM's")
-			await theMem.send("Didn't get a message from you about gear. I'll DM you again when gear with " + theSkill + " appears in the shop!")
+			stmt = 'SELECT ability, brand, gearname FROM storedms WHERE (clientid = %s) AND ((ability = %s) OR (brand = %s) OR (gearname = %s))'
+			await cur.execute(stmt, (theMem.id, theSkill, theBrand, theType, ))
+			fields = await cur.fetchall()
+			string = "Didn't get a message from you. The item I notified you about will be on the store for another 10 hours. I'll DM you again when gear with "
+			for i in fields:
+				if i[0] != None:
+					string+=theSkill + ", "
+				if i[1] != None:
+					string+=theBrand + ", "
+				if i[2] != None:
+					string+=theType + ", "
+
+			string = "".join(string.rsplit(", ", 1)) + " appears in the shop"
+			string = " or ".join(string.rsplit(", ", 1))
+			await theMem.send(string)
 
 	async def doStoreDM(self):
 		cur = await self.sqlBroker.connect()
