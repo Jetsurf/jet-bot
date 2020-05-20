@@ -93,6 +93,7 @@ class nsoHandler():
 				term = match2.get().name()
 
 		#Search Items
+		match3 = None
 		if flag != True:
 			match3 = self.splatInfo.matchGear(term)
 			if match3.isValid():
@@ -116,6 +117,11 @@ class nsoHandler():
 
 			await message.channel.send(embed=embed)
 			return
+
+		if match3 != None:
+			if match3.isValid() and match3.get().price() == 0:
+				await message.channel.send(match3.get().name() + " won't appear on the store. Here is where to get it: " + match3.get().source())
+				return
 
 		cur = await self.sqlBroker.connect()
 
