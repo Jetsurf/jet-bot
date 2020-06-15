@@ -672,7 +672,11 @@ class nsoHandler():
 		embed.add_field(name="Type", value=gear['gear']['kind'], inline=True)
 		embed.add_field(name="Main Ability", value=gear['skill']['name'], inline=True)
 		embed.add_field(name="Available Sub Slots", value=gear['gear']['rarity'], inline=True)
-		embed.add_field(name="Common Ability", value=gear['gear']['brand']['frequent_skill']['name'], inline=True)
+		if 'frequent_skill' in gear['gear']['brand']:
+			embed.add_field(name="Common Ability", value=gear['gear']['brand']['frequent_skill']['name'], inline=True)
+		else:
+			embed.add_field(name="Common Ability", value='None', inline=True)
+
 		embed.add_field(name="Price", value=gear['price'], inline=True)
 		embed.add_field(name="Directions", value=dirs, inline=False)
 		return embed
