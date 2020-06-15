@@ -766,8 +766,6 @@ class nsoHandler():
 		gear = self.storeJSON['merchandises']
 		embed = discord.Embed(colour=0xF9FC5F)
 		embed.title = "Current Splatnet Gear For Sale"
-		theString = ''
-
 		j = 0
 		for i in gear:
 			skill = i['skill']
@@ -776,29 +774,28 @@ class nsoHandler():
 			end = i['end_time']
 			eqName = equip['name']
 			eqBrand = equip['brand']['name']
-			commonSub = equip['brand']['frequent_skill']['name']
+			if 'frequent_skill' in equip['brand']:
+				commonSub = equip['brand']['frequent_skill']['name']
+			else:
+				commonSub = "None"
+
 			eqKind = equip['kind']
 			slots = equip['rarity'] + 1
 
-			timeRemaining = end - theTime
-			timeRemaining = timeRemaining % 86400
-			hours = int(timeRemaining / 3600)
-			timeRemaining = timeRemaining % 3600
-			minutes = int(timeRemaining / 60)
+			if j == 0:
+				timeRemaining = end - theTime
+				timeRemaining = timeRemaining % 86400
+				hours = int(timeRemaining / 3600)
+				timeRemaining = timeRemaining % 3600
+				minutes = int(timeRemaining / 60)
 
-			theString += '	 ID to order: ' + str(j) + '\n'
-			theString += '    Skill      : ' + str(skill['name']) + '\n'
-			theString += '    Common Sub : ' + str(commonSub) + '\n'
-			theString += '    Subs       : ' + str(slots) + '\n'
-			theString += '    Type       : ' + eqKind + '\n'
-			theString += '    Price      : ' + str(price) + '\n'
-			theString += '    Time Left  : ' + str(hours) + ' Hours and ' + str(minutes) + ' minutes'
+			embed.add_field(name='**' + eqName + '**', value=eqBrand + ' : ' + eqKind, inline=False)
+			embed.add_field(name="ID/Subs/Price", value=str(j) + "/" + str(slots) + "/" + str(price), inline=True)
+			embed.add_field(name="Ability/Common Sub", value=str(skill['name']) + '/' + str(commonSub), inline=True)
 
-			embed.add_field(name=eqName + ' : ' + eqBrand, value=theString, inline=False)
-
-			theString = ''
 			j = j + 1
 
+		embed.set_footer(text='Next Item In '+ str(hours) + ' Hours ' + str(minutes) + ' minutes')
 		await message.channel.send(embed=embed)
 
 	async def maps(self, message, offset=0):
