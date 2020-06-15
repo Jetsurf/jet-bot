@@ -107,7 +107,7 @@ class acHandler():
 		print("PROFILE: " + str(profileid))
 		embed.add_field(name='Title', value=str(detaileduser['mHandleName']), inline=True)
 		embed.add_field(name='Comment', value=str(detaileduser['mComment']), inline=True)
-		embed.add_field(name='Birthday', value=str(detaileduser['mTimeStamp']['month']) + '/' + str(detaileduser['mTimeStamp']['day']) + '/' + str(detaileduser['mTimeStamp']['year']), inline=True)
+		embed.add_field(name='Registered On', value=str(detaileduser['mTimeStamp']['month']) + '/' + str(detaileduser['mTimeStamp']['day']) + '/' + str(detaileduser['mTimeStamp']['year']), inline=True)
 		embed.add_field(name='Island Name', value=user['land']['name'], inline=True)
 
 		npcstring = ''
