@@ -151,10 +151,13 @@ class SplatMatchResult():
 			return self.items[0]
 		return None
 
-	def errorMessage(self):
+	def errorMessage(self, listhelp):
 		l = len(self.items)
 		if l == 0:
-			return "I don't know of any " + self.type + " named '" + self.query + "'. Try command '" + self.type + "s list' for a list."
+			msg = "I don't know of any " + self.type + " named '" + self.query + "'."
+			if listhelp:
+				msg += " " + listhelp
+			return msg
 		elif l == 1:
 			return None
 		elif l == 2:
@@ -164,7 +167,10 @@ class SplatMatchResult():
 			str += ", or " + self.items[l - 1].format() + "?"
 			return str
 
-		return "Try command '" + self.type + "s list' for a list of " + self.type + "s."
+		msg = "What is '" + self.query + "'?"
+		if listhelp:
+			msg += " " + listhelp
+		return msg
 
 
 class SplatInfo():

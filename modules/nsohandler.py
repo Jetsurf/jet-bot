@@ -1025,7 +1025,7 @@ class nsoHandler():
 				themap = " ".join(args[1:])
 				match = self.splatInfo.matchMaps(themap)
 				if not match.isValid():
-					await message.channel.send(match.errorMessage())
+					await message.channel.send(match.errorMessage("Try command 'maps list' for a list."))
 					return
 				id = match.get().id()
 				await self.mapParser(message, id)
@@ -1051,7 +1051,7 @@ class nsoHandler():
 		elif "callout" in subcommand:
 			themap = self.splatInfo.matchMaps(" ".join(args[1:]))
 			if not themap.isValid():
-				await message.channel.send(themap.errorMessage())
+				await message.channel.send(themap.errorMessage("Try command 'maps list' for a list."))
 				return
 
 			shortname = themap.get().shortname().lower().replace(" ", "-")
@@ -1080,7 +1080,7 @@ class nsoHandler():
 				theWeapon = " ".join(args[1:])
 				match = self.splatInfo.matchWeapons(theWeapon)
 				if not match.isValid():
-					await message.channel.send(match.errorMessage())
+					await message.channel.send(match.errorMessage("Try command 'weapons list' for a list."))
 					return
 				weap = match.get()
 				embed = discord.Embed(colour=0x0004FF)
@@ -1124,7 +1124,7 @@ class nsoHandler():
 			if len(args) > 1:
 				t = self.splatInfo.matchWeaponType(args[1])
 				if not t.isValid():
-					await message.channel.send("I don't know of any weapontype named " + args[1] + ". Try command 'weapons list' for a list.")
+					await message.channel.send(actualSpecial.errorMessage("Try command 'weapons list' for a list."))
 					return
 
 				weaps = self.splatInfo.getWeaponsByType(t.get())
@@ -1136,14 +1136,16 @@ class nsoHandler():
 				embed.add_field(name=t.get().name() + 's', value=weapString, inline=False)
 				await message.channel.send(embed=embed)
 			else:
-				await message.channel.send("Need a type to search, types are Shooter, Blaster, Roller, Charger, Slosher, Splatling, and Brella, ")
+				types = self.splatInfo.getAllWeaponTypes()
+				typelist = "Did you mean " + ", ".join(map(lambda t: t.format(), types[0:-1])) + ", or " + types[-1].format() + "?"
+				await message.channel.send("Need a type to list. Types are: " + typelist)
 			return
 		elif subcommand == "stats":
 			if len(args) > 1:
 				theWeapon = " ".join(args[1:])
 				match = self.splatInfo.matchWeapons(theWeapon)
 				if not match.isValid():
-					await message.channel.send(match.errorMessage())
+					await message.channel.send(match.errorMessage("Try command 'weapons list' for a list."))
 					return
 				id = match.get().id()
 				await self.weaponParser(message, id)
