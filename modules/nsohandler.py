@@ -3,6 +3,7 @@ import mysqlhandler, nsotoken
 import time, requests
 import json, os
 import urllib, urllib.request
+import splatinfo
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 class nsoHandler():
@@ -299,7 +300,7 @@ class nsoHandler():
 				await self.sqlBroker.commit(cur)
 				
 		elif 'order' in resp.content.lower():
-			await self.orderGear(resp, order=5)
+			await self.orderGearCommand(resp, order=5)
 		else:
 			#Response but nothing understood
 			print("Keeping " + theMem.name + " in DM's")
@@ -681,7 +682,7 @@ class nsoHandler():
 		embed.add_field(name="Directions", value=dirs, inline=False)
 		return embed
 
-	async def orderGear(self, message, args=None, order=-1):
+	async def orderGearCommand(self, message, args=None, order=-1):
 		await message.channel.trigger_typing()
 
 		def check(m):
@@ -700,19 +701,39 @@ class nsoHandler():
 				return
 
 		if order != -1:
-			orderID = order
+			merchid = self.storeJSON['merchandises'][order]['id']
 		elif args != None:
 			if len(args) == 0:
 				await message.channel.send("I need an item to order, please use 'ID to order' from splatnetgear!")
 				return
-			elif args[0].isdigit() and int(args[0]) <= 5 and int(args[0]) >= 0:
-				orderID = args[0]
-			else:
-				await message.channel.send("I didn't quite understand that, please use 'ID to order' from splatnetgear!")
+
+			# Build a list of SplatStoreMerch items to match against
+			merchitems = []
+			for i in range(0, len(self.storeJSON['merchandises'])):
+				merch = self.storeJSON['merchandises'][i]
+				merchitems.append(splatinfo.SplatStoreMerch(merch['gear']['name'], i, merch['id']))
+
+			# Try the match
+			match = self.splatInfo.matchItems("store merchandise", merchitems, " ".join(args))
+			if not match.isValid():
+				await message.channel.send(match.errorMessage("Try command 'splatnetgear' for a list."))
 				return
+
+			merchid = match.get().merchid()
 		else:
 			await message.channel.send("Order called improperly! Please report this to my support discord!")
 			return
+
+		await self.orderGear(message, merchid, confirm = (order == -1))
+
+	# Tries to order gear with the given merchid.
+	# The 'merchid' is a long numeric string assigned by Nintendo (e.g. "4782435326394656903").
+	# If 'confirm' is true then we ask the user if they really want to order.
+	async def orderGear(self, message, merchid, confirm = True):
+		await message.channel.trigger_typing()
+
+		# Filter for incoming messages
+		messageCheck = lambda m: (m.author == message.author) and (m.channel == message.channel)
 
 		thejson = await self.getNSOJSON(message, self.app_head, "https://app.splatoon2.nintendo.net/api/timeline")
 		if thejson == None:
@@ -722,36 +743,39 @@ class nsoHandler():
 		tmp_app_head_shop['x-unique-id'] = thejson['unique_id']
 
 		thejson = await self.getNSOJSON(message, self.app_head, "https://app.splatoon2.nintendo.net/api/onlineshop/merchandises")
-		gearToBuy = thejson['merchandises'][int(orderID)]
+		merches = list(filter(lambda g: g['id'] == merchid, thejson['merchandises']))
+		if len(merches) == 0:
+			await message.channel.send("Can't find that merch in the store!")
+			return
+		gearToBuy = merches[0]
 		orderedFlag = 'ordered_info' in thejson
 
-		if order == -1:
+		if confirm:
 			embed = self.makeGearEmbed(gearToBuy, message.author.name + ' - Order gear?', "Respond with 'yes' to place your order, 'no' to cancel")
 			await message.channel.send(embed=embed)
-			confirm = await self.client.wait_for('message', check=check)
-		else:
-			confirm = message
+			confirmation = await self.client.wait_for('message', check = messageCheck)
+			if not 'yes' in confirmation.content.lower():
+				await message.channel.send(message.author.name + " - order canceled")
+				return
 
 		await message.channel.trigger_typing()
-		if ('yes' in confirm.content.lower() or order != -1) and not orderedFlag:
+		if not orderedFlag:
 			if await self.postNSOStore(message, gearToBuy['id'], tmp_app_head_shop):
 				await message.channel.send(message.author.name + " - ordered!")
 			else:
 				await message.channel.send(message.author.name + "  - failed to order")
-		elif ('yes' in confirm.content.lower() or order != -1) and orderedFlag:
+		else:
 			ordered = thejson['ordered_info']
 			embed = self.makeGearEmbed(ordered, message.author.name + ", you already have an item on order!", "Respond with 'yes' to replace your order, 'no' to cancel")
 			await message.channel.send(embed=embed)
-			confirm = await self.client.wait_for('message', check=check)
-			if 'yes' in confirm.content.lower():
+			confirmation = await self.client.wait_for('message', check = messageCheck)
+			if 'yes' in confirmation.content.lower():
 				if await self.postNSOStore(message, gearToBuy['id'], tmp_app_head_shop, override=True):
 					await message.channel.send(message.author.name + " - ordered!")
 				else:
 					await message.channel.send(message.author.name + "  - failed to order")
 			else:
-				await message.channel.send(message.author.name + " - order canceled")			
-		else:
-			await message.channel.send(message.author.name + " - order canceled")
+				await message.channel.send(message.author.name + " - order canceled")
 
 	async def postNSOStore(self, message, gid, app_head, override=False):
 		iksm = await self.nsotoken.get_iksm_token_mysql(message.author.id)

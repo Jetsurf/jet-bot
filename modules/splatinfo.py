@@ -1,9 +1,9 @@
 import random
 
 class SplatMatchItem():
-	def __init__(self, name, abbrevs):
+	def __init__(self, name, abbrevs = []):
 		self._name      = name
-		self._abbrevs   = abbrevs or []
+		self._abbrevs   = abbrevs
 
 	def name(self):
 		return self._name
@@ -23,6 +23,15 @@ class SplatMatchItem():
 
 	def hasAbbrev(self, a):
 		return a.lower() in self._abbrevs
+
+class SplatStoreMerch(SplatMatchItem):
+        def __init__(self, name, index, merchid):
+                self._merchid = merchid
+
+                super().__init__(name, [str(index)])
+
+        def merchid(self):
+                return self._merchid
 
 class SplatMode(SplatMatchItem):
 	pass
