@@ -47,7 +47,13 @@ class SplatSpecial(SplatMatchItem):
 	pass
 
 class SplatWeaponType(SplatMatchItem):
-	pass
+	def __init__(self, name, pluralname, abbrevs):
+		self._pluralname = pluralname
+
+		super().__init__(name, abbrevs)
+
+	def pluralname(self):
+		return self._pluralname
 
 class SplatWeapon(SplatMatchItem):
 	def __init__(self, name, abbrevs, type, sub, special, specpts, level, id, dupid):
@@ -279,15 +285,15 @@ class SplatInfo():
 
 	def initWeaponTypes(self):
 		self.weapontypes = [
-			SplatWeaponType("Shooter", ["s"]),
-			SplatWeaponType("Blaster", ["bl"]),
-			SplatWeaponType("Roller", ["r"]),
-			SplatWeaponType("Charger", ["c", "sniper"]),
-			SplatWeaponType("Slosher", ["sl", "bucket"]),
-			SplatWeaponType("Splatling", ["sp", "gatling"]),
-			SplatWeaponType("Dualies", ["d"]),
-			SplatWeaponType("Brella", ["bre", "u", "umbrella", "brolly"]),
-			SplatWeaponType("Brush", ["bru"]),
+			SplatWeaponType("Shooter",   "Shooters",   ["s"]),
+			SplatWeaponType("Blaster",   "Blasters",   ["bl"]),
+			SplatWeaponType("Roller",    "Rollers",    ["r"]),
+			SplatWeaponType("Charger",   "Chargers",   ["c", "sniper"]),
+			SplatWeaponType("Slosher",   "Sloshers",   ["sl", "bucket"]),
+			SplatWeaponType("Splatling", "Splatlings", ["sp", "gatling"]),
+			SplatWeaponType("Dualies",   "Dualies",    ["d"]),
+			SplatWeaponType("Brella",    "Brellas",    ["bre", "u", "umbrella", "brolly"]),
+			SplatWeaponType("Brush",     "Brushes",    ["bru"]),
 		]
 
 	def initWeapons(self):

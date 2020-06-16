@@ -1122,22 +1122,23 @@ class nsoHandler():
 				await message.channel.send(embed=embed)
 		elif subcommand == "list":
 			if len(args) > 1:
-				t = self.splatInfo.matchWeaponType(args[1])
-				if not t.isValid():
-					await message.channel.send(actualSpecial.errorMessage("Try command 'weapons list' for a list."))
+				match = self.splatInfo.matchWeaponType(args[1])
+				if not match.isValid():
+					await message.channel.send(match.errorMessage("Try command 'weapons list' for a list."))
 					return
 
-				weaps = self.splatInfo.getWeaponsByType(t.get())
+				type = match.get()
+				weaps = self.splatInfo.getWeaponsByType(type)
 				embed = discord.Embed(colour=0x0004FF)
 				weapString = ""
 				for w in weaps:
 					weapString += w.name() + '\n'
 				embed.title = "Weapons List"
-				embed.add_field(name=t.get().name() + 's', value=weapString, inline=False)
+				embed.add_field(name=type.pluralname(), value=weapString, inline=False)
 				await message.channel.send(embed=embed)
 			else:
 				types = self.splatInfo.getAllWeaponTypes()
-				typelist = "Did you mean " + ", ".join(map(lambda t: t.format(), types[0:-1])) + ", or " + types[-1].format() + "?"
+				typelist = ", ".join(map(lambda t: t.format(), types[0:-1])) + ", or " + types[-1].format() + "?"
 				await message.channel.send("Need a type to list. Types are: " + typelist)
 			return
 		elif subcommand == "stats":
