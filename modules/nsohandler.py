@@ -200,23 +200,6 @@ class nsoHandler():
 		try:	
 			resp = await self.client.wait_for('message', timeout=7100, check=check1)
 		except:
-			#No response
-			print("TIMEOUT: Keeping " + theMem.name + " in DM's")
-			stmt = 'SELECT ability, brand, gearname FROM storedms WHERE (clientid = %s) AND ((ability = %s) OR (brand = %s) OR (gearname = %s))'
-			await cur.execute(stmt, (theMem.id, theSkill, theBrand, theType, ))
-			fields = await cur.fetchall()
-			string = "Didn't get a message from you. The item I notified you about will be on the store for another 10 hours. I'll DM you again when gear with "
-			for i in fields:
-				if i[0] != None:
-					string+=theSkill + ", "
-				if i[1] != None:
-					string+=theBrand + ", "
-				if i[2] != None:
-					string+=theType + ", "
-
-			string = "".join(string.rsplit(", ", 1)) + " appears in the shop"
-			string = " or ".join(string.rsplit(", ", 1))
-			await theMem.send(string)
 			return
 
 		if 'stop' in resp.content.lower():
