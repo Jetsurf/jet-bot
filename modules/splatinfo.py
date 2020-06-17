@@ -1,9 +1,9 @@
 import random
 
 class SplatMatchItem():
-	def __init__(self, name, abbrevs):
+	def __init__(self, name, abbrevs = []):
 		self._name      = name
-		self._abbrevs   = abbrevs or []
+		self._abbrevs   = abbrevs
 
 	def name(self):
 		return self._name
@@ -23,6 +23,15 @@ class SplatMatchItem():
 
 	def hasAbbrev(self, a):
 		return a.lower() in self._abbrevs
+
+class SplatStoreMerch(SplatMatchItem):
+        def __init__(self, name, index, merchid):
+                self._merchid = merchid
+
+                super().__init__(name, [str(index)])
+
+        def merchid(self):
+                return self._merchid
 
 class SplatMode(SplatMatchItem):
 	pass
@@ -47,7 +56,13 @@ class SplatSpecial(SplatMatchItem):
 	pass
 
 class SplatWeaponType(SplatMatchItem):
-	pass
+	def __init__(self, name, pluralname, abbrevs):
+		self._pluralname = pluralname
+
+		super().__init__(name, abbrevs)
+
+	def pluralname(self):
+		return self._pluralname
 
 class SplatWeapon(SplatMatchItem):
 	def __init__(self, name, abbrevs, type, sub, special, specpts, level, id, dupid):
@@ -151,10 +166,13 @@ class SplatMatchResult():
 			return self.items[0]
 		return None
 
-	def errorMessage(self):
+	def errorMessage(self, listhelp):
 		l = len(self.items)
 		if l == 0:
-			return "I don't know of any " + self.type + " named '" + self.query + "'. Try command '" + self.type + "s list' for a list."
+			msg = "I don't know of any " + self.type + " named '" + self.query + "'."
+			if listhelp:
+				msg += " " + listhelp
+			return msg
 		elif l == 1:
 			return None
 		elif l == 2:
@@ -164,7 +182,10 @@ class SplatMatchResult():
 			str += ", or " + self.items[l - 1].format() + "?"
 			return str
 
-		return "Try command '" + self.type + "s list' for a list of " + self.type + "s."
+		msg = "What is '" + self.query + "'?"
+		if listhelp:
+			msg += " " + listhelp
+		return msg
 
 
 class SplatInfo():
@@ -273,15 +294,15 @@ class SplatInfo():
 
 	def initWeaponTypes(self):
 		self.weapontypes = [
-			SplatWeaponType("Shooter", ["s"]),
-			SplatWeaponType("Blaster", ["bl"]),
-			SplatWeaponType("Roller", ["r"]),
-			SplatWeaponType("Charger", ["c", "sniper"]),
-			SplatWeaponType("Slosher", ["sl", "bucket"]),
-			SplatWeaponType("Splatling", ["sp", "gatling"]),
-			SplatWeaponType("Dualies", ["d"]),
-			SplatWeaponType("Brella", ["bre", "u", "umbrella", "brolly"]),
-			SplatWeaponType("Brush", ["bru"]),
+			SplatWeaponType("Shooter",   "Shooters",   ["s"]),
+			SplatWeaponType("Blaster",   "Blasters",   ["bl"]),
+			SplatWeaponType("Roller",    "Rollers",    ["r"]),
+			SplatWeaponType("Charger",   "Chargers",   ["c", "sniper"]),
+			SplatWeaponType("Slosher",   "Sloshers",   ["sl", "bucket"]),
+			SplatWeaponType("Splatling", "Splatlings", ["sp", "gatling"]),
+			SplatWeaponType("Dualies",   "Dualies",    ["d"]),
+			SplatWeaponType("Brella",    "Brellas",    ["bre", "u", "umbrella", "brolly"]),
+			SplatWeaponType("Brush",     "Brushes",    ["bru"]),
 		]
 
 	def initWeapons(self):

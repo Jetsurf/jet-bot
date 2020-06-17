@@ -410,7 +410,7 @@ async def on_message(message):
 	elif cmd == 'rank':
 		await nsoHandler.getRanks(message)
 	elif cmd == 'order':
-		await nsoHandler.orderGear(message, args=args)
+		await nsoHandler.orderGearCommand(message, args=args)
 	elif cmd == 'stats':
 		await nsoHandler.getStats(message)
 	elif cmd == 'srstats':

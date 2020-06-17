@@ -3,6 +3,7 @@ import mysqlhandler, nsotoken
 import time, requests
 import json, os
 import urllib, urllib.request
+import splatinfo
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 class nsoHandler():
@@ -199,23 +200,6 @@ class nsoHandler():
 		try:	
 			resp = await self.client.wait_for('message', timeout=7100, check=check1)
 		except:
-			#No response
-			print("TIMEOUT: Keeping " + theMem.name + " in DM's")
-			stmt = 'SELECT ability, brand, gearname FROM storedms WHERE (clientid = %s) AND ((ability = %s) OR (brand = %s) OR (gearname = %s))'
-			await cur.execute(stmt, (theMem.id, theSkill, theBrand, theType, ))
-			fields = await cur.fetchall()
-			string = "Didn't get a message from you. The item I notified you about will be on the store for another 10 hours. I'll DM you again when gear with "
-			for i in fields:
-				if i[0] != None:
-					string+=theSkill + ", "
-				if i[1] != None:
-					string+=theBrand + ", "
-				if i[2] != None:
-					string+=theType + ", "
-
-			string = "".join(string.rsplit(", ", 1)) + " appears in the shop"
-			string = " or ".join(string.rsplit(", ", 1))
-			await theMem.send(string)
 			return
 
 		if 'stop' in resp.content.lower():
@@ -299,7 +283,7 @@ class nsoHandler():
 				await self.sqlBroker.commit(cur)
 				
 		elif 'order' in resp.content.lower():
-			await self.orderGear(resp, order=5)
+			await self.orderGearCommand(resp, order=5)
 		else:
 			#Response but nothing understood
 			print("Keeping " + theMem.name + " in DM's")
@@ -681,7 +665,7 @@ class nsoHandler():
 		embed.add_field(name="Directions", value=dirs, inline=False)
 		return embed
 
-	async def orderGear(self, message, args=None, order=-1):
+	async def orderGearCommand(self, message, args=None, order=-1):
 		await message.channel.trigger_typing()
 
 		def check(m):
@@ -700,19 +684,39 @@ class nsoHandler():
 				return
 
 		if order != -1:
-			orderID = order
+			merchid = self.storeJSON['merchandises'][order]['id']
 		elif args != None:
 			if len(args) == 0:
 				await message.channel.send("I need an item to order, please use 'ID to order' from splatnetgear!")
 				return
-			elif args[0].isdigit() and int(args[0]) <= 5 and int(args[0]) >= 0:
-				orderID = args[0]
-			else:
-				await message.channel.send("I didn't quite understand that, please use 'ID to order' from splatnetgear!")
+
+			# Build a list of SplatStoreMerch items to match against
+			merchitems = []
+			for i in range(0, len(self.storeJSON['merchandises'])):
+				merch = self.storeJSON['merchandises'][i]
+				merchitems.append(splatinfo.SplatStoreMerch(merch['gear']['name'], i, merch['id']))
+
+			# Try the match
+			match = self.splatInfo.matchItems("store merchandise", merchitems, " ".join(args))
+			if not match.isValid():
+				await message.channel.send(match.errorMessage("Try command 'splatnetgear' for a list."))
 				return
+
+			merchid = match.get().merchid()
 		else:
 			await message.channel.send("Order called improperly! Please report this to my support discord!")
 			return
+
+		await self.orderGear(message, merchid, confirm = (order == -1))
+
+	# Tries to order gear with the given merchid.
+	# The 'merchid' is a long numeric string assigned by Nintendo (e.g. "4782435326394656903").
+	# If 'confirm' is true then we ask the user if they really want to order.
+	async def orderGear(self, message, merchid, confirm = True):
+		await message.channel.trigger_typing()
+
+		# Filter for incoming messages
+		messageCheck = lambda m: (m.author == message.author) and (m.channel == message.channel)
 
 		thejson = await self.getNSOJSON(message, self.app_head, "https://app.splatoon2.nintendo.net/api/timeline")
 		if thejson == None:
@@ -722,36 +726,39 @@ class nsoHandler():
 		tmp_app_head_shop['x-unique-id'] = thejson['unique_id']
 
 		thejson = await self.getNSOJSON(message, self.app_head, "https://app.splatoon2.nintendo.net/api/onlineshop/merchandises")
-		gearToBuy = thejson['merchandises'][int(orderID)]
+		merches = list(filter(lambda g: g['id'] == merchid, thejson['merchandises']))
+		if len(merches) == 0:
+			await message.channel.send("Can't find that merch in the store!")
+			return
+		gearToBuy = merches[0]
 		orderedFlag = 'ordered_info' in thejson
 
-		if order == -1:
+		if confirm:
 			embed = self.makeGearEmbed(gearToBuy, message.author.name + ' - Order gear?', "Respond with 'yes' to place your order, 'no' to cancel")
 			await message.channel.send(embed=embed)
-			confirm = await self.client.wait_for('message', check=check)
-		else:
-			confirm = message
+			confirmation = await self.client.wait_for('message', check = messageCheck)
+			if not 'yes' in confirmation.content.lower():
+				await message.channel.send(message.author.name + " - order canceled")
+				return
 
 		await message.channel.trigger_typing()
-		if ('yes' in confirm.content.lower() or order != -1) and not orderedFlag:
+		if not orderedFlag:
 			if await self.postNSOStore(message, gearToBuy['id'], tmp_app_head_shop):
 				await message.channel.send(message.author.name + " - ordered!")
 			else:
 				await message.channel.send(message.author.name + "  - failed to order")
-		elif ('yes' in confirm.content.lower() or order != -1) and orderedFlag:
+		else:
 			ordered = thejson['ordered_info']
 			embed = self.makeGearEmbed(ordered, message.author.name + ", you already have an item on order!", "Respond with 'yes' to replace your order, 'no' to cancel")
 			await message.channel.send(embed=embed)
-			confirm = await self.client.wait_for('message', check=check)
-			if 'yes' in confirm.content.lower():
+			confirmation = await self.client.wait_for('message', check = messageCheck)
+			if 'yes' in confirmation.content.lower():
 				if await self.postNSOStore(message, gearToBuy['id'], tmp_app_head_shop, override=True):
 					await message.channel.send(message.author.name + " - ordered!")
 				else:
 					await message.channel.send(message.author.name + "  - failed to order")
 			else:
-				await message.channel.send(message.author.name + " - order canceled")			
-		else:
-			await message.channel.send(message.author.name + " - order canceled")
+				await message.channel.send(message.author.name + " - order canceled")
 
 	async def postNSOStore(self, message, gid, app_head, override=False):
 		iksm = await self.nsotoken.get_iksm_token_mysql(message.author.id)
@@ -1025,7 +1032,7 @@ class nsoHandler():
 				themap = " ".join(args[1:])
 				match = self.splatInfo.matchMaps(themap)
 				if not match.isValid():
-					await message.channel.send(match.errorMessage())
+					await message.channel.send(match.errorMessage("Try command 'maps list' for a list."))
 					return
 				id = match.get().id()
 				await self.mapParser(message, id)
@@ -1051,7 +1058,7 @@ class nsoHandler():
 		elif "callout" in subcommand:
 			themap = self.splatInfo.matchMaps(" ".join(args[1:]))
 			if not themap.isValid():
-				await message.channel.send(themap.errorMessage())
+				await message.channel.send(themap.errorMessage("Try command 'maps list' for a list."))
 				return
 
 			shortname = themap.get().shortname().lower().replace(" ", "-")
@@ -1080,7 +1087,7 @@ class nsoHandler():
 				theWeapon = " ".join(args[1:])
 				match = self.splatInfo.matchWeapons(theWeapon)
 				if not match.isValid():
-					await message.channel.send(match.errorMessage())
+					await message.channel.send(match.errorMessage("Try command 'weapons list' for a list."))
 					return
 				weap = match.get()
 				embed = discord.Embed(colour=0x0004FF)
@@ -1122,28 +1129,31 @@ class nsoHandler():
 				await message.channel.send(embed=embed)
 		elif subcommand == "list":
 			if len(args) > 1:
-				t = self.splatInfo.matchWeaponType(args[1])
-				if not t.isValid():
-					await message.channel.send("I don't know of any weapontype named " + args[1] + ". Try command 'weapons list' for a list.")
+				match = self.splatInfo.matchWeaponType(args[1])
+				if not match.isValid():
+					await message.channel.send(match.errorMessage("Try command 'weapons list' for a list."))
 					return
 
-				weaps = self.splatInfo.getWeaponsByType(t.get())
+				type = match.get()
+				weaps = self.splatInfo.getWeaponsByType(type)
 				embed = discord.Embed(colour=0x0004FF)
 				weapString = ""
 				for w in weaps:
 					weapString += w.name() + '\n'
 				embed.title = "Weapons List"
-				embed.add_field(name=t.get().name() + 's', value=weapString, inline=False)
+				embed.add_field(name=type.pluralname(), value=weapString, inline=False)
 				await message.channel.send(embed=embed)
 			else:
-				await message.channel.send("Need a type to search, types are Shooter, Blaster, Roller, Charger, Slosher, Splatling, and Brella, ")
+				types = self.splatInfo.getAllWeaponTypes()
+				typelist = ", ".join(map(lambda t: t.format(), types[0:-1])) + ", or " + types[-1].format() + "?"
+				await message.channel.send("Need a type to list. Types are: " + typelist)
 			return
 		elif subcommand == "stats":
 			if len(args) > 1:
 				theWeapon = " ".join(args[1:])
 				match = self.splatInfo.matchWeapons(theWeapon)
 				if not match.isValid():
-					await message.channel.send(match.errorMessage())
+					await message.channel.send(match.errorMessage("Try command 'weapons list' for a list."))
 					return
 				id = match.get().id()
 				await self.weaponParser(message, id)
