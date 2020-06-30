@@ -1,9 +1,9 @@
 import random
 
 class SplatMatchItem():
-	def __init__(self, name, abbrevs = []):
+	def __init__(self, name, abbrevs = None):
 		self._name      = name
-		self._abbrevs   = abbrevs
+		self._abbrevs   = abbrevs or []
 
 	def name(self):
 		return self._name
@@ -166,7 +166,7 @@ class SplatMatchResult():
 			return self.items[0]
 		return None
 
-	def errorMessage(self, listhelp):
+	def errorMessage(self, listhelp = None):
 		l = len(self.items)
 		if l == 0:
 			msg = "I don't know of any " + self.type + " named '" + self.query + "'."
