@@ -72,7 +72,7 @@ class nsoHandler():
 
 	async def addStoreDM(self, message, args):
 		if len(args) == 0:
-			await message.channel.send("I need an ability to be able to DM you when it appears in the shop! Here are the options: " + abilitiesStr)
+			await message.channel.send("I need an item/brand/ability to search for!")
 			return
 
 		term = " ".join(args).lower()
