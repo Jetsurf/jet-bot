@@ -201,7 +201,7 @@ class Nsotoken():
 
 	def get_session_token(self, session_token_code, auth_code_verifier):
 		head = {
-			'User-Agent':      'OnlineLounge/1.6.1.2 NASDKAPI Android',
+			'User-Agent':      'OnlineLounge/1.8.0 NASDKAPI Android',
 			'Accept-Language': 'en-US',
 			'Accept':          'application/json',
 			'Content-Type':    'application/x-www-form-urlencoded',
@@ -255,7 +255,7 @@ class Nsotoken():
 			'Content-Length': '439',
 			'Accept': 'application/json',
 			'Connection': 'Keep-Alive',
-			'User-Agent': 'OnlineLounge/1.6.1.2 NASDKAPI Android'
+			'User-Agent': 'OnlineLounge/1.8.0 NASDKAPI Android'
 		}
 		body = {
 			'client_id': '71b963c1b7b6d119',
@@ -270,7 +270,7 @@ class Nsotoken():
 			return
 
 		head = {
-			'User-Agent': 'OnlineLounge/1.6.1.2 NASDKAPI Android',
+			'User-Agent': 'OnlineLounge/1.8.0 NASDKAPI Android',
 			'Accept-Language': 'en-US',
 			'Accept': 'application/json',
 			'Authorization': 'Bearer ' + id_response["access_token"],
@@ -288,9 +288,9 @@ class Nsotoken():
 		head = {
 			'Host': 'api-lp1.znc.srv.nintendo.net',
 			'Accept-Language': 'en-US',
-			'User-Agent': 'com.nintendo.znca/1.6.1 (Android/7.1.2)',
+			'User-Agent': 'com.nintendo.znca/1.8.0 (Android/7.1.2)',
 			'Accept': 'application/json',
-			'X-ProductVersion': '1.6.1.2',
+			'X-ProductVersion': '1.8.0',
 			'Content-Type': 'application/json; charset=utf-8',
 			'Connection': 'Keep-Alive',
 			'Authorization': 'Bearer',
@@ -334,9 +334,9 @@ class Nsotoken():
 
 		head = {
 			'Host': 'api-lp1.znc.srv.nintendo.net',
-			'User-Agent': 'com.nintendo.znca/1.6.1 (Android/7.1.2)',
+			'User-Agent': 'com.nintendo.znca/1.8.0 (Android/7.1.2)',
 			'Accept': 'application/json',
-			'X-ProductVersion': '1.6.1.2',
+			'X-ProductVersion': '1.8.0',
 			'Content-Type': 'application/json; charset=utf-8',
 			'Connection': 'Keep-Alive',
 			'Authorization': 'Bearer ' + splatoon_token["result"]["webApiServerCredential"]["accessToken"],
