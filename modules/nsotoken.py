@@ -162,7 +162,7 @@ class Nsotoken():
 			await message.channel.send("Something went wrong! Join my support discord and report that something broke!")
 
 	def get_hash(self, id_token, timestamp):
-		version = '1.5.4'
+		version = '1.5.6'
 		api_app_head = { 'User-Agent': "splatnet2statink/" + version }
 		api_body = { 'naIdToken': id_token, 'timestamp': timestamp }
 		api_response = requests.post("https://elifessler.com/s2s/api/gen2", headers=api_app_head, data=api_body)
@@ -201,7 +201,7 @@ class Nsotoken():
 
 	def get_session_token(self, session_token_code, auth_code_verifier):
 		head = {
-			'User-Agent':      'OnlineLounge/1.8.0 NASDKAPI Android',
+			'User-Agent':      'OnlineLounge/1.9.0 NASDKAPI Android',
 			'Accept-Language': 'en-US',
 			'Accept':          'application/json',
 			'Content-Type':    'application/x-www-form-urlencoded',
@@ -234,6 +234,7 @@ class Nsotoken():
 			'x-iid':   login
 		}
 		api_response = requests.get("https://flapg.com/ika2/api/login?public", headers=api_app_head)
+		print(str(api_response) + ' and ' + str(api_response.text))
 		if '404' in str(api_response):
 			print("ISSUE WITH FLAPG - 404")
 			return 404
@@ -255,7 +256,7 @@ class Nsotoken():
 			'Content-Length': '439',
 			'Accept': 'application/json',
 			'Connection': 'Keep-Alive',
-			'User-Agent': 'OnlineLounge/1.8.0 NASDKAPI Android'
+			'User-Agent': 'OnlineLounge/1.9.0 NASDKAPI Android'
 		}
 		body = {
 			'client_id': '71b963c1b7b6d119',
@@ -270,7 +271,7 @@ class Nsotoken():
 			return
 
 		head = {
-			'User-Agent': 'OnlineLounge/1.8.0 NASDKAPI Android',
+			'User-Agent': 'OnlineLounge/1.9.0 NASDKAPI Android',
 			'Accept-Language': 'en-US',
 			'Accept': 'application/json',
 			'Authorization': 'Bearer ' + id_response["access_token"],
@@ -288,9 +289,9 @@ class Nsotoken():
 		head = {
 			'Host': 'api-lp1.znc.srv.nintendo.net',
 			'Accept-Language': 'en-US',
-			'User-Agent': 'com.nintendo.znca/1.8.0 (Android/7.1.2)',
+			'User-Agent': 'com.nintendo.znca/1.9.0 (Android/7.1.2)',
 			'Accept': 'application/json',
-			'X-ProductVersion': '1.8.0',
+			'X-ProductVersion': '1.9.0',
 			'Content-Type': 'application/json; charset=utf-8',
 			'Connection': 'Keep-Alive',
 			'Authorization': 'Bearer',
@@ -334,9 +335,9 @@ class Nsotoken():
 
 		head = {
 			'Host': 'api-lp1.znc.srv.nintendo.net',
-			'User-Agent': 'com.nintendo.znca/1.8.0 (Android/7.1.2)',
+			'User-Agent': 'com.nintendo.znca/1.9.0 (Android/7.1.2)',
 			'Accept': 'application/json',
-			'X-ProductVersion': '1.8.0',
+			'X-ProductVersion': '1.9.0',
 			'Content-Type': 'application/json; charset=utf-8',
 			'Connection': 'Keep-Alive',
 			'Authorization': 'Bearer ' + splatoon_token["result"]["webApiServerCredential"]["accessToken"],
