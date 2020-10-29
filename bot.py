@@ -361,7 +361,7 @@ async def on_message(message):
 	elif cmd == 'storejson' and message.author in owners:
 		await nsoHandler.getStoreJSON(message)
 	elif cmd == 'admin':
-		if message.author in serverAdmins[theServer]:
+		if message.author.guild_permissions.administrator:
 			if len(args) == 0:
 				await message.channel.send("Options for admin commands are playlist, blacklist, dm, prefix")
 				await serverUtils.print_help(message, prefix)
