@@ -14,15 +14,16 @@ import traceback, textwrap, io, signal
 from contextlib import redirect_stdout
 from subprocess import call
 
-client = discord.Client()
 splatInfo = splatinfo.SplatInfo()
+intents = discord.Intents.default()
+intents.members = True
+client = discord.Client(intents=intents)
 commandParser = None
 serverConfig = None
 mysqlHandler = None
 nsoHandler = None
 nsoTokens = None
 serverVoices = {}
-serverAdmins = {}
 serverUtils = None
 acHandler = None
 doneStartup = False
@@ -58,41 +59,7 @@ def loadConfig():
 	except Exception as e:
 		print('Failed to load config: ' + str(e))
 		quit(1)
-
-def scanAdmins(id=None):
-	global serverAdmins, doneStartup
-
-	if not doneStartup:
-		for server in client.guilds:
-			serverAdmins[server.id] = []
-			for mem in server.members:
-				if mem.guild_permissions.administrator and mem not in serverAdmins[server.id]:
-					serverAdmins[server.id].append(mem)
-	else:
-		serverAdmins[id.id] = []
-		for mem in id.members:
-			if mem.guild_permissions.administrator and mem not in serverAdmins[id.id]:
-				serverAdmins[id.id].append(mem)
 							
-@client.event
-async def on_member_update(before, after):
-	global serverAdmins, doneStartup
-
-	if not doneStartup:
-		return
-
-	if after.guild_permissions.administrator and after not in serverAdmins[after.guild.id]:
-		serverAdmins[after.guild.id].append(after)
-	elif not after.guild_permissions.administrator and after in serverAdmins[after.guild.id]:
-		serverAdmins[after.guild.id].remove(after)
-
-@client.event
-async def on_guild_role_update(before, after):
-	global doneStartup
-
-	if doneStartup:
-		scanAdmins(id=before.guild)
-
 @client.event
 async def on_ready():
 	global client, soundsDir, mysqlHandler, serverUtils, serverVoices, splatInfo, helpfldr
@@ -133,7 +100,6 @@ async def on_ready():
 		nsoHandler = nsohandler.nsoHandler(client, mysqlHandler, nsoTokens, splatInfo)
 		acHandler = achandler.acHandler(client, mysqlHandler, nsoTokens)
 		await nsoHandler.updateS2JSON()
-		scanAdmins()
 		await mysqlHandler.startUp()
 		print('Done\n------')
 		await client.change_presence(status=discord.Status.online, activity=discord.Game("Use !help for directions!"))
@@ -144,21 +110,26 @@ async def on_ready():
 	
 @client.event
 async def on_member_remove(member):
-	global serverAdmins, serverUtils, doneStartup
+	global serverUtils, doneStartup
 
 	if not doneStartup:
 		return
 
-	for mem in serverAdmins[member.guild.id]:
-		if mem.id != client.user.id and await serverUtils.checkDM(mem.id, member.guild.id):
-			await mem.send(member.name + " left " + member.guild.name)
+	print("TEST: " + str(await serverUtils.getAllDM(member.guild.id)))
+
+	gid = member.guild.id
+	for mem in await serverUtils.getAllDM(gid):
+		memid = mem[0]
+		print(str(memid))
+		memobj = client.get_guild(gid).get_member(memid)
+		if memobj.guild_permissions.administrator:
+			await memobj.send(member.name + " left " + member.guild.name)
 			
 @client.event
 async def on_guild_join(server):
 	global serverVoices, head, url, dev, owners, mysqlHandler
 	print("I joined server: " + server.name)
 	serverVoices[server.id] = vserver.voiceServer(client, mysqlHandler, server.id, soundsDir)
-	scanAdmins(id=server)
 
 	if dev == 0:
 		print('I am now in ' + str(len(client.guilds)) + ' servers, posting to discordbots.org')
@@ -290,7 +261,7 @@ async def doEval(message):
 
 @client.event
 async def on_message(message):
-	global serverVoices, serverAdmins, soundsDir, serverUtils, mysqlHandler
+	global serverVoices, soundsDir, serverUtils, mysqlHandler
 	global nsoHandler, owners, commandParser, doneStartup, acHandler, nsoTokens
 
 	# Filter out bots and system messages or handling of messages until startup is done

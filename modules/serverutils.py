@@ -77,6 +77,14 @@ class serverUtils():
 		await self.serverConfig.removeConfigValue(message.guild.id, "announcement.channelid")
 		await message.channel.send("Your guild is now unsubscribed from receiving announcements")
 
+	async def getAllDM(self, serverid):
+		cur = await self.sqlBroker.connect()
+		stmt = "SELECT clientid FROM dms WHERE serverid = %s"
+		await cur.execute(stmt, (serverid,))
+		mems = await cur.fetchall()
+		await self.sqlBroker.close(cur)
+		return mems
+
 	async def checkDM(self, clientid, serverid):
 		cur = await self.sqlBroker.connect()
 		stmt = "SELECT COUNT(*) FROM dms WHERE serverid = %s AND clientid = %s"
