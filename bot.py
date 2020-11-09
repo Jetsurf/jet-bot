@@ -115,12 +115,9 @@ async def on_member_remove(member):
 	if not doneStartup:
 		return
 
-	print("TEST: " + str(await serverUtils.getAllDM(member.guild.id)))
-
 	gid = member.guild.id
 	for mem in await serverUtils.getAllDM(gid):
 		memid = mem[0]
-		print(str(memid))
 		memobj = client.get_guild(gid).get_member(memid)
 		if memobj.guild_permissions.administrator:
 			await memobj.send(member.name + " left " + member.guild.name)
