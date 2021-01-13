@@ -15,6 +15,7 @@ class nsoHandler():
 		self.scheduler = AsyncIOScheduler()
 		self.scheduler.add_job(self.doStoreDM, 'cron', hour="*/2", minute='5') 
 		self.scheduler.add_job(self.updateS2JSON, 'cron', hour="*/2", minute='0', second='15')
+		self.scheduler.add_job(self.doFeed, 'cron', second=0)
 		self.scheduler.start()
 		self.mapJSON = None
 		self.storeJSON = None
@@ -53,6 +54,35 @@ class nsoHandler():
 			'Accept-Encoding': 'gzip, deflate',
 			'Accept-Language': 'en-us'
 		}
+
+	async def doFeed(self):
+		cur = await self.sqlBroker.connect()
+		stmt = "SELECT * FROM feeds"
+		feeds = await cur.execute(stmt)
+		feeds = await cur.fetchall()
+		print("FEEDS: " + str(feeds))
+
+		mapsembed = await self.maps(offset=0, flag=1)
+
+		for server in range(len(feeds)):
+			print("STR: " + str(feeds[server][0]))
+			print("STR: " + str(feeds[server][1]))
+			print("STR: " + str(feeds[server][2]))
+			serverid = feeds[server][0]
+			channelid = feeds[server][1]
+			notitype = feeds[server][2]
+
+			for server in self.client.guilds:
+				theServer = self.client.get_guild(serverid)
+				print("Server: " + str(theServer))
+				if theServer == None:
+					continue
+				
+				theChannel = theServer.get_channel(channelid)
+
+				await theChannel.send(embed=mapsembed)
+
+		await self.sqlBroker.close(cur)
 
 	async def updateS2JSON(self):
 		useragent = { 'User-Agent' : 'jet-bot/1.0 (discord:jetsurf#8514)' }
@@ -809,7 +839,7 @@ class nsoHandler():
 		embed.set_footer(text='Next Item In '+ str(hours) + ' Hours ' + str(minutes) + ' minutes')
 		await message.channel.send(embed=embed)
 
-	async def maps(self, message, offset=0):
+	async def maps(self, message=None, offset=0, flag=0):
 		theTime = int(time.mktime(time.gmtime()))
 		trfWar = self.mapsJSON['regular']
 		ranked = self.mapsJSON['gachi']
@@ -851,7 +881,10 @@ class nsoHandler():
 			hours = hours - 2
 			embed.add_field(name="Time Until Map Rotation", value=str(hours) + ' Hours, and ' + str(minutes) + ' minutes', inline=False)
 
-		await message.channel.send(embed=embed)
+		if flag == 0:
+			await message.channel.send(embed=embed)
+		if flag == 1:
+			return embed
 
 	async def srParser(self, message, getNext=0):
 		theTime = int(time.mktime(time.gmtime()))

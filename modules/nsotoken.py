@@ -55,7 +55,6 @@ class Nsotoken():
 			stmt = "INSERT INTO tokens (clientid, session_time, session_token) VALUES(%s, %s, %s)"
 			input = (str(message.author.id), formatted_date, str(session_token),)
 
-
 		await cur.execute(stmt, input)
 		if cur.lastrowid != None:
 			await self.sqlBroker.commit(cur)
