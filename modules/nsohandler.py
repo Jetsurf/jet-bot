@@ -62,15 +62,7 @@ class nsoHandler():
 		feeds = await cur.fetchall()
 		print("FEEDS: " + str(feeds))
 
-		#mapsembed = await self.maps(offset=0, flag=1)
-
 		for server in range(len(feeds)):
-			print("STR: " + str(feeds[server][0]))
-			print("STR: " + str(feeds[server][1]))
-			print("STR: " + str(feeds[server][2]))
-			print("STR: " + str(feeds[server][3]))
-			print("STR: " + str(feeds[server][4]))
-
 			serverid = feeds[server][0]
 			channelid = feeds[server][1]
 			mapflag = feeds[server][2]
@@ -79,13 +71,10 @@ class nsoHandler():
 
 			for server in self.client.guilds:
 				theServer = self.client.get_guild(serverid)
-				print("Server: " + str(theServer))
 				if theServer == None:
 					continue
 				
 				theChannel = theServer.get_channel(channelid)
-
-				#await self.make_notification(str(notitype))
 				await theChannel.send(embed=await self.make_notification(bool(mapflag), bool(srflag), bool(gearflag)))
 
 		await self.sqlBroker.close(cur)
@@ -97,7 +86,6 @@ class nsoHandler():
 		if mapflag:
 			#maps
 			turf, ranked, league = await self.maps(offset=0, flag=1)
-			print(f"Turf {str(turf)} Ranked {str(ranked)} League {str(league)}")
 			embed.add_field(name="Maps", value="Maps currently on rotation", inline=False)
 			embed.add_field(name="<:turfwar:550107083911987201> Turf War", value=turf['mapA']['name'] + "\n" + turf['mapB']['name'], inline=True)
 			embed.add_field(name="<:ranked:550107084684001350> Ranked: " + ranked['rule']['name'], value=ranked['mapA']['name'] + "\n" + ranked['mapB']['name'], inline=True)
@@ -126,14 +114,13 @@ class nsoHandler():
 			else:
 				embed.add_field(name="Salmon Run", value="Current SR Rotation", inline=False)
 				embed.add_field(name='Map', value=srdata['map']['name'], inline=False)
-				embed.add_field(name='Weapons', value=srdata['weapons'], inline=False)
+				embed.add_field(name='Weapons', value=srdata['weapons'].replace('\n', ', '), inline=False)
 				embed.add_field(name="Time Remaining for SR Rotation", value=str(days) + ' Days, ' + str(hours) + ' Hours, and ' + str(minutes) + ' Minutes')
 
 		if gearflag:
 			#gear
 
 			gear = await self.gearParser(flag=1)
-			print("GEAR: " + str(gear))
 			embed.add_field(name="Gear", value="Gear on rotation", inline=False)
 			embed.add_field(name='**' + gear['gear']['name'] + '**', value=gear['gear']['brand']['name'] + ' : ' + gear['kind'], inline=False)
 			embed.add_field(name="ID/Subs/Price", value="5/" + str(gear['gear']['rarity'] + 1) + "/" + str(gear['price']), inline=True)

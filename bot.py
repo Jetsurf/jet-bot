@@ -372,7 +372,10 @@ async def on_message(message):
 					await commandParser.setPrefix(theServer, args[1])
 					await channel.send("New command prefix is: " + await commandParser.getPrefix(theServer))
 			elif subcommand == 'feed':
-				await serverUtils.createFeed(message)
+				if len(args) == 1:
+					await serverUtils.createFeed(message)
+				elif 'delete' in args[1].lower():
+					await serverUtils.deleteFeed(message)
 		else:
 			await channel.send(message.author.name + " you are not an admin... :cop:")
 	elif cmd == 'alive':
