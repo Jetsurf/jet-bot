@@ -68,9 +68,14 @@ class nsoHandler():
 			print("STR: " + str(feeds[server][0]))
 			print("STR: " + str(feeds[server][1]))
 			print("STR: " + str(feeds[server][2]))
+			print("STR: " + str(feeds[server][3]))
+			print("STR: " + str(feeds[server][4]))
+
 			serverid = feeds[server][0]
 			channelid = feeds[server][1]
-			notitype = feeds[server][2]
+			mapflag = feeds[server][2]
+			srflag = feeds[server][3]
+			gearflag = feeds[server][4]
 
 			for server in self.client.guilds:
 				theServer = self.client.get_guild(serverid)
@@ -81,24 +86,24 @@ class nsoHandler():
 				theChannel = theServer.get_channel(channelid)
 
 				#await self.make_notification(str(notitype))
-				await theChannel.send(embed=await self.make_notification(str(notitype)))
-
+				await theChannel.send(embed=await self.make_notification(bool(mapflag), bool(srflag), bool(gearflag)))
 
 		await self.sqlBroker.close(cur)
 
-	async def make_notification(self, fields):
+	async def make_notification(self, mapflag, srflag, gearflag):
 		embed = discord.Embed(colour=0x3FFF33)
+		embed.title = "Rotation Feed"
 
-		if '0' in fields:
+		if mapflag:
 			#maps
 			turf, ranked, league = await self.maps(offset=0, flag=1)
 			print(f"Turf {str(turf)} Ranked {str(ranked)} League {str(league)}")
 			embed.add_field(name="Maps", value="Maps currently on rotation", inline=False)
-			embed.add_field(name="<:turfwar:550103899084816395> Turf War", value=turf['mapA']['name'] + "\n" + turf['mapB']['name'], inline=True)
-			embed.add_field(name="<:ranked:550104072456372245> Ranked: " + ranked['rule']['name'], value=ranked['mapA']['name'] + "\n" + ranked['mapB']['name'], inline=True)
-			embed.add_field(name="<:league:550104147463110656> League: " + league['rule']['name'], value=league['mapA']['name'] + "\n" + league['mapB']['name'], inline=True)
+			embed.add_field(name="<:turfwar:550107083911987201> Turf War", value=turf['mapA']['name'] + "\n" + turf['mapB']['name'], inline=True)
+			embed.add_field(name="<:ranked:550107084684001350> Ranked: " + ranked['rule']['name'], value=ranked['mapA']['name'] + "\n" + ranked['mapB']['name'], inline=True)
+			embed.add_field(name="<:league:550107083660328971> League: " + league['rule']['name'], value=league['mapA']['name'] + "\n" + league['mapB']['name'], inline=True)
 
-		if '0' in fields:
+		if srflag:
 			#sr
 			flag = 0
 			srdata = await self.srParser(getNext=0, flag=1)
@@ -122,9 +127,9 @@ class nsoHandler():
 				embed.add_field(name="Salmon Run", value="Current SR Rotation", inline=False)
 				embed.add_field(name='Map', value=srdata['map']['name'], inline=False)
 				embed.add_field(name='Weapons', value=srdata['weapons'], inline=False)
-				embed.add_field(name="Time Remaining on Rotation", value=str(days) + ' Days, ' + str(hours) + ' Hours, and ' + str(minutes) + ' Minutes')
+				embed.add_field(name="Time Remaining for SR Rotation", value=str(days) + ' Days, ' + str(hours) + ' Hours, and ' + str(minutes) + ' Minutes')
 
-		if '0' in fields:
+		if gearflag:
 			#gear
 
 			gear = await self.gearParser(flag=1)
