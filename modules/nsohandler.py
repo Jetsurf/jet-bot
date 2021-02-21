@@ -15,7 +15,7 @@ class nsoHandler():
 		self.scheduler = AsyncIOScheduler()
 		self.scheduler.add_job(self.doStoreDM, 'cron', hour="*/2", minute='5') 
 		self.scheduler.add_job(self.updateS2JSON, 'cron', hour="*/2", minute='0', second='15')
-		self.scheduler.add_job(self.doFeed, 'cron', second=0)
+		self.scheduler.add_job(self.doFeed, 'cron', hour="*/2", minute='0', second='15')
 		self.scheduler.start()
 		self.mapJSON = None
 		self.storeJSON = None
@@ -60,7 +60,7 @@ class nsoHandler():
 		stmt = "SELECT * FROM feeds"
 		feeds = await cur.execute(stmt)
 		feeds = await cur.fetchall()
-		print("FEEDS: " + str(feeds))
+		print("Processing: " + str(len(feeds)) + " feeds")
 
 		for server in range(len(feeds)):
 			serverid = feeds[server][0]
@@ -84,7 +84,6 @@ class nsoHandler():
 		embed.title = "Rotation Feed"
 
 		if mapflag:
-			#maps
 			turf, ranked, league = await self.maps(offset=0, flag=1)
 			embed.add_field(name="Maps", value="Maps currently on rotation", inline=False)
 			embed.add_field(name="<:turfwar:550107083911987201> Turf War", value=turf['mapA']['name'] + "\n" + turf['mapB']['name'], inline=True)
@@ -92,7 +91,6 @@ class nsoHandler():
 			embed.add_field(name="<:league:550107083660328971> League: " + league['rule']['name'], value=league['mapA']['name'] + "\n" + league['mapB']['name'], inline=True)
 
 		if srflag:
-			#sr
 			flag = 0
 			srdata = await self.srParser(getNext=0, flag=1)
 			if srdata == None:
@@ -108,18 +106,16 @@ class nsoHandler():
 
 			if flag == 1:
 				embed.add_field(name="Salmon Run", value="Next SR Rotation", inline=False)
-				embed.add_field(name='Map', value=srdata['map']['name'], inline=False)
-				embed.add_field(name='Weapons', value=dsrata['weapons'], inline=False)
-				embed.add_field(name='Time Until SR Rotation', value=str(days) + ' Days, ' + str(hours) + ' Hours, and ' + str(minutes) + ' Minutes')
+				embed.add_field(name='Map', value=srdata['map']['name'], inline=True)
+				embed.add_field(name='Weapons', value=dsrata['weapons'], inline=True)
+				embed.add_field(name='Time Until SR Rotation', value=str(days) + ' Days, ' + str(hours) + ' Hours, and ' + str(minutes) + ' Minutes', inline=False)
 			else:
 				embed.add_field(name="Salmon Run", value="Current SR Rotation", inline=False)
-				embed.add_field(name='Map', value=srdata['map']['name'], inline=False)
-				embed.add_field(name='Weapons', value=srdata['weapons'].replace('\n', ', '), inline=False)
-				embed.add_field(name="Time Remaining for SR Rotation", value=str(days) + ' Days, ' + str(hours) + ' Hours, and ' + str(minutes) + ' Minutes')
+				embed.add_field(name='Map', value=srdata['map']['name'], inline=True)
+				embed.add_field(name='Weapons', value=srdata['weapons'].replace('\n', ', ', 3), inline=True)
+				embed.add_field(name="Time Remaining for SR Rotation", value=str(days) + ' Days, ' + str(hours) + ' Hours, and ' + str(minutes) + ' Minutes', inline=False)
 
 		if gearflag:
-			#gear
-
 			gear = await self.gearParser(flag=1)
 			embed.add_field(name="Gear", value="Gear on rotation", inline=False)
 			embed.add_field(name='**' + gear['gear']['name'] + '**', value=gear['gear']['brand']['name'] + ' : ' + gear['kind'], inline=False)
@@ -127,7 +123,6 @@ class nsoHandler():
 			embed.add_field(name="Ability/Common Sub", value=gear['skill']['name'] + '/' + gear['gear']['brand']['frequent_skill']['name'], inline=True)
 
 		return embed
-
 
 	async def updateS2JSON(self):
 		useragent = { 'User-Agent' : 'jet-bot/1.0 (discord:jetsurf#8514)' }
