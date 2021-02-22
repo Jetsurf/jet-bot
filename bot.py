@@ -338,6 +338,12 @@ async def on_message(message):
 	elif cmd == 'storejson' and message.author in owners:
 		await nsoHandler.getStoreJSON(message)
 	elif cmd == 'admin':
+		if message.guild.get_member(message.author.id) == None:
+			print("Lazy loading member list for "  + str(msesage.guild.name))
+			server = await client.get_guild(message.guild.id)
+			await server.get_all_members()
+			print("Done")
+
 		if message.author.guild_permissions.administrator:
 			if len(args) == 0:
 				await message.channel.send("Options for admin commands are playlist, blacklist, dm, prefix")
