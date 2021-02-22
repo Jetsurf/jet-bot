@@ -28,6 +28,7 @@ serverUtils = None
 acHandler = None
 doneStartup = False
 token = ''
+hs = 0
 owners = []
 dev = 1
 soundsDir = ''
@@ -49,6 +50,7 @@ def loadConfig():
 			dbtoken = configData['discordbottok']
 			head = { 'Authorization': dbtoken }
 			url = 'https://top.gg/api/bots/' + str(dbid) + '/stats'
+			hs = configData['home_server']
 			dev = 0
 		except:
 			print('No ID/Token for top.gg, skipping')
@@ -62,11 +64,12 @@ def loadConfig():
 
 @client.event
 async def on_ready():
-	global client, soundsDir, mysqlHandler, serverUtils, serverVoices, splatInfo, helpfldr
+	global client, soundsDir, mysqlHandler, serverUtils, serverVoices, splatInfo, helpfldr, hs
 	global nsoHandler, nsoTokens, head, url, dev, owners, commandParser, doneStartup, acHandler
 
 	#This is needed due to no prsence intent, prod bot needs to find the devs in its primary server
-	await client.get_guild(543127511161372703).chunk()
+	print("Chunking home server to find owners")
+	await client.get_guild(hs).chunk()
 
 	if not doneStartup:
 		print('Logged in as,', client.user.name, client.user.id)
