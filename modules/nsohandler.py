@@ -15,6 +15,7 @@ class nsoHandler():
 		self.scheduler = AsyncIOScheduler()
 		self.scheduler.add_job(self.doStoreDM, 'cron', hour="*/2", minute='5') 
 		self.scheduler.add_job(self.updateS2JSON, 'cron', hour="*/2", minute='0', second='15')
+		self.scheduler.add_job(self.doFeed, 'cron', hour="*/2", minute='0', second='15')
 		self.scheduler.start()
 		self.mapJSON = None
 		self.storeJSON = None
@@ -53,6 +54,75 @@ class nsoHandler():
 			'Accept-Encoding': 'gzip, deflate',
 			'Accept-Language': 'en-us'
 		}
+
+	async def doFeed(self):
+		cur = await self.sqlBroker.connect()
+		stmt = "SELECT * FROM feeds"
+		feeds = await cur.execute(stmt)
+		feeds = await cur.fetchall()
+		print("Processing: " + str(len(feeds)) + " feeds")
+
+		for server in range(len(feeds)):
+			serverid = feeds[server][0]
+			channelid = feeds[server][1]
+			mapflag = feeds[server][2]
+			srflag = feeds[server][3]
+			gearflag = feeds[server][4]
+
+			for server in self.client.guilds:
+				theServer = self.client.get_guild(serverid)
+				if theServer == None:
+					continue
+				
+				theChannel = theServer.get_channel(channelid)
+				await theChannel.send(embed=await self.make_notification(bool(mapflag), bool(srflag), bool(gearflag)))
+
+		await self.sqlBroker.close(cur)
+
+	async def make_notification(self, mapflag, srflag, gearflag):
+		embed = discord.Embed(colour=0x3FFF33)
+		embed.title = "Rotation Feed"
+
+		if mapflag:
+			turf, ranked, league = await self.maps(offset=0, flag=1)
+			embed.add_field(name="Maps", value="Maps currently on rotation", inline=False)
+			embed.add_field(name="<:turfwar:550107083911987201> Turf War", value=turf['mapA']['name'] + "\n" + turf['mapB']['name'], inline=True)
+			embed.add_field(name="<:ranked:550107084684001350> Ranked: " + ranked['rule']['name'], value=ranked['mapA']['name'] + "\n" + ranked['mapB']['name'], inline=True)
+			embed.add_field(name="<:league:550107083660328971> League: " + league['rule']['name'], value=league['mapA']['name'] + "\n" + league['mapB']['name'], inline=True)
+
+		if srflag:
+			flag = 0
+			srdata = await self.srParser(getNext=0, flag=1)
+			if srdata == None:
+				srdata = await self.srParser(getNext=1, flag=1)
+				flag = 1
+
+			timeRemaining = srdata['time']
+			days = int(timeRemaining / 86400)
+			timeRemaining = timeRemaining % 86400
+			hours = int(timeRemaining / 3600)
+			timeRemaining = timeRemaining % 3600
+			minutes = int(timeRemaining / 60)
+
+			if flag == 1:
+				embed.add_field(name="Salmon Run", value="Next SR Rotation", inline=False)
+				embed.add_field(name='Map', value=srdata['map']['name'], inline=True)
+				embed.add_field(name='Weapons', value=dsrata['weapons'], inline=True)
+				embed.add_field(name='Time Until SR Rotation', value=str(days) + ' Days, ' + str(hours) + ' Hours, and ' + str(minutes) + ' Minutes', inline=False)
+			else:
+				embed.add_field(name="Salmon Run", value="Current SR Rotation", inline=False)
+				embed.add_field(name='Map', value=srdata['map']['name'], inline=True)
+				embed.add_field(name='Weapons', value=srdata['weapons'].replace('\n', ', ', 3), inline=True)
+				embed.add_field(name="Time Remaining for SR Rotation", value=str(days) + ' Days, ' + str(hours) + ' Hours, and ' + str(minutes) + ' Minutes', inline=False)
+
+		if gearflag:
+			gear = await self.gearParser(flag=1)
+			embed.add_field(name="Gear", value="Gear on rotation", inline=False)
+			embed.add_field(name='**' + gear['gear']['name'] + '**', value=gear['gear']['brand']['name'] + ' : ' + gear['kind'], inline=False)
+			embed.add_field(name="ID/Subs/Price", value="5/" + str(gear['gear']['rarity'] + 1) + "/" + str(gear['price']), inline=True)
+			embed.add_field(name="Ability/Common Sub", value=gear['skill']['name'] + '/' + gear['gear']['brand']['frequent_skill']['name'], inline=True)
+
+		return embed
 
 	async def updateS2JSON(self):
 		useragent = { 'User-Agent' : 'jet-bot/1.0 (discord:jetsurf#8514)' }
@@ -772,7 +842,7 @@ class nsoHandler():
 
 		return '200' in str(response)
 
-	async def gearParser(self, message):
+	async def gearParser(self, message=None, flag=0):
 		theTime = int(time.mktime(time.gmtime()))
 		gear = self.storeJSON['merchandises']
 		embed = discord.Embed(colour=0xF9FC5F)
@@ -800,16 +870,22 @@ class nsoHandler():
 				timeRemaining = timeRemaining % 3600
 				minutes = int(timeRemaining / 60)
 
-			embed.add_field(name='**' + eqName + '**', value=eqBrand + ' : ' + eqKind, inline=False)
-			embed.add_field(name="ID/Subs/Price", value=str(j) + "/" + str(slots) + "/" + str(price), inline=True)
-			embed.add_field(name="Ability/Common Sub", value=str(skill['name']) + '/' + str(commonSub), inline=True)
-
-			j = j + 1
+			if flag == 0:
+				embed.add_field(name='**' + eqName + '**', value=eqBrand + ' : ' + eqKind, inline=False)
+				embed.add_field(name="ID/Subs/Price", value=str(j) + "/" + str(slots) + "/" + str(price), inline=True)
+				embed.add_field(name="Ability/Common Sub", value=str(skill['name']) + '/' + str(commonSub), inline=True)
+				j = j + 1
+			else:
+				if j != 5:
+					j = j + 1
+					continue
+				else:
+					return i
 
 		embed.set_footer(text='Next Item In '+ str(hours) + ' Hours ' + str(minutes) + ' minutes')
 		await message.channel.send(embed=embed)
 
-	async def maps(self, message, offset=0):
+	async def maps(self, message=None, offset=0, flag=0):
 		theTime = int(time.mktime(time.gmtime()))
 		trfWar = self.mapsJSON['regular']
 		ranked = self.mapsJSON['gachi']
@@ -824,20 +900,36 @@ class nsoHandler():
 		mapA = trfWar[offset]['stage_a']
 		mapB = trfWar[offset]['stage_b']
 		end = trfWar[offset]['end_time']
-
-		embed.add_field(name="<:turfwar:550103899084816395> Turf War", value=mapA['name'] + "\n" + mapB['name'], inline=True)
+		if flag == 0:
+			embed.add_field(name="<:turfwar:550103899084816395> Turf War", value=mapA['name'] + "\n" + mapB['name'], inline=True)
+		if flag == 1:
+			turf = {}
+			turf['mapA'] = mapA
+			turf['mapB'] = mapB
 
 		mapA = ranked[offset]['stage_a']
 		mapB = ranked[offset]['stage_b']
 		game = ranked[offset]['rule']
 
-		embed.add_field(name="<:ranked:550104072456372245> Ranked: " + game['name'], value=mapA['name'] + "\n" + mapB['name'], inline=True)
+		if flag == 0:
+			embed.add_field(name="<:ranked:550104072456372245> Ranked: " + game['name'], value=mapA['name'] + "\n" + mapB['name'], inline=True)
+		if flag == 1:
+			ranked = {}
+			ranked['mapA'] = mapA
+			ranked['mapB'] = mapB
+			ranked['rule'] = game
 
 		mapA = league[offset]['stage_a']
 		mapB = league[offset]['stage_b']
 		game = league[offset]['rule']
 
-		embed.add_field(name="<:league:550104147463110656> League: " + game['name'], value=mapA['name'] + "\n" + mapB['name'], inline=True)
+		if flag == 0:
+			embed.add_field(name="<:league:550104147463110656> League: " + game['name'], value=mapA['name'] + "\n" + mapB['name'], inline=True)
+		if flag == 1:
+			league = {}
+			league['mapA'] = mapA
+			league['mapB'] = mapB
+			league['rule'] = game
 
 		timeRemaining = end - theTime
 		timeRemaining = timeRemaining % 86400
@@ -851,9 +943,12 @@ class nsoHandler():
 			hours = hours - 2
 			embed.add_field(name="Time Until Map Rotation", value=str(hours) + ' Hours, and ' + str(minutes) + ' minutes', inline=False)
 
-		await message.channel.send(embed=embed)
+		if flag == 0:
+			await message.channel.send(embed=embed)
+		if flag == 1:
+			return turf, ranked, league
 
-	async def srParser(self, message, getNext=0):
+	async def srParser(self, message=None, getNext=0, flag=0):
 		theTime = int(time.mktime(time.gmtime()))
 		currentSR = self.srJSON['details']
 		gotData = 0
@@ -861,6 +956,7 @@ class nsoHandler():
 		end = 0
 		embed = discord.Embed(colour=0xFF8633)
 		theString = ''	
+		srdata = {}
 
 		if getNext == 0:
 			embed.title = "Current Salmon Run"
@@ -878,8 +974,12 @@ class nsoHandler():
 				gotData = 1
 
 			if (gotData == 1 and getNext == 0) or (gotData == 0 and getNext == 1):
-				embed.set_thumbnail(url='https://splatoon2.ink/assets/splatnet' + map['image'])
-				embed.add_field(name='Map', value=map['name'], inline=False)
+				if flag == 0:
+					embed.set_thumbnail(url='https://splatoon2.ink/assets/splatnet' + map['image'])
+					embed.add_field(name='Map', value=map['name'], inline=False)
+				else:
+					srdata['thumb'] = 'https://splatoon2.ink/assets/splatnet' + map['image']
+					srdata['map'] = map
 				for j in i['weapons']:
 					try:
 						weap = j['weapon']
@@ -891,16 +991,23 @@ class nsoHandler():
 			elif gotData == 1 and getNext == 1:
 				gotData = 0
 				continue
-
-		embed.add_field(name='Weapons', value=theString, inline=False)
+		if flag == 0:
+			embed.add_field(name='Weapons', value=theString, inline=False)
+		else:
+			srdata['weapons'] = theString
 
 		if gotData == 0 and getNext == 0:
-			await message.channel.send('No SR Currently Running')
-			return
+			if flag == 0:
+				await message.channel.send('No SR Currently Running')
+				return
+			else:
+				return None
 		elif getNext == 1:
 			timeRemaining = start - theTime
 		else:
 			timeRemaining = end - theTime
+
+		srdata['time'] = timeRemaining
 
 		days = int(timeRemaining / 86400)
 		timeRemaining = timeRemaining % 86400
@@ -913,7 +1020,10 @@ class nsoHandler():
 		else:
 			embed.add_field(name="Time Remaining ", value=str(days) + ' Days, ' + str(hours) + ' Hours, and ' + str(minutes) + ' Minutes')
 
-		await message.channel.send(embed=embed)
+		if flag == 0:
+			await message.channel.send(embed=embed)
+		if flag == 1:
+			return srdata
 
 	async def battleParser(self, message, num=1):
 		if not await self.checkDuplicate(message.author.id):

@@ -15,7 +15,7 @@ For self-hosting:
 Requires a bot token from the Discord Developer Portal
 
 Requires https://github.com/Rapptz/discord.py discord python library to 
-function (Version >= 1.3 needed) as well as all dependencies for it.
+function (Version >= 1.5 needed) as well as all dependencies for it.
 
 Requires youtube-dl and ffmpeg for online video/music playback.
 
@@ -54,6 +54,8 @@ There are a few admin commands to configure the bot. To run these commands, you 
  - `!admin announcement set CHANNEL` : Sets a chat channel for announcements about restarts/new features from the devs
  - `!admin announcement get` : Gets the name of the channel that is set to receive announcements
  - `!admin announcement stop` : Disables announcements from the devs for the server
+ - `!admin feed` : Create (or change) feed for rotation updates (maps/sr/gear)
+ - `!admin feed delete` : Deletes feed for a channel
 
 ### Music Commands
 

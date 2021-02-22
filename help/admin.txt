@@ -7,3 +7,5 @@
 !admin announcement set CHANNEL : Sets a chat channel for announcements about restarts/new features from the devs
 !admin announcement get : Gets the name of the channel that is set to receive announcements
 !admin announcement stop : Disables announcements from the devs for the server
+!admin feed : Create (or change) feed for rotation updates (maps/sr/gear)
+!admin feed delete : Deletes feed for a channel

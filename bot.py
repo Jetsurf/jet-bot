@@ -106,6 +106,14 @@ async def on_ready():
 	else:
 		print('Finished reconnect')
 	doneStartup = True
+
+	print("Starting Chunking")
+
+	for server in client.guilds:
+		await server.chunk()
+
+	print("Finished Chunking")
+
 	sys.stdout.flush()
 	
 @client.event
@@ -371,6 +379,11 @@ async def on_message(message):
 				else:
 					await commandParser.setPrefix(theServer, args[1])
 					await channel.send("New command prefix is: " + await commandParser.getPrefix(theServer))
+			elif subcommand == 'feed':
+				if len(args) == 1:
+					await serverUtils.createFeed(message)
+				elif 'delete' in args[1].lower():
+					await serverUtils.deleteFeed(message)
 		else:
 			await channel.send(message.author.name + " you are not an admin... :cop:")
 	elif cmd == 'alive':
@@ -475,4 +488,5 @@ print('Logging into discord')
 
 sys.stdout.flush()
 sys.stderr.flush()
+client.chunk_guilds_at_startup = False
 client.run(token)
