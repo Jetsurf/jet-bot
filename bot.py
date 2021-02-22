@@ -339,9 +339,8 @@ async def on_message(message):
 		await nsoHandler.getStoreJSON(message)
 	elif cmd == 'admin':
 		if message.guild.get_member(message.author.id) == None:
-			print("Lazy loading member list for "  + str(msesage.guild.name))
-			server = await client.get_guild(message.guild.id)
-			await server.get_all_members()
+			print("Lazy loading member list for "  + str(message.guild.name))
+			await client.get_guild(message.guild.id).chunk()
 			print("Done")
 
 		if message.author.guild_permissions.administrator:
