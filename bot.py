@@ -17,7 +17,7 @@ from subprocess import call
 splatInfo = splatinfo.SplatInfo()
 intents = discord.Intents.default()
 intents.members = True
-client = discord.Client(intents=intents)
+client = discord.Client(intents=intents, chunk_guilds_at_startup=False)
 commandParser = None
 serverConfig = None
 mysqlHandler = None
@@ -488,5 +488,4 @@ print('Logging into discord')
 
 sys.stdout.flush()
 sys.stderr.flush()
-client.chunk_guilds_at_startup = False
 client.run(token)
