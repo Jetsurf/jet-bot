@@ -876,7 +876,6 @@ class nsoHandler():
 				embed.add_field(name="Ability/Common Sub", value=str(skill['name']) + '/' + str(commonSub), inline=True)
 				j = j + 1
 			else:
-				print("j = " + str(j))
 				if j != 5:
 					j = j + 1
 					continue
