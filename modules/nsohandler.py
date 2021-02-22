@@ -107,7 +107,7 @@ class nsoHandler():
 			if flag == 1:
 				embed.add_field(name="Salmon Run", value="Next SR Rotation", inline=False)
 				embed.add_field(name='Map', value=srdata['map']['name'], inline=True)
-				embed.add_field(name='Weapons', value=dsrata['weapons'], inline=True)
+				embed.add_field(name='Weapons', value=srdata['weapons'], inline=True)
 				embed.add_field(name='Time Until SR Rotation', value=str(days) + ' Days, ' + str(hours) + ' Hours, and ' + str(minutes) + ' Minutes', inline=False)
 			else:
 				embed.add_field(name="Salmon Run", value="Current SR Rotation", inline=False)
