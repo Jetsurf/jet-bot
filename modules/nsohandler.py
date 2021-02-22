@@ -391,13 +391,12 @@ class nsoHandler():
 		for id in range(len(toDM)):
 			memid = toDM[id][0]
 			servid = toDM[id][1]
-			flag = True
-			for server in self.client.guilds:
-				if str(server.id) != str(servid):
-					continue
-				theMem = server.get_member(memid)
-				if theMem != None:
-					asyncio.ensure_future(self.handleDM(theMem, theGear))
+
+			self.client.get_guild(servid)
+			self.client.get_all_members()
+			self.client.get_member(memid)
+
+			asyncio.ensure_future(self.handleDM(theMem, theGear))
 
 	async def getStoreJSON(self, message):
 		theGear = self.storeJSON['merchandises'][5]
