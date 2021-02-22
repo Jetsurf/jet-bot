@@ -28,6 +28,7 @@ serverUtils = None
 acHandler = None
 doneStartup = False
 token = ''
+hs = 0
 owners = []
 dev = 1
 soundsDir = ''
@@ -36,7 +37,7 @@ head = {}
 url = ''
 
 def loadConfig():
-	global token, soundsDir, helpfldr, mysqlHandler, dev, head, url
+	global token, soundsDir, helpfldr, mysqlHandler, dev, head, url, hs
 	try:
 		with open('./config/discordbot.json', 'r') as json_config:
 			configData = json.load(json_config)
@@ -44,6 +45,8 @@ def loadConfig():
 		token = configData['token']
 		soundsDir = configData['soundsdir']
 		helpfldr = configData['help']
+		hs = configData['home_server']
+
 		try:
 			dbid = configData['discordbotid']
 			dbtoken = configData['discordbottok']
@@ -51,7 +54,7 @@ def loadConfig():
 			url = 'https://top.gg/api/bots/' + str(dbid) + '/stats'
 			dev = 0
 		except:
-			print('No ID/Token for discordbots.org, skipping')
+			print('No ID/Token for top.gg, skipping')
 
 		mysqlHandler = mysqlhandler.mysqlHandler(configData['mysql_host'], configData['mysql_user'], configData['mysql_pw'], configData['mysql_db'])
 
@@ -62,11 +65,12 @@ def loadConfig():
 
 @client.event
 async def on_ready():
-	global client, soundsDir, mysqlHandler, serverUtils, serverVoices, splatInfo, helpfldr
+	global client, soundsDir, mysqlHandler, serverUtils, serverVoices, splatInfo, helpfldr, hs
 	global nsoHandler, nsoTokens, head, url, dev, owners, commandParser, doneStartup, acHandler
 
 	#This is needed due to no prsence intent, prod bot needs to find the devs in its primary server
-	await client.get_guild(543127511161372703).chunk()
+	print("Chunking home server (" + str(hs) + ") to find owners")
+	await client.get_guild(int(hs)).chunk()
 
 	if not doneStartup:
 		print('Logged in as,', client.user.name, client.user.id)
@@ -77,13 +81,14 @@ async def on_ready():
 		for mem in client.get_all_members():
 			if mem.id in ownerids:
 				owners.append(mem)
+				print("Loaded owner: " + str(mem.name))
 			if len(owners) == len(ownerids):
 				break;
 	else:
 		print('RECONNECT TO DISCORD')
 
 	if dev == 0:
-		print('I am in ' + str(len(client.guilds)) + ' servers, posting to discordbots.org')
+		print('I am in ' + str(len(client.guilds)) + ' servers, posting to top.gg')
 		body = { 'server_count' : len(client.guilds) }
 		requests.post(url, headers=head, json=body)
 	else:
@@ -110,13 +115,6 @@ async def on_ready():
 		print('Finished reconnect')
 	doneStartup = True
 
-	print("Starting Chunking")
-
-	for server in client.guilds:
-		await server.chunk()
-
-	print("Finished Chunking")
-
 	sys.stdout.flush()
 
 @client.event
@@ -140,14 +138,14 @@ async def on_guild_join(server):
 	serverVoices[server.id] = vserver.voiceServer(client, mysqlHandler, server.id, soundsDir)
 
 	if dev == 0:
-		print('I am now in ' + str(len(client.guilds)) + ' servers, posting to discordbots.org')
+		print('I am now in ' + str(len(client.guilds)) + ' servers, posting to top.gg')
 		body = { 'server_count' : len(client.guilds) }
 		r = requests.post(url, headers=head, json=body)
 	else:
 		print('I am now in ' + str(len(client.guilds)) + ' servers')
 
 	for mem in owners:
-		await mem.send("I joined server: " + server.name + " with " + str(len(server.members)) + " members - I am now in " + str(len(client.guilds)) + " servers with " + str(len(set(client.get_all_members()))) + " total members")
+		await mem.send("I joined server: " + server.name + " - I am now in " + str(len(client.guilds)) + " servers")
 	sys.stdout.flush()
 
 @client.event
@@ -157,14 +155,14 @@ async def on_guild_remove(server):
 	serverVoices[server.id] = None
 
 	if dev == 0:
-		print('I am now in ' + str(len(client.guilds)) + ' servers, posting to discordbots.org')
+		print('I am now in ' + str(len(client.guilds)) + ' servers, posting to top.gg')
 		body = { 'server_count' : len(client.guilds) }
 		r = requests.post(url, headers=head, json=body)
 	else:
 		print('I am now in ' + str(len(client.guilds)) + ' servers')
 
 	for mem in owners:
-		await mem.send("I left server: " + server.name + " ID: " + str(server.id) + " - I am now in " + str(len(client.guilds)) + " servers with " + str(len(set(client.get_all_members()))) + " total members")
+		await mem.send("I left server: " + server.name + " ID: " + str(server.id) + " - I am now in " + str(len(client.guilds)) + " servers with")
 	sys.stdout.flush()
 
 @client.event
