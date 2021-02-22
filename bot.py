@@ -59,11 +59,14 @@ def loadConfig():
 	except Exception as e:
 		print('Failed to load config: ' + str(e))
 		quit(1)
-							
+
 @client.event
 async def on_ready():
 	global client, soundsDir, mysqlHandler, serverUtils, serverVoices, splatInfo, helpfldr
 	global nsoHandler, nsoTokens, head, url, dev, owners, commandParser, doneStartup, acHandler
+
+	#This is needed due to no prsence intent, prod bot needs to find the devs in its primary server
+	await client.get_guild(543127511161372703).chunk()
 
 	if not doneStartup:
 		print('Logged in as,', client.user.name, client.user.id)
@@ -83,7 +86,7 @@ async def on_ready():
 		print('I am in ' + str(len(client.guilds)) + ' servers, posting to discordbots.org')
 		body = { 'server_count' : len(client.guilds) }
 		requests.post(url, headers=head, json=body)
-	else:	
+	else:
 		print('I am in ' + str(len(client.guilds)) + ' servers')
 
 	if not doneStartup:
@@ -115,7 +118,7 @@ async def on_ready():
 	print("Finished Chunking")
 
 	sys.stdout.flush()
-	
+
 @client.event
 async def on_member_remove(member):
 	global serverUtils, doneStartup
@@ -129,7 +132,7 @@ async def on_member_remove(member):
 		memobj = client.get_guild(gid).get_member(memid)
 		if memobj.guild_permissions.administrator:
 			await memobj.send(member.name + " left " + member.guild.name)
-			
+
 @client.event
 async def on_guild_join(server):
 	global serverVoices, head, url, dev, owners, mysqlHandler
