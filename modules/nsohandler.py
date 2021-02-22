@@ -394,7 +394,7 @@ class nsoHandler():
 
 			server = await self.client.get_guild(servid)
 			await server.get_all_members()
-			await server.get_member(memid)
+			theMem = await server.get_member(memid)
 
 			asyncio.ensure_future(self.handleDM(theMem, theGear))
 
