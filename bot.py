@@ -106,6 +106,14 @@ async def on_ready():
 	else:
 		print('Finished reconnect')
 	doneStartup = True
+
+	print("Starting Chunking")
+
+	for server in client.guilds:
+		await server.chunk()
+
+	print("Finished Chunking")
+
 	sys.stdout.flush()
 	
 @client.event
@@ -480,4 +488,5 @@ print('Logging into discord')
 
 sys.stdout.flush()
 sys.stderr.flush()
+client.chunk_guilds_at_startup = False
 client.run(token)
