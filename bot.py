@@ -37,7 +37,7 @@ head = {}
 url = ''
 
 def loadConfig():
-	global token, soundsDir, helpfldr, mysqlHandler, dev, head, url
+	global token, soundsDir, helpfldr, mysqlHandler, dev, head, url, hs
 	try:
 		with open('./config/discordbot.json', 'r') as json_config:
 			configData = json.load(json_config)
@@ -45,12 +45,13 @@ def loadConfig():
 		token = configData['token']
 		soundsDir = configData['soundsdir']
 		helpfldr = configData['help']
+		hs = configData['home_server']
+
 		try:
 			dbid = configData['discordbotid']
 			dbtoken = configData['discordbottok']
 			head = { 'Authorization': dbtoken }
 			url = 'https://top.gg/api/bots/' + str(dbid) + '/stats'
-			hs = configData['home_server']
 			dev = 0
 		except:
 			print('No ID/Token for top.gg, skipping')
@@ -68,8 +69,8 @@ async def on_ready():
 	global nsoHandler, nsoTokens, head, url, dev, owners, commandParser, doneStartup, acHandler
 
 	#This is needed due to no prsence intent, prod bot needs to find the devs in its primary server
-	print("Chunking home server to find owners")
-	await client.get_guild(hs).chunk()
+	print("Chunking home server (" + str(hs) + ") to find owners")
+	await client.get_guild(int(hs)).chunk()
 
 	if not doneStartup:
 		print('Logged in as,', client.user.name, client.user.id)
@@ -80,6 +81,7 @@ async def on_ready():
 		for mem in client.get_all_members():
 			if mem.id in ownerids:
 				owners.append(mem)
+				print("Loaded owner: " + str(mem.name))
 			if len(owners) == len(ownerids):
 				break;
 	else:
