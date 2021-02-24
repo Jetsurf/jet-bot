@@ -69,13 +69,15 @@ class nsoHandler():
 			srflag = feeds[server][3]
 			gearflag = feeds[server][4]
 
-			for server in self.client.guilds:
-				theServer = self.client.get_guild(serverid)
-				if theServer == None:
-					continue
-				
-				theChannel = theServer.get_channel(channelid)
-				await theChannel.send(embed=await self.make_notification(bool(mapflag), bool(srflag), bool(gearflag)))
+			theServer = self.client.get_guild(serverid)
+			if theServer == None:
+				continue
+
+			theChannel = theServer.get_channel(channelid)
+			if theChannel is None:
+				continue;
+
+			await theChannel.send(embed=await self.make_notification(bool(mapflag), bool(srflag), bool(gearflag)))
 
 		await self.sqlBroker.close(cur)
 
@@ -392,9 +394,14 @@ class nsoHandler():
 			memid = toDM[id][0]
 			servid = toDM[id][1]
 
-			server = await self.client.get_guild(servid)
-			await server.get_all_members()
-			theMem = await server.get_member(memid)
+			server = self.client.get_guild(int(servid))
+			if server is None:
+				continue
+			print("DEBUGSRV: " + str(server.name))
+			await server.chunk()
+			#THIS NEEDS IMPROVEMENT
+			theMem = server.get_member(int(memid))
+			print(str(theMem.name))
 
 			asyncio.ensure_future(self.handleDM(theMem, theGear))
 
