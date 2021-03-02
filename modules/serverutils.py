@@ -75,9 +75,9 @@ class serverUtils():
 			else:
 				await message.channel.send("Ok, canceling.")
 				return False
-		else:		
+		else:
 			await message.channel.send("No feed is setup for this channel. Would you like to create one (yes/no)?")
-			
+
 			feedresp = await self.client.wait_for('message', check=check)
 
 			if 'yes' in feedresp.content.lower():
@@ -143,7 +143,7 @@ class serverUtils():
 		if len(args) < 2:
 			await message.channel.send("No channel given, please specify a channel")
 			return
-		
+
 		channelname = args[2].lower()
 		channelid = None
 		for channel in message.guild.channels:
@@ -200,7 +200,7 @@ class serverUtils():
 
 	async def print_help(self, message, prefix):
 		embed = discord.Embed(colour=0x2AE5B8)
-		
+
 		if 'admin' in message.content:
 			file = self.helpfldr + '/admin.txt'
 		elif 'generalsn' in message.content:

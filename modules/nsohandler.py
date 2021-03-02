@@ -249,7 +249,7 @@ class nsoHandler():
 			await message.channel.send("Added you to recieve a DM when gear by brand " + term + " appears in the shop!")
 		else:
 			await message.channel.send("Added you to recieve a DM when " + term + " appears in the shop!")
-		
+
 	async def handleDM(self, theMem, theGear):
 		def checkDM(m):
 			return m.author.id == theMem.id and m.guild == None
@@ -267,9 +267,9 @@ class nsoHandler():
 				return True
 			else:
 				return False
-		
+
 		# Discord.py changed timeouts to throw exceptions...
-		try:	
+		try:
 			resp = await self.client.wait_for('message', timeout=7100, check=check1)
 		except:
 			return
@@ -298,7 +298,7 @@ class nsoHandler():
 						if i[2] != None:
 							gearFlag = True
 							string+=theType + "/"
-			
+
 					string+= "all/quit to stop removing DM triggers)"
 
 					await theMem.send(string)
@@ -353,7 +353,7 @@ class nsoHandler():
 
 				await cur.execute(stmt, (theMem.id, theSkill, theBrand, theType, ))
 				await self.sqlBroker.commit(cur)
-				
+
 		elif 'order' in resp.content.lower():
 			await self.orderGearCommand(resp, order=5)
 		else:
@@ -397,11 +397,10 @@ class nsoHandler():
 			server = self.client.get_guild(int(servid))
 			if server is None:
 				continue
-			print("DEBUGSRV: " + str(server.name))
+
 			await server.chunk()
 			#THIS NEEDS IMPROVEMENT
 			theMem = server.get_member(int(memid))
-			print(str(theMem.name))
 
 			asyncio.ensure_future(self.handleDM(theMem, theGear))
 
@@ -444,7 +443,7 @@ class nsoHandler():
 
 		with open("../" + jsontype + ".json", "w") as f:
 			json.dump(thejson, f)
-		
+
 		with open("../" + jsontype + ".json", "r") as f:
 			jsonToSend = discord.File(fp=f)
 			await message.channel.send(file=jsonToSend)
@@ -494,7 +493,7 @@ class nsoHandler():
 				gotweap = True
 				theweapdata = weapondata[i]
 				break
-		
+
 		if not gotweap:
 			await message.channel.send("I have no stats for that weapon for you")
 			return
@@ -1078,7 +1077,7 @@ class nsoHandler():
 		teamstring = ""
 		enemystring = ""
 		placedPlayer = False
-	
+
 		if rule == "Turf War":
 			myteam = sorted(myteam, key=lambda i : i['game_paint_point'], reverse=True)
 			enemyteam = sorted(enemyteam, key=lambda i : i['game_paint_point'], reverse=True)
@@ -1100,7 +1099,7 @@ class nsoHandler():
 				if myrank != None:
 					teamstring += " - " + myrank
 				teamstring += " - " + myweapon + " - " + str(mykills) + "(" + str(myassists) + ")/" + str(mydeaths) + "/" + str(specials) + "\n"
-			
+
 			teamstring += tname
 			if 'udemae' in i['player']:
 				teamstring += " - " + i['player']['udemae']['name']
@@ -1116,7 +1115,7 @@ class nsoHandler():
 			enemystring += ename
 			if 'udemae' in i['player']:
 				enemystring += " - " + i['player']['udemae']['name']
-			
+
 			enemystring += " - " + i['player']['weapon']['name'] + " - " + str(i['kill_count'] + i['assist_count']) + "(" + str(i['assist_count']) + ")/" + str(i['death_count']) + "/" + str(i['special_count']) + "\n"
 		if 'VICTORY' in myresult:
 			embed.add_field(name=str(matchname) + "'s team - " + str(myresult), value=teamstring, inline=True)

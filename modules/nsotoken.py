@@ -228,7 +228,7 @@ class Nsotoken():
 			'x-token': id_token,
 			'x-time':  str(timestamp),
 			'x-guid':  guid,
-			'x-hash':  self.get_hash(id_token, timestamp),
+			'x-hash':  str(self.get_hash(id_token, timestamp)),
 			'x-ver':   '3',
 			'x-iid':   login
 		}

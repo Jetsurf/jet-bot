@@ -4,7 +4,7 @@ class ServerConfig():
 	def __init__(self, mysqlhandler):
 		self.db        = None
 		self.sqlBroker = mysqlhandler
-		
+
 	async def getConfig(self, cursor, serverid):
 		await cursor.execute("SELECT config FROM server_config WHERE (serverid = %s)", (serverid,))
 		row = await cursor.fetchone()
