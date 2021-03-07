@@ -848,7 +848,7 @@ class nsoHandler():
 		return '200' in str(response)
 
 	async def gearParser(self, message=None, flag=0):
-		theTime = int(time.mktime(time.gmtime()))
+		theTime = int(time.time())
 		gear = self.storeJSON['merchandises']
 		embed = discord.Embed(colour=0xF9FC5F)
 		embed.title = "Current Splatnet Gear For Sale"
@@ -891,7 +891,7 @@ class nsoHandler():
 		await message.channel.send(embed=embed)
 
 	async def maps(self, message=None, offset=0, flag=0):
-		theTime = int(time.mktime(time.gmtime()))
+		theTime = int(time.time())
 		trfWar = self.mapsJSON['regular']
 		ranked = self.mapsJSON['gachi']
 		league = self.mapsJSON['league']
@@ -954,7 +954,7 @@ class nsoHandler():
 			return turf, ranked, league
 
 	async def srParser(self, message=None, getNext=0, flag=0):
-		theTime = int(time.mktime(time.gmtime()))
+		theTime = int(time.time())
 		currentSR = self.srJSON['details']
 		gotData = 0
 		start = 0
