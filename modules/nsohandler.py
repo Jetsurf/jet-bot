@@ -1195,7 +1195,8 @@ class nsoHandler():
 				"**weapons stats WEAPON**: Show player stats for WEAPON\n"
 				"**weapons sub SUB**: Show all weapons with SUB\n"
 				"**weapons list TYPE**: Shows all weapons of TYPE\n"
-				"**weapons special SPECIAL**: Show all weapons with SPECIAL")
+				"**weapons special SPECIAL**: Show all weapons with SPECIAL\n"
+				"**weapons info WEAPON**: Shows information about specific weapon named WEAPON\n")
 			return
 		elif subcommand == "info":
 			if len(args) > 1:
