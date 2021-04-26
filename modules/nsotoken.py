@@ -213,9 +213,7 @@ class Nsotoken():
 			'session_token_code':          session_token_code,
 			'session_token_code_verifier': auth_code_verifier.replace(b"=", b"")
 		}
-		#https://accounts.nintendo.com/connect/1.0.0/authorize?state=xk86EGtvSwpCGhmU-3hHkAkkh4Rplqr1mTd22fUBBOKVZLpN&redirect_uri=npf71b963c1b7b6d119%3A%2F%2Fauth&client_id=71b963c1b7b6d119&scope=openid+user+user.birthday+user.mii+user.screenName&response_type=session_token_code&session_token_code_challenge=e13cdADTdktGW4KLIX__UYM0O6vSsuDpLld5Z7xZOrk&session_token_code_challenge_method=S256&theme=login_form
-		#npf71b963c1b7b6d119://auth#session_state=203afe63d959fc544a84d673ec6b2dd8f300ce5d5d5f2d53a87c1c74c6c8b3e4&session_token_code=eyJhbGciOiJIUzI1NiJ9.eyJzdGM6c2NwIjpbMCw4LDksMTcsMjNdLCJpc3MiOiJodHRwczovL2FjY291bnRzLm5pbnRlbmRvLmNvbSIsInN0YzptIjoiUzI1NiIsImp0aSI6IjIzNTA4Nzg1ODAwIiwic3RjOmMiOiJlMTNjZEFEVGRrdEdXNEtMSVhfX1VZTTBPNnZTc3VEcExsZDVaN3haT3JrIiwic3ViIjoiOGY4YmJkNzQ4NWM4ZDFmOSIsImlhdCI6MTU5NTI4MzIyNiwidHlwIjoic2Vzc2lvbl90b2tlbl9jb2RlIiwiYXVkIjoiNzFiOTYzYzFiN2I2ZDExOSIsImV4cCI6MTU5NTI4MzgyNn0.Mga42GWVEsq0Rnbn0xhP6c4vwAbfJpcqMZ0jexOv6sM&state=xk86EGtvSwpCGhmU-3hHkAkkh4Rplqr1mTd22fUBBOKVZLpN
-		#npf71b963c1b7b6d119://auth#session_state=e266c440274134c7602e38cfefa3927d79d204ee0900d3939a7aef3c1700d8bb&session_token_code=eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiI3MWI5NjNjMWI3YjZkMTE5IiwiaXNzIjoiaHR0cHM6Ly9hY2NvdW50cy5uaW50ZW5kby5jb20iLCJzdGM6YyI6Im1OQTg0bGN3N2ctM2YtTC0zWUI5OVFReW1UN0hpZjFnX0lWSzJnckRXUFEiLCJzdGM6bSI6IlMyNTYiLCJzdGM6c2NwIjpbMCw4LDksMTcsMjNdLCJpYXQiOjE1OTUyODE1MDAsInN1YiI6IjU4ZjA3YWJmMWRhNWU2YTYiLCJleHAiOjE1OTUyODIxMDAsImp0aSI6IjIzNTA4MTE3NDIyIiwidHlwIjoic2Vzc2lvbl90b2tlbl9jb2RlIn0.M6Jv2sxcOJVQPz6NehglU6XJeN0lqgisCvRyuwxQ7o8&state=-TzglBkF2TlPkzEBGNuTDPfgdy4fFjybpBmJjAYqNaqfnU8l
+		
 		r = self.session.post('https://accounts.nintendo.com/connect/1.0.0/api/session_token', headers=head, data=body)
 		if '200' not in str(r):
 			print("ERROR IN SESSION TOKEN: " + str(r.text))
