@@ -68,12 +68,13 @@ async def on_ready():
 	global client, soundsDir, mysqlHandler, serverUtils, serverVoices, splatInfo, helpfldr, hs
 	global nsoHandler, nsoTokens, head, url, dev, owners, commandParser, doneStartup, acHandler
 
-	#This is needed due to no prsence intent, prod bot needs to find the devs in its primary server
-	print("Chunking home server (" + str(hs) + ") to find owners")
-	await client.get_guild(int(hs)).chunk()
-
 	if not doneStartup:
 		print('Logged in as,', client.user.name, client.user.id)
+		
+		#This is needed due to no prsence intent, prod bot needs to find the devs in its primary server
+		print("Chunking home server (" + str(hs) + ") to find owners")
+		await client.get_guild(int(hs)).chunk()
+		
 		#Get owners from Discord team api
 		print("Loading owners...")
 		theapp = await client.application_info()
