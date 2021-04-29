@@ -425,7 +425,7 @@ class SplatInfo():
 
 			["Sloshing Machine",       ["sm", "sloshine"],                  "Slosher", "Autobomb",     "Sting Ray",           190,	13, 3020],
 			["Sloshing Machine Neo",   ["smn", "sloshine neo"],             "Slosher", "Point Sensor", "Splat Bomb Launcher", 180,	19, 3021],
-			["Kensa Sloshing Machine", ["ksm", "kslosh", "kensa sloshine"], "Slosher", "Fizzy Bomb",   "Splashdown",          170,	21, 3022],
+			["Kensa Sloshing Machine", ["ksm", "kslosh", "kensa sloshine", "kmachine"], "Slosher", "Fizzy Bomb",   "Splashdown",          170,	21, 3022],
 
 			["Splash-o-matic",     ["splasho"],               "Shooter", "Toxic Mist", "Inkjet",                170,	25, 20],
 			["Neo Splash-o-matic", ["nsplasho", "neosplash"], "Shooter", "Burst Bomb", "Suction Bomb Launcher", 200,	27, 21],
@@ -484,7 +484,7 @@ class SplatInfo():
 
 			["Undercover Brella",         ["ub"],  "Brella", "Ink Mine",   "Splashdown", 160,	13,	6020],
 			["Undercover Sorella Brella", ["usb"], "Brella", "Splat Bomb", "Baller",     180,	19,	6021],
-			["Kensa Undercover Brella",   ["kub"], "Brella", "Torpedo",    "Ink Armor",  180,	24,	6022],
+			["Kensa Undercover Brella",   ["kub", "kunder"], "Brella", "Torpedo",    "Ink Armor",  180,	24,	6022],
 
 			# === Duplicate weapons
 			["Hero Blaster Replica",   ["herob", "heroblaster"],     "Blaster",   "Toxic Mist",   "Splashdown",     170,	5,  215,  210],

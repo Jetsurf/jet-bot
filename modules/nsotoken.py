@@ -324,7 +324,16 @@ class Nsotoken():
 			print("NSO ERROR IN LOGIN: " + str(splatoon_token))
 			return None
 
-		idToken = splatoon_token["result"]["webApiServerCredential"]["accessToken"]
+		try:
+			idToken = splatoon_token["result"]["webApiServerCredential"]["accessToken"]
+		except Exception as e:
+			print("YO! ORDER LIKELY EXPLODED. HERES THE JSON NINTENO SENT:")
+			print(str(splatoon_token))
+			print("HERES THE EXCEPTION:")
+			print(str(e))
+			#Cross fingers this will shed light on this stupid bug
+			return None
+
 		flapg_app = self.call_flapg(idToken, guid, timestamp, "app")
 		if flapg_app == None:
 			print("ERROR IN FLAPGAPI APP CALL")
