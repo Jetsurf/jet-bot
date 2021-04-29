@@ -162,7 +162,7 @@ async def on_guild_remove(server):
 		print('I am now in ' + str(len(client.guilds)) + ' servers')
 
 	for mem in owners:
-		await mem.send("I left server: " + server.name + " ID: " + str(server.id) + " - I am now in " + str(len(client.guilds)) + " servers with")
+		await mem.send("I left server: " + server.name + " ID: " + str(server.id) + " - I am now in " + str(len(client.guilds)) + " servers")
 	sys.stdout.flush()
 
 @client.event
