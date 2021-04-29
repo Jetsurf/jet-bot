@@ -125,13 +125,13 @@ class serverUtils():
 
 	async def changeStatus(self):
 		status = [ "Use !help for directions!",
-					"{} guilds for {} users",
+					"{} guilds",
 					"\U0001F355 \U00002795 \U0001F34D \U000027A1 \U0001F4A9" ]
 
 		if self.statusnum%2 == 0:
 			await self.client.change_presence(status=discord.Status.online, activity=discord.Game(status[0]))
 		elif self.statusnum%3 == 0:
-			theStatus = status[1].format(len(self.client.guilds), len(set(self.client.get_all_members())))
+			theStatus = status[1].format(len(self.client.guilds))
 			await self.client.change_presence(status=discord.Status.online, activity=discord.Activity(name=theStatus, type=discord.ActivityType(3)))
 		elif self.statusnum%101 == 0:
 			await self.client.change_presence(status=discord.Status.online, activity=discord.Game(status[2]))
