@@ -355,6 +355,7 @@ class nsoHandler():
 				await self.sqlBroker.commit(cur)
 
 		elif 'order' in resp.content.lower():
+			print(f"Ordering gear for: {str(resp.author.name)}")
 			await self.orderGearCommand(resp, order=5)
 		else:
 			#Response but nothing understood
