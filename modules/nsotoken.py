@@ -231,12 +231,12 @@ class Nsotoken():
 			'x-iid':   login
 		}
 		api_response = requests.get("https://flapg.com/ika2/api/login?public", headers=api_app_head)
-		print(str(api_response) + ' and ' + str(api_response.text))
+		print("FLAPG API RESPONSE: " + str(api_response))
 		if '404' in str(api_response):
 			print("ISSUE WITH FLAPG - 404")
 			return 404
 		elif '200' not in str(api_response):
-			print("ERROR IN FLAPGAPI: " + str(api_response))
+			print("ERROR IN FLAPGAPI: " + str(api_response) + " and JSON : " + str(api_response.text))
 			return None
 		else:
 			return json.loads(api_response.text)["result"]
