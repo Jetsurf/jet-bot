@@ -15,7 +15,7 @@ class nsoHandler():
 		self.scheduler = AsyncIOScheduler()
 		self.scheduler.add_job(self.doStoreDM, 'cron', hour="*/2", minute='5') 
 		self.scheduler.add_job(self.updateS2JSON, 'cron', hour="*/2", minute='0', second='15')
-		self.scheduler.add_job(self.doFeed, 'cron', hour="*/2", minute='0', second='15')
+		self.scheduler.add_job(self.doFeed, 'cron', hour="*/2", minute='0', second='25')
 		self.scheduler.start()
 		self.mapJSON = None
 		self.storeJSON = None
@@ -355,6 +355,7 @@ class nsoHandler():
 				await self.sqlBroker.commit(cur)
 
 		elif 'order' in resp.content.lower():
+			print(f"Ordering gear for: {str(resp.author.name)}")
 			await self.orderGearCommand(resp, order=5)
 		else:
 			#Response but nothing understood
