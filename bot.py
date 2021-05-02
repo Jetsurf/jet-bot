@@ -398,6 +398,7 @@ async def on_message(message):
 	elif cmd == 'rank':
 		await nsoHandler.getRanks(message)
 	elif cmd == 'order':
+		print(f"Ordering gear for user: {message.author.name} and id {str(message.author.id)}")
 		await nsoHandler.orderGearCommand(message, args=args)
 	elif cmd == 'stats':
 		await nsoHandler.getStats(message)
