@@ -397,11 +397,15 @@ class nsoHandler():
 
 			server = self.client.get_guild(int(servid))
 			if server is None:
+				print("Suggested cleanup on server: " + str(servid))
 				continue
 
 			await server.chunk()
 			#THIS NEEDS IMPROVEMENT
 			theMem = server.get_member(int(memid))
+			if theMem is None:
+				print("Suggested cleanup on user: " + str(memid))
+				continue
 
 			asyncio.ensure_future(self.handleDM(theMem, theGear))
 
@@ -483,7 +487,6 @@ class nsoHandler():
 
 		thejson = await self.getNSOJSON(message, self.app_head, "https://app.splatoon2.nintendo.net/api/records")
 		if thejson == None:
-			await message.channel.send(message.author.name + " there is a problem with your token")
 			return
 
 		weapondata = thejson['records']['weapon_stats']
@@ -527,7 +530,6 @@ class nsoHandler():
 
 		thejson = await self.getNSOJSON(message, self.app_head, "https://app.splatoon2.nintendo.net/api/records")
 		if thejson == None:
-			await message.channel.send(message.author.name + " there is a problem with your token")
 			return
 
 		allmapdata = thejson['records']['stage_stats']
@@ -581,7 +583,6 @@ class nsoHandler():
 
 		thejson = await self.getNSOJSON(message, self.app_head, "https://app.splatoon2.nintendo.net/api/records")
 		if thejson == None:
-			await message.channel.send(message.author.name + " there is a problem with your token")
 			return
 
 		embed = discord.Embed(colour=0x0004FF)
@@ -636,7 +637,6 @@ class nsoHandler():
 
 		thejson = await self.getNSOJSON(message, self.app_head_coop, "https://app.splatoon2.nintendo.net/api/coop_results")
 		if thejson == None:
-			await message.channel.send(message.author.name + " there is a problem with your token")
 			return
 
 		name = thejson['results'][0]['my_result']['name']	
@@ -695,7 +695,6 @@ class nsoHandler():
 
 		thejson = await self.getNSOJSON(message, self.app_head, "https://app.splatoon2.nintendo.net/api/records")
 		if thejson == None:
-			await message.channel.send(message.author.name + " there is a problem with your token")
 			return
 
 		name = thejson['records']['player']['nickname']
@@ -796,8 +795,8 @@ class nsoHandler():
 
 		thejson = await self.getNSOJSON(message, self.app_head, "https://app.splatoon2.nintendo.net/api/timeline")
 		if thejson == None:
-			await message.channel.send(message.author.name + " there is a problem with your token")
 			return
+
 		tmp_app_head_shop = self.app_head_shop
 		tmp_app_head_shop['x-unique-id'] = thejson['unique_id']
 
@@ -1038,7 +1037,6 @@ class nsoHandler():
 
 		recordjson = await self.getNSOJSON(message, self.app_head, "https://app.splatoon2.nintendo.net/api/records")
 		if recordjson == None:
-			await message.channel.send(message.author.name + " there is a problem with your token")
 			return
 
 		embed = discord.Embed(colour=0x0004FF)
