@@ -161,7 +161,7 @@ class Nsotoken():
 			await message.channel.send("Something went wrong! Join my support discord and report that something broke!")
 
 	def get_hash(self, id_token, timestamp):
-		version = '1.5.9'
+		version = '1.5.11'
 		api_app_head = { 'User-Agent': "splatnet2statink/" + version }
 		api_body = { 'naIdToken': id_token, 'timestamp': timestamp }
 		api_response = requests.post("https://elifessler.com/s2s/api/gen2", headers=api_app_head, data=api_body)
@@ -200,7 +200,7 @@ class Nsotoken():
 
 	def get_session_token(self, session_token_code, auth_code_verifier):
 		head = {
-			'User-Agent':      'OnlineLounge/1.10.1 NASDKAPI Android',
+			'User-Agent':      'OnlineLounge/1.11.0 NASDKAPI Android',
 			'Accept-Language': 'en-US',
 			'Accept':          'application/json',
 			'Content-Type':    'application/x-www-form-urlencoded',
@@ -253,7 +253,7 @@ class Nsotoken():
 			'Content-Length': '439',
 			'Accept': 'application/json',
 			'Connection': 'Keep-Alive',
-			'User-Agent': 'OnlineLounge/1.10.1 NASDKAPI Android'
+			'User-Agent': 'OnlineLounge/1.11.0 NASDKAPI Android'
 		}
 		body = {
 			'client_id': '71b963c1b7b6d119',
@@ -268,7 +268,7 @@ class Nsotoken():
 			return
 
 		head = {
-			'User-Agent': 'OnlineLounge/1.10.1 NASDKAPI Android',
+			'User-Agent': 'OnlineLounge/1.11.0 NASDKAPI Android',
 			'Accept-Language': 'en-US',
 			'Accept': 'application/json',
 			'Authorization': 'Bearer ' + id_response["access_token"],
@@ -286,9 +286,9 @@ class Nsotoken():
 		head = {
 			'Host': 'api-lp1.znc.srv.nintendo.net',
 			'Accept-Language': 'en-US',
-			'User-Agent': 'com.nintendo.znca/1.10.1 (Android/7.1.2)',
+			'User-Agent': 'com.nintendo.znca/1.11.0 (Android/7.1.2)',
 			'Accept': 'application/json',
-			'X-ProductVersion': '1.10.1',
+			'X-ProductVersion': '1.11.0',
 			'Content-Type': 'application/json; charset=utf-8',
 			'Connection': 'Keep-Alive',
 			'Authorization': 'Bearer',
@@ -341,9 +341,9 @@ class Nsotoken():
 
 		head = {
 			'Host': 'api-lp1.znc.srv.nintendo.net',
-			'User-Agent': 'com.nintendo.znca/1.10.1 (Android/7.1.2)',
+			'User-Agent': 'com.nintendo.znca/1.11.0 (Android/7.1.2)',
 			'Accept': 'application/json',
-			'X-ProductVersion': '1.10.1',
+			'X-ProductVersion': '1.11.0',
 			'Content-Type': 'application/json; charset=utf-8',
 			'Connection': 'Keep-Alive',
 			'Authorization': 'Bearer ' + splatoon_token["result"]["webApiServerCredential"]["accessToken"],
