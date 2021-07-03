@@ -3,6 +3,7 @@ import queue, sys
 import requests, urllib, urllib.request, copy
 import youtube_dl, traceback
 import mysqlhandler
+import json, re
 from bs4 import BeautifulSoup
 from random import randint
 
@@ -157,6 +158,27 @@ class voiceServer():
 			self.vclient.play(source, after=self.playNext)
 			self.source = source
 
+	def decode_vidlist(self, vidlist):
+		vids = []
+		for result in vidlist:
+			r = result.get('videoRenderer')
+			if r:
+				title = ' '.join(list(map(lambda e: e.get("text"), r['title']['runs'])))
+				videoId = r['videoId']
+				length = r['lengthText']['simpleText']
+				vids.append({"videoId": videoId, "title": title, "length": length})
+		return vids
+
+	def get_yt_json(self, soup):
+		scripts = soup.find_all("script")
+		for s in scripts:
+			text = s.get_text()
+			if (re.search(r'var ytInitialData =', text)):
+				text = re.sub(r'^\s*var ytInitialData\s*=\s*', '', text)  # Slice off leading JS
+				text = re.sub(r';\s*$', '', text)  # Slice off trailing semicolon
+				return text
+		return None
+
 	def playNext(self, e):
 		if self.ytQueue.empty():
 			self.source = None
@@ -184,19 +206,18 @@ class voiceServer():
 					await message.channel.trigger_typing()
 					query = urllib.request.pathname2url(' '.join(message.content.split()[2:]))
 					url = "https://youtube.com/results?search_query=" + query
-					print("QUERY: " + url)
-					response = urllib.request.urlopen(url)
-					html = response.read()
-					soup = BeautifulSoup(html, "html5lib")
-					vid =  soup.find_all("div", attrs={"class" :'ytd-video-renderer'})#'yt-uix-tile-link'})
-					print(str(vid))
-					if len(vid) == 0:
+					
+					source = requests.get(url).text
+					soup = BeautifulSoup(source,'html5lib')
+					theJson = self.get_yt_json(soup)
+					data = json.loads(theJson)
+					vidlist = data['contents']['twoColumnSearchResultsRenderer']['primaryContents']['sectionListRenderer']['contents'][0]['itemSectionRenderer']['contents']
+					vids = self.decode_vidlist(vidlist)
+
+					if len(vids) == 0:
 						await message.channel.send("No videos found")
 						return
-					if 'googleadservices' in vid[0]['href']:
-						theURL = 'https://youtube.com' + vid[1]['href']
-					else:	
-						theURL = "https://youtube.com" + vid[0]['href']
+					theURL = "https://youtube.com/watch?v=" + vids[0]['videoId']
 				elif 'soundcloud' in message.content.lower():
 					await message.channel.trigger_typing()
 					query = ' '.join(message.content.split()[2:])
