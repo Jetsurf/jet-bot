@@ -284,3 +284,31 @@ class serverUtils():
 		else:
 			await self.sqlBroker.rollback(cur)
 			await message.channel.send("Something went wrong!")
+
+	async def trim_db_from_leave(self, serverid):
+		cur = await self.sqlBroker.connect()
+		stmt = "DELETE FROM storedms WHERE serverid = %s"
+		input = (serverid,)
+		await cur.execute(stmt, input)
+
+		stmt = "DELETE FROM blacklist WHERE serverid = %s"
+		await cur.execute(stmt, input)
+
+		stmt = "DELETE FROM playlist WHERE serverid = %s"
+		await cur.execute(stmt, input)
+
+		stmt = "DELETE FROM server_config WHERE serverid = %s"
+		await cur.execute(stmt, input)
+
+		stmt = "DELETE FROM feeds WHERE serverid = %s"
+		await cur.execute(stmt, input)
+
+		stmt = "DELETE FROM dms WHERE serverid = %s"
+		await cur.execute(stmt, input)
+		if cur.lastrowid != None:
+			await self.sqlBroker.commit(cur)
+			print("Cleaned up DB on server " + str(serverid))
+		else:
+			await self.sqlBroker.rollback(cur)
+			print("Error on DB cleanup for server " + str(serverid))
+

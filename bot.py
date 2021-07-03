@@ -164,11 +164,14 @@ async def on_guild_remove(server):
 
 	for mem in owners:
 		await mem.send("I left server: " + server.name + " ID: " + str(server.id) + " - I am now in " + str(len(client.guilds)) + " servers")
+
+	print("Trimming DB for serverid: " + str(server.id))
+	await serverUtils.trim_db_from_leave(server.id)
 	sys.stdout.flush()
 
 @client.event
 async def on_voice_state_update(mem, before, after):
-	global client, serverVoices, mysqlHandler, soundsDir
+	global client, serverVoices, mysqlHandler, soundsDir, serverUtils
 
 	#Don't care if during startup
 	if not doneStartup:
