@@ -126,6 +126,7 @@ async def on_member_remove(member):
 		return
 
 	gid = member.guild.id
+	await client.get_guild(gid).chunk()
 	for mem in await serverUtils.getAllDM(gid):
 		memid = mem[0]
 		memobj = client.get_guild(gid).get_member(memid)
