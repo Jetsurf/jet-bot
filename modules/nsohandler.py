@@ -489,7 +489,10 @@ class nsoHandler():
 		if thejson == None:
 			return
 
-		weapondata = thejson['records']['weapon_stats']
+		try:
+			weapondata = thejson['records']['weapon_stats']
+		except:
+			print("ERROR IN WEAPON JSON:\n" + str(thejson))
 		theweapdata = None
 		gotweap = False
 		for i in weapondata:
@@ -532,7 +535,11 @@ class nsoHandler():
 		if thejson == None:
 			return
 
-		allmapdata = thejson['records']['stage_stats']
+		try:
+			allmapdata = thejson['records']['stage_stats']
+		except:
+			print("ERROR IN MAP JSON:\n" + str(thejson))
+
 		themapdata = None
 		for i in allmapdata:
 			if int(i) == mapid:
