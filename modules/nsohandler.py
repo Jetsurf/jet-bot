@@ -495,7 +495,7 @@ class nsoHandler():
 			await message.channel.send("Error while retrieving json for weapon stats, this has been logged with my owners.")
 			print("ERROR IN WEAPON JSON:\n" + str(thejson))
 			return
-    
+
 		theweapdata = None
 		gotweap = False
 		for i in weapondata:
