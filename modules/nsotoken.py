@@ -32,7 +32,7 @@ class Nsotoken():
 			await self.sqlBroker.rollback(cur)
 			await message.channel.send("Something went wrong! If you want to report this, join my support discord and let the devs know what you were doing!")
 
-	async def addToken(self, message, token, session_token, session_only=False):
+	async def addToken(self, message, token, session_token):
 		now = datetime.now()
 		formatted_date = now.strftime('%Y-%m-%d %H:%M:%S')
 
@@ -43,7 +43,7 @@ class Nsotoken():
 
 		cur = await self.sqlBroker.connect()
 
-		if await self.checkDuplicate(str(message.author.id), cur) and not session_only:
+		if await self.checkDuplicate(str(message.author.id), cur):
 			if ac_g != None:
 				stmt = "UPDATE tokens SET gtoken = %s, park_session = %s, ac_bearer = %s, session_token = %s, iksm_time = %s WHERE clientid = %s"
 				input = (str(ac_g), str(ac_p), str(ac_b), str(session_token), formatted_date, str(message.author.id),)
@@ -95,6 +95,14 @@ class Nsotoken():
 		return session_token[0][0]
 
 	async def login(self, message, flag=-1):
+		cur = await self.sqlBroker.connect()
+		dupe = self.checkDuplicate(message.id, cur)
+		await self.sqlBroker.close(cur)
+
+		if dupe:
+			await message.channel.send("You already have a token setup with me, if you need to refresh your token (due to an issue), DM me !deletetoken to perform this again.")
+			return
+
 		auth_state = base64.urlsafe_b64encode(os.urandom(36))
 		auth_code_verifier = base64.urlsafe_b64encode(os.urandom(32))
 		auth_cv_hash = hashlib.sha256()
@@ -151,7 +159,7 @@ class Nsotoken():
 			await message.channel.send("Something went wrong! Make sure you are also using the latest link I gave you to sign in. If so, join my support discord and report that something broke!")
 			return
 		else:
-			success = await self.addToken(message, {}, session_token_code, True)
+			success = await self.addToken(message, {}, session_token_code)
 
 		if success and flag == -1:
 			await message.channel.send("Token added, NSO commands will now work! You shouldn't need to run this command again.")

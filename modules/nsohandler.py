@@ -492,7 +492,10 @@ class nsoHandler():
 		try:
 			weapondata = thejson['records']['weapon_stats']
 		except:
+			await message.channel.send("Error while retrieving json for weapon stats, this has been logged with my owners.")
 			print("ERROR IN WEAPON JSON:\n" + str(thejson))
+			return
+    
 		theweapdata = None
 		gotweap = False
 		for i in weapondata:
@@ -538,7 +541,9 @@ class nsoHandler():
 		try:
 			allmapdata = thejson['records']['stage_stats']
 		except:
+			await message.channel.send("Error retrieving json for stage_stats. This has been logged for my owners.")
 			print("ERROR IN MAP JSON:\n" + str(thejson))
+    		return
 
 		themapdata = None
 		for i in allmapdata:
