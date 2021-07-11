@@ -95,6 +95,14 @@ class Nsotoken():
 		return session_token[0][0]
 
 	async def login(self, message, flag=-1):
+		cur = await self.sqlBroker.connect()
+		dupe = self.checkDuplicate(message.id, cur)
+		await self.sqlBroker.close(cur)
+
+		if dupe:
+			await message.channel.send("You already have a token setup with me, if you need to refresh your token (due to an issue), DM me !deletetoken to perform this again.")
+			return
+
 		auth_state = base64.urlsafe_b64encode(os.urandom(36))
 		auth_code_verifier = base64.urlsafe_b64encode(os.urandom(32))
 		auth_cv_hash = hashlib.sha256()
