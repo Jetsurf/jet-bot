@@ -543,7 +543,7 @@ class nsoHandler():
 		except:
 			await message.channel.send("Error retrieving json for stage_stats. This has been logged for my owners.")
 			print("ERROR IN MAP JSON:\n" + str(thejson))
-	    		return
+			return
 
 		themapdata = None
 		for i in allmapdata:
