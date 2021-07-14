@@ -259,7 +259,17 @@ class nsoHandler():
 		theBrand = theGear['gear']['brand']['name']
 
 		embed = self.makeGearEmbed(theGear, "Gear you wanted to be notified about has appeared in the shop!", "Respond with 'order' to order, or 'stop' to stop recieving notifications (within the next two hours)")
-		await theMem.send(embed=embed)
+		try:
+			await theMem.send(embed=embed)
+		except discord.errors.Forbidden:
+			print(f"Forbidden from messaging user {str(theMem.id)}, removing from DMs")
+			cur = await self.sqlBroker.connect()
+			stmt = "DELETE FROM storedms WHERE clientid = %s"
+			await cur.execute(stmt, (theMem.id,))
+			await self.sqlBroker.commit(cur)
+			print(f"Removed {str(theMem.id)} from storedm")
+			return
+
 		print('Messaged ' + theMem.name)
 
 		def check1(m):
