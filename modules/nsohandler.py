@@ -1117,32 +1117,32 @@ class nsoHandler():
 				placedPlayer = True
 				teamstring += matchname
 				if myrank != None:
-					teamstring += " - " + myrank
-				teamstring += " - " + myweapon + " - " + str(mykills) + "(" + str(myassists) + ")/" + str(mydeaths) + "/" + str(specials) + "\n"
+					teamstring += f" - {myrank}"
+				teamstring += f" - {myweapon} - {str(mykills)}({str(myassists)})/{str(mydeaths)}/{str(specials)}\n"
 			if rule != "Turf War" and mykills > i['kill_count'] + i['assist_count'] and not placedPlayer:
 				placedPlayer = True
 				teamstring += matchname
 				if myrank != None:
-					teamstring += " - " + myrank
-				teamstring += " - " + myweapon + " - " + str(mykills) + "(" + str(myassists) + ")/" + str(mydeaths) + "/" + str(specials) + "\n"
+					teamstring += f" - {myrank}"
+				teamstring += f" - {myweapon} - {str(mykills)}({str(myassists)})/{str(mydeaths)}/{str(specials)}\n"
 
 			teamstring += tname
 			if 'udemae' in i['player']:
 				teamstring += " - " + i['player']['udemae']['name']
-			teamstring += " - " + i['player']['weapon']['name'] + " - " + str(i['kill_count'] + i['assist_count']) + "(" + str(i['assist_count']) + ")/" + str(i['death_count']) + "/" + str(i['special_count']) + "\n"
+			teamstring += f" - {i['player']['weapon']['name']} - {str(i['kill_count'] + i['assist_count'])}({str(i['assist_count'])})/{str(i['death_count'])}/{str(i['special_count'])}\n"
 
 		if not placedPlayer:
 			if myrank != None:
 				teamstring += " - " + myrank
-			teamstring += " - " + myweapon + " - " + str(mykills) + "(" + str(myassists) + ")/" + str(mydeaths) + "/" + str(specials) + "\n"
+			teamstring += f" - {myweapon} - {str(mykills)}({str(myassists)})/{str(mydeaths)}/{str(specials)}\n"
 
 		for i in enemyteam:
 			ename = i['player']['nickname']
 			enemystring += ename
 			if 'udemae' in i['player']:
-				enemystring += " - " + i['player']['udemae']['name']
+				enemystring += f" - {i['player']['udemae']['name']}"
 
-			enemystring += " - " + i['player']['weapon']['name'] + " - " + str(i['kill_count'] + i['assist_count']) + "(" + str(i['assist_count']) + ")/" + str(i['death_count']) + "/" + str(i['special_count']) + "\n"
+			enemystring += f" - {i['player']['weapon']['name']} - {str(i['kill_count'] + i['assist_count'])}({str(i['assist_count'])})/{str(i['death_count'])}/{str(i['special_count'])}\n"
 		if 'VICTORY' in myresult:
 			embed.add_field(name=str(matchname) + "'s team - " + str(myresult), value=teamstring, inline=True)
 			embed.add_field(name="Enemy Team - " + str(enemyresult), value=enemystring, inline=True)
