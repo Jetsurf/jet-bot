@@ -284,13 +284,7 @@ async def on_message(message):
 
 	if message.guild == None:
 		if message.author in owners:
-			if '!servers' in message.content:
-				numServers = str(len(client.guilds))
-				serverNames = ""
-				for server in client.guilds:
-					serverNames = serverNames + str(server.name + '\n')
-				await channel.send("I am in: " + str(numServers) + " servers\n" + serverNames)
-			elif '!restart' in message.content:
+			if '!restart' in message.content:
 				await channel.send("Going to restart!")
 				await mysqlHandler.close_pool()
 				await client.close()
