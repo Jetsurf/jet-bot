@@ -122,7 +122,10 @@ class nsoHandler():
 			embed.add_field(name="Gear", value="Gear on rotation", inline=False)
 			embed.add_field(name='**' + gear['gear']['name'] + '**', value=gear['gear']['brand']['name'] + ' : ' + gear['kind'], inline=False)
 			embed.add_field(name="ID/Subs/Price", value="5/" + str(gear['gear']['rarity'] + 1) + "/" + str(gear['price']), inline=True)
-			embed.add_field(name="Ability/Common Sub", value=gear['skill']['name'] + '/' + gear['gear']['brand']['frequent_skill']['name'], inline=True)
+			if 'frequent_skill' in gear['gear']['brand']:
+				embed.add_field(name="Ability/Common Sub", value=gear['skill']['name'] + '/' + gear['gear']['brand']['frequent_skill']['name'], inline=True)
+			else:
+				embed.add_field(name="Ability/Common Sub", value=gear['skill']['name'] + '/' + "None", inline=True)				
 
 		return embed
 
