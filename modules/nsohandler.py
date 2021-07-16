@@ -814,9 +814,6 @@ class nsoHandler():
 
 		await self.orderGear(message, merchid, confirm = (order == -1))
 
-	# Tries to order gear with the given merchid.
-	# The 'merchid' is a long numeric string assigned by Nintendo (e.g. "4782435326394656903").
-	# If 'confirm' is true then we ask the user if they really want to order.
 	async def orderGear(self, message, merchid, confirm = True):
 		await message.channel.trigger_typing()
 
