@@ -398,7 +398,6 @@ class nsoHandler():
 		stmt = "SELECT DISTINCT clientid,serverid FROM storedms WHERE (ability = %s) OR (brand = %s) OR (gearname = %s)"
 		await cur.execute(stmt, (theSkill, theBrand, theType,))
 		toDM = await cur.fetchall()
-		print("DM TEST: " + str(toDM))
 		await self.sqlBroker.close(cur)
 
 		for id in range(len(toDM)):
@@ -406,9 +405,6 @@ class nsoHandler():
 			servid = toDM[id][1]
 
 			server = self.client.get_guild(int(servid))
-			if server is None:
-				print("Suggested cleanup on server: " + str(servid))
-				continue
 
 			await server.chunk()
 			#THIS NEEDS IMPROVEMENT
