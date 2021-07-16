@@ -1062,6 +1062,7 @@ class nsoHandler():
 			await message.channel.send("You don't have a token setup with me! Please DM me !token with how to get one setup!")
 			return
 
+		await message.channel.trigger_typing()
 		recordjson = await self.getNSOJSON(message, self.app_head, "https://app.splatoon2.nintendo.net/api/records")
 		if recordjson == None:
 			return
@@ -1096,9 +1097,9 @@ class nsoHandler():
 			myrank = None
 
 		if num == 1:
-			embed.title = "Stats for " + str(accountname) +"'s last battle - " + str(battletype) + " - " + str(rule) + " (Kills/Deaths/Specials)"
+			embed.title = f"Stats for {str(accountname)}'s last battle - {str(battletype)} - {str(rule)} (Kills(Assists)/Deaths/Specials)"
 		else:
-			embed.title = "Stats for " + str(accountname) +"'s battle " + str(num) + " matches ago - " + str(battletype) + " - " + str(rule) + " (Kills/Deaths/Specials)"
+			embed.title = f"Stats for {str(accountname)}'s battle {str(num)} matches ago - {str(battletype)} - {str(rule)} (Kills(Assists)/Deaths/Specials)"
 
 		teamstring = ""
 		enemystring = ""
@@ -1144,11 +1145,11 @@ class nsoHandler():
 
 			enemystring += f" - {i['player']['weapon']['name']} - {str(i['kill_count'] + i['assist_count'])}({str(i['assist_count'])})/{str(i['death_count'])}/{str(i['special_count'])}\n"
 		if 'VICTORY' in myresult:
-			embed.add_field(name=str(matchname) + "'s team - " + str(myresult), value=teamstring, inline=True)
-			embed.add_field(name="Enemy Team - " + str(enemyresult), value=enemystring, inline=True)
+			embed.add_field(name=f"{str(matchname)}'s team - {str(myresult)}", value=teamstring, inline=True)
+			embed.add_field(name=f"Enemy Team - {str(enemyresult)}", value=enemystring, inline=True)
 		else:
-			embed.add_field(name="Enemy Team - " + str(enemyresult), value=enemystring, inline=True)
-			embed.add_field(name=str(matchname) + "'s team - " + str(myresult), value=teamstring, inline=True)
+			embed.add_field(name=f"Enemy Team - {str(enemyresult)}", value=enemystring, inline=True)
+			embed.add_field(name=f"{str(matchname)}'s team - {str(myresult)}", value=teamstring, inline=True)
 
 		await message.channel.send(embed=embed)
 
@@ -1190,7 +1191,7 @@ class nsoHandler():
 					count = int(args[1])
 
 			if count == 1:
-				await message.channel.send("Random map: " + self.splatInfo.getRandomMap().name())
+				await message.channel.send(f"Random map: {self.splatInfo.getRandomMap().name()}")
 			else:
 				out = "Random maps:\n"
 				for i in range(count):
