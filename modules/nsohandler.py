@@ -519,6 +519,15 @@ class nsoHandler():
 
 		name = thejson['records']['player']['nickname']
 		turfinked = theweapdata['total_paint_point']
+		turfstring = str(turfinked)
+		if turfinked >= 100000:
+			turfstring = str(turfinked) + "<:badge_100k:863924861809197096>"
+		if turfinked >= 500000:
+			turfstring = str(turfinked) + "<:badge_500k:863925109278507038>"
+		if turfinked >= 1000000:
+			turfstring = str(turfinked) + "<:badge_1M:863925025388101632>"
+		if turfinked >= 9999999:
+			turfstring = str(turfinked) + "<:badge_10M:863924949748416542>"
 		wins = theweapdata['win_count']
 		loss = theweapdata['lose_count']
 		if (wins + loss) != 0:
@@ -533,7 +542,7 @@ class nsoHandler():
 		embed.title = str(name) + "'s Stats for " + theweapdata['weapon']['name']
 		embed.set_thumbnail(url='https://splatoon2.ink/assets/splatnet' + theweapdata['weapon']['image'])
 		embed.add_field(name="Wins/Losses/%", value=str(wins) + "/" + str(loss) + "/" + str(winper) + "%", inline=True)
-		embed.add_field(name="Turf Inked", value=str(turfinked), inline=True)
+		embed.add_field(name="Turf Inked", value=turfstring, inline=True)
 		embed.add_field(name="Freshness (Current/Max)", value=str(freshcur) + "/" + str(freshmax), inline=True)
 
 		await message.channel.send(embed=embed)

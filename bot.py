@@ -338,7 +338,7 @@ async def on_message(message):
 
 		if message.author.guild_permissions.administrator:
 			if len(args) == 0:
-				await message.channel.send("Options for admin commands are playlist, blacklist, dm, prefix")
+				await message.channel.send("Options for admin commands are playlist, blacklist, dm, prefix, announcement, and feed")
 				await serverUtils.print_help(message, prefix)
 				return
 			subcommand = args[0].lower()
