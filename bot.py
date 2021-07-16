@@ -204,11 +204,6 @@ async def on_error(event, *args, **kwargs):
 	exc = sys.exc_info()
 	if exc[0] is discord.errors.Forbidden:
 		return
-	elif exc[0] is pymysql.err.OperationalError:
-		##THIS DOES NOT WORK
-		cur = args.get('cur')
-		mysqlHandler.close(cur)
-		print("MYSQL: Disconnect from server, terminating connection", file=sys.stderr)
 	else:
 		raise exc[1]
 
