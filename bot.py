@@ -286,7 +286,6 @@ async def on_message(message):
 				sys.stderr.flush()
 				sys.stdout.flush()
 				sys.exit(0)
-				print("KEY CHECK: " + str(keys))
 			elif '!cmdreport' in message.content:
 				await serverUtils.report_cmd_totals(message)
 			elif '!nsojson' in command:
