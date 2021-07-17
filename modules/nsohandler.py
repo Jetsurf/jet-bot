@@ -539,11 +539,11 @@ class nsoHandler():
 		freshmax = theweapdata['max_win_meter']
 
 		embed = discord.Embed(colour=0x0004FF)
-		embed.title = str(name) + "'s Stats for " + theweapdata['weapon']['name']
+		embed.title = f"{str(name)}'s Stats for {theweapdata['weapon']['name']}"
 		embed.set_thumbnail(url='https://splatoon2.ink/assets/splatnet' + theweapdata['weapon']['image'])
-		embed.add_field(name="Wins/Losses/%", value=str(wins) + "/" + str(loss) + "/" + str(winper) + "%", inline=True)
+		embed.add_field(name="Wins/Losses/%", value=f"{str(wins)}/{str(loss)}/{str(winper)}%", inline=True)
 		embed.add_field(name="Turf Inked", value=turfstring, inline=True)
-		embed.add_field(name="Freshness (Current/Max)", value=str(freshcur) + "/" + str(freshmax), inline=True)
+		embed.add_field(name="Freshness (Current/Max)", value=f"{str(freshcur)}/{str(freshmax)}", inline=True)
 
 		await message.channel.send(embed=embed)
 
