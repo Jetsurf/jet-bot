@@ -677,8 +677,7 @@ class nsoHandler():
 		embed = discord.Embed(colour=0xFF9B00)
 		embed.title = name + " - " + rank + " " + str(points) + " - Salmon Run Stats"
 
-		embed.add_field(name="Overall Stats", value="Shifts Worked: " + str(jobcard['job_num']) + '\nTeammates Rescued: ' + str(jobcard['help_total']) + '\nGolden Eggs Collected: ' +
-			str(jobcard['golden_ikura_total']) + '\nPower Eggs Collected: ' + str(jobcard['ikura_total']) + '\nTotal Points: ' + str(jobcard['kuma_point_total']), inline=True)
+		embed.add_field(name="Overall Stats", value=f"Shifts Worked: {str(jobcard['job_num'])}\nTeammates Rescued: {str(jobcard['help_total'])}\nGolden Eggs Collected: {str(jobcard['golden_ikura_total'])}\nPower Eggs Collected: {str(jobcard['ikura_total'])}\nTotal Points: {str(jobcard['kuma_point_total'])}", inline=True)
 
 		sheadcnt, stingcnt, flyfshcnt, seelcnt, scrapcnt, mawscnt, drizcnt, deathcnt, rescnt, matches, hazardpts, geggs, peggs = 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 		for i in jobresults:
@@ -710,11 +709,9 @@ class nsoHandler():
 		peggsavg = int(peggs / matches)
 		deathsavg = int(deathcnt / matches)
 		resavg = int(rescnt / matches)
-		embed.add_field(name=" Average Stats (Last " + str(matches) + " Games)", value="Average Teammates Rescued: " + str(resavg) + "\nAverage Times Died: " + str(deathsavg) + "\nAverage Golden Eggs: " + str(geggsavg) + "\nAverage Power Eggs: " + str(peggsavg) +
-			"\nAverage Hazard Level: " + str(hazardavg) + "%", inline=True)
-		embed.add_field(name=" Total Stats (Last " + str(matches) + " Games)", value="Total Teammates Rescued: " + str(rescnt) + "\nTotal Times Died: " + str(deathcnt) + "\nTotal Golden Eggs: " + str(geggs) + "\nTotal Power Eggs: " + str(peggs), inline=True)
-		embed.add_field(name="Boss Kill Counts (Last " + str(matches) + " games)", value='Steelhead: ' + str(sheadcnt) + '\nStinger: ' + str(stingcnt) + '\nFlyfish: ' + str(flyfshcnt) + '\nSteel Eel: ' + str(seelcnt) +
-			'\nScrapper: ' + str(scrapcnt) + '\nMaws: ' + str(mawscnt) + '\nDrizzler: ' + str(drizcnt), inline=True)
+		embed.add_field(name=f"Avgerage Stats (Last {str(matches)} Games)", value=f"Teammates Rescued: {str(resavg)}\nTimes Died: {str(deathsavg)}\nGolden Eggs: {str(geggsavg)}\nPower Eggs: {str(peggsavg)} \nHazard Level: {str(hazardavg)}%", inline=True)
+		embed.add_field(name=f"Total Stats (Last {str(matches)} Games)", value=f"Teammates Rescued: {str(rescnt)}\nTimes Died: {str(deathcnt)}\nGolden Eggs: {str(geggs)}\nPower Eggs: {str(peggs)}", inline=True)
+		embed.add_field(name=f"Boss Kill Counts (Last {str(matches)} games)", value=f"Steelhead: {str(sheadcnt)}\nStinger: {str(stingcnt)}\nFlyfish: {str(flyfshcnt)}\nSteel Eel: {str(seelcnt)}\nScrapper: {str(scrapcnt)}\nMaws: {str(mawscnt)}\nDrizzler: {str(drizcnt)}", inline=True)
 
 		await message.channel.send(embed=embed)
 
@@ -836,9 +833,9 @@ class nsoHandler():
 		orderedFlag = 'ordered_info' in thejson
 
 		if confirm:
-			embed = self.makeGearEmbed(gearToBuy, message.author.name + ' - Order gear?', "Respond with 'yes' to place your order, 'no' to cancel")
+			embed = self.makeGearEmbed(gearToBuy, f"{message.author.name} - Order gear?", "Respond with 'yes' to place your order, 'no' to cancel")
 			await message.channel.send(embed=embed)
-			confirmation = await self.client.wait_for('message', check = messageCheck)
+			confirmation = await self.client.wait_for('message', check=messageCheck)
 			if not 'yes' in confirmation.content.lower():
 				await message.channel.send(message.author.name + " - order canceled")
 				return
@@ -846,21 +843,21 @@ class nsoHandler():
 		await message.channel.trigger_typing()
 		if not orderedFlag:
 			if await self.postNSOStore(message, gearToBuy['id'], tmp_app_head_shop):
-				await message.channel.send(message.author.name + " - ordered!")
+				await message.channel.send(f"{message.author.name} - ordered!")
 			else:
-				await message.channel.send(message.author.name + "  - failed to order")
+				await message.channel.send(f"{message.author.name} - failed to order")
 		else:
 			ordered = thejson['ordered_info']
-			embed = self.makeGearEmbed(ordered, message.author.name + ", you already have an item on order!", "Respond with 'yes' to replace your order, 'no' to cancel")
+			embed = self.makeGearEmbed(ordered, f"{message.author.name}, you already have an item on order!", "Respond with 'yes' to replace your order, 'no' to cancel")
 			await message.channel.send(embed=embed)
-			confirmation = await self.client.wait_for('message', check = messageCheck)
+			confirmation = await self.client.wait_for('message', check=messageCheck)
 			if 'yes' in confirmation.content.lower():
 				if await self.postNSOStore(message, gearToBuy['id'], tmp_app_head_shop, override=True):
-					await message.channel.send(message.author.name + " - ordered!")
+					await message.channel.send(f"{message.author.name} - ordered!")
 				else:
-					await message.channel.send(message.author.name + "  - failed to order")
+					await message.channel.send(f"{message.author.name} - failed to order")
 			else:
-				await message.channel.send(message.author.name + " - order canceled")
+				await message.channel.send(f"{message.author.name} - order canceled")
 
 	async def postNSOStore(self, message, gid, app_head, override=False):
 		iksm = await self.nsotoken.get_iksm_token_mysql(message.author.id)
@@ -903,9 +900,9 @@ class nsoHandler():
 				minutes = int(timeRemaining / 60)
 
 			if flag == 0:
-				embed.add_field(name='**' + eqName + '**', value=eqBrand + ' : ' + eqKind, inline=False)
-				embed.add_field(name="ID/Subs/Price", value=str(j) + "/" + str(slots) + "/" + str(price), inline=True)
-				embed.add_field(name="Ability/Common Sub", value=str(skill['name']) + '/' + str(commonSub), inline=True)
+				embed.add_field(name='**' + eqName + '**', value=f"{eqBrand} : {eqKind}", inline=False)
+				embed.add_field(name="ID/Subs/Price", value=f"{str(j)}/{str(slots)}/{str(price)}", inline=True)
+				embed.add_field(name="Ability/Common Sub", value=f"{str(skill['name'])}/{str(commonSub)}", inline=True)
 				j = j + 1
 			else:
 				if j != 5:
@@ -914,7 +911,7 @@ class nsoHandler():
 				else:
 					return i
 
-		embed.set_footer(text='Next Item In '+ str(hours) + ' Hours ' + str(minutes) + ' minutes')
+		embed.set_footer(text=f"Next Item In {str(hours)} Hours {str(minutes)} minutes")
 		await message.channel.send(embed=embed)
 
 	async def maps(self, message=None, offset=0, flag=0):
@@ -933,7 +930,7 @@ class nsoHandler():
 		mapB = trfWar[offset]['stage_b']
 		end = trfWar[offset]['end_time']
 		if flag == 0:
-			embed.add_field(name="<:turfwar:550103899084816395> Turf War", value=mapA['name'] + "\n" + mapB['name'], inline=True)
+			embed.add_field(name="<:turfwar:550103899084816395> Turf War", value=f"{mapA['name']}\n{mapB['name']}", inline=True)
 		if flag == 1:
 			turf = {}
 			turf['mapA'] = mapA
@@ -944,7 +941,7 @@ class nsoHandler():
 		game = ranked[offset]['rule']
 
 		if flag == 0:
-			embed.add_field(name="<:ranked:550104072456372245> Ranked: " + game['name'], value=mapA['name'] + "\n" + mapB['name'], inline=True)
+			embed.add_field(name=f"<:ranked:550104072456372245> Ranked: {game['name']}", value=mapA['name'] + "\n" + mapB['name'], inline=True)
 		if flag == 1:
 			ranked = {}
 			ranked['mapA'] = mapA
@@ -956,7 +953,7 @@ class nsoHandler():
 		game = league[offset]['rule']
 
 		if flag == 0:
-			embed.add_field(name="<:league:550104147463110656> League: " + game['name'], value=mapA['name'] + "\n" + mapB['name'], inline=True)
+			embed.add_field(name=f"<:league:550104147463110656> League: {game['name']}", value=mapA['name'] + "\n" + mapB['name'], inline=True)
 		if flag == 1:
 			league = {}
 			league['mapA'] = mapA
@@ -970,10 +967,10 @@ class nsoHandler():
 		minutes = int(timeRemaining / 60)
 
 		if offset == 0:
-			embed.add_field(name="Time Remaining", value=str(hours) + ' Hours, and ' + str(minutes) + ' minutes', inline=False)
+			embed.add_field(name="Time Remaining", value=f"{str(hours)} Hours, and {str(minutes)} minutes", inline=False)
 		elif offset >= 1:
 			hours = hours - 2
-			embed.add_field(name="Time Until Map Rotation", value=str(hours) + ' Hours, and ' + str(minutes) + ' minutes', inline=False)
+			embed.add_field(name="Time Until Map Rotation", value=f"{str(hours)} Hours, and {str(minutes)} minutes", inline=False)
 
 		if flag == 0:
 			await message.channel.send(embed=embed)
@@ -1048,9 +1045,9 @@ class nsoHandler():
 		minutes = int(timeRemaining / 60)
 
 		if getNext == 1:
-			embed.add_field(name='Time Until Rotation', value=str(days) + ' Days, ' + str(hours) + ' Hours, and ' + str(minutes) + ' Minutes')
+			embed.add_field(name='Time Until Rotation', value=f"{str(days)} Days, {str(hours)} Hours, and {str(minutes)} Minutes")
 		else:
-			embed.add_field(name="Time Remaining ", value=str(days) + ' Days, ' + str(hours) + ' Hours, and ' + str(minutes) + ' Minutes')
+			embed.add_field(name="Time Remaining ", value=f"{str(days)} Days, {str(hours)} Hours, and {str(minutes)} Minutes")
 
 		if flag == 0:
 			await message.channel.send(embed=embed)
