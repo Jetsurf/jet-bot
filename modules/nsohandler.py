@@ -88,9 +88,9 @@ class nsoHandler():
 		if mapflag:
 			turf, ranked, league = await self.maps(offset=0, flag=1)
 			embed.add_field(name="Maps", value="Maps currently on rotation", inline=False)
-			embed.add_field(name="<:turfwar:550107083911987201> Turf War", value=turf['mapA']['name'] + "\n" + turf['mapB']['name'], inline=True)
-			embed.add_field(name="<:ranked:550107084684001350> Ranked: " + ranked['rule']['name'], value=ranked['mapA']['name'] + "\n" + ranked['mapB']['name'], inline=True)
-			embed.add_field(name="<:league:550107083660328971> League: " + league['rule']['name'], value=league['mapA']['name'] + "\n" + league['mapB']['name'], inline=True)
+			embed.add_field(name="<:turfwar:550107083911987201> Turf War", value=f"{turf['mapA']['name']}\n{turf['mapB']['name']}", inline=True)
+			embed.add_field(name=f"<:ranked:550107084684001350> Ranked: {ranked['rule']['name']}", value=f"{ranked['mapA']['name']}\n{ranked['mapB']['name']}", inline=True)
+			embed.add_field(name=f"<:league:550107083660328971> League: {league['rule']['name']}", value=f"{league['mapA']['name']}\n{league['mapB']['name']}", inline=True)
 
 		if srflag:
 			flag = 0
@@ -110,22 +110,21 @@ class nsoHandler():
 				embed.add_field(name="Salmon Run", value="Next SR Rotation", inline=False)
 				embed.add_field(name='Map', value=srdata['map']['name'], inline=True)
 				embed.add_field(name='Weapons', value=srdata['weapons'], inline=True)
-				embed.add_field(name='Time Until SR Rotation', value=str(days) + ' Days, ' + str(hours) + ' Hours, and ' + str(minutes) + ' Minutes', inline=False)
+				embed.add_field(name='Time Until SR Rotation', value=f"{str(days)} Days, {str(hours)} Hours, and {str(minutes)} Minutes", inline=False)
 			else:
 				embed.add_field(name="Salmon Run", value="Current SR Rotation", inline=False)
 				embed.add_field(name='Map', value=srdata['map']['name'], inline=True)
 				embed.add_field(name='Weapons', value=srdata['weapons'].replace('\n', ', ', 3), inline=True)
-				embed.add_field(name="Time Remaining for SR Rotation", value=str(days) + ' Days, ' + str(hours) + ' Hours, and ' + str(minutes) + ' Minutes', inline=False)
-
+				embed.add_field(name="Time Remaining for SR Rotation", value=f"{str(days)} Days, {str(hours)} Hours, and {str(minutes)} Minutes", inline=False)
 		if gearflag:
 			gear = await self.gearParser(flag=1)
 			embed.add_field(name="Gear", value="Gear on rotation", inline=False)
-			embed.add_field(name='**' + gear['gear']['name'] + '**', value=gear['gear']['brand']['name'] + ' : ' + gear['kind'], inline=False)
-			embed.add_field(name="ID/Subs/Price", value="5/" + str(gear['gear']['rarity'] + 1) + "/" + str(gear['price']), inline=True)
+			embed.add_field(name=f"**{gear['gear']['name']}**", value=f"{gear['gear']['brand']['name']} : {gear['kind']}", inline=False)
+			embed.add_field(name="ID/Subs/Price", value=f"5/{str(gear['gear']['rarity'] + 1)}/{str(gear['price'])}", inline=True)
 			if 'frequent_skill' in gear['gear']['brand']:
-				embed.add_field(name="Ability/Common Sub", value=gear['skill']['name'] + '/' + gear['gear']['brand']['frequent_skill']['name'], inline=True)
+				embed.add_field(name="Ability/Common Sub", value=f"{gear['skill']['name']}/{gear['gear']['brand']['frequent_skill']['name']}", inline=True)
 			else:
-				embed.add_field(name="Ability/Common Sub", value=gear['skill']['name'] + '/' + "None", inline=True)				
+				embed.add_field(name="Ability/Common Sub", value=f"{gear['skill']['name']}/None", inline=True)				
 
 		return embed
 
@@ -196,7 +195,7 @@ class nsoHandler():
 
 		if match3 != None:
 			if match3.isValid() and match3.get().price() == 0:
-				await message.channel.send(match3.get().name() + " won't appear on the store. Here is where to get it: " + match3.get().source())
+				await message.channel.send(f"{match3.get().name()} won't appear on the store. Here is where to get it: {match3.get().source()}")
 				return
 
 		cur = await self.sqlBroker.connect()
@@ -212,11 +211,11 @@ class nsoHandler():
 		count = await cur.fetchone()
 		if count[0] > 0:
 			if match1.isValid():
-				await message.channel.send("You will already be DM'ed when gear with ability " + term + " appears in the shop? (Respond Yes/No)")
+				await message.channel.send(f"You will already be DM'ed when gear with ability {term} appears in the shop? (Respond Yes/No)")
 			elif match2.isValid():
-				await message.channel.send("You will already be DM'ed when gear by brand " + term + " appears in the shop? (Respond Yes/No)")
+				await message.channel.send(f"You will already be DM'ed when gear by brand {term} appears in the shop? (Respond Yes/No)")
 			else:
-				await message.channel.send("You will already be DM'ed when " + term + " appears in the shop? (Respond Yes/No)")
+				await message.channel.send(f"You will already be DM'ed when {term} appears in the shop? (Respond Yes/No)")
 
 			await self.sqlBroker.close(cur)
 			return
@@ -225,11 +224,11 @@ class nsoHandler():
 				return m.author == message.author and m.channel == message.channel
 
 			if match1.isValid():
-				await message.channel.send(message.author.name + " do you want me to DM you when gear with ability " + term + " appears in the shop? (Respond Yes/No)")
+				await message.channel.send(f"{message.author.name} do you want me to DM you when gear with ability {term} appears in the shop? (Respond Yes/No)")
 			elif match2.isValid():
-				await message.channel.send(message.author.name + " do you want me to DM you when gear by brand " + term + " appears in the shop? (Respond Yes/No)")
+				await message.channel.send(f"{message.author.name} do you want me to DM you when gear by brand {term} appears in the shop? (Respond Yes/No)")
 			else:
-				await message.channel.send(message.author.name + " do you want me to DM you when " + term + " appears in the shop? (Respond Yes/No)")
+				await message.channel.send(f"{message.author.name} do you want me to DM you when {term} appears in the shop? (Respond Yes/No)")
 
 			resp = await self.client.wait_for('message', check=check2)
 			if 'yes' not in resp.content.lower():
@@ -247,11 +246,11 @@ class nsoHandler():
 		await self.sqlBroker.commit(cur)
 
 		if match1.isValid():
-			await message.channel.send("Added you to recieve a DM when gear with " + term + " appears in the shop!")
+			await message.channel.send(f"Added you to recieve a DM when gear with {term} appears in the shop!")
 		elif match2.isValid():
-			await message.channel.send("Added you to recieve a DM when gear by brand " + term + " appears in the shop!")
+			await message.channel.send(f"Added you to recieve a DM when gear by brand {term} appears in the shop!")
 		else:
-			await message.channel.send("Added you to recieve a DM when " + term + " appears in the shop!")
+			await message.channel.send(f"Added you to recieve a DM when {term} appears in the shop!")
 
 	async def handleDM(self, theMem, theGear):
 		def checkDM(m):
@@ -324,18 +323,18 @@ class nsoHandler():
 						stmt = 'DELETE FROM storedms WHERE (clientid = %s) AND (ability = %s)'
 						await cur.execute(stmt, (theMem.id, theSkill, ))
 						abilFlag = False
-						await theMem.send("Ok, removed you from being DM'ed when gear with ability " + theSkill + " appears in the shop!")
+						await theMem.send(f"Ok, removed you from being DM'ed when gear with ability {theSkill} appears in the shop!")
 					elif confirm.content.lower() == theBrand.lower() and branFlag:
 						stmt = 'DELETE FROM storedms WHERE (clientid = %s) AND (brand = %s)'
 						await cur.execute(stmt, (theMem.id, theBrand, ))
 						branFlag = False
-						await theMem.send("Ok, removed you from being DM'ed when gear by brand " + theBrand + " appears in the shop!")
+						await theMem.send(f"Ok, removed you from being DM'ed when gear by brand {theBrand} appears in the shop!")
 					elif confirm.content.lower() == theType.lower() and abilFlag:
 						stmt = 'DELETE FROM storedms WHERE (clientid = %s) AND (gearname = %s)'
 						await cur.execute(stmt, (theMem.id, theType, ))
 						await self.sqlBroker.commit(cur)
 						gearFlag = False
-						await theMem.send("Ok, removed you from being DM'ed when " + theAbility + " appears in the shop!")
+						await theMem.send(f"Ok, removed you from being DM'ed when {theAbility} appears in the shop!")
 					elif confirm.content.lower() == 'all':
 						stmt = 'DELETE FROM storedms WHERE (clientid = %s) AND ((ability = %s) OR (brand = %s) OR (gearname = %s))'
 						await cur.execute(stmt, (theMem.id, theSkill, theBrand, theType, ))
@@ -356,11 +355,11 @@ class nsoHandler():
 				await cur.execute(stmt, (theMem.id, theSkill, theBrand, theType, ))
 				fields = await cur.fetchone()
 				if fields[0] != None:
-					await theMem.send("Ok, I won't DM you again when gear with ability " + theSkill + " appears in the shop.")
+					await theMem.send(f"Ok, I won't DM you again when gear with ability {theSkill} appears in the shop.")
 				elif fields[1] != None:
-					await theMem.send("Ok, I won't DM you again when gear by " + theBrand  + " appears in the shop.")
+					await theMem.send(f"Ok, I won't DM you again when gear by {theBrand} appears in the shop.")
 				else:
-					await theMem.send("Ok, I won't DM you again when " + theType + " appears in the shop.")
+					await theMem.send(f"Ok, I won't DM you again when {theType} appears in the shop.")
 
 				stmt = 'DELETE FROM storedms WHERE (clientid = %s) AND ((ability = %s) OR (brand = %s) OR (gearname = %s))'
 
@@ -372,7 +371,7 @@ class nsoHandler():
 			await self.orderGearCommand(resp, order=5)
 		else:
 			#Response but nothing understood
-			print("Keeping " + theMem.name + " in DM's")
+			print(f"Keeping {theMem.name} in DM's")
 			stmt = 'SELECT ability, brand, gearname FROM storedms WHERE (clientid = %s) AND ((ability = %s) OR (brand = %s) OR (gearname = %s))'
 			await cur.execute(stmt, (theMem.id, theSkill, theBrand, theType, ))
 			fields = await cur.fetchall()
@@ -385,7 +384,7 @@ class nsoHandler():
 				if i[2] != None:
 					string+=theType + ", "
 
-			string = "".join(string.rsplit(", ", 1)) + " appears in the shop"
+			string = f"{"".join(string.rsplit(", ", 1))} appears in the shop"
 			string = " or ".join(string.rsplit(", ", 1))
 			await theMem.send(string)
 
@@ -413,14 +412,14 @@ class nsoHandler():
 			#THIS NEEDS IMPROVEMENT
 			theMem = server.get_member(int(memid))
 			if theMem is None:
-				print("Suggested cleanup on user: " + str(memid))
+				print(f"Suggested cleanup on user: {str(memid)}")
 				continue
 
 			asyncio.ensure_future(self.handleDM(theMem, theGear))
 
 	async def getStoreJSON(self, message):
 		theGear = self.storeJSON['merchandises'][5]
-		await message.channel.send('```' + str(theGear) + '```')
+		await message.channel.send(f"```{str(theGear)}```")
 
 	async def getRawJSON(self, message):
 		if not await self.checkDuplicate(message.author.id):
@@ -455,14 +454,14 @@ class nsoHandler():
 			results_list = requests.get(url, headers=header, cookies=dict(iksm_session=iksm))
 			thejson = json.loads(results_list.text)
 
-		with open("../" + jsontype + ".json", "w") as f:
+		with open(f"../{jsontype}.json", "w") as f:
 			json.dump(thejson, f)
 
-		with open("../" + jsontype + ".json", "r") as f:
+		with open(f"../{jsontype}.json", "r") as f:
 			jsonToSend = discord.File(fp=f)
 			await message.channel.send(file=jsonToSend)
 
-		os.remove("../" + jsontype + ".json")
+		os.remove(f"../{jsontype}.json")
 
 	async def checkDuplicate(self, id):
 		cur = await self.sqlBroker.connect()
