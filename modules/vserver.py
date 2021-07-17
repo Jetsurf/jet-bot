@@ -83,7 +83,7 @@ class voiceServer():
 					await tmpvclient.disconnect()
 				self.vclient = await channel.connect()
 			else:
-				await message.channel.send("I could not join channel " + str(channelName))
+				await message.channel.send(f"I could not join channel {str(channelName)}")
 		elif channel != None:
 			if self.vclient != None:
 				tmpvclient = self.vclient
@@ -105,7 +105,7 @@ class voiceServer():
 			return
 		
 		try:
-			source = discord.FFmpegPCMAudio(self.soundsDir + '/' + command + '.mp3')
+			source = discord.FFmpegPCMAudio(f"{self.soundsDir}/{command}.mp3")
 			source = discord.PCMVolumeTransformer(source)
 		except:
 			return
@@ -143,7 +143,7 @@ class voiceServer():
 			duration = song.duration
 			minutes = int(duration / 60)
 			seconds = duration % 60
-			embed.add_field(name=name, value="Duration - " + str(minutes) + " Minutes " + str(seconds) + " Seconds\nURL - " + str(url), inline=False)
+			embed.add_field(name=name, value=f"Duration - {str(minutes)} Minutes {str(seconds)} Seconds\nURL - {str(url)}", inline=False)
 
 		await message.channel.send(embed=embed)
 
@@ -189,7 +189,7 @@ class voiceServer():
 	async def setupPlay(self, message):
 		if 'https://' in message.content:
 			if await self.listCheck(1, message.content.split(' ')[1]):
-				print(message.author.name + " tried to play a blacklisted video")
+				print(f"{message.author.name} tried to play a blacklisted video")
 				await message.channel.send("Sorry, I can't play that")
 				return
 			try:
@@ -199,13 +199,13 @@ class voiceServer():
 				await message.add_reaction('👍')
 			except Exception as e:
 				print(str(e))
-				await message.channel.send("Sorry, I can't play that, you can report the following in my support discord: " + str(e))
+				await message.channel.send(f"Sorry, I can't play that, you can report the following in my support discord: {str(e)}")
 		else:
 			try:
 				if 'youtube' in message.content.lower():
 					await message.channel.trigger_typing()
 					query = urllib.request.pathname2url(' '.join(message.content.split()[2:]))
-					url = "https://youtube.com/results?search_query=" + query
+					url = f"https://youtube.com/results?search_query={query}"
 					
 					source = requests.get(url).text
 					soup = BeautifulSoup(source,'html5lib')
@@ -217,11 +217,11 @@ class voiceServer():
 					if len(vids) == 0:
 						await message.channel.send("No videos found")
 						return
-					theURL = "https://youtube.com/watch?v=" + vids[0]['videoId']
+					theURL = f"https://youtube.com/watch?v={vids[0]['videoId']}"
 				elif 'soundcloud' in message.content.lower():
 					await message.channel.trigger_typing()
 					query = ' '.join(message.content.split()[2:])
-					url = "https://soundcloud.com/search/sounds?q=" + query
+					url = f"https://soundcloud.com/search/sounds?q={query}"
 					response = requests.get(url)
 					soup = BeautifulSoup(response.text, "html5lib")
 					song = soup.find("h2")
@@ -231,21 +231,21 @@ class voiceServer():
 					await message.channel.send("Don't know where to search, try !play youtube SEARCH or !play soundcloud SEARCH")
 					return
 				if await self.listCheck(1, theURL):
-					print(message.author.name + " tried to play a blacklisted video")
+					print(f"{message.author.name} tried to play a blacklisted video")
 					await message.channel.send("Sorry, I can't play that")
 					return
 
 				tempPlayer = await YTDLSource.from_url(theURL)
 				if self.ytQueue.empty() and self.source == None:
-					await message.channel.send("Playing : " + theURL)
+					await message.channel.send(f"Playing : {theURL}")
 				else:
-					await message.channel.send("Queued : " + theURL)
+					await message.channel.send(f"Queued : {theURL}")
 				print("Playing: " + theURL)
 				self.ytQueue.put(tempPlayer)
 				self.play()
 			except Exception as e:
 				print(traceback.format_exc())
-				await message.channel.send("Sorry, I can't play that, you can report the following in my support discord: " + str(e))
+				await message.channel.send(f"Sorry, I can't play that, you can report the following in my support discord: {str(e)}")
 
 	async def listCheck(self, theList, theURL):
 		cur = await self.sqlBroker.connect()
@@ -309,7 +309,7 @@ class voiceServer():
 			try:
 				tempPlayer = await YTDLSource.from_url(x[numToPlay - 1][0])
 			except Exception as e:
-				print("ERROR: Failure on song " + x[numToPlay - 1][0] + " " + str(e))
+				print(f"ERROR: Failure on song {x[numToPlay - 1][0]} {str(e)}")
 				sys.stdout.flush()
 				continue
 
@@ -318,9 +318,9 @@ class voiceServer():
 				await message.channel.send("Playing : " + x[toPlay[0] - 1][0])
 			self.play()
 		if numToQueue > 1 and self.source == None:
-			await message.channel.send("Also queued " + str(numToQueue - 1) + " more song(s) from my playlist")
+			await message.channel.send(f"Also queued {str(numToQueue - 1)} more song(s) from my playlist")
 		elif numToQueue > 1:
-			await message.channel.send("Added " + str(numToQueue) + " more song(s) to the queue from my playlist")
+			await message.channel.send(f"Added {str(numToQueue)} more song(s) to the queue from my playlist")
 
 	async def addPlaylist(self, message):
 		toAdd = ''

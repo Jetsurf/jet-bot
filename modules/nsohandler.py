@@ -384,7 +384,7 @@ class nsoHandler():
 				if i[2] != None:
 					string+=theType + ", "
 
-			string = f"{"".join(string.rsplit(", ", 1))} appears in the shop"
+			string = "".join(string.rsplit(", ", 1)) + " appears in the shop"
 			string = " or ".join(string.rsplit(", ", 1))
 			await theMem.send(string)
 
