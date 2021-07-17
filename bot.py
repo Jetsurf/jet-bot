@@ -51,7 +51,7 @@ def loadConfig():
 			dbid = configData['discordbotid']
 			dbtoken = configData['discordbottok']
 			head = { 'Authorization': dbtoken }
-			url = 'https://top.gg/api/bots/' + str(dbid) + '/stats'
+			url = f"https://top.gg/api/bots/{str(dbid)}/stats"
 			dev = 0
 		except:
 			print('No ID/Token for top.gg, skipping')
@@ -60,7 +60,7 @@ def loadConfig():
 
 		print('Config Loaded')
 	except Exception as e:
-		print('Failed to load config: ' + str(e))
+		print(f"Failed to load config: {str(e)}")
 		quit(1)
 
 @client.event
@@ -72,7 +72,7 @@ async def on_ready():
 		print('Logged in as,', client.user.name, client.user.id)
 		
 		#This is needed due to no prsence intent, prod bot needs to find the devs in its primary server
-		print("Chunking home server (" + str(hs) + ") to find owners")
+		print(f"Chunking home server ({str(hs)}) to find owners")
 		await client.get_guild(int(hs)).chunk()
 		
 		#Get owners from Discord team api
@@ -82,18 +82,18 @@ async def on_ready():
 		for mem in client.get_all_members():
 			if mem.id in ownerids:
 				owners.append(mem)
-				print("Loaded owner: " + str(mem.name))
+				print(f"Loaded owner: {str(mem.name)}")
 			if len(owners) == len(ownerids):
 				break;
 	else:
 		print('RECONNECT TO DISCORD')
 
 	if dev == 0:
-		print('I am in ' + str(len(client.guilds)) + ' servers, posting to top.gg')
+		print(f"I am in {str(len(client.guilds))} servers, posting to top.gg")
 		body = { 'server_count' : len(client.guilds) }
 		requests.post(url, headers=head, json=body)
 	else:
-		print('I am in ' + str(len(client.guilds)) + ' servers')
+		print(f"I am in {str(len(client.guilds))} servers")
 
 	if not doneStartup:
 		print("Doing Startup...")
@@ -131,23 +131,23 @@ async def on_member_remove(member):
 		memid = mem[0]
 		memobj = client.get_guild(gid).get_member(memid)
 		if memobj.guild_permissions.administrator:
-			await memobj.send(member.name + " left " + member.guild.name)
+			await memobj.send(f"{member.name} left {member.guild.name}")
 
 @client.event
 async def on_guild_join(server):
 	global serverVoices, head, url, dev, owners, mysqlHandler
-	print("I joined server: " + server.name)
+	print(f"I joined server: {server.name}")
 	serverVoices[server.id] = vserver.voiceServer(client, mysqlHandler, server.id, soundsDir)
 
 	if dev == 0:
-		print('I am now in ' + str(len(client.guilds)) + ' servers, posting to top.gg')
+		print(f"I am now in {str(len(client.guilds))} servers, posting to top.gg")
 		body = { 'server_count' : len(client.guilds) }
 		r = requests.post(url, headers=head, json=body)
 	else:
-		print('I am now in ' + str(len(client.guilds)) + ' servers')
+		print(f"I am now in {str(len(client.guilds))} servers")
 
 	for mem in owners:
-		await mem.send("I joined server: " + server.name + " - I am now in " + str(len(client.guilds)) + " servers")
+		await mem.send(f"I joined server: {server.name} - I am now in {str(len(client.guilds))} servers")
 	sys.stdout.flush()
 
 @client.event
@@ -157,16 +157,16 @@ async def on_guild_remove(server):
 	serverVoices[server.id] = None
 
 	if dev == 0:
-		print('I am now in ' + str(len(client.guilds)) + ' servers, posting to top.gg')
+		print(f"I am now in {str(len(client.guilds))} servers, posting to top.gg")
 		body = { 'server_count' : len(client.guilds) }
 		r = requests.post(url, headers=head, json=body)
 	else:
-		print('I am now in ' + str(len(client.guilds)) + ' servers')
+		print(f"I am now in {str(len(client.guilds))} servers")
 
 	for mem in owners:
-		await mem.send("I left server: " + server.name + " ID: " + str(server.id) + " - I am now in " + str(len(client.guilds)) + " servers")
+		await mem.send(f"I left server: {server.name} ID: {str(server.id)} - I am now in {str(len(client.guilds))} servers")
 
-	print("Trimming DB for serverid: " + str(server.id))
+	print(f"Trimming DB for serverid: {str(server.id)}")
 	await serverUtils.trim_db_from_leave(server.id)
 	sys.stdout.flush()
 
@@ -187,7 +187,7 @@ async def on_voice_state_update(mem, before, after):
 		return
 	#Check for forced disconnects
 	if mem.id == client.user.id and after.channel == None:
-		print("Disconnect, recreating vserver for " + str(before.channel.guild.id))
+		print(f"Disconnect, recreating vserver for {str(before.channel.guild.id)}")
 		try:
 			if serverVoices[server].vclient == None:
 				await serverVoices[server].vclient.disconnect()
@@ -225,8 +225,8 @@ async def doEval(message):
 	else:
 		await message.channel.trigger_typing()
 		if '```' in message.content:
-			code = message.content.replace('`', '').replace(prefix + 'eval ', '')
-			theeval = 'async def func(): \n' + textwrap.indent(code, ' ')
+			code = message.content.replace('`', '').replace(f"{prefix}eval ", '')
+			theeval = f"async def func(): \n{textwrap.indent(code, ' ')}"
 			try:
 				exec(theeval, env)
 			except Exception as err:
@@ -305,11 +305,11 @@ async def on_message(message):
 	prefix = await commandParser.getPrefix(theServer)
 
 	if command.startswith('!prefix'):
-		await message.channel.send("The command prefix for this server is: " + prefix)
+		await message.channel.send(f"The command prefix for this server is: {prefix}")
 	elif message.content.startswith('!help') and prefix not in '!':
 		await serverUtils.print_help(message, prefix)
 	elif ('pizza' in command and 'pineapple' in command) or ('\U0001F355' in message.content and '\U0001F34D' in message.content):
-		await channel.send('Don\'t ever think pineapple and pizza go together ' + message.author.name + '!!!')		
+		await channel.send(f"Don't ever think pineapple and pizza go together {message.author.name}!!!")		
 
 	parsed = await commandParser.parse(theServer, message.content)
 	if parsed == None:
@@ -332,7 +332,7 @@ async def on_message(message):
 		await nsoHandler.getStoreJSON(message)
 	elif cmd == 'admin':
 		if message.guild.get_member(message.author.id) == None:
-			print("Lazy loading member list for "  + str(message.guild.name))
+			print(f"Lazy loading member list for {str(message.guild.name)}")
 			await client.get_guild(message.guild.id).chunk()
 			print("Done")
 
@@ -365,28 +365,28 @@ async def on_message(message):
 					if channel == None:
 						await message.channel.send("No channel is set to receive announcements")
 					else:
-						await message.channel.send("Current announcement channel is: " + channel.name)
+						await message.channel.send(f"Current announcement channel is: {channel.name}")
 				elif subcommand2 == 'stop':
 					await serverUtils.stopAnnouncements(message)
 				else:
 					await message.channel.send("Usage: set CHANNEL, get, or stop")
 			elif subcommand == 'prefix':
 				if (len(args) == 1):
-					await channel.send("Current command prefix is: " + prefix)
+					await channel.send(f"Current command prefix is: {prefix}")
 				elif (len(args) != 2) or (len(args[1]) < 0) or (len(args[1]) > 2):
 					await channel.send("Usage: ```admin prefix <char>``` where *char* is one or two characters")
 				else:
 					await commandParser.setPrefix(theServer, args[1])
-					await channel.send("New command prefix is: " + await commandParser.getPrefix(theServer))
+					await channel.send(f"New command prefix is: {await commandParser.getPrefix(theServer)}")
 			elif subcommand == 'feed':
 				if len(args) == 1:
 					await serverUtils.createFeed(message)
 				elif 'delete' in args[1].lower():
 					await serverUtils.deleteFeed(message)
 		else:
-			await channel.send(message.author.name + " you are not an admin... :cop:")
+			await channel.send(f"{message.author.name} you are not an admin... :cop:")
 	elif cmd == 'alive':
-		await channel.send("Hey " + message.author.name + ", I'm alive so shut up! :japanese_goblin:")
+		await channel.send(f"Hey {message.author.name}, I'm alive so shut up! :japanese_goblin:")
 	elif cmd == 'rank':
 		await nsoHandler.getRanks(message)
 	elif cmd == 'order':
@@ -411,7 +411,7 @@ async def on_message(message):
 		theSounds = theSounds.decode("utf-8")
 		theSounds = theSounds.replace('.mp3', '')
 		theSounds = theSounds.replace('\n', ', ')
-		await channel.send("Current Sounds:\n```" + theSounds + "```")
+		await channel.send(f"Current Sounds:\n```{theSounds}```")
 	elif cmd == 'join':
 		if len(args) > 0:
 			await serverVoices[theServer].joinVoiceChannel(message, args)
@@ -436,9 +436,9 @@ async def on_message(message):
 	elif serverVoices[theServer].vclient is not None:
 		if cmd == 'currentsong':
 			if serverVoices[theServer].source is not None:
-				await channel.send('Currently Playing Video: ' + serverVoices[theServer].source.yturl)
+				await channel.send(f"Currently Playing Video: {serverVoices[theServer].source.yturl}")
 			else:
-				await channel.send('I\'m not playing anything.')
+				await channel.send("I'm not playing anything.")
 		elif cmd == 'leavevoice':
 			await serverVoices[theServer].vclient.disconnect()
 			serverVoices[theServer].vclient = None
@@ -467,7 +467,7 @@ async def on_message(message):
 			if int(vol) > 60:
 				vol = 60
 			if serverVoices[theServer].source != None:
-				await channel.send("Setting Volume to " + str(vol) + "%")
+				await channel.send(f"Setting Volume to {str(vol)}%")
 				serverVoices[theServer].source.volume = float(int(vol) / 100)
 		elif cmd == 'queue':
 			await serverVoices[theServer].printQueue(message)
