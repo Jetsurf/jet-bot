@@ -198,7 +198,7 @@ class voiceServer():
 				self.play()
 				await message.add_reaction('👍')
 			except Exception as e:
-				print(f"Failure to create youtube DL player...")
+				print("Failure to play youtube DL link...")
 				traceback.print_exception(*sys.exc_info())
 				await message.channel.send(f"Sorry, I can't play that, you can report the following in my support discord: {str(e)}")
 		else:
