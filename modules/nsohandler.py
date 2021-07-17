@@ -60,7 +60,7 @@ class nsoHandler():
 		stmt = "SELECT * FROM feeds"
 		feeds = await cur.execute(stmt)
 		feeds = await cur.fetchall()
-		print("Processing: " + str(len(feeds)) + " feeds")
+		print(f"Processing: {str(len(feeds))} feeds")
 
 		for server in range(len(feeds)):
 			serverid = feeds[server][0]
@@ -272,7 +272,7 @@ class nsoHandler():
 			print(f"Removed {str(theMem.id)} from storedm")
 			return
 
-		print('Messaged ' + theMem.name)
+		print(f"Messaged {theMem.name}")
 
 		def check1(m):
 			if isinstance(m.channel, discord.DMChannel) and m.channel.recipient.name == theMem.name and not m.author.bot:
@@ -303,13 +303,13 @@ class nsoHandler():
 					for i in fields:
 						if i[0] != None:
 							abilFlag = True
-							string+=theSkill + "/"
+							string+=f"{theSkill}/"
 						if i[1] != None:
 							branFlag = True
-							string+=theBrand + "/"
+							string+=f"{theBrand}/"
 						if i[2] != None:
 							gearFlag = True
-							string+=theType + "/"
+							string+=f"{theType}/"
 
 					string+= "all/quit to stop removing DM triggers)"
 
@@ -395,7 +395,7 @@ class nsoHandler():
 		theSkill = theGear['skill']['name']
 		theType = theGear['gear']['name']
 		theBrand = theGear['gear']['brand']['name']
-		print("Doing Store DM! Checking " + theType + ' Brand: ' + theBrand + ' Ability: ' + theSkill)
+		print(f"Doing Store DM! Checking {theType} Brand: {theBrand} Ability: {theSkill}")
 
 		stmt = "SELECT DISTINCT clientid,serverid FROM storedms WHERE (ability = %s) OR (brand = %s) OR (gearname = %s)"
 		await cur.execute(stmt, (theSkill, theBrand, theType,))
@@ -438,9 +438,9 @@ class nsoHandler():
 			header = self.app_head_coop
 		elif 'fullbattle' in message.content:
 			num = message.content[20:]
-			url = "https://app.splatoon2.nintendo.net/api/results/" + num
+			url = f"https://app.splatoon2.nintendo.net/api/results/{num}"
 			header = self.app_head
-			jsontype = 'fullbattle' + num
+			jsontype = f"fullbattle{num}"
 		elif 'battle' in message.content:
 			url = "https://app.splatoon2.nintendo.net/api/results"
 			jsontype = 'battle'
@@ -501,7 +501,7 @@ class nsoHandler():
 			weapondata = thejson['records']['weapon_stats']
 		except:
 			await message.channel.send("Error while retrieving json for weapon stats, this has been logged with my owners.")
-			print("ERROR IN WEAPON JSON:\n" + str(thejson))
+			print(f"ERROR IN WEAPON JSON:\n{str(thejson)}")
 			return
 
 		theweapdata = None
@@ -520,13 +520,13 @@ class nsoHandler():
 		turfinked = theweapdata['total_paint_point']
 		turfstring = str(turfinked)
 		if turfinked >= 100000:
-			turfstring = str(turfinked) + "<:badge_100k:863924861809197096>"
+			turfstring = f"{str(turfinked)}<:badge_100k:863924861809197096>"
 		if turfinked >= 500000:
-			turfstring = str(turfinked) + "<:badge_500k:863925109278507038>"
+			turfstring = f"{str(turfinked)}<:badge_500k:863925109278507038>"
 		if turfinked >= 1000000:
-			turfstring = str(turfinked) + "<:badge_1M:863925025388101632>"
+			turfstring = f"{str(turfinked)}<:badge_1M:863925025388101632>"
 		if turfinked >= 9999999:
-			turfstring = str(turfinked) + "<:badge_10M:863924949748416542>"
+			turfstring = f"{str(turfinked)}<:badge_10M:863924949748416542>"
 		wins = theweapdata['win_count']
 		loss = theweapdata['lose_count']
 		if (wins + loss) != 0:
@@ -539,7 +539,7 @@ class nsoHandler():
 
 		embed = discord.Embed(colour=0x0004FF)
 		embed.title = f"{str(name)}'s Stats for {theweapdata['weapon']['name']}"
-		embed.set_thumbnail(url='https://splatoon2.ink/assets/splatnet' + theweapdata['weapon']['image'])
+		embed.set_thumbnail(url=f"https://splatoon2.ink/assets/splatnet{theweapdata['weapon']['image']}")
 		embed.add_field(name="Wins/Losses/%", value=f"{str(wins)}/{str(loss)}/{str(winper)}%", inline=True)
 		embed.add_field(name="Turf Inked", value=turfstring, inline=True)
 		embed.add_field(name="Freshness (Current/Max)", value=f"{str(freshcur)}/{str(freshmax)}", inline=True)
@@ -559,7 +559,7 @@ class nsoHandler():
 			allmapdata = thejson['records']['stage_stats']
 		except:
 			await message.channel.send("Error retrieving json for stage_stats. This has been logged for my owners.")
-			print("ERROR IN MAP JSON:\n" + str(thejson))
+			print(f"ERROR IN MAP JSON:\n{str(thejson)}")
 			return
 
 		themapdata = None
@@ -598,7 +598,7 @@ class nsoHandler():
 		else:
 			cbpercent = 0
 
-		embed.set_thumbnail(url='https://splatoon2.ink/assets/splatnet' + themapdata['stage']['image'])
+		embed.set_thumbnail(url=f"https://splatoon2.ink/assets/splatnet{themapdata['stage']['image']}")
 		embed.add_field(name="Splat Zones", value=f"{str(szwin)}/{str(szloss)}/{str(szpercent)}%", inline=True)
 		embed.add_field(name="Rainmaker", value=f"{str(rmwin)}/{str(rmloss)}/{str(rmpercent)}%", inline=True)
 		embed.add_field(name="Tower Control", value=f"{str(tcwin)}/{str(tcloss)}/{str(tcpercent)}%", inline=True)
@@ -674,7 +674,7 @@ class nsoHandler():
 		rank = thejson['summary']['stats'][0]['grade']['name']
 		points = thejson['summary']['stats'][0]['grade_point']
 		embed = discord.Embed(colour=0xFF9B00)
-		embed.title = name + " - " + rank + " " + str(points) + " - Salmon Run Stats"
+		embed.title = f"{name} - {rank} {str(points)} - Salmon Run Stats"
 
 		embed.add_field(name="Overall Stats", value=f"Shifts Worked: {str(jobcard['job_num'])}\nTeammates Rescued: {str(jobcard['help_total'])}\nGolden Eggs Collected: {str(jobcard['golden_ikura_total'])}\nPower Eggs Collected: {str(jobcard['ikura_total'])}\nTotal Points: {str(jobcard['kuma_point_total'])}", inline=True)
 
@@ -751,7 +751,7 @@ class nsoHandler():
 	def makeGearEmbed(self, gear, title, dirs):
 		embed = discord.Embed(colour=0xF9FC5F)
 		embed.title = title
-		embed.set_thumbnail(url='https://splatoon2.ink/assets/splatnet' + gear['gear']['image'])
+		embed.set_thumbnail(url=f"https://splatoon2.ink/assets/splatnet{gear['gear']['image']}")
 		embed.add_field(name="Brand", value=gear['gear']['brand']['name'], inline=True)
 		embed.add_field(name="Name", value=gear['gear']['name'], inline=True)
 		embed.add_field(name="Type", value=gear['gear']['kind'], inline=True)
@@ -836,7 +836,7 @@ class nsoHandler():
 			await message.channel.send(embed=embed)
 			confirmation = await self.client.wait_for('message', check=messageCheck)
 			if not 'yes' in confirmation.content.lower():
-				await message.channel.send(message.author.name + " - order canceled")
+				await message.channel.send(f"{message.author.name} - order canceled")
 				return
 
 		await message.channel.trigger_typing()
@@ -860,7 +860,7 @@ class nsoHandler():
 
 	async def postNSOStore(self, message, gid, app_head, override=False):
 		iksm = await self.nsotoken.get_iksm_token_mysql(message.author.id)
-		url = 'https://app.splatoon2.nintendo.net/api/onlineshop/order/' + gid
+		url = f"https://app.splatoon2.nintendo.net/api/onlineshop/order/{gid}"
 		if override:
 			payload = { "override" : 1 }
 			response = requests.post(url, headers=app_head, cookies=dict(iksm_session=iksm), data=payload)
@@ -899,7 +899,7 @@ class nsoHandler():
 				minutes = int(timeRemaining / 60)
 
 			if flag == 0:
-				embed.add_field(name='**' + eqName + '**', value=f"{eqBrand} : {eqKind}", inline=False)
+				embed.add_field(name=f"**{eqName}**", value=f"{eqBrand} : {eqKind}", inline=False)
 				embed.add_field(name="ID/Subs/Price", value=f"{str(j)}/{str(slots)}/{str(price)}", inline=True)
 				embed.add_field(name="Ability/Common Sub", value=f"{str(skill['name'])}/{str(commonSub)}", inline=True)
 				j = j + 1
@@ -1003,17 +1003,17 @@ class nsoHandler():
 
 			if (gotData == 1 and getNext == 0) or (gotData == 0 and getNext == 1):
 				if flag == 0:
-					embed.set_thumbnail(url='https://splatoon2.ink/assets/splatnet' + map['image'])
+					embed.set_thumbnail(url=f"https://splatoon2.ink/assets/splatnet{map['image']}")
 					embed.add_field(name='Map', value=map['name'], inline=False)
 				else:
-					srdata['thumb'] = 'https://splatoon2.ink/assets/splatnet' + map['image']
+					srdata['thumb'] = f"https://splatoon2.ink/assets/splatnet{map['image']}"
 					srdata['map'] = map
 				for j in i['weapons']:
 					try:
 						weap = j['weapon']
 					except:
 						weap = j['coop_special_weapon']
-					theString = theString + weap['name'] + '\n'
+					theString = f"{theString}{weap['name']}\n"
 				break
 
 			elif gotData == 1 and getNext == 1:
@@ -1200,7 +1200,7 @@ class nsoHandler():
 				return
 
 			shortname = themap.get().shortname().lower().replace(" ", "-")
-			url = "http://db-files.crmea.de/images/bot/callouts/" + shortname + ".png"
+			url = f"http://db-files.crmea.de/images/bot/callouts/{shortname}.png"
 			embed = discord.Embed(colour=0x0004FF)
 			embed.set_image(url=url)
 			await message.channel.send(embed=embed)
@@ -1245,11 +1245,9 @@ class nsoHandler():
 					return
 				weaponsList = self.splatInfo.getWeaponsBySub(actualSub.get())
 				embed = discord.Embed(colour=0x0004FF)
-				embed.title = "Weapons with Subweapon: " + actualSub.get().name()
+				embed.title = f"Weapons with Subweapon: {actualSub.get().name()}"
 				for i in weaponsList:
-					embed.add_field(name=i.name(), value="Special: " + i.special().name() +
-						"\nPts for Special: " + str(i.specpts) +
-						"\nLevel To Purchase: " + str(i.level), inline=True)
+					embed.add_field(name=i.name(), value=f"Special: {i.special().name()}\nPts for Special: {str(i.specpts)}\nLevel To Purchase: {str(i.level)}", inline=True)
 				await message.channel.send(embed=embed)
 		elif subcommand == "special":
 			if len(args) > 1:
@@ -1260,11 +1258,9 @@ class nsoHandler():
 					return
 				weaponsList = self.splatInfo.getWeaponsBySpecial(actualSpecial.get())
 				embed = discord.Embed(colour=0x0004FF)
-				embed.title = "Weapons with Special: " + actualSpecial.get().name()
+				embed.title = f"Weapons with Special: {actualSpecial.get().name()}"
 				for i in weaponsList:
-					embed.add_field(name=i.name(), value="Subweapon: " + i.sub().name() +
-						"\nPts for Special: " + str(i.specpts) +
-						"\nLevel To Purchase: " + str(i.level), inline=True)
+					embed.add_field(name=i.name(), value=f"Subweapon: {i.sub().name()}\nPts for Special: {str(i.specpts)}\nLevel To Purchase: {str(i.level)}", inline=True)
 				await message.channel.send(embed=embed)
 		elif subcommand == "list":
 			if len(args) > 1:
@@ -1278,14 +1274,14 @@ class nsoHandler():
 				embed = discord.Embed(colour=0x0004FF)
 				weapString = ""
 				for w in weaps:
-					weapString += w.name() + '\n'
+					weapString += f"{w.name()}\n"
 				embed.title = "Weapons List"
 				embed.add_field(name=type.pluralname(), value=weapString, inline=False)
 				await message.channel.send(embed=embed)
 			else:
 				types = self.splatInfo.getAllWeaponTypes()
-				typelist = ", ".join(map(lambda t: t.format(), types[0:-1])) + ", or " + types[-1].format() + "?"
-				await message.channel.send("Need a type to list. Types are: " + typelist)
+				typelist = f"{', '.join(map(lambda t: t.format(), types[0:-1]))}, or {types[-1].format()}?"
+				await message.channel.send(f"Need a type to list. Types are: {typelist}")
 			return
 		elif subcommand == "stats":
 			if len(args) > 1:
@@ -1309,7 +1305,7 @@ class nsoHandler():
 					count = int(args[1])
 
 			if count == 1:
-				await message.channel.send("Random weapon: " + self.splatInfo.getRandomWeapon().name())
+				await message.channel.send(f"Random weapon: {self.splatInfo.getRandomWeapon().name()}")
 			else:
 				out = "Random weapons:\n"
 				for i in range(count):

@@ -101,6 +101,7 @@ class voiceServer():
 			self.vclient.play(source)
 
 	async def playSound(self, command):
+		command = command.replace("../", "")
 		if self.source != None or self.vclient == None:
 			return
 		
