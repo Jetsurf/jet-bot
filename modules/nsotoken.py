@@ -96,7 +96,7 @@ class Nsotoken():
 
 	async def login(self, message, flag=-1):
 		cur = await self.sqlBroker.connect()
-		dupe = self.checkDuplicate(message.id, cur)
+		dupe = await self.checkDuplicate(message.author.id, cur)
 		await self.sqlBroker.close(cur)
 
 		if dupe:
@@ -133,7 +133,7 @@ class Nsotoken():
 		post_login = r.history[0].url
 
 		await message.channel.send("Navigate to this URL in your browser: " + post_login)
-		await message.channel.send("Log in, right click the \"Select this person\" button, copy the link address, and paste it back to me")
+		await message.channel.send("Log in, right click the \"Select this person\" button, copy the link address, and paste it back to me or 'stop' to cancel.")
 
 		while True:
 			def check(m):
@@ -141,8 +141,12 @@ class Nsotoken():
 
 			accounturl = await self.client.wait_for('message', check=check)
 			accounturl = accounturl.content
-			if 'npf71b963c1b7b6d119' not in accounturl:
-				await message.channel.send("Invalid URL, please copy the link in \"Select this person\"")
+
+			if 'stop' in accounturl.lower():
+				await message.channel.send("Ok, stopping the token setup")
+				return
+			elif 'npf71b963c1b7b6d119' not in accounturl:
+				await message.channel.send("Invalid URL, please copy the link in \"Select this person\" (or stop to cancel).")				
 			else:
 				break
 
