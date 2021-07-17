@@ -571,7 +571,7 @@ class nsoHandler():
 
 		name = thejson['records']['player']['nickname']
 		embed = discord.Embed(colour=0x0004FF)
-		embed.title = str(name) + "'s Stats for " + themapdata['stage']['name'] + " (Wins/Losses/%)"
+		embed.title = f"{str(name)}'s Stats for {themapdata['stage']['name']} (Wins/Losses/%)"
 
 		rmwin = themapdata['hoko_win']
 		rmloss = themapdata['hoko_lose']
@@ -600,10 +600,10 @@ class nsoHandler():
 			cbpercent = 0
 
 		embed.set_thumbnail(url='https://splatoon2.ink/assets/splatnet' + themapdata['stage']['image'])
-		embed.add_field(name="Splat Zones", value=str(szwin) + "/" + str(szloss) + "/" + str(szpercent) + "%", inline=True)
-		embed.add_field(name="Rainmaker", value=str(rmwin) + "/" + str(rmloss) + "/" + str(rmpercent) + "%", inline=True)
-		embed.add_field(name="Tower Control", value=str(tcwin) + "/" + str(tcloss) + "/" + str(tcpercent) + "%", inline=True)
-		embed.add_field(name="Clam Blitz", value=str(cbwin) + "/" + str(cbloss) + "/" + str(cbpercent) + "%", inline=True)
+		embed.add_field(name="Splat Zones", value=f"{str(szwin)}/{str(szloss)}/{str(szpercent)}%", inline=True)
+		embed.add_field(name="Rainmaker", value=f"{str(rmwin)}/{str(rmloss)}/{str(rmpercent)}%", inline=True)
+		embed.add_field(name="Tower Control", value=f"{str(tcwin)}/{str(tcloss)}/{str(tcpercent)}%", inline=True)
+		embed.add_field(name="Clam Blitz", value=f"{str(cbwin)}/{str(cbloss)}/{str(cbpercent)}%", inline=True)
 		await message.channel.send(embed=embed)
 
 	async def getStats(self, message):
