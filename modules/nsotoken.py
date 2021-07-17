@@ -96,7 +96,7 @@ class Nsotoken():
 
 	async def login(self, message, flag=-1):
 		cur = await self.sqlBroker.connect()
-		dupe = self.checkDuplicate(message.id, cur)
+		dupe = await self.checkDuplicate(message.author.id, cur)
 		await self.sqlBroker.close(cur)
 
 		if dupe:
@@ -132,8 +132,8 @@ class Nsotoken():
 
 		post_login = r.history[0].url
 
-		await message.channel.send("Navigate to this URL in your browser: " + post_login)
-		await message.channel.send("Log in, right click the \"Select this person\" button, copy the link address, and paste it back to me")
+		await message.channel.send(f"Navigate to this URL in your browser: {post_login}")
+		await message.channel.send("Log in, right click the \"Select this person\" button, copy the link address, and paste it back to me or 'stop' to cancel.")
 
 		while True:
 			def check(m):
@@ -141,15 +141,19 @@ class Nsotoken():
 
 			accounturl = await self.client.wait_for('message', check=check)
 			accounturl = accounturl.content
-			if 'npf71b963c1b7b6d119' not in accounturl:
-				await message.channel.send("Invalid URL, please copy the link in \"Select this person\"")
+
+			if 'stop' in accounturl.lower():
+				await message.channel.send("Ok, stopping the token setup")
+				return
+			elif 'npf71b963c1b7b6d119' not in accounturl:
+				await message.channel.send("Invalid URL, please copy the link in \"Select this person\" (or stop to cancel).")				
 			else:
 				break
 
 		await message.channel.trigger_typing()
 		session_token_code = re.search('session_token_code=(.*)&', accounturl)
 		if session_token_code == None:
-			print("Issue with account url: " + str(accounturl))
+			print(f"Issue with account url: {str(accounturl)}")
 			await message.channel.send("Error in account url. Issue is logged, but you can report this in my support guild")
 			return
 
@@ -170,7 +174,7 @@ class Nsotoken():
 
 	def get_hash(self, id_token, timestamp):
 		version = '1.5.11'
-		api_app_head = { 'User-Agent': "splatnet2statink/" + version }
+		api_app_head = { 'User-Agent': f"splatnet2statink/{version}" }
 		api_body = { 'naIdToken': id_token, 'timestamp': timestamp }
 		api_response = requests.post("https://elifessler.com/s2s/api/gen2", headers=api_app_head, data=api_body)
 		print("S2API RESPONSE: " + str(api_response))
@@ -179,7 +183,7 @@ class Nsotoken():
 			print("stat.ink: RATE LIMITED")
 			return 429
 		elif '200' not in str(api_response):
-			print("ERROR IN stat.ink CALL")
+			print(f"ERROR IN stat.ink CALL: {str(api_response)}")
 			return None
 		else:
 			return json.loads(api_response.text)["hash"]
@@ -224,7 +228,7 @@ class Nsotoken():
 		
 		r = self.session.post('https://accounts.nintendo.com/connect/1.0.0/api/session_token', headers=head, data=body)
 		if '200' not in str(r):
-			print("ERROR IN SESSION TOKEN: " + str(r.text))
+			print(f"ERROR IN SESSION TOKEN: {str(r.text)}")
 			return None
 		else:
 			return json.loads(r.text)["session_token"]
@@ -239,12 +243,12 @@ class Nsotoken():
 			'x-iid':   login
 		}
 		api_response = requests.get("https://flapg.com/ika2/api/login?public", headers=api_app_head)
-		print("FLAPG API RESPONSE: " + str(api_response))
+		print(f"FLAPG API RESPONSE: {str(api_response)}")
 		if '404' in str(api_response):
 			print("ISSUE WITH FLAPG - 404")
 			return 404
 		elif '200' not in str(api_response):
-			print("ERROR IN FLAPGAPI: " + str(api_response) + " and JSON : " + str(api_response.text))
+			print(f"ERROR IN FLAPGAPI: {str(api_response)} and JSON : {str(api_response.text)}")
 			return None
 		else:
 			return json.loads(api_response.text)["result"]
@@ -272,7 +276,7 @@ class Nsotoken():
 		r = requests.post("https://accounts.nintendo.com/connect/1.0.0/api/token", headers=head, json=body)
 		id_response = json.loads(r.text)
 		if '200' not in str(r):
-			print("NSO ERROR IN API TOKEN: " + str(id_response))
+			print(f"NSO ERROR IN API TOKEN: {str(id_response)}")
 			return
 
 		head = {
@@ -288,7 +292,7 @@ class Nsotoken():
 		r = requests.get("https://api.accounts.nintendo.com/2.0.0/users/me", headers=head)
 		user_info = json.loads(r.text)
 		if '200' not in str(r):
-			print("NSO ERROR IN USER LOGIN: " + str(user_info))
+			print(f"NSO ERROR IN USER LOGIN: {str(user_info)}")
 			return
 
 		head = {
@@ -329,7 +333,7 @@ class Nsotoken():
 		r = requests.post("https://api-lp1.znc.srv.nintendo.net/v1/Account/Login", headers=head, json=body)
 		splatoon_token = json.loads(r.text)
 		if '200' not in str(r):
-			print("NSO ERROR IN LOGIN: " + str(splatoon_token))
+			print(f"NSO ERROR IN LOGIN: {str(splatoon_token)}")
 			return None
 
 		try:
@@ -354,7 +358,7 @@ class Nsotoken():
 			'X-ProductVersion': '1.11.0',
 			'Content-Type': 'application/json; charset=utf-8',
 			'Connection': 'Keep-Alive',
-			'Authorization': 'Bearer ' + splatoon_token["result"]["webApiServerCredential"]["accessToken"],
+			'Authorization': f'Bearer {splatoon_token["result"]["webApiServerCredential"]["accessToken"]}',
 			'Content-Length': '37',
 			'X-Platform': 'Android',
 			'Accept-Encoding': 'gzip'
@@ -377,7 +381,7 @@ class Nsotoken():
 		r = requests.post("https://api-lp1.znc.srv.nintendo.net/v2/Game/GetWebServiceToken", headers=head, json=body)
 		token = json.loads(r.text)
 		if '200' not in str(r):
-			print("NSO ERROR IN GETWEBSERVICETOKEN: " + str(token))
+			print(f"NSO ERROR IN GETWEBSERVICETOKEN: {str(token)}")
 			return None
 
 		head = {
@@ -399,7 +403,7 @@ class Nsotoken():
 			head['Host'] = 'web.sd.lp1.acbaa.srv.nintendo.net'
 			r = requests.get("https://web.sd.lp1.acbaa.srv.nintendo.net/?lang=en-US&na_country=US&na_lang=en-US", headers=head)
 			if r.cookies['_gtoken'] == None:
-				print("ERROR IN GETTING AC _GTOKEN: " + str(r.text))
+				print(f"ERROR IN GETTING AC _GTOKEN: {str(r.text)}")
 				return None
 			else:
 				print("Got a AC token, getting park_session")
@@ -425,7 +429,7 @@ class Nsotoken():
 			head['Host'] = 'app.splatoon2.nintendo.net'
 			r = requests.get("https://app.splatoon2.nintendo.net/?lang=en-US", headers=head)
 			if '200' not in str(r):
-				print("ERROR IN GETTING IKSM: " + str(r.text))
+				print(f"ERROR IN GETTING IKSM: {str(r.text)}")
 				return None
 			else:
 				print("Got a S2 token!")
