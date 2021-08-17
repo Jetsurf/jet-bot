@@ -217,7 +217,7 @@ class Nsotoken():
 
 	def get_session_token(self, session_token_code, auth_code_verifier):
 		head = {
-			'User-Agent':      f'OnlineLounge/{self.nsoAppVer}  NASDKAPI Android',
+			'User-Agent':      f'OnlineLounge/{self.nsoAppVer} NASDKAPI Android',
 			'Accept-Language': 'en-US',
 			'Accept':          'application/json',
 			'Content-Type':    'application/x-www-form-urlencoded',
