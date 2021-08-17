@@ -6,5 +6,6 @@
 	"mysql_user"	: "",
 	"mysql_pw"		: "",
 	"mysql_db"		: "",
-	"home_server		: ""
+	"home_server	: "",
+	"nso_app_ver"	: ""
 }

@@ -21,6 +21,7 @@ client = discord.Client(intents=intents, chunk_guilds_at_startup=False)
 commandParser = None
 serverConfig = None
 mysqlHandler = None
+nsoAppVer = ''
 nsoHandler = None
 nsoTokens = None
 serverVoices = {}
@@ -37,7 +38,7 @@ head = {}
 url = ''
 
 def loadConfig():
-	global token, soundsDir, helpfldr, mysqlHandler, dev, head, url, hs
+	global token, nsoAppVer, soundsDir, helpfldr, mysqlHandler, dev, head, url, hs
 	try:
 		with open('./config/discordbot.json', 'r') as json_config:
 			configData = json.load(json_config)
@@ -52,6 +53,7 @@ def loadConfig():
 			dbtoken = configData['discordbottok']
 			head = { 'Authorization': dbtoken }
 			url = f"https://top.gg/api/bots/{str(dbid)}/stats"
+			nsoAppVer = configData['nso_app_ver']
 			dev = 0
 		except:
 			print('No ID/Token for top.gg, skipping')
@@ -63,10 +65,24 @@ def loadConfig():
 		print(f"Failed to load config: {str(e)}")
 		quit(1)
 
+async def resetNSOVer(message):
+	global nsoAppVer, nsoTokens
+
+	try:
+		with open('./config/discordbot.json', 'r') as json_config:
+			configData = json.load(json_config)
+			nsoAppVer = configData['nso_app_ver']
+			await nsoTokens.reloadNSOAppVer(nsoAppVer)
+	except:
+		await message.channel.send("Issue loading config file... whats up with that?")
+		return
+
+	await message.channel.send(f"Reloaded NSO Version from config with version: {nsoAppVer}")
+
 @client.event
 async def on_ready():
 	global client, soundsDir, mysqlHandler, serverUtils, serverVoices, splatInfo, helpfldr, hs
-	global nsoHandler, nsoTokens, head, url, dev, owners, commandParser, doneStartup, acHandler
+	global nsoHandler, nsoTokens, head, url, dev, owners, commandParser, doneStartup, acHandler, nsoAppVer
 
 	if not doneStartup:
 		print('Logged in as,', client.user.name, client.user.id)
@@ -105,7 +121,7 @@ async def on_ready():
 		serverConfig = serverconfig.ServerConfig(mysqlHandler)
 		commandParser = commandparser.CommandParser(serverConfig, client.user.id)
 		serverUtils = serverutils.serverUtils(client, mysqlHandler, serverConfig, helpfldr)
-		nsoTokens = nsotoken.Nsotoken(client, mysqlHandler)
+		nsoTokens = nsotoken.Nsotoken(client, mysqlHandler, nsoAppVer)
 		nsoHandler = nsohandler.nsoHandler(client, mysqlHandler, nsoTokens, splatInfo)
 		acHandler = achandler.acHandler(client, mysqlHandler, nsoTokens)
 		await nsoHandler.updateS2JSON()
@@ -279,19 +295,21 @@ async def on_message(message):
 
 	if message.guild == None:
 		if message.author in owners:
-			if '!restart' in message.content:
+			if '!restart' in command:
 				await channel.send("Going to restart!")
 				await mysqlHandler.close_pool()
 				await client.close()
 				sys.stderr.flush()
 				sys.stdout.flush()
 				sys.exit(0)
-			elif '!cmdreport' in message.content:
+			elif '!cmdreport' in command:
 				await serverUtils.report_cmd_totals(message)
 			elif '!nsojson' in command:
 				await nsoHandler.getRawJSON(message)
 			elif '!announce' in command:
 				await serverUtils.doAnnouncement(message)
+			elif '!reloadnsoapp' in command:
+				await resetNSOVer(message)
 		if '!token' in command:
 			await nsoTokens.login(message)
 		elif '!deletetoken' in command:
@@ -328,6 +346,8 @@ async def on_message(message):
 		await doEval(message)
 	elif cmd == 'getcons' and message.author in owners:
 		await mysqlHandler.printCons(message)
+	elif cmd == 'reloadnsoapp' and message.author in owners:
+		await resetNSOVer(message)
 	elif cmd == 'storejson' and message.author in owners:
 		await nsoHandler.getStoreJSON(message)
 	elif cmd == 'admin':
