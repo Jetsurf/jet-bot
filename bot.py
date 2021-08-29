@@ -94,7 +94,11 @@ async def on_ready():
 		#Get owners from Discord team api
 		print("Loading owners...")
 		theapp = await client.application_info()
-		ownerids = [x.id for x in theapp.team.members]
+		if theapp.team:
+			ownerids = [x.id for x in theapp.team.members]
+		else:
+			ownerids = [theapp.owner.id]
+
 		for mem in client.get_all_members():
 			if mem.id in ownerids:
 				owners.append(mem)
