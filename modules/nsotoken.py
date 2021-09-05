@@ -138,7 +138,7 @@ class Nsotoken():
 		post_login = r.history[0].url
 
 		await message.channel.send(f"Navigate to this URL in your browser: {post_login}")
-		await message.channel.send("Log in, right click the \"Select this person\" button, copy the link address, and paste it back to me or 'stop' to cancel.")
+		await message.channel.send("Log in, right click the \"Select this person\" button, copy the link address, and paste it back to me or 'stop' to cancel. Screenshot: https://db-files.crmea.de/images/bot/nsohowto.png")
 
 		while True:
 			def check(m):
