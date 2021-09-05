@@ -50,7 +50,7 @@ class CommandParser():
 			return None
 
 		# Split command into words at runs of spaces
-		words = re.split(r" +", message[pos:])
+		words = re.split(r"\s+", message[pos:])
 
 		# First word is command, rest are args
 		command = words[0].lower()
