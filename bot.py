@@ -1,9 +1,10 @@
-#!/usr/bin/python3
+#!/usr/bin/python3.8
 
 import sys
 sys.path.append('./modules')
 #Base Stuffs
 import discord, asyncio, subprocess, json, time
+from discord.app import Option
 #DBL Posting
 import urllib, urllib.request, requests, pymysql
 #Our Classes
@@ -17,7 +18,7 @@ from subprocess import call
 splatInfo = splatinfo.SplatInfo()
 intents = discord.Intents.default()
 intents.members = True
-client = discord.Client(intents=intents, chunk_guilds_at_startup=False)
+client = discord.Bot(intents=intents, chunk_guilds_at_startup=False)
 commandParser = None
 serverConfig = None
 mysqlHandler = None
@@ -47,13 +48,13 @@ def loadConfig():
 		soundsDir = configData['soundsdir']
 		helpfldr = configData['help']
 		hs = configData['home_server']
+		nsoAppVer = configData['nso_app_ver']
 
 		try:
 			dbid = configData['discordbotid']
 			dbtoken = configData['discordbottok']
 			head = { 'Authorization': dbtoken }
 			url = f"https://top.gg/api/bots/{str(dbid)}/stats"
-			nsoAppVer = configData['nso_app_ver']
 			dev = 0
 		except:
 			print('No ID/Token for top.gg, skipping')
@@ -64,6 +65,10 @@ def loadConfig():
 	except Exception as e:
 		print(f"Failed to load config: {str(e)}")
 		quit(1)
+
+@client.slash_command(name='battle', description='Get stats from a battle (1-50)')
+async def cmdBattle(interaction, battlenum: Option(int, "Battle Number, 1 being latest, 50 max", required=True, default=1)):
+    await nsoHandler.cmdBattles(interaction, battlenum)
 
 async def resetNSOVer(message):
 	global nsoAppVer, nsoTokens

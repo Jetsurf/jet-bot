@@ -1067,6 +1067,7 @@ class nsoHandler():
 		battlejson = await self.getNSOJSON(message, self.app_head, "https://app.splatoon2.nintendo.net/api/results")
 
 		accountname = recordjson['records']['player']['nickname']
+		print("TYPE: " + str(type(num)))
 		thebattle = battlejson['results'][num - 1]
 		battletype = thebattle['game_mode']['name']
 		battleid = thebattle['battle_number']
@@ -1147,7 +1148,11 @@ class nsoHandler():
 			embed.add_field(name=f"Enemy Team - {str(enemyresult)}", value=enemystring, inline=True)
 			embed.add_field(name=f"{str(matchname)}'s team - {str(myresult)}", value=teamstring, inline=True)
 
-		await message.channel.send(embed=embed)
+		print(str(type(message)))
+		if isinstance(message, discord.message.Message):
+			await message.channel.send(embed=embed)
+		else:
+			await message.respond(embed=embed)
 
 	async def cmdMaps(self, message, args):
 		if len(args) == 0:
@@ -1314,24 +1319,17 @@ class nsoHandler():
 		else:
 			await message.channel.send("Unknown subcommand. Try 'weapons help'")
 
-	async def cmdBattles(self, message, args):
-		if len(args) == 0:
-			await message.channel.send("Try 'battles help' for help")
-			return
-
-		subcommand = args[0].lower()
-		if subcommand == "help":
-			await message.channel.send("**battles last**: Get the stats from the last battle\n"
-				"**num NUM**: Get a battle from the last 50 you have played (1 is most recent)")
-		elif subcommand == "last":
-			await self.battleParser(message)
-		elif subcommand == "num":
-			if len(args) > 1:
-				if args[1].isdigit() and int(args[1]) <= 50 and int(args[1]) > 0:
-					await self.battleParser(message, num=int(args[1]))
-				else:
-					await message.channel.send("Battle num must be number 1-50")
-			else:
-				await message.channel.send("Must provide a number of the battle to get")
+	async def cmdBattles(self, interaction , arg):
+		print("Type: " + str(type(arg)))
+		if isinstance(arg, (list, tuple)):
+			print("TEST")
+			tmparg = int(arg[0])
 		else:
-			await message.channel.send("Unknown subcommand. Try 'battles help'")
+			tmparg = arg    
+
+		print(f"From battle: called by {interaction.author.name} with id {interaction.author.id}")
+
+		if tmparg <= 50 and tmparg > 0:
+			await self.battleParser(interaction, num=tmparg)
+		else:
+			await interaction.respond("Battlenum needs to be between 1-50!")
