@@ -39,7 +39,10 @@ class CommandParser():
 			if pos == -1:
 				return None  # No space in message
 
-			mentionid = message[2:pos - 1]
+			idstart = 2
+			if message[idstart] == "!":
+				idstart += 1  # There can optionally be a '!' character before the user id
+			mentionid = message[idstart:pos - 1]
 			if not mentionid.isdigit():
 				return None  # Mention userid not numeric
 			elif int(mentionid) != self.myid:
@@ -50,7 +53,7 @@ class CommandParser():
 			return None
 
 		# Split command into words at runs of spaces
-		words = re.split(r" +", message[pos:])
+		words = re.split(r"\s+", message[pos:])
 
 		# First word is command, rest are args
 		command = words[0].lower()

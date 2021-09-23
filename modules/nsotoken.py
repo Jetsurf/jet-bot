@@ -5,10 +5,15 @@ import os, base64, hashlib, random, string
 from datetime import datetime
 
 class Nsotoken():
-	def __init__(self, client, mysqlhandler):
+	def __init__(self, client, mysqlhandler, nsoAppVer):
 		self.client = client
 		self.session = requests.Session()
 		self.sqlBroker = mysqlhandler
+		self.nsoAppVer = nsoAppVer
+
+	async def reloadNSOAppVer(self, nsoAppVer):
+		self.nsoAppVer = nsoAppVer
+		return self.nsoAppVer
 
 	async def checkDuplicate(self, id, cur):
 		stmt = "SELECT COUNT(*) FROM tokens WHERE clientid = %s"
@@ -134,6 +139,7 @@ class Nsotoken():
 
 		await message.channel.send(f"Navigate to this URL in your browser: {post_login}")
 		await message.channel.send("Log in, right click the \"Select this person\" button, copy the link address, and paste it back to me or 'stop' to cancel.")
+		await message.channel.send("https://db-files.crmea.de/images/bot/nsohowto.png")
 
 		while True:
 			def check(m):
@@ -212,7 +218,7 @@ class Nsotoken():
 
 	def get_session_token(self, session_token_code, auth_code_verifier):
 		head = {
-			'User-Agent':      'OnlineLounge/1.12.0 NASDKAPI Android',
+			'User-Agent':      f'OnlineLounge/{self.nsoAppVer} NASDKAPI Android',
 			'Accept-Language': 'en-US',
 			'Accept':          'application/json',
 			'Content-Type':    'application/x-www-form-urlencoded',
@@ -265,7 +271,7 @@ class Nsotoken():
 			'Content-Length': '439',
 			'Accept': 'application/json',
 			'Connection': 'Keep-Alive',
-			'User-Agent': 'OnlineLounge/1.12.0 NASDKAPI Android'
+			'User-Agent': f'OnlineLounge/{self.nsoAppVer} NASDKAPI Android'
 		}
 		body = {
 			'client_id': '71b963c1b7b6d119',
@@ -280,7 +286,7 @@ class Nsotoken():
 			return
 
 		head = {
-			'User-Agent': 'OnlineLounge/1.12.0 NASDKAPI Android',
+			'User-Agent': f'OnlineLounge/{self.nsoAppVer} NASDKAPI Android',
 			'Accept-Language': 'en-US',
 			'Accept': 'application/json',
 			'Authorization': 'Bearer ' + id_response["access_token"],
@@ -298,9 +304,9 @@ class Nsotoken():
 		head = {
 			'Host': 'api-lp1.znc.srv.nintendo.net',
 			'Accept-Language': 'en-US',
-			'User-Agent': 'com.nintendo.znca/1.11.0 (Android/7.1.2)',
+			'User-Agent': f'com.nintendo.znca/{self.nsoAppVer} (Android/7.1.2)',
 			'Accept': 'application/json',
-			'X-ProductVersion': '1.12.0',
+			'X-ProductVersion': self.nsoAppVer,
 			'Content-Type': 'application/json; charset=utf-8',
 			'Connection': 'Keep-Alive',
 			'Authorization': 'Bearer',
@@ -353,9 +359,9 @@ class Nsotoken():
 
 		head = {
 			'Host': 'api-lp1.znc.srv.nintendo.net',
-			'User-Agent': 'com.nintendo.znca/1.12.0 (Android/7.1.2)',
+			'User-Agent': f'com.nintendo.znca/{self.nsoAppVer} (Android/7.1.2)',
 			'Accept': 'application/json',
-			'X-ProductVersion': '1.12.0',
+			'X-ProductVersion': self.nsoAppVer,
 			'Content-Type': 'application/json; charset=utf-8',
 			'Connection': 'Keep-Alive',
 			'Authorization': f'Bearer {splatoon_token["result"]["webApiServerCredential"]["accessToken"]}',
