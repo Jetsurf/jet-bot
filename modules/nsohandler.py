@@ -474,8 +474,8 @@ class nsoHandler():
 		else:
 			return False
 
-	async def getNSOJSON(self, message, header, url):
-		Session_token = await self.nsotoken.get_iksm_token_mysql(message.author.id)
+	async def getNSOJSON(self, ctx, header, url):
+		Session_token = await self.nsotoken.get_iksm_token_mysql(ctx.user.id)
 		results_list = requests.get(url, headers=header, cookies=dict(iksm_session=Session_token))
 		thejson = json.loads(results_list.text)	
 
@@ -1053,18 +1053,18 @@ class nsoHandler():
 		if flag == 1:
 			return srdata
 
-	async def battleParser(self, message, num=1):
-		if not await self.checkDuplicate(message.author.id):
-			await message.channel.send("You don't have a token setup with me! Please DM me !token with how to get one setup!")
+	async def battleParser(self, ctx, num=1):
+		if not await self.checkDuplicate(ctx.user.id):
+			await ctx.send("You don't have a token setup with me! Please DM me !token with how to get one setup!")
 			return
 
-		await message.channel.trigger_typing()
-		recordjson = await self.getNSOJSON(message, self.app_head, "https://app.splatoon2.nintendo.net/api/records")
+		await ctx.channel.trigger_typing()
+		recordjson = await self.getNSOJSON(ctx, self.app_head, "https://app.splatoon2.nintendo.net/api/records")
 		if recordjson == None:
 			return
 
 		embed = discord.Embed(colour=0x0004FF)
-		battlejson = await self.getNSOJSON(message, self.app_head, "https://app.splatoon2.nintendo.net/api/results")
+		battlejson = await self.getNSOJSON(ctx, self.app_head, "https://app.splatoon2.nintendo.net/api/results")
 
 		accountname = recordjson['records']['player']['nickname']
 		print("TYPE: " + str(type(num)))
@@ -1072,7 +1072,7 @@ class nsoHandler():
 		battletype = thebattle['game_mode']['name']
 		battleid = thebattle['battle_number']
 
-		fullbattle = await self.getNSOJSON(message, self.app_head, "https://app.splatoon2.nintendo.net/api/results/" + battleid)
+		fullbattle = await self.getNSOJSON(ctx, self.app_head, "https://app.splatoon2.nintendo.net/api/results/" + battleid)
 		enemyteam = fullbattle['other_team_members']
 		myteam = fullbattle['my_team_members']
 		mystats = fullbattle['player_result']
@@ -1148,11 +1148,7 @@ class nsoHandler():
 			embed.add_field(name=f"Enemy Team - {str(enemyresult)}", value=enemystring, inline=True)
 			embed.add_field(name=f"{str(matchname)}'s team - {str(myresult)}", value=teamstring, inline=True)
 
-		print(str(type(message)))
-		if isinstance(message, discord.message.Message):
-			await message.channel.send(embed=embed)
-		else:
-			await message.respond(embed=embed)
+		await ctx.respond(embed=embed)
 
 	async def cmdMaps(self, message, args):
 		if len(args) == 0:
@@ -1319,17 +1315,10 @@ class nsoHandler():
 		else:
 			await message.channel.send("Unknown subcommand. Try 'weapons help'")
 
-	async def cmdBattles(self, interaction , arg):
-		print("Type: " + str(type(arg)))
-		if isinstance(arg, (list, tuple)):
-			print("TEST")
-			tmparg = int(arg[0])
-		else:
-			tmparg = arg    
+	async def cmdBattles(self, ctx, num):
+		print(f"From battle: called by {ctx.user.name} with id {ctx.user.id}")
 
-		print(f"From battle: called by {interaction.author.name} with id {interaction.author.id}")
-
-		if tmparg <= 50 and tmparg > 0:
-			await self.battleParser(interaction, num=tmparg)
+		if num <= 50 and num > 0:
+			await self.battleParser(ctx, num)
 		else:
-			await interaction.respond("Battlenum needs to be between 1-50!")
+			await ctx.respond("Battlenum needs to be between 1-50!")
