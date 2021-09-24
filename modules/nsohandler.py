@@ -605,12 +605,12 @@ class nsoHandler():
 		embed.add_field(name="Clam Blitz", value=f"{str(cbwin)}/{str(cbloss)}/{str(cbpercent)}%", inline=True)
 		await message.channel.send(embed=embed)
 
-	async def getStats(self, message):
-		if not await self.checkDuplicate(message.author.id):
-			await message.channel.send("You don't have a token setup with me! Please DM me !token with how to get one setup!")
+	async def getStats(self, ctx):
+		if not await self.checkDuplicate(ctx.author.id):
+			await ctx.respond("You don't have a token setup with me! Please DM me !token with how to get one setup!")
 			return
 
-		thejson = await self.getNSOJSON(message, self.app_head, "https://app.splatoon2.nintendo.net/api/records")
+		thejson = await self.getNSOJSON(ctx, self.app_head, "https://app.splatoon2.nintendo.net/api/records")
 		if thejson == None:
 			return
 
@@ -657,17 +657,14 @@ class nsoHandler():
 		embed.add_field(name='Pair League Medals', value=f"Gold: {str(leaguepairgold)}\nSilver: {str(leaguepairsilver)}\nBronze: {str(leaguepairbronze)}\nUnranked: {str(leaguepairnone)}", inline=True)
 		embed.add_field(name='Favorite Weapon', value=f"{topweap['weapon']['name']} with {str(topink)} turf inked total", inline=True)
 
-		if isinstance(message, discord.message.Message):
-			await message.channel.send(embed=embed)
-		else:
-			await message.respond(embed=embed)
+		await ctx.respond(embed=embed)
 
-	async def getSRStats(self, message):
-		if not await self.checkDuplicate(message.author.id):
-			await message.channel.send("You don't have a token setup with me! Please DM me !token with how to get one setup!")
+	async def getSRStats(self, ctx):
+		if not await self.checkDuplicate(ctx.author.id):
+			await ctx.respond("You don't have a token setup with me! Please DM me !token with how to get one setup!")
 			return
 
-		thejson = await self.getNSOJSON(message, self.app_head_coop, "https://app.splatoon2.nintendo.net/api/coop_results")
+		thejson = await self.getNSOJSON(ctx, self.app_head_coop, "https://app.splatoon2.nintendo.net/api/coop_results")
 		if thejson == None:
 			return
 
@@ -715,14 +712,14 @@ class nsoHandler():
 		embed.add_field(name=f"Total Stats (Last {str(matches)} Games)", value=f"Teammates Rescued: {str(rescnt)}\nTimes Died: {str(deathcnt)}\nGolden Eggs: {str(geggs)}\nPower Eggs: {str(peggs)}", inline=True)
 		embed.add_field(name=f"Boss Kill Counts (Last {str(matches)} games)", value=f"Steelhead: {str(sheadcnt)}\nStinger: {str(stingcnt)}\nFlyfish: {str(flyfshcnt)}\nSteel Eel: {str(seelcnt)}\nScrapper: {str(scrapcnt)}\nMaws: {str(mawscnt)}\nDrizzler: {str(drizcnt)}", inline=True)
 
-		await message.channel.send(embed=embed)
+		await ctx.respond(embed=embed)
 
-	async def getRanks(self, message):
-		if not await self.checkDuplicate(message.author.id):
-			await message.channel.send("You don't have a token setup with me! Please DM me !token with how to get one setup!")
+	async def getRanks(self, ctx):
+		if not await self.checkDuplicate(ctx.author.id):
+			await ctx.respond("You don't have a token setup with me! Please DM me !token with how to get one setup!")
 			return
 
-		thejson = await self.getNSOJSON(message, self.app_head, "https://app.splatoon2.nintendo.net/api/records")
+		thejson = await self.getNSOJSON(ctx, self.app_head, "https://app.splatoon2.nintendo.net/api/records")
 		if thejson == None:
 			return
 
@@ -749,7 +746,7 @@ class nsoHandler():
 		embed.add_field(name="Tower Control", value=tcrank, inline=True)
 		embed.add_field(name="Rainmaker", value=rmrank, inline=True)
 		embed.add_field(name="Clam Blitz", value=cbrank, inline=True)
-		await message.channel.send(embed=embed)
+		await ctx.respond(embed=embed)
 
 	def makeGearEmbed(self, gear, title, dirs):
 		embed = discord.Embed(colour=0xF9FC5F)
@@ -873,7 +870,7 @@ class nsoHandler():
 
 		return '200' in str(response)
 
-	async def gearParser(self, message=None, flag=0):
+	async def gearParser(self, ctx=None, flag=0):
 		theTime = int(time.time())
 		gear = self.storeJSON['merchandises']
 		embed = discord.Embed(colour=0xF9FC5F)
@@ -914,9 +911,9 @@ class nsoHandler():
 					return i
 
 		embed.set_footer(text=f"Next Item In {str(hours)} Hours {str(minutes)} minutes")
-		await message.channel.send(embed=embed)
+		await ctx.respond(embed=embed)
 
-	async def maps(self, message=None, offset=0, flag=0):
+	async def maps(self, ctx=None, offset=0, flag=0):
 		theTime = int(time.time())
 		trfWar = self.mapsJSON['regular']
 		ranked = self.mapsJSON['gachi']
@@ -975,11 +972,11 @@ class nsoHandler():
 			embed.add_field(name="Time Until Map Rotation", value=f"{str(hours)} Hours, and {str(minutes)} minutes", inline=False)
 
 		if flag == 0:
-			await message.channel.send(embed=embed)
+			await ctx.respond(embed=embed)
 		if flag == 1:
 			return turf, ranked, league
 
-	async def srParser(self, message=None, getNext=0, flag=0):
+	async def srParser(self, ctx=None, getNext=0, flag=0):
 		theTime = int(time.time())
 		currentSR = self.srJSON['details']
 		gotData = 0
@@ -1052,7 +1049,7 @@ class nsoHandler():
 			embed.add_field(name="Time Remaining ", value=f"{str(days)} Days, {str(hours)} Hours, and {str(minutes)} Minutes")
 
 		if flag == 0:
-			await message.channel.send(embed=embed)
+			await ctx.respond(embed=embed)
 		if flag == 1:
 			return srdata
 
