@@ -8,7 +8,7 @@ from discord.app import Option
 #DBL Posting
 import urllib, urllib.request, requests, pymysql
 #Our Classes
-import nsotoken, commandparser, serverconfig, splatinfo
+import nsotoken, commandparser, serverconfig, splatinfo, messagecontext
 import vserver, mysqlhandler, serverutils, nsohandler, achandler
 #Eval
 import traceback, textwrap, io, signal
@@ -339,6 +339,7 @@ async def on_message(message):
 
 	command = message.content.lower()
 	channel = message.channel
+	context = messagecontext.MessageContext(message)
 
 	if message.guild == None:
 		if message.author in owners:
@@ -499,7 +500,10 @@ async def on_message(message):
 	elif (cmd == 'weapon') or (cmd == 'weapons'):
 		await nsoHandler.cmdWeaps(message, args)
 	elif (cmd == 'battle') or (cmd == 'battles'):
-		await nsoHandler.cmdBattles(message, args)
+		if len(args) != 1:
+			await message.channel.send("Usage: battle <number>")
+		else:
+			await nsoHandler.cmdBattles(context, int(args[0]))
 	elif serverVoices[theServer].vclient is not None:
 		if cmd == 'currentsong':
 			if serverVoices[theServer].source is not None:
