@@ -657,7 +657,10 @@ class nsoHandler():
 		embed.add_field(name='Pair League Medals', value=f"Gold: {str(leaguepairgold)}\nSilver: {str(leaguepairsilver)}\nBronze: {str(leaguepairbronze)}\nUnranked: {str(leaguepairnone)}", inline=True)
 		embed.add_field(name='Favorite Weapon', value=f"{topweap['weapon']['name']} with {str(topink)} turf inked total", inline=True)
 
-		await message.channel.send(embed=embed)
+		if isinstance(message, discord.message.Message):
+			await message.channel.send(embed=embed)
+		else:
+			await message.respond(embed=embed)
 
 	async def getSRStats(self, message):
 		if not await self.checkDuplicate(message.author.id):
@@ -1148,7 +1151,6 @@ class nsoHandler():
 			embed.add_field(name=f"Enemy Team - {str(enemyresult)}", value=enemystring, inline=True)
 			embed.add_field(name=f"{str(matchname)}'s team - {str(myresult)}", value=teamstring, inline=True)
 
-		print(str(type(message)))
 		if isinstance(message, discord.message.Message):
 			await message.channel.send(embed=embed)
 		else:

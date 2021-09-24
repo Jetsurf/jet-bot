@@ -66,9 +66,47 @@ def loadConfig():
 		print(f"Failed to load config: {str(e)}")
 		quit(1)
 
+@client.slash_command(name='nextmaps', description='Shows the next maps in rotation for Turf War/Ranked/League')
+async def cmdNextMaps(ctx, rotation: Option(int, "Map Rotations ahead to show, max of 11 ahead", required=False, default=1)):
+	if rotation < 0 or rotation > 11:
+		await ctx.respond("Rotation must be between 1-11")
+		return
+	if rotation == None:
+		rotation = 1
+
+	await nsoHandler.maps(ctx, rotation)
+
+@client.slash_command(name='currentmaps', description='Shows current map rotation for Turf War/Ranked/League')
+async def cmdCurrentMaps(ctx):
+	await nsoHandler.maps(ctx)
+
+@client.slash_command(name='nextsr', description='Shows map/weapons for the next Salmon Run rotation')
+async def cmdNextSR(ctx):
+	await nsoHandler.srParser(ctx, 1)
+
+@client.slash_command(name='currentsr', description='Shows map/weapons for the current Salmon Run rotation')
+async def cmdCurrentSR(ctx):
+	await nsoHandler.srParser(ctx)
+
+@client.slash_command(name='splatnetgear', description='Show gear available on S2 Splatnet')
+async def cmdSplatNet(ctx):
+	await nsoHandler.gearParser(ctx)
+
+@client.slash_command(name='rank', description='Get your ranks in ranked mode from S2 SplatNet')
+async def cmdRanks(ctx):
+	await nsoHandler.getRanks(ctx)
+
+@client.slash_command(name='srstats', description='Get your Salmon Run stats from S2 SplatNet')
+async def cmdSRStats(ctx):
+	await nsoHandler.getSRStats(ctx)
+
+@client.slash_command(name='stats', description='Get your gameplay stats from S2 SplatNet ')
+async def cmdStats(ctx):
+    await nsoHandler.getStats(ctx)
+
 @client.slash_command(name='battle', description='Get stats from a battle (1-50)')
-async def cmdBattle(interaction, battlenum: Option(int, "Battle Number, 1 being latest, 50 max", required=True, default=1)):
-    await nsoHandler.cmdBattles(interaction, battlenum)
+async def cmdBattle(ctx, battlenum: Option(int, "Battle Number, 1 being latest, 50 max", required=True, default=1)):
+    await nsoHandler.cmdBattles(ctx, battlenum)
 
 async def resetNSOVer(message):
 	global nsoAppVer, nsoTokens

@@ -208,7 +208,7 @@ class Nsotoken():
 
 		await self.addToken(message, keys, session_token)
 
-		if game is 's2':
+		if game == 's2':
 			return keys['s2']
 		else:
 			return keys
