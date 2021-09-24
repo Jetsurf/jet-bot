@@ -1151,14 +1151,7 @@ class nsoHandler():
 			embed.add_field(name=f"Enemy Team - {str(enemyresult)}", value=enemystring, inline=True)
 			embed.add_field(name=f"{str(matchname)}'s team - {str(myresult)}", value=teamstring, inline=True)
 
-<<<<<<< HEAD
-		if isinstance(message, discord.message.Message):
-			await message.channel.send(embed=embed)
-		else:
-			await message.respond(embed=embed)
-=======
 		await ctx.respond(embed=embed)
->>>>>>> 806d222730afd20d6c8e81a7124dedcbed202830
 
 	async def cmdMaps(self, message, args):
 		if len(args) == 0:
