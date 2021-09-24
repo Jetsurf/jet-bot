@@ -606,7 +606,7 @@ class nsoHandler():
 		await message.channel.send(embed=embed)
 
 	async def getStats(self, ctx):
-		if not await self.checkDuplicate(ctx.author.id):
+		if not await self.checkDuplicate(ctx.user.id):
 			await ctx.respond("You don't have a token setup with me! Please DM me !token with how to get one setup!")
 			return
 
@@ -660,7 +660,7 @@ class nsoHandler():
 		await ctx.respond(embed=embed)
 
 	async def getSRStats(self, ctx):
-		if not await self.checkDuplicate(ctx.author.id):
+		if not await self.checkDuplicate(ctx.user.id):
 			await ctx.respond("You don't have a token setup with me! Please DM me !token with how to get one setup!")
 			return
 
@@ -715,7 +715,7 @@ class nsoHandler():
 		await ctx.respond(embed=embed)
 
 	async def getRanks(self, ctx):
-		if not await self.checkDuplicate(ctx.author.id):
+		if not await self.checkDuplicate(ctx.user.id):
 			await ctx.respond("You don't have a token setup with me! Please DM me !token with how to get one setup!")
 			return
 
