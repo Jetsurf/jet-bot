@@ -39,7 +39,9 @@ head = {}
 url = ''
 
 #SubCommand Groups
-maps = SlashCommandGroup('maps', 'Commands Related to maps for Splatoon 2')
+cmdGroups = {}
+maps = SlashCommandGroup('maps', 'Commands related to maps for Splatoon 2')
+admin = SlashCommandGroup('admin', 'Commands that require guild admin privledges to run')
 
 class blank():
 	def __init__(self):
@@ -84,7 +86,16 @@ async def cmdOrder(ctx, order: Option(str, "Gear currently on the store to order
 		else:
 			i += 1
 
-	nsoHandler.orderGearCommand(message, args=[str(i)])
+	nsoHandler.orderGearCommand(ctx, args=[str(i)])
+
+@admin.command(name='feed', description="Sets up a Splatoon 2 rotation feed for a channel")
+async def cmdAdminFeed(ctx, map: Option(bool, "Enable maps in the feed?", required=True), sr: Option(bool, "Enable Salmon Run in the feed?", required=True), gear: Option(bool, "Enable gear in the feed?", required=True), recreate: Option(bool, "Recreate feed if one is already present.", required=False)):
+	args = [ map, sr, gear, recreate ]
+	await serverUtils.createFeed(ctx, args=args)
+
+@admin.command(name='deletefeed', description='Deletes a feed from a channel')
+async def cmdAdminDeleteFeed(ctx):
+	await serverUtils.deleteFeed(ctx, is_slash=True, bypass=True)
 
 @maps.command(name='stats', description="Shows S2 gameplay stats for a map")
 async def cmdMapsCallout(ctx, map: Option(str, "Map to show stats for", choices=[ themap.name() for themap in splatInfo.getAllMaps() ] ,required=True)):
@@ -596,6 +607,8 @@ print('**********NEW SESSION**********')
 print('Logging into discord')
 
 client.add_application_command(maps)
+client.add_application_command(admin)
+
 sys.stdout.flush()
 sys.stderr.flush()
 client.run(token)
