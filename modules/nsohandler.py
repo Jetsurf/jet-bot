@@ -7,16 +7,18 @@ import splatinfo
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 class nsoHandler():
-	def __init__(self, client, mysqlHandler, nsotoken, splatInfo):
+	def __init__(self, client, mysqlHandler, nsotoken, splatInfo, cmdMapsCallout):
 		self.client = client
 		self.splatInfo = splatInfo
 		self.sqlBroker = mysqlHandler
+		self.cmdMapsCallout = cmdMapsCallout
 		self.app_timezone_offset = str(int((time.mktime(time.gmtime()) - time.mktime(time.localtime()))/60))
 		self.scheduler = AsyncIOScheduler()
 		self.scheduler.add_job(self.doStoreDM, 'cron', hour="*/2", minute='5') 
 		self.scheduler.add_job(self.updateS2JSON, 'cron', hour="*/2", minute='0', second='15')
 		self.scheduler.add_job(self.doFeed, 'cron', hour="*/2", minute='0', second='25')
 		self.scheduler.start()
+		self.calloutCmd = None
 		self.mapJSON = None
 		self.storeJSON = None
 		self.srJSON= None
@@ -143,6 +145,17 @@ class nsoHandler():
 		req = urllib.request.Request('https://splatoon2.ink/data/coop-schedules.json', headers=useragent)
 		response = urllib.request.urlopen(req)
 		self.srJSON = json.loads(response.read().decode())
+
+		print("Updating maps for callout")
+
+		try:
+			self.client.remove_application_command(self.client.slash_command(name='callout', description="Shows callout locations for a map", type=1, is_subcommand=True, func=self.cmdMapsCallout))
+		except:
+			print("Firstrun remove not needed")
+
+		self.calloutCmd = self.client.add_application_command(self.client.slash_command(name='callout', description="Shows callout locations for a map", type=1, is_subcommand=True, func=self.cmdMapsCallout))
+		await self.client.sync_commands()
+		print("Added callout maps")
 
 	async def addStoreDM(self, message, args):
 		if len(args) == 0:

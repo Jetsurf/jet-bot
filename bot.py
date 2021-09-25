@@ -19,9 +19,11 @@ splatInfo = splatinfo.SplatInfo()
 intents = discord.Intents.default()
 intents.members = True
 client = discord.Bot(intents=intents, chunk_guilds_at_startup=False)
+mapscmdgrp = discord.SubCommandGroup(name="maps", description=("Maps Subcmd"))
 commandParser = None
 serverConfig = None
 mysqlHandler = None
+calloutCmd = None
 nsoAppVer = ''
 nsoHandler = None
 nsoTokens = None
@@ -65,6 +67,11 @@ def loadConfig():
 	except Exception as e:
 		print(f"Failed to load config: {str(e)}")
 		quit(1)
+
+
+#@client.application_command()
+async def cmdMapsCallout(ctx, map: Option(str, "Map to show callout locations for", choices=[ themap.name() for themap in splatInfo.getAllMaps() ] ,required=True)):
+	await ctx.respond(f"You picked {map}")
 
 @client.slash_command(name='nextmaps', description='Shows the next maps in rotation for Turf War/Ranked/League')
 async def cmdNextMaps(ctx, rotation: Option(int, "Map Rotations ahead to show, max of 11 ahead", required=False, default=1)):
@@ -125,7 +132,10 @@ async def resetNSOVer(message):
 @client.event
 async def on_ready():
 	global client, soundsDir, mysqlHandler, serverUtils, serverVoices, splatInfo, helpfldr, hs
-	global nsoHandler, nsoTokens, head, url, dev, owners, commandParser, doneStartup, acHandler, nsoAppVer
+	global nsoHandler, nsoTokens, head, url, dev, owners, commandParser, doneStartup, acHandler, nsoAppVer, calloutCmd
+
+	print("Setting up dynamic commands")
+	print("Maps for callout to be loaded on s2.ink initial load")
 
 	if not doneStartup:
 		print('Logged in as,', client.user.name, client.user.id)
@@ -169,7 +179,7 @@ async def on_ready():
 		commandParser = commandparser.CommandParser(serverConfig, client.user.id)
 		serverUtils = serverutils.serverUtils(client, mysqlHandler, serverConfig, helpfldr)
 		nsoTokens = nsotoken.Nsotoken(client, mysqlHandler, nsoAppVer)
-		nsoHandler = nsohandler.nsoHandler(client, mysqlHandler, nsoTokens, splatInfo)
+		nsoHandler = nsohandler.nsoHandler(client, mysqlHandler, nsoTokens, splatInfo, cmdMapsCallout)
 		acHandler = achandler.acHandler(client, mysqlHandler, nsoTokens)
 		await nsoHandler.updateS2JSON()
 		await mysqlHandler.startUp()
@@ -456,14 +466,14 @@ async def on_message(message):
 	elif cmd == 'alive':
 		await channel.send(f"Hey {message.author.name}, I'm alive so shut up! :japanese_goblin:")
 	elif cmd == 'rank':
-		await nsoHandler.getRanks(message)
+		await nsoHandler.getRanks(context)
 	elif cmd == 'order':
 		print(f"Ordering gear for user: {message.author.name} and id {str(message.author.id)}")
 		await nsoHandler.orderGearCommand(message, args=args)
 	elif cmd == 'stats':
-		await nsoHandler.getStats(message)
+		await nsoHandler.getStats(context)
 	elif cmd == 'srstats':
-		await nsoHandler.getSRStats(message)
+		await nsoHandler.getSRStats(context)
 	elif cmd == 'storedm':
 		await nsoHandler.addStoreDM(message, args)
 	elif cmd == 'passport':
@@ -486,13 +496,13 @@ async def on_message(message):
 		else:
 			await serverVoices[theServer].joinVoiceChannel(message, args)
 	elif cmd == 'currentmaps':
-		await nsoHandler.maps(message)
+		await nsoHandler.maps(context)
 	elif cmd == 'nextmaps':
-		await nsoHandler.maps(message, offset=min(11, message.content.count('next')))
+		await nsoHandler.maps(context, offset=min(11, message.content.count('next')))
 	elif cmd == 'currentsr':
-		await nsoHandler.srParser(message)
+		await nsoHandler.srParser(context)
 	elif cmd == 'splatnetgear':
-		await nsoHandler.gearParser(message)
+		await nsoHandler.gearParser(context)
 	elif cmd == 'nextsr':
 		await nsoHandler.srParser(message, 1)
 	elif (cmd == 'map') or (cmd == 'maps'):
