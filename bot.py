@@ -4,7 +4,7 @@ import sys
 sys.path.append('./modules')
 #Base Stuffs
 import discord, asyncio, subprocess, json, time
-from discord.app import Option
+from discord.app import Option, SlashCommandGroup
 #DBL Posting
 import urllib, urllib.request, requests, pymysql
 #Our Classes
@@ -19,13 +19,11 @@ splatInfo = splatinfo.SplatInfo()
 intents = discord.Intents.default()
 intents.members = True
 client = discord.Bot(intents=intents, chunk_guilds_at_startup=False)
-mapscmdgrp = discord.SubCommandGroup(name="maps", description=("Maps Subcmd"))
 commandParser = None
 serverConfig = None
 mysqlHandler = None
-calloutCmd = None
 nsoAppVer = ''
-nsoHandler = None
+#nsoHandler = None
 nsoTokens = None
 serverVoices = {}
 serverUtils = None
@@ -39,6 +37,16 @@ soundsDir = ''
 helpfldr = ''
 head = {}
 url = ''
+
+#SubCommand Groups
+maps = SlashCommandGroup('maps', 'Commands Related to maps for Splatoon 2')
+
+class blank():
+	def __init__(self):
+		self.storeJSON = {}
+		self.storeJSON['merchandises'] = []
+
+nsoHandler = blank()
 
 def loadConfig():
 	global token, nsoAppVer, soundsDir, helpfldr, mysqlHandler, dev, head, url, hs
@@ -68,10 +76,30 @@ def loadConfig():
 		print(f"Failed to load config: {str(e)}")
 		quit(1)
 
+async def cmdOrder(ctx, order: Option(str, "Gear currently on the store to order", choices=[ gear['name'] for gear in nsoHandler.storeJSON['merchandises']])):
+	i = 0
+	for gear in nsoHandler.storeJSON['merchandises']:
+		if gear.name == order:
+			break
+		else:
+			i += 1
 
-#@client.application_command()
+	nsoHandler.orderGearCommand(message, args=[str(i)])
+
+@maps.command(name='stats', description="Shows S2 gameplay stats for a map")
+async def cmdMapsCallout(ctx, map: Option(str, "Map to show stats for", choices=[ themap.name() for themap in splatInfo.getAllMaps() ] ,required=True)):
+	await nsoHandler.cmdMaps(ctx, args=[ 'stats', str(map)])
+
+@maps.command(name='callout', description="Shows callout locations for a map")
 async def cmdMapsCallout(ctx, map: Option(str, "Map to show callout locations for", choices=[ themap.name() for themap in splatInfo.getAllMaps() ] ,required=True)):
-	await ctx.respond(f"You picked {map}")
+	await nsoHandler.cmdMaps(ctx, args=[ 'callout', str(map) ])
+
+@maps.command(name='random', description="Generates a random list of maps")
+async def cmdMapsCallout(ctx, num: Option(int, "Number of maps to include in the list (1-10)", required=True)):
+	if num < 1 or num > 10:
+		await ctx.respond("Num needs to be between 1-10")
+	else:
+		await nsoHandler.cmdMaps(ctx, args=[ 'random', str(num)])
 
 @client.slash_command(name='nextmaps', description='Shows the next maps in rotation for Turf War/Ranked/League')
 async def cmdNextMaps(ctx, rotation: Option(int, "Map Rotations ahead to show, max of 11 ahead", required=False, default=1)):
@@ -132,10 +160,10 @@ async def resetNSOVer(message):
 @client.event
 async def on_ready():
 	global client, soundsDir, mysqlHandler, serverUtils, serverVoices, splatInfo, helpfldr, hs
-	global nsoHandler, nsoTokens, head, url, dev, owners, commandParser, doneStartup, acHandler, nsoAppVer, calloutCmd
+	global nsoHandler, nsoTokens, head, url, dev, owners, commandParser, doneStartup, acHandler, nsoAppVer
 
 	print("Setting up dynamic commands")
-	print("Maps for callout to be loaded on s2.ink initial load")
+	print("Gear for order to be loaded on s2.ink initial load")
 
 	if not doneStartup:
 		print('Logged in as,', client.user.name, client.user.id)
@@ -179,7 +207,7 @@ async def on_ready():
 		commandParser = commandparser.CommandParser(serverConfig, client.user.id)
 		serverUtils = serverutils.serverUtils(client, mysqlHandler, serverConfig, helpfldr)
 		nsoTokens = nsotoken.Nsotoken(client, mysqlHandler, nsoAppVer)
-		nsoHandler = nsohandler.nsoHandler(client, mysqlHandler, nsoTokens, splatInfo, cmdMapsCallout)
+		nsoHandler = nsohandler.nsoHandler(client, mysqlHandler, nsoTokens, splatInfo, cmdOrder)
 		acHandler = achandler.acHandler(client, mysqlHandler, nsoTokens)
 		await nsoHandler.updateS2JSON()
 		await mysqlHandler.startUp()
@@ -506,7 +534,7 @@ async def on_message(message):
 	elif cmd == 'nextsr':
 		await nsoHandler.srParser(message, 1)
 	elif (cmd == 'map') or (cmd == 'maps'):
-		await nsoHandler.cmdMaps(message, args)
+		await nsoHandler.cmdMaps(context, args)
 	elif (cmd == 'weapon') or (cmd == 'weapons'):
 		await nsoHandler.cmdWeaps(message, args)
 	elif (cmd == 'battle') or (cmd == 'battles'):
@@ -567,6 +595,7 @@ if dev == 0:
 print('**********NEW SESSION**********')
 print('Logging into discord')
 
+client.add_application_command(maps)
 sys.stdout.flush()
 sys.stderr.flush()
 client.run(token)

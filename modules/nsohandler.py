@@ -5,20 +5,20 @@ import json, os
 import urllib, urllib.request
 import splatinfo
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from discord.app import *
 
 class nsoHandler():
-	def __init__(self, client, mysqlHandler, nsotoken, splatInfo, cmdMapsCallout):
+	def __init__(self, client, mysqlHandler, nsotoken, splatInfo, cmdOrder):
 		self.client = client
 		self.splatInfo = splatInfo
 		self.sqlBroker = mysqlHandler
-		self.cmdMapsCallout = cmdMapsCallout
+		self.cmdOrder = cmdOrder
 		self.app_timezone_offset = str(int((time.mktime(time.gmtime()) - time.mktime(time.localtime()))/60))
 		self.scheduler = AsyncIOScheduler()
 		self.scheduler.add_job(self.doStoreDM, 'cron', hour="*/2", minute='5') 
 		self.scheduler.add_job(self.updateS2JSON, 'cron', hour="*/2", minute='0', second='15')
 		self.scheduler.add_job(self.doFeed, 'cron', hour="*/2", minute='0', second='25')
 		self.scheduler.start()
-		self.calloutCmd = None
 		self.mapJSON = None
 		self.storeJSON = None
 		self.srJSON= None
@@ -146,16 +146,19 @@ class nsoHandler():
 		response = urllib.request.urlopen(req)
 		self.srJSON = json.loads(response.read().decode())
 
-		print("Updating maps for callout")
+		#TODO: This ideally will be for updating the order command with choices to contain current gear in the store
+		#print("Updating gear for order")
 
-		try:
-			self.client.remove_application_command(self.client.slash_command(name='callout', description="Shows callout locations for a map", type=1, is_subcommand=True, func=self.cmdMapsCallout))
-		except:
-			print("Firstrun remove not needed")
+		#try:
+		#	self.client.remove_application_command(name='order')
+		#except:
+		#	pass
 
-		self.calloutCmd = self.client.add_application_command(self.client.slash_command(name='callout', description="Shows callout locations for a map", type=1, is_subcommand=True, func=self.cmdMapsCallout))
-		await self.client.sync_commands()
-		print("Added callout maps")
+		#self.calloutCmd = self.client.slash_command(name='order', description="Orders gear from the SplatNet store", type=1, func=self.cmdOrder)
+		#print(str(self.calloutCmd))
+		#self.client.add_application_command(self.calloutCmd)
+		#await self.client.register_commands()
+		#print("Added gear for order")
 
 	async def addStoreDM(self, message, args):
 		if len(args) == 0:
@@ -1163,14 +1166,14 @@ class nsoHandler():
 
 		await ctx.respond(embed=embed)
 
-	async def cmdMaps(self, message, args):
+	async def cmdMaps(self, ctx, args):
 		if len(args) == 0:
-			await message.channel.send("Try 'maps help' for help")
+			await ctx.respond("Try 'maps help' for help")
 			return
 
 		subcommand = args[0].lower()
 		if subcommand == "help":
-			await message.channel.send("**maps random [n]**: Generate a list of random maps\n"
+			await ctx.respond("**maps random [n]**: Generate a list of random maps\n"
 				"**maps stats MAP**: Show player stats for MAP\n"
 				"**maps callout MAP**: Show callouts for MAP\n"
 				"**maps list**: Lists all maps with abbreviations")
@@ -1178,48 +1181,49 @@ class nsoHandler():
 			embed = discord.Embed(colour=0xF9FC5F)
 			embed.title = "Maps List"
 			embed.add_field(name="Maps (abbreviation)", value=", ".join(map(lambda item: item.format(), self.splatInfo.getAllMaps())), inline=False)
-			await message.channel.send(embed=embed)
+			await ctx.respond(embed=embed)
 		elif subcommand == "stats":
 			if len(args) > 1:
 				themap = " ".join(args[1:])
 				match = self.splatInfo.matchMaps(themap)
 				if not match.isValid():
-					await message.channel.send(match.errorMessage("Try command 'maps list' for a list."))
+					await ctx.respond(match.errorMessage("Try command 'maps list' for a list."))
 					return
 				id = match.get().id()
-				await self.mapParser(message, id)
+				await self.mapParser(ctx, id)
 		elif subcommand == "random":
 			count = 1
 			if len(args) > 1:
 				if not args[1].isdigit():
-					await message.channel.send("Argument to 'maps random' must be numeric")
+					await ctx.respond("Argument to 'maps random' must be numeric")
 					return
 				elif (int(args[1]) < 1) or (int(args[1]) > 10):
-					await message.channel.send("Number of random maps must be within 1..10")
+					await ctx.respond("Number of random maps must be within 1..10")
 					return
 				else:
 					count = int(args[1])
 
 			if count == 1:
-				await message.channel.send(f"Random map: {self.splatInfo.getRandomMap().name()}")
+				await ctx.respond(f"Random map: {self.splatInfo.getRandomMap().name()}")
 			else:
 				out = "Random maps:\n"
 				for i in range(count):
 					out += "%d: %s\n" % (i + 1, self.splatInfo.getRandomMap().name())
-				await message.channel.send(out)
+				await ctx.respond(out)
 		elif "callout" in subcommand:
 			themap = self.splatInfo.matchMaps(" ".join(args[1:]))
 			if not themap.isValid():
-				await message.channel.send(themap.errorMessage("Try command 'maps list' for a list."))
+				await ctx.respond(themap.errorMessage("Try command 'maps list' for a list."))
 				return
 
 			shortname = themap.get().shortname().lower().replace(" ", "-")
 			url = f"http://db-files.crmea.de/images/bot/callouts/{shortname}.png"
 			embed = discord.Embed(colour=0x0004FF)
+			embed.title = themap.get().name()
 			embed.set_image(url=url)
-			await message.channel.send(embed=embed)
+			await ctx.respond(embed=embed)
 		else:
-			await message.channel.send("Unknown subcommand. Try 'maps help'")
+			await ctx.respond("Unknown subcommand. Try 'maps help'")
 
 	async def cmdWeaps(self, message, args):
 		if len(args) == 0:
