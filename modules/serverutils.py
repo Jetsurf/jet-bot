@@ -161,7 +161,7 @@ class serverUtils():
 
 		self.statusnum += 1
 
-	async def setAnnounceChannel(self, message, args):
+	async def setAnnounceChannel(self, ctx, args):
 		if len(args) < 2:
 			await message.channel.send("No channel given, please specify a channel")
 			return
@@ -173,10 +173,10 @@ class serverUtils():
 				channelid = channel.id
 
 		if channelid == None:
-			await message.channel.send("Could not find a channel with name: " + channelname)
+			await ctx.respond("Could not find a channel with name: " + channelname)
 		else:
-			await self.serverConfig.setConfigValue(message.guild.id, 'announcement.channelid', channelid)
-			await message.channel.send("Set announcement channel to: " + channelname)
+			await self.serverConfig.setConfigValue(ctx.guild.id, 'announcement.channelid', channelid)
+			await ctx.respond("Set announcement channel to: " + channelname)
 
 	async def getAnnounceChannel(self, serverid):
 		channelid = await self.serverConfig.getConfigValue(serverid, 'announcement.channelid')
@@ -197,9 +197,9 @@ class serverUtils():
 			else:
 				await channel.send("ANNOUNCEMENT: " + announcemsg)
 
-	async def stopAnnouncements(self, message):
-		await self.serverConfig.removeConfigValue(message.guild.id, "announcement.channelid")
-		await message.channel.send("Your guild is now unsubscribed from receiving announcements")
+	async def stopAnnouncements(self, ctx):
+		await self.serverConfig.removeConfigValue(ctx.guild.id, "announcement.channelid")
+		await ctx.respond("Your guild is now unsubscribed from receiving announcements")
 
 	async def getAllDM(self, serverid):
 		cur = await self.sqlBroker.connect()
@@ -268,44 +268,44 @@ class serverUtils():
 		await self.sqlBroker.close(cur)
 		await message.channel.send(embed=embed)
 
-	async def increment_cmd(self, message, cmd):
+	async def increment_cmd(self, ctx, cmd):
 		if cmd not in self.valid_commands['base'] and cmd not in self.valid_commands['base_sn'] and cmd not in self.valid_commands['user_sn'] and cmd not in self.valid_commands['hybrid_sn'] and cmd not in self.valid_commands['voice']:
 			return
 
 		cur = await self.sqlBroker.connect()
 		stmt = "INSERT INTO commandcounts (serverid, command, count) VALUES (%s, %s, 1) ON DUPLICATE KEY UPDATE count = count + 1;"
-		await cur.execute(stmt, (message.guild.id, cmd,))
+		await cur.execute(stmt, (ctx.guild.id, cmd,))
 		await self.sqlBroker.commit(cur)
 
-	async def addDM(self, message):
-		if await self.checkDM(message.author.id, message.guild.id):
-			await message.channel.send("You are already in my list of people to DM")
+	async def addDM(self, ctx):
+		if await self.checkDM(ctx.user.id, ctx.guild.id):
+			await ctx.respond("You are already in my list of people to DM")
 			return
 
 		cur = await self.sqlBroker.connect()
 		stmt = "INSERT INTO dms(serverid, clientid) values(%s, %s)"
-		await cur.execute(stmt, (message.guild.id, message.author.id,))
+		await cur.execute(stmt, (ctx.guild.id, ctx.user.id,))
 		if cur.lastrowid != None:
 			await self.sqlBroker.commit(cur)
-			await message.channel.send("Added " + message.author.name + " to my DM list!")
+			await ctx.respond("Added " + ctx.user.name + " to my DM list!")
 		else:
 			await self.sqlBroker.rollback(cur)
-			await message.channel.send("Something went wrong!")
+			await ctx.respond("Something went wrong!")
 
-	async def removeDM(self, message):
-		if not await self.checkDM(message.author.id, message.guild.id):
-			await message.channel.send("You aren't in my list of people to DM")
+	async def removeDM(self, ctx):
+		if not await self.checkDM(ctx.user.id, ctx.guild.id):
+			await ctx.respond("You aren't in my list of people to DM")
 			return
 
 		cur = await self.sqlBroker.connect()
 		stmt = "DELETE FROM dms WHERE serverid = %s AND clientid = %s"
-		await cur.execute(stmt, (message.guild.id, str(message.author.id),))
-		if self.cursor.lastrowid != None:
+		await cur.execute(stmt, (ctx.guild.id, str(ctx.user.id),))
+		if cur.lastrowid != None:
 			await self.sqlBroker.commit(cur)
-			await message.channel.send("Removed " + message.author.name + " from my DM list!")
+			await ctx.respond("Removed " + ctx.user.name + " from my DM list!")
 		else:
 			await self.sqlBroker.rollback(cur)
-			await message.channel.send("Something went wrong!")
+			await ctx.respond("Something went wrong!")
 
 	async def trim_db_from_leave(self, serverid):
 		cur = await self.sqlBroker.connect()
