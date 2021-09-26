@@ -272,11 +272,12 @@ async def cmdStats(ctx):
 
 @client.slash_command(name='battle', description='Get stats from a battle (1-50)')
 async def cmdBattle(ctx, battlenum: Option(int, "Battle Number, 1 being latest, 50 max", required=True, default=1)):
-	await serverUtils.increment_cmd(message, 'battle')
+	await serverUtils.increment_cmd(ctx, 'battle')
 	await nsoHandler.cmdBattles(ctx, battlenum)
 
 @voice.command(name='join', description='Join a voice chat channel')
 async def cmdVoiceJoin(ctx, channel: Option(discord.VoiceChannel, "Voice Channel to join", required=False)):
+	await serverUtils.increment_cmd(ctx, 'join')
 	if channel == None:
 		await serverVoices[ctx.guild.id].joinVoiceChannel(ctx, [])
 	else:
@@ -284,6 +285,7 @@ async def cmdVoiceJoin(ctx, channel: Option(discord.VoiceChannel, "Voice Channel
 
 @voice.command(name='volume', description='Changes the volume while in voice chat')
 async def cmdVoiceVolume(ctx, vol: Option(int, "What to change the volume to 1-60% (7\% is default)"), required=True):
+	await serverUtils.increment_cmd(ctx, 'volume')
 	if serverVoices[ctx.guild.id].vclient != None:
 		if vol > 60:
 			vol = 60
@@ -297,6 +299,7 @@ async def cmdVoiceVolume(ctx, vol: Option(int, "What to change the volume to 1-6
 
 @play.command(name='url', description='Plays a video from a URL')
 async def cmdVoicePlayUrl(ctx, url: Option(str, "URL of the video to play")):
+	await serverUtils.increment_cmd(ctx, 'play')
 	if serverVoices[ctx.guild.id].vclient is not None:
 		await serverVoices[ctx.guild.id].setupPlay(ctx, [ str(url) ])
 	else:
@@ -304,6 +307,7 @@ async def cmdVoicePlayUrl(ctx, url: Option(str, "URL of the video to play")):
 
 @play.command(name='search', description="Searches SOURCE for a playable video/song")
 async def cmdVoicePlaySearch(ctx, source: Option(str, "Source to search", choices=[ 'youtube', 'soundcloud' ], default='youtube', required=True), search: Option(str, "Video to search for", required = True)):
+	await serverUtils.increment_cmd(ctx, 'play')
 	if serverVoices[ctx.guild.id].vclient is not None:
 		theList = []
 		for i in itertools.chain([ source ], search.split()):
@@ -317,6 +321,7 @@ async def cmdVoicePlaySearch(ctx, source: Option(str, "Source to search", choice
 
 @voice.command(name='skip', description="Skips the currently playing song")
 async def cmdVoiceSkip(ctx):
+	await serverUtils.increment_cmd(ctx, 'skip')
 	if serverVoices[ctx.guild.id].vclient is not None:
 		if serverVoices[ctx.guild.id].source is not None:
 			await serverVoices[ctx.guild.id].stop(ctx)
@@ -327,6 +332,7 @@ async def cmdVoiceSkip(ctx):
 			
 @voice.command(name='end', description="Stops playing all videos")
 async def cmdVoiceEnd(ctx):
+	await serverUtils.increment_cmd(ctx, 'stop')
 	if serverVoices[ctx.guild.id].vclient is not None:
 		if serverVoices[ctx.guild.id].source is not None:
 			serverVoices[theServer].end()
@@ -338,6 +344,7 @@ async def cmdVoiceEnd(ctx):
 
 @voice.command(name='playrandom', description="Plays a number of videos from this servers playlist")
 async def cmdVoicePlayRandom(ctx, num: Option(int, "Number of videos to queue up", required=True)):
+	await serverUtils.increment_cmd(ctx, 'playrandom')
 	if num < 0:
 		await ctx.respond("Num needs to be greater than 0.")
 	else:
@@ -345,6 +352,7 @@ async def cmdVoicePlayRandom(ctx, num: Option(int, "Number of videos to queue up
 
 @voice.command(name='currentvid', description="Shows the currently playing video")
 async def cmdVoiceCurrent(ctx):
+	await serverUtils.increment_cmd(ctx, 'currentsong')
 	if serverVoices[ctx.guild.id].vclient is not None:
 		if serverVoices[ctx.guild.id].source is not None:
 			await ctx.respond(f"Currently Playing Video: {serverVoices[ctx.guild.id].source.yturl}")
@@ -355,6 +363,7 @@ async def cmdVoiceCurrent(ctx):
 
 @voice.command(name='queue', description="Shows the current queue of videos to play")
 async def cmdVoiceQueue(ctx):
+	await serverUtils.increment_cmd(ctx, 'queue')
 	if serverVoices[ctx.guild.id].vclient is not None:
 		await serverVoices[theServer].printQueue(context)
 	else:
@@ -362,6 +371,7 @@ async def cmdVoiceQueue(ctx):
 
 @voice.command(name='disconnect', description="Disconnects me from voice")
 async def cmdVoiceDisconnect(ctx):
+	await serverUtils.increment_cmd(ctx, 'leavevoice')
 	if serverVoices[ctx.guild.id] != None:
 		await serverVoices[ctx.guild.id].vclient.disconnect()
 		serverVoices[ctx.guild.id].vclient = None
@@ -371,6 +381,7 @@ async def cmdVoiceDisconnect(ctx):
 
 @voice.command(name='sounds', description="Shows sounds I can play with /voice soundclip")
 async def cmdVoiceSounds(ctx):
+	await serverUtils.increment_cmd(ctx, 'sounds')
 	theSounds = subprocess.check_output(["ls", soundsDir])
 	theSounds = theSounds.decode("utf-8")
 	theSounds = theSounds.replace('.mp3', '')
