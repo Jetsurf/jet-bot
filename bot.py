@@ -174,16 +174,21 @@ async def cmdDMAdd(ctx):
 	else:
 		await ctx.respond("You aren't a guild administrator")
 
-@maps.command(name='stats', description="Shows S2 gameplay stats for a map")
+@maps.command(name='stats', description="Shows Splatoon 2 gameplay stats for a map")
 async def cmdMapsStats(ctx, map: Option(str, "Map to show stats for", choices=[ themap.name() for themap in splatInfo.getAllMaps() ] ,required=True)):
 	await serverUtils.increment_cmd(ctx, 'maps')
 	await nsoHandler.cmdMaps(ctx, args=[ 'stats', str(map)])
 
-@maps.command(name='callout', description="Shows callout locations for a map")
+@maps.command(name='list', description="Shows all Splatoon 2 maps")
+async def cmdMapsStats(ctx):
+	await serverUtils.increment_cmd(ctx, 'maps')
+	await nsoHandler.cmdMaps(ctx, args=[ 'list' ])
+
+@maps.command(name='callout', description="Shows callout locations for a Splatoon 2 map")
 async def cmdMapsCallout(ctx, map: Option(str, "Map to show callout locations for", choices=[ themap.name() for themap in splatInfo.getAllMaps() ] ,required=True)):
 	await nsoHandler.cmdMaps(ctx, args=[ 'callout', str(map) ])
 
-@maps.command(name='random', description="Generates a random list of maps")
+@maps.command(name='random', description="Generates a random list of Splatoon 2 maps")
 async def cmdMapsRandom(ctx, num: Option(int, "Number of maps to include in the list (1-10)", required=True)):
 	await serverUtils.increment_cmd(ctx, 'maps')
 	if num < 1 or num > 10:
@@ -251,7 +256,7 @@ async def cmdWeapInfo(ctx, name: Option(str, "Name of the weapon to get info for
 	await nsoHandler.cmdWeaps(ctx, args=[ 'info', str(name) ])
 
 @weapon.command(name='list', description='Gets a list pf weapons by type in Splatoon 2')
-async def cmdWeapInfo(ctx, weaptype: Option(str, "Type of weapon to generate a list for", required=True, choices=[ weaptype.name() for weaptype in splatInfo.getAllWeaponTypes() ])):
+async def cmdWeapList(ctx, weaptype: Option(str, "Type of weapon to generate a list for", required=True, choices=[ weaptype.name() for weaptype in splatInfo.getAllWeaponTypes() ])):
 	await serverUtils.increment_cmd(ctx, 'weapons')
 
 	await nsoHandler.cmdWeaps(ctx, args=[ 'list', str(weaptype) ])
