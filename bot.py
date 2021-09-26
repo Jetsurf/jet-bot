@@ -94,6 +94,10 @@ async def cmdOrder(ctx, id: Option(int, "ID of gear to order (get this from spla
 
 @announce.command(name='remove', description="Removes you from being DM'ed on users leaving")
 async def cmdDMRemove(ctx):
+	if ctx.guild == None:
+		await ctx.respond("Can't DM me with this command.")
+		return
+
 	if await checkIfAdmin(ctx):
 		await serverUtils.stopAnnouncements(ctx)
 	else:
@@ -101,6 +105,10 @@ async def cmdDMRemove(ctx):
 
 @announce.command(name='get', description="Gets the channel that is set to receive annoucements")
 async def cmdDMRemove(ctx):
+	if ctx.guild == None:
+		await ctx.respond("Can't DM me with this command.")
+		return
+
 	if await checkIfAdmin(ctx):
 		await serverUtils.getAnnounceChannel(ctx)
 	else:
@@ -108,6 +116,10 @@ async def cmdDMRemove(ctx):
 
 @announce.command(name='set', description="Sets a chat channel to receive announcements from my developers")
 async def cmdDMAdd(ctx, channel: Option(discord.TextChannel, "Channel to set to receive announcements", required=True)):
+	if ctx.guild == None:
+		await ctx.respond("Can't DM me with this command.")
+		return
+
 	if await checkIfAdmin(ctx):
 		await serverUtils.setAnnounceChannel(ctx)
 	else:
@@ -116,6 +128,10 @@ async def cmdDMAdd(ctx, channel: Option(discord.TextChannel, "Channel to set to 
 @feed.command(name='create', description="Sets up a Splatoon 2 rotation feed for a channel")
 async def cmdAdminFeed(ctx, map: Option(bool, "Enable maps in the feed?", required=True), sr: Option(bool, "Enable Salmon Run in the feed?", required=True), gear: Option(bool, "Enable gear in the feed?", required=True), recreate: Option(bool, "Recreate feed if one is already present.", required=False)):
 	args = [ map, sr, gear, recreate ]
+
+	if ctx.guild == None:
+		await ctx.respond("Can't DM me with this command.")
+		return
 
 	if await checkIfAdmin(ctx):
 		if map == False and sr == False and gear == False:
@@ -127,6 +143,10 @@ async def cmdAdminFeed(ctx, map: Option(bool, "Enable maps in the feed?", requir
 
 @feed.command(name='delete', description="Deletes a feed from a channel")
 async def cmdAdminDeleteFeed(ctx):
+	if ctx.guild == None:
+		await ctx.respond("Can't DM me with this command.")
+		return
+
 	if await checkIfAdmin(ctx):
 		await serverUtils.deleteFeed(ctx, is_slash=True, bypass=True)
 	else:
@@ -134,6 +154,10 @@ async def cmdAdminDeleteFeed(ctx):
 
 @dm.command(name='remove', description="Removes you from being DM'ed on users leaving")
 async def cmdDMRemove(ctx):
+	if ctx.guild == None:
+		await ctx.respond("Can't DM me with this command.")
+		return
+
 	if await checkIfAdmin(ctx):
 		await serverUtils.removeDM(ctx)
 	else:
@@ -141,6 +165,10 @@ async def cmdDMRemove(ctx):
 
 @dm.command(name='add', description="Adds you to DM's on users leaving")
 async def cmdDMAdd(ctx):
+	if ctx.guild == None:
+		await ctx.respond("Can't DM me with this command.")
+		return
+
 	if await checkIfAdmin(ctx):
 		await serverUtils.addDM(ctx)
 	else:
@@ -381,9 +409,6 @@ async def resetNSOVer(message):
 async def on_ready():
 	global client, soundsDir, mysqlHandler, serverUtils, serverVoices, splatInfo, helpfldr, hs
 	global nsoHandler, nsoTokens, head, url, dev, owners, commandParser, doneStartup, acHandler, nsoAppVer
-
-	print("Setting up dynamic commands")
-	print("Gear for order to be loaded on s2.ink initial load")
 
 	if not doneStartup:
 		print('Logged in as,', client.user.name, client.user.id)
