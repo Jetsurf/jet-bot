@@ -3,7 +3,7 @@
 import sys
 sys.path.append('./modules')
 #Base Stuffs
-import discord, asyncio, subprocess, json, time
+import discord, asyncio, subprocess, json, time, itertools
 from discord.app import Option, SlashCommandGroup
 #DBL Posting
 import urllib, urllib.request, requests, pymysql
@@ -43,9 +43,11 @@ cmdGroups = {}
 maps = SlashCommandGroup('maps', 'Commands related to maps for Splatoon 2')
 weapon = SlashCommandGroup("weapons", 'Commands realted to weapons for Splatoon 2')
 admin = SlashCommandGroup('admin', 'Commands that require guild admin privledges to run')
+voice = SlashCommandGroup('voice', 'Commands related to voice functions')
 dm = admin.command_group(name='dm', description="Admin commands related to DM's on users leaving")
 feed = admin.command_group(name='feed', description="Admin commands related to SplatNet rotation feeds")
 announce = admin.command_group(name='announcements', description="Admin commands related to developer annoucenments")
+play = voice.command_group(name="play", description="Commands realted to playing audio")
 
 class blank():
 	def __init__(self):
@@ -188,7 +190,7 @@ async def cmdCurrentSR(ctx):
 	await nsoHandler.srParser(ctx)
 
 @weapon.command(name='random', description='Generates a random list of weapons')
-async def cmdRandomWeaps(ctx, num: Option(int, "Number of weapons to include in the list (1-10)", required=True, default=4)):
+async def cmdWeapRandom(ctx, num: Option(int, "Number of weapons to include in the list (1-10)", required=True)):
 	await serverUtils.increment_cmd(ctx, 'weapons')
 	if num < 0 or num > 10:
 		await ctx.respond("Num must be between 1-10!")
@@ -203,16 +205,22 @@ async def cmdWeapStats(ctx, name: Option(str, "Name of the weapon to get stats f
 	await nsoHandler.cmdWeaps(ctx, args=[ 'stats', str(name) ])
 
 @weapon.command(name='sub', description='Gets Splatoon 2all weapons with sub type')
-async def cmdWeapStats(ctx, sub: Option(str, "Name of the sub to get matching weapons for", choices=[ weap.name() for weap in splatInfo.getAllSubweapons() ], required=True)):
+async def cmdWeapSub(ctx, sub: Option(str, "Name of the sub to get matching weapons for", choices=[ weap.name() for weap in splatInfo.getAllSubweapons() ], required=True)):
 	await serverUtils.increment_cmd(ctx, 'weapons')
 
 	await nsoHandler.cmdWeaps(ctx, args=[ 'sub', str(sub) ])
 
 @weapon.command(name='special', description='Gets all Splatoon 2 weapons with special type')
-async def cmdWeapStats(ctx, special: Option(str, "Name of the special to get matching weapons for", choices=[ weap.name() for weap in splatInfo.getAllSpecials() ], required=True)):
+async def cmdWeapSpecial(ctx, special: Option(str, "Name of the special to get matching weapons for", choices=[ weap.name() for weap in splatInfo.getAllSpecials() ], required=True)):
 	await serverUtils.increment_cmd(ctx, 'weapons')
 
 	await nsoHandler.cmdWeaps(ctx, args=[ 'special', str(special) ])
+
+@weapon.command(name='info', description='Gets info on a weapon in Splatoon 2')
+async def cmdWeapInfo(ctx, name: Option(str, "Name of the weapon to get info for", required=True)):
+	await serverUtils.increment_cmd(ctx, 'weapons')
+
+	await nsoHandler.cmdWeaps(ctx, args=[ 'info', str(name) ])
 
 @client.slash_command(name='splatnetgear', description='Show gear available on S2 Splatnet')
 async def cmdSplatNet(ctx):
@@ -239,9 +247,115 @@ async def cmdBattle(ctx, battlenum: Option(int, "Battle Number, 1 being latest, 
 	await serverUtils.increment_cmd(message, 'battle')
 	await nsoHandler.cmdBattles(ctx, battlenum)
 
-@client.slash_command(name='join', description='Have the bot join a voice chat channel')
-async def cmdJoin(ctx, channel: Option(discord.VoiceChannel, "Voice Channel to join", required=True)):
-	await serverVoices[ctx.guild.id].joinVoiceChannel(ctx, channel)
+@voice.command(name='join', description='Join a voice chat channel')
+async def cmdVoiceJoin(ctx, channel: Option(discord.VoiceChannel, "Voice Channel to join", required=False)):
+	if channel == None:
+		await serverVoices[ctx.guild.id].joinVoiceChannel(ctx, [])
+	else:
+		await serverVoices[ctx.guild.id].joinVoiceChannel(ctx, channel)
+
+@voice.command(name='volume', description='Changes the volume while in voice chat')
+async def cmdVoiceVolume(ctx, vol: Option(int, "What to change the volume to 1-60% (7\% is default)"), required=True):
+	if serverVoices[ctx.guild.id].vclient != None:
+		if vol > 60:
+			vol = 60
+		if serverVoices[ctx.guild.id].source != None:
+			await ctx.respond(f"Setting Volume to {str(vol)}%")
+			serverVoices[ctx.guild.id].source.volume = float(int(vol) / 100)
+		else:
+			await ctx.respond("Not playing anything")
+	else:
+		await ctx.respond("Not connected to voice")
+
+@play.command(name='url', description='Plays a video from a URL')
+async def cmdVoicePlayUrl(ctx, url: Option(str, "URL of the video to play")):
+	if serverVoices[ctx.guild.id].vclient is not None:
+		await serverVoices[ctx.guild.id].setupPlay(ctx, [ str(url) ])
+	else:
+		await ctx.respond("Not connected to voice")
+
+@play.command(name='search', description="Searches SOURCE for a playable video/song")
+async def cmdVoicePlaySearch(ctx, source: Option(str, "Source to search", choices=[ 'youtube', 'soundcloud' ], default='youtube', required=True), search: Option(str, "Video to search for", required = True)):
+	if serverVoices[ctx.guild.id].vclient is not None:
+		theList = []
+		for i in itertools.chain([ source ], search.split()):
+			theList.append(i)
+		
+		print(f"{theList}")
+		await serverVoices[ctx.guild.id].setupPlay(ctx, theList)
+
+	else:
+		await ctx.respond("Not connected to voice")
+
+@voice.command(name='skip', description="Skips the currently playing song")
+async def cmdVoiceSkip(ctx):
+	if serverVoices[ctx.guild.id].vclient is not None:
+		if serverVoices[ctx.guild.id].source is not None:
+			await serverVoices[ctx.guild.id].stop(ctx)
+		else:
+			await ctx.respond("Not playing anything")
+	else:
+		ctx.respond("Not connected to voice")
+			
+@voice.command(name='end', description="Stops playing all videos")
+async def cmdVoiceEnd(ctx):
+	if serverVoices[ctx.guild.id].vclient is not None:
+		if serverVoices[ctx.guild.id].source is not None:
+			serverVoices[theServer].end()
+			await ctx.respond("Stopped playing all videos")
+		else:
+			await ctx.respond("Not playing anything.")
+	else:
+		await ctx.respond("Not connected to voice")
+
+@voice.command(name='playrandom', description="Plays a number of videos from this servers playlist")
+async def cmdVoicePlayRandom(ctx, num: Option(int, "Number of videos to queue up", required=True)):
+	if num < 0:
+		await ctx.respond("Num needs to be greater than 0.")
+	else:
+		await serverVoices[theServer].playRandom(context, num)
+
+@voice.command(name='currentvid', description="Shows the currently playing video")
+async def cmdVoiceCurrent(ctx):
+	if serverVoices[ctx.guild.id].vclient is not None:
+		if serverVoices[ctx.guild.id].source is not None:
+			await ctx.respond(f"Currently Playing Video: {serverVoices[ctx.guild.id].source.yturl}")
+		else:
+			await ctx.respond("I'm not playing anything.")
+	else:
+		await ctx.respond("Not connected to voice")
+
+@voice.command(name='queue', description="Shows the current queue of videos to play")
+async def cmdVoiceQueue(ctx):
+	if serverVoices[ctx.guild.id].vclient is not None:
+		await serverVoices[theServer].printQueue(context)
+	else:
+		await ctx.respond("Not connected to voice.")
+
+@voice.command(name='disconnect', description="Disconnects me from voice")
+async def cmdVoiceDisconnect(ctx):
+	if serverVoices[ctx.guild.id] != None:
+		await serverVoices[ctx.guild.id].vclient.disconnect()
+		serverVoices[ctx.guild.id].vclient = None
+		await ctx.respond("Disconnected from voice.")
+	else:
+		await ctx.respond("Not connected to voice.")
+
+@voice.command(name='sounds', description="Shows sounds I can play with /voice soundclip")
+async def cmdVoiceSounds(ctx):
+	theSounds = subprocess.check_output(["ls", soundsDir])
+	theSounds = theSounds.decode("utf-8")
+	theSounds = theSounds.replace('.mp3', '')
+	theSounds = theSounds.replace('\n', ', ')
+	await ctx.respond(f"Current Sounds:\n```{theSounds}```")
+
+@voice.command(name='playsound', description="Plays one of my sound clips in voice")
+async def cmdVoicePlaySound(ctx, sound: Option(str, "Sound clip to play, get with /voice sounds")):
+	if serverVoices[ctx.guild.id].vclient is not None:
+		await ctx.respond(f"Attempting to play: {sound}")
+		await serverVoices[ctx.guild.id].playSound(sound)
+	else:
+		await ctx.respond("Not connected to voice.")
 
 async def checkIfAdmin(ctx):
 	if ctx.guild.get_member(ctx.user.id) == None:
@@ -535,9 +649,7 @@ async def on_message(message):
 		await nsoHandler.getStoreJSON(message)
 	elif cmd == 'admin':
 		if message.guild.get_member(message.author.id) == None:
-			print(f"Lazy loading member list for {str(message.guild.name)}")
 			await client.get_guild(message.guild.id).chunk()
-			print("Done")
 
 		if message.author.guild_permissions.administrator:
 			if len(args) == 0:
@@ -570,7 +682,7 @@ async def on_message(message):
 					else:
 						await message.channel.send(f"Current announcement channel is: {channel.name}")
 				elif subcommand2 == 'stop':
-					await serverUtils.stopAnnouncements(message)
+					await serverUtils.stopAnnouncements(context)
 				else:
 					await message.channel.send("Usage: set CHANNEL, get, or stop")
 			elif subcommand == 'prefix':
@@ -583,9 +695,9 @@ async def on_message(message):
 					await channel.send(f"New command prefix is: {await commandParser.getPrefix(theServer)}")
 			elif subcommand == 'feed':
 				if len(args) == 1:
-					await serverUtils.createFeed(message)
+					await serverUtils.createFeed(context)
 				elif 'delete' in args[1].lower():
-					await serverUtils.deleteFeed(message)
+					await serverUtils.deleteFeed(context)
 		else:
 			await channel.send(f"{message.author.name} you are not an admin... :cop:")
 	elif cmd == 'alive':
@@ -629,7 +741,7 @@ async def on_message(message):
 	elif cmd == 'splatnetgear':
 		await nsoHandler.gearParser(context)
 	elif cmd == 'nextsr':
-		await nsoHandler.srParser(message, 1)
+		await nsoHandler.srParser(context, 1)
 	elif (cmd == 'map') or (cmd == 'maps'):
 		await nsoHandler.cmdMaps(context, args)
 	elif (cmd == 'weapon') or (cmd == 'weapons'):
@@ -651,15 +763,15 @@ async def on_message(message):
 		elif cmd == 'playrandom':
 			if len(args) > 0:
 				if args[0].isdigit():
-					await serverVoices[theServer].playRandom(message, int(args[0]))
+					await serverVoices[theServer].playRandom(context, int(args[0]))
 				else:
 					await message.channel.send("Num to play must be a number")
 			else:
-				await serverVoices[theServer].playRandom(message, 1)
+				await serverVoices[theServer].playRandom(context, 1)
 		elif cmd == 'play':
-			await serverVoices[theServer].setupPlay(message)
+			await serverVoices[theServer].setupPlay(context, args)
 		elif cmd == 'skip':
-			await serverVoices[theServer].stop(message)
+			await serverVoices[theServer].stop(ctx)
 		elif (cmd == 'end') or (cmd == 'stop'):
 			serverVoices[theServer].end()
 		elif cmd == 'volume' or cmd == 'vol':
@@ -676,7 +788,7 @@ async def on_message(message):
 				await channel.send(f"Setting Volume to {str(vol)}%")
 				serverVoices[theServer].source.volume = float(int(vol) / 100)
 		elif cmd == 'queue':
-			await serverVoices[theServer].printQueue(message)
+			await serverVoices[theServer].printQueue(context)
 		else:
 			await serverVoices[theServer].playSound(cmd)
 
@@ -692,11 +804,10 @@ if dev == 0:
 print('**********NEW SESSION**********')
 print('Logging into discord')
 
-print(f"TEST: {str(weapon.to_dict())}")
-
 client.add_application_command(maps)
 client.add_application_command(admin)
 client.add_application_command(weapon)
+client.add_application_command(voice)
 
 sys.stdout.flush()
 sys.stderr.flush()

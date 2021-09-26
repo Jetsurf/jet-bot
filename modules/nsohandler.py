@@ -506,12 +506,12 @@ class nsoHandler():
 
 		return thejson
 
-	async def weaponParser(self, message, weapid):
-		if not await self.checkDuplicate(message.author.id):
-			await message.channel.send("You don't have a token setup with me! Please DM me !token with how to get one setup!")
+	async def weaponParser(self, ctx, weapid):
+		if not await self.checkDuplicate(ctx.user.id):
+			await ctx.channel.send("You don't have a token setup with me! Please DM me !token with how to get one setup!")
 			return
 
-		thejson = await self.getNSOJSON(message, self.app_head, "https://app.splatoon2.nintendo.net/api/records")
+		thejson = await self.getNSOJSON(ctx, self.app_head, "https://app.splatoon2.nintendo.net/api/records")
 		if thejson == None:
 			return
 
@@ -531,7 +531,7 @@ class nsoHandler():
 				break
 
 		if not gotweap:
-			await message.channel.send("I have no stats for that weapon for you")
+			await ctx.respond("I have no stats for that weapon for you")
 			return
 
 		name = thejson['records']['player']['nickname']
@@ -562,7 +562,7 @@ class nsoHandler():
 		embed.add_field(name="Turf Inked", value=turfstring, inline=True)
 		embed.add_field(name="Freshness (Current/Max)", value=f"{str(freshcur)}/{str(freshmax)}", inline=True)
 
-		await message.channel.send(embed=embed)
+		await ctx.respond(embed=embed)
 
 	async def mapParser(self, ctx, mapid):
 		if not await self.checkDuplicate(ctx.user.id):
@@ -1306,7 +1306,7 @@ class nsoHandler():
 					await ctx.respond(match.errorMessage("Try command 'weapons list' for a list."))
 					return
 				id = match.get().id()
-				await self.weaponParser(message, id)
+				await self.weaponParser(ctx, id)
 		elif subcommand == "random":
 			count = 1
 			if len(args) > 1:
