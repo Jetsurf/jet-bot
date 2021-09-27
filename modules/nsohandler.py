@@ -161,7 +161,7 @@ class nsoHandler():
 		#await self.client.register_commands()
 		#print("Added gear for order")
 
-	async def addStoreDM(self, ctx, args):
+	async def addStoreDM(self, ctx, args, is_slash=False):
 		if len(args) == 0:
 			await ctx.respond("I need an item/brand/ability to search for!")
 			return
@@ -194,7 +194,7 @@ class nsoHandler():
 	
 		if not flag:
 			if len(match1.items) + len(match2.items) + len(match3.items) < 1:
-				await message.channel.send("Didn't find any partial matches for you. Search for Abilities/Gear Brand/Gear Name!")
+				await ctx.respond("Didn't find any partial matches for you.")
 				return
 
 			embed = discord.Embed(colour=0xF9FC5F)
@@ -207,12 +207,12 @@ class nsoHandler():
 			if len(match3.items) > 0:
 				embed.add_field(name="Gear", value=", ".join(map(lambda item: item.name(), match3.items)), inline=False)
 
-			await message.channel.send(embed=embed)
+			await ctx.respond(embed=embed)
 			return
 
 		if match3 != None:
 			if match3.isValid() and match3.get().price() == 0:
-				await message.channel.send(f"{match3.get().name()} won't appear on the store. Here is where to get it: {match3.get().source()}")
+				await ctx.respond(f"{match3.get().name()} won't appear on the store. Here is where to get it: {match3.get().source()}")
 				return
 
 		cur = await self.sqlBroker.connect()
@@ -224,33 +224,34 @@ class nsoHandler():
 		else:
 			stmt = "SELECT COUNT(*) FROM storedms WHERE clientid = %s AND gearname = %s"
 
-		await cur.execute(stmt, (str(message.author.id), term,))
+		await cur.execute(stmt, (str(ctx.user.id), term,))
 		count = await cur.fetchone()
 		if count[0] > 0:
 			if match1.isValid():
-				await message.channel.send(f"You will already be DM'ed when gear with ability {term} appears in the shop? (Respond Yes/No)")
+				await ctx.respond(f"You will already be DM'ed when gear with ability {term} appears in the shop? (Respond Yes/No)")
 			elif match2.isValid():
-				await message.channel.send(f"You will already be DM'ed when gear by brand {term} appears in the shop? (Respond Yes/No)")
+				await ctx.respond(f"You will already be DM'ed when gear by brand {term} appears in the shop? (Respond Yes/No)")
 			else:
-				await message.channel.send(f"You will already be DM'ed when {term} appears in the shop? (Respond Yes/No)")
+				await ctx.respond(f"You will already be DM'ed when {term} appears in the shop? (Respond Yes/No)")
 
 			await self.sqlBroker.close(cur)
 			return
 		else:
-			def check2(m):
-				return m.author == message.author and m.channel == message.channel
+			if not is_slash:
+				def check2(m):
+					return m.author == message.author and m.channel == message.channel
 
-			if match1.isValid():
-				await message.channel.send(f"{message.author.name} do you want me to DM you when gear with ability {term} appears in the shop? (Respond Yes/No)")
-			elif match2.isValid():
-				await message.channel.send(f"{message.author.name} do you want me to DM you when gear by brand {term} appears in the shop? (Respond Yes/No)")
-			else:
-				await message.channel.send(f"{message.author.name} do you want me to DM you when {term} appears in the shop? (Respond Yes/No)")
+				if match1.isValid():
+					await ctx.respond(f"{ctx.user.name} do you want me to DM you when gear with ability {term} appears in the shop? (Respond Yes/No)")
+				elif match2.isValid():
+					await ctx.respond(f"{ctx.user.name} do you want me to DM you when gear by brand {term} appears in the shop? (Respond Yes/No)")
+				else:
+					await message.channel.send(f"{ctx.user.name} do you want me to DM you when {term} appears in the shop? (Respond Yes/No)")
 
-			resp = await self.client.wait_for('message', check=check2)
-			if 'yes' not in resp.content.lower():
-				await message.channel.send("Ok, I haven't added you to receive a DM.")
-				return
+				resp = await self.client.wait_for('message', check=check2)
+				if 'yes' not in resp.content.lower():
+					await message.channel.send("Ok, I haven't added you to receive a DM.")
+					return
 
 		if match1.isValid():
 			stmt = 'INSERT INTO storedms (clientid, serverid, ability) VALUES(%s, %s, %s)'
@@ -259,15 +260,15 @@ class nsoHandler():
 		else:
 			stmt = 'INSERT INTO storedms (clientid, serverid, gearname) VALUES(%s, %s, %s)'
 
-		await cur.execute(stmt, (str(message.author.id), str(message.guild.id), term,))
+		await cur.execute(stmt, (str(ctx.user.id), str(ctx.guild.id), term,))
 		await self.sqlBroker.commit(cur)
 
 		if match1.isValid():
-			await message.channel.send(f"Added you to recieve a DM when gear with {term} appears in the shop!")
+			await ctx.respond(f"Added you to recieve a DM when gear with {term} appears in the shop!")
 		elif match2.isValid():
-			await message.channel.send(f"Added you to recieve a DM when gear by brand {term} appears in the shop!")
+			await ctx.respond(f"Added you to recieve a DM when gear by brand {term} appears in the shop!")
 		else:
-			await message.channel.send(f"Added you to recieve a DM when {term} appears in the shop!")
+			await ctx.respond(f"Added you to recieve a DM when {term} appears in the shop!")
 
 	async def handleDM(self, theMem, theGear):
 		def checkDM(m):
