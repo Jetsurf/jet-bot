@@ -34,12 +34,7 @@ You can also configure some settings at runtime with [admin commands](#admin-com
 
 ## Commands
 
-The default command prefix is `!`. You can also send commands without the prefix by @mentioning the bot:
-```@Splatnet/Music Bot nextmaps```
-
-You can always run `!help` to get a list of the commands regardless of the prefix. Also, you can run
-`!prefix`. 
-
+NOTE: This bot is now using slash commands, message commands still work, but are deprecated and will go away once discord disables messaging for bots
 The following sections list the different commands that are available.
 
 ### Admin commands
@@ -96,7 +91,7 @@ The following commands require you to DM the bot with !token and follow the inst
  - `/map stats` MAP : Pulls stats for a specific map
  - `/battle last` : Gets stats from the last battle you played
  - `/battle num NUM` : Gets stats from NUM last battle (1 is last, upto 50)
- - `/weapon stats` WEAPON : Pulls stats for a specific weapon
+ - `/weapon stats WEAPON` : Pulls stats for a specific weapon
 
  ### Bot Info Commands
  
