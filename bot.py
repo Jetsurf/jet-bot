@@ -113,14 +113,14 @@ async def cmdOrder(ctx, id: Option(int, "ID of gear to order (get this from spla
 
 	await nsoHandler.orderGearCommand(ctx, args=[str(order)])
 
-@announce.command(name='remove', description="Removes you from being DM'ed on users leaving")
-async def cmdDMRemove(ctx):
+@announce.command(name='set', description="Sets a chat channel to receive announcements from my developers")
+async def cmdDMAdd(ctx, channel: Option(discord.TextChannel, "Channel to set to receive announcements", required=True)):
 	if ctx.guild == None:
 		await ctx.respond("Can't DM me with this command.")
 		return
 
 	if await checkIfAdmin(ctx):
-		await serverUtils.stopAnnouncements(ctx)
+		await serverUtils.setAnnounceChannel(ctx, channel)
 	else:
 		await ctx.respond("You aren't a guild administrator")
 
@@ -139,14 +139,14 @@ async def cmdDMRemove(ctx):
 	else:
 		await ctx.respond("You aren't a guild administrator")
 
-@announce.command(name='set', description="Sets a chat channel to receive announcements from my developers")
-async def cmdDMAdd(ctx, channel: Option(discord.TextChannel, "Channel to set to receive announcements", required=True)):
+@announce.command(name='remove', description="Removes you from being DM'ed on users leaving")
+async def cmdDMRemove(ctx):
 	if ctx.guild == None:
 		await ctx.respond("Can't DM me with this command.")
 		return
 
 	if await checkIfAdmin(ctx):
-		await serverUtils.setAnnounceChannel(ctx, channel)
+		await serverUtils.stopAnnouncements(ctx)
 	else:
 		await ctx.respond("You aren't a guild administrator")
 
@@ -199,27 +199,10 @@ async def cmdDMAdd(ctx):
 	else:
 		await ctx.respond("You aren't a guild administrator")
 
-@maps.command(name='stats', description="Shows Splatoon 2 gameplay stats for a map")
-async def cmdMapsStats(ctx, map: Option(str, "Map to show stats for", choices=[ themap.name() for themap in splatInfo.getAllMaps() ] ,required=True)):
-	await serverUtils.increment_cmd(ctx, 'maps')
-	await nsoHandler.cmdMaps(ctx, args=[ 'stats', str(map)])
-
-@maps.command(name='list', description="Shows all Splatoon 2 maps")
-async def cmdMapsStats(ctx):
-	await serverUtils.increment_cmd(ctx, 'maps')
-	await nsoHandler.cmdMaps(ctx, args=[ 'list' ])
-
-@maps.command(name='callout', description="Shows callout locations for a Splatoon 2 map")
-async def cmdMapsCallout(ctx, map: Option(str, "Map to show callout locations for", choices=[ themap.name() for themap in splatInfo.getAllMaps() ] ,required=True)):
-	await nsoHandler.cmdMaps(ctx, args=[ 'callout', str(map) ])
-
-@maps.command(name='random', description="Generates a random list of Splatoon 2 maps")
-async def cmdMapsRandom(ctx, num: Option(int, "Number of maps to include in the list (1-10)", required=True)):
-	await serverUtils.increment_cmd(ctx, 'maps')
-	if num < 1 or num > 10:
-		await ctx.respond("Num needs to be between 1-10")
-	else:
-		await nsoHandler.cmdMaps(ctx, args=[ 'random', str(num)])
+@maps.command(name='current', description='Shows current map rotation for Turf War/Ranked/League')
+async def cmdCurrentMaps(ctx):
+	await serverUtils.increment_cmd(ctx, 'currentmaps')
+	await nsoHandler.maps(ctx)
 
 @maps.command(name='next', description='Shows the next maps in rotation for Turf War/Ranked/League')
 async def cmdNextMaps(ctx, rotation: Option(int, "Map Rotations ahead to show, max of 11 ahead", required=False, default=1)):
@@ -232,11 +215,6 @@ async def cmdNextMaps(ctx, rotation: Option(int, "Map Rotations ahead to show, m
 
 	await nsoHandler.maps(ctx, rotation)
 
-@maps.command(name='current', description='Shows current map rotation for Turf War/Ranked/League')
-async def cmdCurrentMaps(ctx):
-	await serverUtils.increment_cmd(ctx, 'currentmaps')
-	await nsoHandler.maps(ctx)
-
 @maps.command(name='nextsr', description='Shows map/weapons for the next Salmon Run rotation')
 async def cmdNextSR(ctx):
 	await serverUtils.increment_cmd(ctx, 'nextsr')
@@ -247,32 +225,27 @@ async def cmdCurrentSR(ctx):
 	await serverUtils.increment_cmd(ctx, 'currentsr')
 	await nsoHandler.srParser(ctx)
 
-@weapon.command(name='random', description='Generates a random list of weapons')
-async def cmdWeapRandom(ctx, num: Option(int, "Number of weapons to include in the list (1-10)", required=True)):
-	await serverUtils.increment_cmd(ctx, 'weapons')
-	if num < 0 or num > 10:
-		await ctx.respond("Num must be between 1-10!")
-		return
+@maps.command(name='callout', description="Shows callout locations for a Splatoon 2 map")
+async def cmdMapsCallout(ctx, map: Option(str, "Map to show callout locations for", choices=[ themap.name() for themap in splatInfo.getAllMaps() ] ,required=True)):
+	await nsoHandler.cmdMaps(ctx, args=[ 'callout', str(map) ])
 
-	await nsoHandler.cmdWeaps(ctx, args=[ 'random', str(num) ])
+@maps.command(name='list', description="Shows all Splatoon 2 maps")
+async def cmdMapsStats(ctx):
+	await serverUtils.increment_cmd(ctx, 'maps')
+	await nsoHandler.cmdMaps(ctx, args=[ 'list' ])
 
-@weapon.command(name='stats', description='Gets stats from a weapon in Splatoon 2')
-async def cmdWeapStats(ctx, name: Option(str, "Name of the weapon to get stats for", required=True)):
-	await serverUtils.increment_cmd(ctx, 'weapons')
+@maps.command(name='stats', description="Shows Splatoon 2 gameplay stats for a map")
+async def cmdMapsStats(ctx, map: Option(str, "Map to show stats for", choices=[ themap.name() for themap in splatInfo.getAllMaps() ] ,required=True)):
+	await serverUtils.increment_cmd(ctx, 'maps')
+	await nsoHandler.cmdMaps(ctx, args=[ 'stats', str(map)])
 
-	await nsoHandler.cmdWeaps(ctx, args=[ 'stats', str(name) ])
-
-@weapon.command(name='sub', description='Gets Splatoon 2all weapons with sub type')
-async def cmdWeapSub(ctx, sub: Option(str, "Name of the sub to get matching weapons for", choices=[ weap.name() for weap in splatInfo.getAllSubweapons() ], required=True)):
-	await serverUtils.increment_cmd(ctx, 'weapons')
-
-	await nsoHandler.cmdWeaps(ctx, args=[ 'sub', str(sub) ])
-
-@weapon.command(name='special', description='Gets all Splatoon 2 weapons with special type')
-async def cmdWeapSpecial(ctx, special: Option(str, "Name of the special to get matching weapons for", choices=[ weap.name() for weap in splatInfo.getAllSpecials() ], required=True)):
-	await serverUtils.increment_cmd(ctx, 'weapons')
-
-	await nsoHandler.cmdWeaps(ctx, args=[ 'special', str(special) ])
+@maps.command(name='random', description="Generates a random list of Splatoon 2 maps")
+async def cmdMapsRandom(ctx, num: Option(int, "Number of maps to include in the list (1-10)", required=True)):
+	await serverUtils.increment_cmd(ctx, 'maps')
+	if num < 1 or num > 10:
+		await ctx.respond("Num needs to be between 1-10")
+	else:
+		await nsoHandler.cmdMaps(ctx, args=[ 'random', str(num)])
 
 @weapon.command(name='info', description='Gets info on a weapon in Splatoon 2')
 async def cmdWeapInfo(ctx, name: Option(str, "Name of the weapon to get info for", required=True)):
@@ -285,6 +258,33 @@ async def cmdWeapList(ctx, weaptype: Option(str, "Type of weapon to generate a l
 	await serverUtils.increment_cmd(ctx, 'weapons')
 
 	await nsoHandler.cmdWeaps(ctx, args=[ 'list', str(weaptype) ])
+
+@weapon.command(name='random', description='Generates a random list of weapons')
+async def cmdWeapRandom(ctx, num: Option(int, "Number of weapons to include in the list (1-10)", required=True)):
+	await serverUtils.increment_cmd(ctx, 'weapons')
+	if num < 0 or num > 10:
+		await ctx.respond("Num must be between 1-10!")
+		return
+
+	await nsoHandler.cmdWeaps(ctx, args=[ 'random', str(num) ])
+
+@weapon.command(name='special', description='Gets all Splatoon 2 weapons with special type')
+async def cmdWeapSpecial(ctx, special: Option(str, "Name of the special to get matching weapons for", choices=[ weap.name() for weap in splatInfo.getAllSpecials() ], required=True)):
+	await serverUtils.increment_cmd(ctx, 'weapons')
+
+	await nsoHandler.cmdWeaps(ctx, args=[ 'special', str(special) ])
+
+@weapon.command(name='stats', description='Gets stats from a weapon in Splatoon 2')
+async def cmdWeapStats(ctx, name: Option(str, "Name of the weapon to get stats for", required=True)):
+	await serverUtils.increment_cmd(ctx, 'weapons')
+
+	await nsoHandler.cmdWeaps(ctx, args=[ 'stats', str(name) ])
+
+@weapon.command(name='sub', description='Gets Splatoon 2all weapons with sub type')
+async def cmdWeapSub(ctx, sub: Option(str, "Name of the sub to get matching weapons for", choices=[ weap.name() for weap in splatInfo.getAllSubweapons() ], required=True)):
+	await serverUtils.increment_cmd(ctx, 'weapons')
+
+	await nsoHandler.cmdWeaps(ctx, args=[ 'sub', str(sub) ])
 
 @client.slash_command(name='splatnetgear', description='Show gear available on S2 Splatnet')
 async def cmdSplatNet(ctx):

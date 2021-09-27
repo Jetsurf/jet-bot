@@ -72,7 +72,7 @@ There are a few admin commands to configure the bot. To run these commands, you 
  - `/storedm brand BRAND` : DM's you when a piece of gear made by BRAND appears in the store. Can't DM the bot with this.
  - `/storedm brand GEAR` : DM's you when a piece of GEAR (supports all items in the game) appears in the store. Can't DM the bot with this.
  - `/maps current` : Displays the current Splatoon 2 Gamemodes/Maps
- - `/maps next` : Displays the upcoming Splatoon 2 Gamemodes/Maps (!nextnextmaps displays 2 map rotations from now, etc)
+ - `/maps next NUM` : Displays the upcoming Splatoon 2 Gamemodes/Maps NUM rotations in the future
  - `/maps currentsr` : Displays the current Splatoon 2 Salmon Run Map/Weapons
  - `/maps nextsr` : Displays the next Splatoon 2 Salmon Run Map/Weapons
  - `/maps random NUM` : Generates a list of random maps (1-10, NUM is optional for just 1 random map)
