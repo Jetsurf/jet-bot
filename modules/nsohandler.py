@@ -277,7 +277,7 @@ class nsoHandler():
 			await ctx.respond(f"Added you to recieve a DM when gear with {term} appears in the shop!")
 		elif match2.isValid():
 			await ctx.respond(f"Added you to recieve a DM when gear by brand {term} appears in the shop!")
-		else:
+		elif match3.isValid():
 			await ctx.respond(f"Added you to recieve a DM when {term} appears in the shop!")
 
 	async def removeStoreDM(self, ctx, args):
@@ -351,18 +351,22 @@ class nsoHandler():
 			elif match2.isValid():
 				stmt = 'DELETE FROM storedms WHERE clientid=%s AND brand=%s'
 			else:
-				stmt = 'DELETE FROM storedms WHERE clientid=%s AND gearname=%s'		
+				stmt = 'DELETE FROM storedms WHERE clientid=%s AND gearname=%s'	
+		else:
+			await ctx.respond(f"Doesn't look like you are set to receive a DM when {term} appears in the store.")
+			return
 
 		await cur.execute(stmt, (str(ctx.user.id), term,))
 		await self.sqlBroker.commit(cur)
 
 		if match1.isValid():
-			await ctx.respond(f"Removed you from recieving a DM when gear with {term} appears in the shop!")
+			await ctx.respond(f"Removed you from recieving a DM when gear with {term} appears in the store.")
 		elif match2.isValid():
-			await ctx.respond(f"Removed you from recieving a DM when gear by brand {term} appears in the shop!")
+			await ctx.respond(f"Removed you from recieving a DM when gear by brand {term} appears in the store.")
 		else:
-			await ctx.respond(f"Removed you from recieving a DM when {term} appears in the shop!")	
+			await ctx.respond(f"Removed you from recieving a DM when {term} appears in the store.")	
 
+			
 	async def listStoreDM(self, ctx):
 		cur = await self.sqlBroker.connect()
 
