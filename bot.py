@@ -110,7 +110,11 @@ async def cmdDMRemove(ctx):
 		return
 
 	if await checkIfAdmin(ctx):
-		await serverUtils.getAnnounceChannel(ctx)
+		channel = await serverUtils.getAnnounceChannel(ctx.guild.id)
+		if channel == None:
+			await ctx.respnd("No channel is set to receive announcements")
+		else:
+			await ctx.respond(f"Current announcement channel is: {channel.name}")
 	else:
 		await ctx.respond("You aren't a guild administrator")
 
@@ -121,7 +125,7 @@ async def cmdDMAdd(ctx, channel: Option(discord.TextChannel, "Channel to set to 
 		return
 
 	if await checkIfAdmin(ctx):
-		await serverUtils.setAnnounceChannel(ctx)
+		await serverUtils.setAnnounceChannel(ctx, channel)
 	else:
 		await ctx.respond("You aren't a guild administrator")
 
@@ -721,7 +725,7 @@ async def on_message(message):
 			elif subcommand == "announcement":
 				subcommand2 = args[1].lower()
 				if subcommand2 == 'set':
-					await serverUtils.setAnnounceChannel(message, args)
+					await serverUtils.setAnnounceChannel(context, args)
 				elif subcommand2 == 'get':
 					channel = await serverUtils.getAnnounceChannel(message.guild.id)
 					if channel == None:

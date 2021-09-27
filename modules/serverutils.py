@@ -162,15 +162,20 @@ class serverUtils():
 		self.statusnum += 1
 
 	async def setAnnounceChannel(self, ctx, args):
-		if len(args) < 2:
+		if not isinstance( args, (discord.TextChannel, tuple)) and len(args) < 2:
 			await message.channel.send("No channel given, please specify a channel")
 			return
 
-		channelname = args[2].lower()
-		channelid = None
-		for channel in message.guild.channels:
-			if channel.name.lower() == channelname and channel.type == discord.ChannelType.text:
-				channelid = channel.id
+		if not isinstance( args, (discord.TextChannel, tuple)):
+			channelname = args[2].lower()
+			channelid = None
+
+			for channel in ctx.guild.channels:
+				if channel.name.lower() == channelname and channel.type == discord.ChannelType.text:
+					channelid = channel.id
+		else:
+			channelid = args.id
+			channelname = args.name
 
 		if channelid == None:
 			await ctx.respond("Could not find a channel with name: " + channelname)

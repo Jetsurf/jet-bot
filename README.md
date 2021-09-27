@@ -46,16 +46,15 @@ The following sections list the different commands that are available.
 
 There are a few admin commands to configure the bot. To run these commands, you need the administrator role in your discord server.
 
- - `!admin playlist URL`: Add the given URL to the `!playrandom` playlist
- - `!admin blacklist URL`: Prevent the video at the URL from ever being played
- - `!admin dm add`: Subscribe to DMs on users leaving the server
- - `!admin dm remove`: Unsubscribe from DMs on users leaving the server
- - `!admin prefix CHAR`: Change the command prefix character to CHAR
- - `!admin announcement set CHANNEL` : Sets a chat channel for announcements about restarts/new features from the devs
- - `!admin announcement get` : Gets the name of the channel that is set to receive announcements
- - `!admin announcement stop` : Disables announcements from the devs for the server
- - `!admin feed` : Create (or change) feed for rotation updates (maps/sr/gear)
- - `!admin feed delete` : Deletes feed for a channel
+ - `/admin playlist URL`: Add the given URL to the `!playrandom` playlist
+ - `/admin blacklist URL`: Prevent the video at the URL from ever being played
+ - `/admin dm add`: Subscribe to DMs on users leaving the server
+ - `/admin dm remove`: Unsubscribe from DMs on users leaving the server
+ - `/admin announcement set CHANNEL` : Sets a chat channel for announcements about restarts/new features from the devs
+ - `/admin announcement get` : Gets the name of the channel that is set to receive announcements
+ - `/admin announcement stop` : Disables announcements from the devs for the server
+ - `/admin feed create` : Create (or change) feed for rotation updates (maps/sr/gear)
+ - `/admin feed delete` : Deletes feed for a channel
 
 ### Music Commands
 
