@@ -84,6 +84,14 @@ def loadConfig():
 		print(f"Failed to load config: {str(e)}")
 		quit(1)
 
+@client.slash_command(name='support', description='Sends a discord invite to my support guild.')
+async def cmdSupport(ctx):
+	await ctx.respond('Here is a link to my support server: https://discord.gg/TcZgtP5')
+
+@client.slash_command(name='github', description='Sends a link to my github page')
+async def cmdGithub(ctx):
+	await ctx.respond('Here is my github page! : https://github.com/Jetsurf/jet-bot')
+
 @client.slash_command(name='order', description='Orders gear from the store')
 async def cmdOrder(ctx, id: Option(int, "ID of gear to order (get this from splatnetgear command) (0-5)", required=True)):
 	await serverUtils.increment_cmd(ctx, 'order')
