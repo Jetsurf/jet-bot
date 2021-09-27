@@ -14,7 +14,7 @@ For self-hosting:
 
 Requires a bot token from the Discord Developer Portal
 
-Requires https://github.com/Rapptz/discord.py discord python library to 
+Requires https://github.com/Pycord-Development/pycord discord python library to 
 function (Version >= 1.5 needed) as well as all dependencies for it.
 
 Requires youtube-dl and ffmpeg for online video/music playback.
@@ -90,11 +90,11 @@ The following commands require you to DM the bot with !token and follow the inst
  - `/stats` : Shows various stats from your gameplay
  - `/srstats` : Shows various stats from Salmon Run
  - `/order ID/ITEM NAME` : !splatnetgear provides an ID. Use either the ID or the name of an item on the store to order it
- - `/map stats` MAP : Pulls stats for a specific map
  - `/battle last` : Gets stats from the last battle you played
  - `/battle num NUM` : Gets stats from NUM last battle (1 is last, upto 50)
  - `/weapon stats WEAPON` : Pulls stats for a specific weapon
-
+ - `/map stats` MAP : Pulls stats for a specific map
+ 
  ### Bot Info Commands
  
  - `/github` : Displays my github link
