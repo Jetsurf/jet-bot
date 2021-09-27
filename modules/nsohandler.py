@@ -148,18 +148,28 @@ class nsoHandler():
 		self.srJSON = json.loads(response.read().decode())
 
 		#TODO: This ideally will be for updating the order command with choices to contain current gear in the store
-		#print("Updating gear for order")
+		print("DEBUG: Updating gear for order command")
+		#print(f"{str(await self.client.http.get_global_commands(application_id=self.client.user.id))}")
+		for cmd in await self.client.http.get_global_commands(application_id=self.client.user.id):
+			if cmd['name'] != 'order':
+				continue;
+			else:
+				orderid = cmd['id']
+				print(f"{str(cmd)}")
+				print(f"{str(cmd['id'])}")
+		list1 = []
+		for item in self.storeJSON['merchandises']:
+			gear = item['gear']
+			theHash = {}
+			theHash['name'] = str(gear['name'])
+			theHash['value'] = str(gear['name'])
+			list1.append(theHash)
 
-		#try:
-		#	self.client.remove_application_command(name='order')
-		#except:
-		#	pass
-
-		#self.calloutCmd = self.client.slash_command(name='order', description="Orders gear from the SplatNet store", type=1, func=self.cmdOrder)
-		#print(str(self.calloutCmd))
-		#self.client.add_application_command(self.calloutCmd)
-		#await self.client.register_commands()
-		#print("Added gear for order")
+		print(f'LIST1 {str(list1)}')
+		payload = { 'options': [ {'type': 3, 'name': 'id', 'description': 'ID of gear to order (get this from splatnetgear command) (0-5)', 'required': True, 'choices': list1 } ] }
+		print(f"{str(payload.items())}")
+		await self.client.http.edit_global_command(application_id=self.client.user.id, command_id=orderid, payload=payload)
+		await self.client.register_commands()
 
 	async def addStoreDM(self, ctx, args, is_slash=False):
 		if len(args) == 0:

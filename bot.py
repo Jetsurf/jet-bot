@@ -106,10 +106,10 @@ async def cmdGithub(ctx):
 	await ctx.respond('Here is my github page! : https://github.com/Jetsurf/jet-bot')
 
 @client.slash_command(name='order', description='Orders gear from the store')
-async def cmdOrder(ctx, id: Option(int, "ID of gear to order (get this from splatnetgear command) (0-5)", required=True)):
+async def cmdOrder(ctx, order: Option(str, "ID of gear to order (get this from splatnetgear command) (0-5)", choices=[ '0' ],required=True)):
 	await serverUtils.increment_cmd(ctx, 'order')
-	if order < 0 or order > 5:
-		ctx.respond()
+	#if order < 0 or order > 5:
+	#	ctx.respond()
 
 	await nsoHandler.orderGearCommand(ctx, args=[str(order)])
 
@@ -457,13 +457,29 @@ async def on_ready():
 	global client, soundsDir, mysqlHandler, serverUtils, serverVoices, splatInfo, helpfldr, hs
 	global nsoHandler, nsoTokens, head, url, dev, owners, commandParser, doneStartup, acHandler, nsoAppVer
 
+	#print(f"{str(await client.http.get_global_commands(application_id=client.user.id))}")
+	#for cmd in await client.http.get_global_commands(application_id=client.user.id):
+	#	if cmd['name'] != 'order':
+	#		continue;
+	#	else:
+	#		orderid = cmd['id']
+	#		print(f"{str(cmd)}")
+	#		print(f"{str(cmd['id'])}")
+	#[{'type': 3, 'name': 'id', 'description': 'ID of gear to order (get this from splatnetgear command) (0-5)', 'required': True}]}
+	#print(f'{str(await client.http.get_global_command(application_id=client.user.id, command_id=orderid))}')
+	#payload = { 'options': [ {'type': 3, 'name': 'id', 'description': 'ID of gear to order (get this from splatnetgear command) (0-5)', 'required': True, 'choices': [{'name': '0', 'value': '0'}, {'name': 'wargl', 'value': 'wargl'}, {'name': 'blarg', 'value': 'blarg'}, {'name': 'blah', 'value': 'blah'}, {'name': 'bleh', 'value': 'bleh' } ] } ] }
+	#print(f"{str(payload.items())}")
+	#response = await client.http.edit_global_command(application_id=client.user.id, command_id=orderid, payload=payload)
+	#await client.register_commands()
+	#print(f"TEST: {str(response)}")
+
 	if not doneStartup:
 		print('Logged in as,', client.user.name, client.user.id)
-		
+
 		#This is needed due to no prsence intent, prod bot needs to find the devs in its primary server
 		print(f"Chunking home server ({str(hs)}) to find owners")
 		await client.get_guild(int(hs)).chunk()
-		
+
 		#Get owners from Discord team api
 		print("Loading owners...")
 		theapp = await client.application_info()
