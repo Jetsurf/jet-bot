@@ -161,9 +161,9 @@ class nsoHandler():
 		#await self.client.register_commands()
 		#print("Added gear for order")
 
-	async def addStoreDM(self, message, args):
+	async def addStoreDM(self, ctx, args):
 		if len(args) == 0:
-			await message.channel.send("I need an item/brand/ability to search for!")
+			await ctx.respond("I need an item/brand/ability to search for!")
 			return
 
 		term = " ".join(args).lower()

@@ -72,7 +72,9 @@ There are a few admin commands to configure the bot. To run these commands, you 
  - `/maps currentsr` : Displays the current Splatoon 2 Salmon Run Map/Weapons
  - `/maps nextsr` : Displays the next Splatoon 2 Salmon Run Map/Weapons
  - `/splatnetgear` : Gets all of the current gear for sale on SplatNet
- - `/storedm` ABILITY/GEAR/BRAND : DM's you when a piece of gear with ABILITY, made by BRAND, or is item GEAR (supports all items in the game) appears in the store. Suggests when using partial terms. Can't DM the bot with this
+ - `/storedm ability ABILITY` : DM's you when a piece of gear with ABILITY appears in the store. Can't DM the bot with this.
+ - `/storedm brand BRAND` : DM's you when a piece of gear made by BRAND appears in the store. Can't DM the bot with this.
+ - `/storedm brand GEAR` : DM's you when a piece of GEAR (supports all items in the game) appears in the store. Can't DM the bot with this.
  - `/map random NUM` : Generates a list of random maps (1-10, NUM is optional for just 1 random map)
  - `/map callout MAP` : Provides a map with callout locations
  - `/weapon random NUM` : Generates a list of random weapons (1-10, NUM is optional for just 1 random weapon)

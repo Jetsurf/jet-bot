@@ -40,6 +40,7 @@ url = ''
 
 #SubCommand Groups
 cmdGroups = {}
+storedm = SlashCommandGroup('storedm', "Commands related to DM'ing on store changes")
 maps = SlashCommandGroup('maps', 'Commands related to maps for Splatoon 2')
 weapon = SlashCommandGroup("weapons", 'Commands realted to weapons for Splatoon 2')
 admin = SlashCommandGroup('admin', 'Commands that require guild admin privledges to run')
@@ -83,6 +84,18 @@ def loadConfig():
 	except Exception as e:
 		print(f"Failed to load config: {str(e)}")
 		quit(1)
+
+@storedm.command(name='ability', description='Sends a DM when gear with this ability appears in the store')
+async def cmdStoreDMAbilty(ctx, ability: Option(str, "ABILITY to DM you with when it appears in the store", choices=[ ability.name() for ability in splatInfo.getAllAbilities() ], required=True))
+	await nsoHandler.addStoreDM(context, [ str(ability) ])
+
+@storedm.command(name='gear', description='Sends a DM when GEAR appears in the store')
+async def cmdStoreDMAbilty(ctx, gear: Option(str, "GEAR to DM you with when it appears in the store", required=True))
+	await nsoHandler.addStoreDM(context, [ str(gear) ])
+
+@storedm.command(name='brand', description='Sends a DM when gear made by BRAND appears in the store')
+async def cmdStoreDMAbilty(ctx, brand: Option(str, "Ability to DM you with when it appears in the store", choices=[ brand.name() for brand in splatInfo.getAllBrands() ]))
+	await nsoHandler.addStoreDM(context, [ str(brand) ])
 
 @client.slash_command(name='support', description='Sends a discord invite to my support guild.')
 async def cmdSupport(ctx):
@@ -771,7 +784,7 @@ async def on_message(message):
 	elif cmd == 'srstats':
 		await nsoHandler.getSRStats(context)
 	elif cmd == 'storedm':
-		await nsoHandler.addStoreDM(message, args)
+		await nsoHandler.addStoreDM(context, args)
 	elif cmd == 'passport':
 		await acHandler.passport(message)
 	elif cmd == 'github':
@@ -867,6 +880,7 @@ client.add_application_command(maps)
 client.add_application_command(admin)
 client.add_application_command(weapon)
 client.add_application_command(voice)
+client.add_application_command(storedm)
 
 sys.stdout.flush()
 sys.stderr.flush()
