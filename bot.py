@@ -86,16 +86,16 @@ def loadConfig():
 		quit(1)
 
 @storedm.command(name='ability', description='Sends a DM when gear with this ability appears in the store')
-async def cmdStoreDMAbilty(ctx, ability: Option(str, "ABILITY to DM you with when it appears in the store", choices=[ ability.name() for ability in splatInfo.getAllAbilities() ], required=True))
-	await nsoHandler.addStoreDM(context, [ str(ability) ])
+async def cmdStoreDMAbilty(ctx, ability: Option(str, "ABILITY to DM you with when it appears in the store", required=True)):
+	await nsoHandler.addStoreDM(ctx, [ str(ability) ])
 
 @storedm.command(name='gear', description='Sends a DM when GEAR appears in the store')
-async def cmdStoreDMAbilty(ctx, gear: Option(str, "GEAR to DM you with when it appears in the store", required=True))
-	await nsoHandler.addStoreDM(context, [ str(gear) ])
+async def cmdStoreDMGear(ctx, gear: Option(str, "GEAR to DM you with when it appears in the store", required=True)):
+	await nsoHandler.addStoreDM(ctx, [ str(gear) ])
 
 @storedm.command(name='brand', description='Sends a DM when gear made by BRAND appears in the store')
-async def cmdStoreDMAbilty(ctx, brand: Option(str, "Ability to DM you with when it appears in the store", choices=[ brand.name() for brand in splatInfo.getAllBrands() ]))
-	await nsoHandler.addStoreDM(context, [ str(brand) ])
+async def cmdStoreDMABrand(ctx, brand: Option(str, "Ability to DM you with when it appears in the store", choices=[ brand.name() for brand in splatInfo.getAllBrands() ], required=True)):
+	await nsoHandler.addStoreDM(ctx, [ str(brand) ])
 
 @client.slash_command(name='support', description='Sends a discord invite to my support guild.')
 async def cmdSupport(ctx):
