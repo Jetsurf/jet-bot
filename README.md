@@ -67,10 +67,10 @@ There are a few admin commands to configure the bot. To run these commands, you 
  
 ### Splatoon General Info Commands
 
- - `/splatnetgear` : Gets all of the current gear for sale on SplatNet
- - `/storedm ability ABILITY` : DM's you when a piece of gear with ABILITY appears in the store. Can't DM the bot with this.
- - `/storedm brand BRAND` : DM's you when a piece of gear made by BRAND appears in the store. Can't DM the bot with this.
- - `/storedm brand GEAR` : DM's you when a piece of GEAR (supports all items in the game) appears in the store. Can't DM the bot with this.
+ - `/store currentgear` : Gets all of the current gear for sale on SplatNet
+ - `/store dm add FLAG` : DM's you when a piece of gear with FLAG (Ability/Brand/Gear Name) appears in the SplatNet store. Can't DM the bot with this.
+ - `/store dm list` : DM's you when a piece of gear made by BRAND appears in the store. Can't DM the bot with this.
+ - `/store dm remove FLAG` : Removes you from receiving DM's when a piece of gear with FLAG (Ability/Brand/Gear Name) appears in the SplatNet store. Can't DM the bot with this.
  - `/maps current` : Displays the current Splatoon 2 Gamemodes/Maps
  - `/maps next NUM` : Displays the upcoming Splatoon 2 Gamemodes/Maps NUM rotations in the future
  - `/maps currentsr` : Displays the current Splatoon 2 Salmon Run Map/Weapons
@@ -91,7 +91,7 @@ The following commands require you to DM the bot with !token and follow the inst
  - `/rank` : Shows your ranks in the ranked gamemodes
  - `/stats` : Shows various stats from your gameplay
  - `/srstats` : Shows various stats from Salmon Run
- - `/order ID/ITEM NAME` : !splatnetgear provides an ID. Use either the ID or the name of an item on the store to order it
+ - `/store order ID/ITEM NAME` : !splatnetgear provides an ID. Use either the ID or the name of an item on the store to order it
  - `/battle last` : Gets stats from the last battle you played
  - `/battle num NUM` : Gets stats from NUM last battle (1 is last, upto 50)
  - `/weapons stats WEAPON` : Pulls stats for a specific weapon

@@ -280,6 +280,126 @@ class nsoHandler():
 		else:
 			await ctx.respond(f"Added you to recieve a DM when {term} appears in the shop!")
 
+	async def removeStoreDM(self, ctx, args):
+		if len(args) == 0:
+			await ctx.respond("I need an item/brand/ability to search for!")
+			return
+
+		term = " ".join(args).lower()
+
+		flag = False
+
+		#Search Abilities
+		if flag != True: #Pre-emptive for adding in pure gear
+			match1 = self.splatInfo.matchAbilities(term)			
+			if match1.isValid():
+				flag = True
+				term = match1.get().name()
+
+		#Search brands
+		if flag != True:
+			match2 = self.splatInfo.matchBrands(term)
+			if match2.isValid():
+				flag = True
+				term = match2.get().name()
+
+		#Search Items
+		match3 = None
+		if flag != True:
+			match3 = self.splatInfo.matchGear(term)
+			if match3.isValid():
+				flag = True
+				term = match3.get().name()
+	
+		if not flag:
+			if len(match1.items) + len(match2.items) + len(match3.items) < 1:
+				await ctx.respond("Didn't find any partial matches for you.")
+				return
+
+			embed = discord.Embed(colour=0xF9FC5F)
+			embed.title = "Did you mean?"
+
+			if len(match1.items) > 0:
+				embed.add_field(name="Abilities", value=", ".join(map(lambda item: item.name(), match1.items)), inline=False)
+			if len(match2.items) > 0:
+				embed.add_field(name="Brands", value=", ".join(map(lambda item: item.name(), match2.items)), inline=False)
+			if len(match3.items) > 0:
+				embed.add_field(name="Gear", value=", ".join(map(lambda item: item.name(), match3.items)), inline=False)
+
+			await ctx.respond(embed=embed)
+			return
+
+		if match3 != None:
+			if match3.isValid() and match3.get().price() == 0:
+				await ctx.respond(f"{match3.get().name()} won't appear on the store. Here is where to get it: {match3.get().source()}")
+				return
+
+		cur = await self.sqlBroker.connect()
+
+		if match1.isValid():
+			stmt = "SELECT COUNT(*) FROM storedms WHERE clientid = %s AND ability = %s"
+		elif match2.isValid():
+			stmt = "SELECT COUNT(*) FROM storedms WHERE clientid = %s AND brand = %s"
+		else:
+			stmt = "SELECT COUNT(*) FROM storedms WHERE clientid = %s AND gearname = %s"
+
+		await cur.execute(stmt, (str(ctx.user.id), term,))
+		count = await cur.fetchone()
+		if count[0] > 0:
+			if match1.isValid():
+				stmt = 'DELETE FROM storedms WHERE clientid=%s AND ability=%s'
+			elif match2.isValid():
+				stmt = 'DELETE FROM storedms WHERE clientid=%s AND brand=%s'
+			else:
+				stmt = 'DELETE FROM storedms WHERE clientid=%s AND gearname=%s'		
+
+		await cur.execute(stmt, (str(ctx.user.id), str(ctx.guild.id), term,))
+		await self.sqlBroker.commit(cur)
+
+		if match1.isValid():
+			await ctx.respond(f"Removed you from recieving a DM when gear with {term} appears in the shop!")
+		elif match2.isValid():
+			await ctx.respond(f"Removed you from recieving a DM when gear by brand {term} appears in the shop!")
+		else:
+			await ctx.respond(f"Removed you from recieving a DM when {term} appears in the shop!")	
+
+	async def listStoreDM(self, ctx):
+		cur = await self.sqlBroker.connect()
+
+		stmt1 = "SELECT ability FROM storedms WHERE clientid = %s"
+		stmt2 = "SELECT brand FROM storedms WHERE clientid = %s"
+		stmt3 = "SELECT gearname FROM storedms WHERE clientid = %s"
+
+		await cur.execute(stmt1, (str(ctx.user.id),))
+		abilities = await cur.fetchall()
+		await cur.execute(stmt2, (str(ctx.user.id),))
+		brands = await cur.fetchall()
+		await cur.execute(stmt3, (str(ctx.user.id),))
+		gear = await cur.fetchall()
+
+		embed = discord.Embed(colour=0x0004FF)
+		embed.title = f"Storedm triggers for {ctx.user.name}"
+
+		embed.add_field(name="Wins/Losses/%", value=f"{str(wins)}/{str(loss)}/{str(winper)}%", inline=True)
+
+		ablString = ""
+		for abl in abilities:
+			ablString += f"{abl[0]}\n"
+
+		brandString = ""
+		for brnd in brands:
+			brandString += f"{brnd[0]}"
+
+		gearString = ""
+		for gr in gear:
+			gearString += f"{gr[0]}"
+
+		embed.add_field(name="Ability Triggers", value=ablString, inline=False)
+		embed.add_field(name="Brand Triggers", value=brandString, inline=False)
+		embed.add_field(name="Gear Triggers", value=gearString, inline=False)
+
+		await ctx.respond(embed=embed)
+
 	async def handleDM(self, theMem, theGear):
 		def checkDM(m):
 			return m.author.id == theMem.id and m.guild == None

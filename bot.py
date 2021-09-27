@@ -40,15 +40,16 @@ url = ''
 
 #SubCommand Groups
 cmdGroups = {}
-storedm = SlashCommandGroup('storedm', "Commands related to DM'ing on store changes")
 maps = SlashCommandGroup('maps', 'Commands related to maps for Splatoon 2')
 weapon = SlashCommandGroup("weapons", 'Commands realted to weapons for Splatoon 2')
 admin = SlashCommandGroup('admin', 'Commands that require guild admin privledges to run')
 voice = SlashCommandGroup('voice', 'Commands related to voice functions')
+store = SlashCommandGroup('store', 'Commands related to the Splatoon 2 store')
 dm = admin.command_group(name='dm', description="Admin commands related to DM's on users leaving")
 feed = admin.command_group(name='feed', description="Admin commands related to SplatNet rotation feeds")
 announce = admin.command_group(name='announcements', description="Admin commands related to developer annoucenments")
 play = voice.command_group(name="play", description="Commands realted to playing audio")
+storedm = store.command_group('dm', "Commands related to DM'ing on store changes")
 
 class blank():
 	def __init__(self):
@@ -85,30 +86,38 @@ def loadConfig():
 		print(f"Failed to load config: {str(e)}")
 		quit(1)
 
-@storedm.command(name='ability', description='Sends a DM when gear with this ability appears in the store')
-async def cmdStoreDMAbilty(ctx, ability: Option(str, "ABILITY to DM you with when it appears in the store", required=True)):
-	await nsoHandler.addStoreDM(ctx, [ str(ability) ], True)
+@store.command(name='currentgear', description="See the current gear on the SplatNet store")
+async def cmdStoreCurrent(ctx):
+	await serverUtils.increment_cmd(ctx, 'splatnetgear')
+	await nsoHandler.gearParser(ctx)
 
-@storedm.command(name='brand', description='Sends a DM when gear made by BRAND appears in the store')
-async def cmdStoreDMBrand(ctx, brand: Option(str, "Ability to DM you with when it appears in the store", choices=[ brand.name() for brand in splatInfo.getAllBrands() ], required=True)):
-	await nsoHandler.addStoreDM(ctx, [ str(brand) ], True)
+@store.command(name='order', description='Orders gear from the SplatNet store')
+async def cmdOrder(ctx, order: Option(str, "ID or NAME of the gear to order from the store (get both from /splatnetgear)", required=True)):
+	await serverUtils.increment_cmd(ctx, 'order')
+	await nsoHandler.orderGearCommand(ctx, args=[str(order)])
 
-@storedm.command(name='gear', description='Sends a DM when GEAR appears in the store')
-async def cmdStoreDMGear(ctx, gear: Option(str, "GEAR to DM you with when it appears in the store", required=True)):
-	await nsoHandler.addStoreDM(ctx, [ str(gear) ], True)
+@storedm.command(name='add', description='Sends a DM when gear with this ability appears in the store')
+async def cmdStoreDMAbilty(ctx, flag: Option(str, "ABILITY/BRAND/GEAR to DM you with when it appears in the store", required=True)):
+	await serverUtils.increment_cmd(ctx, 'storedm') 
+	await nsoHandler.addStoreDM(ctx, [ str(flag) ], True)
+
+@storedm.command(name='list', description='Shows you everything you are set to recieve a DM for')
+async def cmdStoreDMAbilty(ctx):
+	await serverUtils.increment_cmd(ctx, 'storedm') 
+	await nsoHandler.listStoreDM(ctx, [ str(flag) ], True)
+
+@storedm.command(name='remove', description='Shows you everything you are set to recieve a DM for')
+async def cmdStoreDMAbilty(ctx, flag: Option(str, "ABILITY/BRAND/GEAR to stop DMing you with when it appears in the store", required=True)):
+	await serverUtils.increment_cmd(ctx, 'storedm') 
+	await nsoHandler.removeStoreDM(ctx, [ str(flag) ], True)
 
 @client.slash_command(name='support', description='Sends a discord invite to my support guild.')
 async def cmdSupport(ctx):
-	await ctx.respond('Here is a link to my support server: https://discord.gg/TcZgtP5')
+	await ctx.respond('Here is a link to my support server: https://discord.gg/TcZgtP5', ephemeral=True)
 
 @client.slash_command(name='github', description='Sends a link to my github page')
 async def cmdGithub(ctx):
 	await ctx.respond('Here is my github page! : https://github.com/Jetsurf/jet-bot')
-
-@client.slash_command(name='order', description='Orders gear from the store')
-async def cmdOrder(ctx, order: Option(str, "ID or NAME of the gear to order from the store (get both from /splatnetgear)", required=True)):
-	await serverUtils.increment_cmd(ctx, 'order')
-	await nsoHandler.orderGearCommand(ctx, args=[str(order)])
 
 @announce.command(name='set', description="Sets a chat channel to receive announcements from my developers")
 async def cmdDMAdd(ctx, channel: Option(discord.TextChannel, "Channel to set to receive announcements", required=True)):
@@ -282,11 +291,6 @@ async def cmdWeapSub(ctx, sub: Option(str, "Name of the sub to get matching weap
 	await serverUtils.increment_cmd(ctx, 'weapons')
 
 	await nsoHandler.cmdWeaps(ctx, args=[ 'sub', str(sub) ])
-
-@client.slash_command(name='splatnetgear', description='Show gear available on S2 Splatnet')
-async def cmdSplatNet(ctx):
-	await serverUtils.increment_cmd(ctx, 'splatnetgear')
-	await nsoHandler.gearParser(ctx)
 
 @client.slash_command(name='rank', description='Get your ranks in ranked mode from S2 SplatNet')
 async def cmdRanks(ctx):
@@ -877,7 +881,7 @@ client.add_application_command(maps)
 client.add_application_command(admin)
 client.add_application_command(weapon)
 client.add_application_command(voice)
-client.add_application_command(storedm)
+client.add_application_command(store)
 
 sys.stdout.flush()
 sys.stderr.flush()
