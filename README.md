@@ -1,5 +1,5 @@
 # Splatnet/Music Bot
-Splatnet/Music bot was originally created to be a music/soundclip playing bot. It 
+Splatnet/Music bot was originally created in 2017 to be a music/soundclip playing bot. It 
 has evolved into its primary purpose of fetching data about Splatoon 2 
 maps/Splatnet to help discord servers to access this information 
 quickly.
@@ -15,7 +15,7 @@ For self-hosting:
 Requires a bot token from the Discord Developer Portal
 
 Requires https://github.com/Pycord-Development/pycord discord python library to 
-function (Version >= 1.5 needed) as well as all dependencies for it.
+function (needs branch feature/slash) as well as all dependencies for it.
 
 Requires youtube-dl and ffmpeg for online video/music playback.
 
@@ -41,7 +41,7 @@ The following sections list the different commands that are available.
 
 There are a few admin commands to configure the bot. To run these commands, you need the administrator role in your discord server.
 
- - `/admin playlist URL`: Add the given URL to the `!playrandom` playlist
+ - `/admin playlist URL`: Add the given URL to the `/voice playrandom` playlist
  - `/admin blacklist URL`: Prevent the video at the URL from ever being played
  - `/admin dm add`: Subscribe to DMs on users leaving the server
  - `/admin dm remove`: Unsubscribe from DMs on users leaving the server
@@ -53,7 +53,7 @@ There are a few admin commands to configure the bot. To run these commands, you 
 
 ### Music Commands
 
- - `/voice join CHANNELNAME` : Join a Voice Channel, must be exact Upper/Lower case. If no name is provided, join the voice chat you
+ - `/voice join CHANNEL` : Join a Voice Channel. If no channel is provided, joins the voice channel you are connected to
    are currently connected to.
  - `/voice play url URL` : Play/Queue Up a website to Play from URL
  - `/voice play search SOURCE SEARCH` : Searches SOURCE for SEARCH to play
@@ -67,20 +67,22 @@ There are a few admin commands to configure the bot. To run these commands, you 
  
 ### Splatoon General Info Commands
 
- - `/maps current` : Displays the current Splatoon 2 Gamemodes/Maps
- - `/maps next` : Displays the upcoming Splatoon 2 Gamemodes/Maps (!nextnextmaps displays 2 map rotations from now, etc)
- - `/maps currentsr` : Displays the current Splatoon 2 Salmon Run Map/Weapons
- - `/maps nextsr` : Displays the next Splatoon 2 Salmon Run Map/Weapons
  - `/splatnetgear` : Gets all of the current gear for sale on SplatNet
  - `/storedm ability ABILITY` : DM's you when a piece of gear with ABILITY appears in the store. Can't DM the bot with this.
  - `/storedm brand BRAND` : DM's you when a piece of gear made by BRAND appears in the store. Can't DM the bot with this.
  - `/storedm brand GEAR` : DM's you when a piece of GEAR (supports all items in the game) appears in the store. Can't DM the bot with this.
- - `/map random NUM` : Generates a list of random maps (1-10, NUM is optional for just 1 random map)
- - `/map callout MAP` : Provides a map with callout locations
- - `/weapon random NUM` : Generates a list of random weapons (1-10, NUM is optional for just 1 random weapon)
- - `/weapon info WEAP` : Gets Sub/Special/Level/Points for special for WEAP
- - `/weapon sub SUB` : Gets all weapons with the subweapon SUB
- - `/weapon special SPECIAL` : Gets all weapons with the special SPECIAL
+ - `/maps current` : Displays the current Splatoon 2 Gamemodes/Maps
+ - `/maps next` : Displays the upcoming Splatoon 2 Gamemodes/Maps (!nextnextmaps displays 2 map rotations from now, etc)
+ - `/maps currentsr` : Displays the current Splatoon 2 Salmon Run Map/Weapons
+ - `/maps nextsr` : Displays the next Splatoon 2 Salmon Run Map/Weapons
+ - `/maps random NUM` : Generates a list of random maps (1-10, NUM is optional for just 1 random map)
+ - `/maps callout MAP` : Provides a map with callout locations
+ - `/maps list` : Shows all Splatoon 2 maps w/ abbreviations
+ - `/weapons random NUM` : Generates a list of random weapons (1-10, NUM is optional for just 1 random weapon)
+ - `/weapons info WEAP` : Gets Sub/Special/Level/Points for special for WEAP
+ - `/weapons sub SUB` : Gets all weapons with the subweapon SUB
+ - `/weapons special SPECIAL` : Gets all weapons with the special SPECIAL
+ - `/weapons list TYPE` : Gets all weapons of the type TYPE
  
 ### Splatoon 2 Splatnet Commands
 
@@ -92,9 +94,9 @@ The following commands require you to DM the bot with !token and follow the inst
  - `/order ID/ITEM NAME` : !splatnetgear provides an ID. Use either the ID or the name of an item on the store to order it
  - `/battle last` : Gets stats from the last battle you played
  - `/battle num NUM` : Gets stats from NUM last battle (1 is last, upto 50)
- - `/weapon stats WEAPON` : Pulls stats for a specific weapon
- - `/map stats` MAP : Pulls stats for a specific map
- 
+ - `/weapons stats WEAPON` : Pulls stats for a specific weapon
+ - `/maps stats MAP` : Pulls stats for a specific map
+
  ### Bot Info Commands
  
  - `/github` : Displays my github link
