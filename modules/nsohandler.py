@@ -147,29 +147,29 @@ class nsoHandler():
 		response = urllib.request.urlopen(req)
 		self.srJSON = json.loads(response.read().decode())
 
-		#TODO: This ideally will be for updating the order command with choices to contain current gear in the store
-		print("DEBUG: Updating gear for order command")
-		#print(f"{str(await self.client.http.get_global_commands(application_id=self.client.user.id))}")
-		for cmd in await self.client.http.get_global_commands(application_id=self.client.user.id):
-			if cmd['name'] != 'order':
-				continue;
-			else:
-				orderid = cmd['id']
-				print(f"{str(cmd)}")
-				print(f"{str(cmd['id'])}")
-		list1 = []
-		for item in self.storeJSON['merchandises']:
-			gear = item['gear']
-			theHash = {}
-			theHash['name'] = str(gear['name'])
-			theHash['value'] = str(gear['name'])
-			list1.append(theHash)
+		#TODO: This ideally will be for updating the order command with choices to contain current gear in the store, have to wait for pycord to progress
+		if False:
+			print("DEBUG: Updating gear for order command")
+			for cmd in await self.client.http.get_global_commands(application_id=self.client.user.id):
+				if cmd['name'] != 'order':
+					continue;
+				else:
+					orderid = cmd['id']
+					print(f"{str(cmd)}")
+					print(f"{str(cmd['id'])}")
+			list1 = []
+			for item in self.storeJSON['merchandises']:
+				gear = item['gear']
+				theHash = {}
+				theHash['name'] = str(gear['name'])
+				theHash['value'] = str(gear['name'])
+				list1.append(theHash)
 
-		print(f'LIST1 {str(list1)}')
-		payload = { 'options': [ {'type': 3, 'name': 'id', 'description': 'ID of gear to order (get this from splatnetgear command) (0-5)', 'required': True, 'choices': list1 } ] }
-		print(f"{str(payload.items())}")
-		await self.client.http.edit_global_command(application_id=self.client.user.id, command_id=orderid, payload=payload)
-		await self.client.register_commands()
+			print(f'LIST1 {str(list1)}')
+			payload = { 'options': [ {'type': 3, 'name': 'id', 'description': 'ID of gear to order (get this from splatnetgear command) (0-5)', 'required': True, 'choices': list1 } ] }
+			print(f"{str(payload.items())}")
+			await self.client.http.edit_global_command(application_id=self.client.user.id, command_id=orderid, payload=payload)
+			await self.client.register_commands()
 
 	async def addStoreDM(self, ctx, args, is_slash=False):
 		if len(args) == 0:
