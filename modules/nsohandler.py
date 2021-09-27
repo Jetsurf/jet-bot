@@ -228,11 +228,11 @@ class nsoHandler():
 		count = await cur.fetchone()
 		if count[0] > 0:
 			if match1.isValid():
-				await ctx.respond(f"You will already be DM'ed when gear with ability {term} appears in the shop? (Respond Yes/No)")
+				await ctx.respond(f"You will already be DM'ed when gear with ability {term} appears in the shop.")
 			elif match2.isValid():
-				await ctx.respond(f"You will already be DM'ed when gear by brand {term} appears in the shop? (Respond Yes/No)")
+				await ctx.respond(f"You will already be DM'ed when gear by brand {term} appears in the shop.")
 			else:
-				await ctx.respond(f"You will already be DM'ed when {term} appears in the shop? (Respond Yes/No)")
+				await ctx.respond(f"You will already be DM'ed when {term} appears in the shop.")
 
 			await self.sqlBroker.close(cur)
 			return
@@ -246,11 +246,11 @@ class nsoHandler():
 				elif match2.isValid():
 					await ctx.respond(f"{ctx.user.name} do you want me to DM you when gear by brand {term} appears in the shop? (Respond Yes/No)")
 				else:
-					await message.channel.send(f"{ctx.user.name} do you want me to DM you when {term} appears in the shop? (Respond Yes/No)")
+					await ctx.respond(f"{ctx.user.name} do you want me to DM you when {term} appears in the shop? (Respond Yes/No)")
 
 				resp = await self.client.wait_for('message', check=check2)
 				if 'yes' not in resp.content.lower():
-					await message.channel.send("Ok, I haven't added you to receive a DM.")
+					await ctx.respond("Ok, I haven't added you to receive a DM.")
 					return
 
 		if match1.isValid():
