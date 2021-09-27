@@ -104,12 +104,12 @@ async def cmdStoreDMAbilty(ctx, flag: Option(str, "ABILITY/BRAND/GEAR to DM you 
 @storedm.command(name='list', description='Shows you everything you are set to recieve a DM for')
 async def cmdStoreDMAbilty(ctx):
 	await serverUtils.increment_cmd(ctx, 'storedm') 
-	await nsoHandler.listStoreDM(ctx, [ str(flag) ], True)
+	await nsoHandler.listStoreDM(ctx)
 
 @storedm.command(name='remove', description='Shows you everything you are set to recieve a DM for')
 async def cmdStoreDMAbilty(ctx, flag: Option(str, "ABILITY/BRAND/GEAR to stop DMing you with when it appears in the store", required=True)):
 	await serverUtils.increment_cmd(ctx, 'storedm') 
-	await nsoHandler.removeStoreDM(ctx, [ str(flag) ], True)
+	await nsoHandler.removeStoreDM(ctx, [ str(flag) ])
 
 @client.slash_command(name='support', description='Sends a discord invite to my support guild.')
 async def cmdSupport(ctx):
@@ -311,6 +311,11 @@ async def cmdStats(ctx):
 async def cmdBattle(ctx, battlenum: Option(int, "Battle Number, 1 being latest, 50 max", required=True, default=1)):
 	await serverUtils.increment_cmd(ctx, 'battle')
 	await nsoHandler.cmdBattles(ctx, battlenum)
+
+#TODO: COMMENT THIS OUT! NEEDS GUILD RESTRICTION
+@client.slash_command(name='eval', description="Eval a code block Owners only.")
+async def cmdEval(ctx, code: Option(str, "The code block to eval", required=True, default='``````')):
+	await doEval(ctx, code, slash=True)
 
 @voice.command(name='join', description='Join a voice chat channel')
 async def cmdVoiceJoin(ctx, channel: Option(discord.VoiceChannel, "Voice Channel to join", required=False)):
@@ -595,29 +600,32 @@ async def on_voice_state_update(mem, before, after):
 def killEval(signum, frame):
 	raise asyncio.TimeoutError
 
-async def doEval(message):
+async def doEval(ctx, codeblk, slash=False):
 	global owners, commandParser
 	newout = io.StringIO()
-	env = { 'message' : message	}
+	env = { 'ctx' : ctx	}
 	env.update(globals())
 	env.pop('token')
 	env.pop('mysqlHandler')
 	env.pop('nsoTokens')
 	embed = discord.Embed(colour=0x00FFFF)
-	prefix = await commandParser.getPrefix(message.guild.id)
-	if message.author not in owners:
-		await message.channel.send("You are not an owner, this command is limited to my owners only :cop:")
+	prefix = await commandParser.getPrefix(ctx.guild.id)
+	if ctx.user not in owners:
+		await ctx.respond("You are not an owner, this command is limited to my owners only :cop:")
 	else:
-		await message.channel.trigger_typing()
-		if '```' in message.content:
-			code = message.content.replace('`', '').replace(f"{prefix}eval ", '')
+		if slash or '```' in ctx.content :
+			if not slash:
+				code = ctx.content.replace('`', '').replace(f"{prefix}eval ", '')
+			else:
+				code = codeblk.replace('`', '')
+
 			theeval = f"async def func(): \n{textwrap.indent(code, ' ')}"
 			try:
 				exec(theeval, env)
 			except Exception as err:
 				embed.title = "**ERROR IN EXEC SETUP**"
 				embed.add_field(name="Result", value=str(err), inline=False)
-				await message.channel.send(embed=embed)
+				await ctx.respond(embed=embed)
 				return
 			func = env['func']
 			try:
@@ -629,12 +637,12 @@ async def doEval(message):
 			except asyncio.TimeoutError:
 				embed.title = "**TIMEOUT**"
 				embed.add_field(name="TIMEOUT", value="Timeout occured during execution", inline=False)
-				await message.channel.send(embed=embed)
+				await ctx.respond(embed=embed)
 				return
 			except Exception as err:
 				embed.title = "**ERROR IN EXECUTION**"
 				embed.add_field(name="Result", value=str(err), inline=False)
-				await message.channel.send(embed=embed)
+				await ctx.respond(embed=embed)
 				return
 			finally:
 				signal.alarm(0)
@@ -648,7 +656,7 @@ async def doEval(message):
 
 			await message.channel.send(embed=embed)
 		else:
-			await message.channel.send("Please provide code in a block")
+			await ctx.respond("Please provide code in a block")
 
 @client.event
 async def on_message(message):
@@ -713,7 +721,7 @@ async def on_message(message):
 		print("Failed to increment command... issue with MySQL?")
 
 	if cmd == 'eval':
-		await doEval(message)
+		await doEval(context)
 	elif cmd == 'getcons' and message.author in owners:
 		await mysqlHandler.printCons(message)
 	elif cmd == 'reloadnsoapp' and message.author in owners:
@@ -877,11 +885,11 @@ if dev == 0:
 print('**********NEW SESSION**********')
 print('Logging into discord')
 
+client.add_application_command(store)
 client.add_application_command(maps)
-client.add_application_command(admin)
 client.add_application_command(weapon)
 client.add_application_command(voice)
-client.add_application_command(store)
+client.add_application_command(admin)
 
 sys.stdout.flush()
 sys.stderr.flush()

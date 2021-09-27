@@ -353,7 +353,7 @@ class nsoHandler():
 			else:
 				stmt = 'DELETE FROM storedms WHERE clientid=%s AND gearname=%s'		
 
-		await cur.execute(stmt, (str(ctx.user.id), str(ctx.guild.id), term,))
+		await cur.execute(stmt, (str(ctx.user.id), term,))
 		await self.sqlBroker.commit(cur)
 
 		if match1.isValid():
@@ -380,23 +380,24 @@ class nsoHandler():
 		embed = discord.Embed(colour=0x0004FF)
 		embed.title = f"Storedm triggers for {ctx.user.name}"
 
-		embed.add_field(name="Wins/Losses/%", value=f"{str(wins)}/{str(loss)}/{str(winper)}%", inline=True)
-
 		ablString = ""
 		for abl in abilities:
-			ablString += f"{abl[0]}\n"
+			if abl[0] != None:
+				ablString += f"{abl[0]}\n"
 
 		brandString = ""
 		for brnd in brands:
-			brandString += f"{brnd[0]}"
+			if brnd[0] != None:
+				brandString += f"{brnd[0]}"
 
 		gearString = ""
 		for gr in gear:
-			gearString += f"{gr[0]}"
+			if gr[0] != None:
+				gearString += f"{gr[0]}"
 
-		embed.add_field(name="Ability Triggers", value=ablString, inline=False)
-		embed.add_field(name="Brand Triggers", value=brandString, inline=False)
-		embed.add_field(name="Gear Triggers", value=gearString, inline=False)
+		embed.add_field(name="Ability Triggers", value= ablString if ablString != '' else "None", inline=False)
+		embed.add_field(name="Brand Triggers", value=brandString if brandString != '' else "None", inline=False)
+		embed.add_field(name="Gear Triggers", value=gearString if gearString != '' else "None", inline=False)
 
 		await ctx.respond(embed=embed)
 
