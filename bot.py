@@ -98,16 +98,27 @@ async def cmdOrder(ctx, order: Option(str, "ID or NAME of the gear to order from
 
 @storedm.command(name='add', description='Sends a DM when gear with this ability appears in the store')
 async def cmdStoreDMAbilty(ctx, flag: Option(str, "ABILITY/BRAND/GEAR to DM you with when it appears in the store", required=True)):
+	if ctx.guild == None:
+		await ctx.respond("Can't DM me with this command.")
+		return
 	await serverUtils.increment_cmd(ctx, 'storedm') 
 	await nsoHandler.addStoreDM(ctx, [ str(flag) ], True)
 
 @storedm.command(name='list', description='Shows you everything you are set to recieve a DM for')
 async def cmdStoreDMAbilty(ctx):
+	if ctx.guild == None:
+		await ctx.respond("Can't DM me with this command.")
+		return
+
 	await serverUtils.increment_cmd(ctx, 'storedm') 
 	await nsoHandler.listStoreDM(ctx)
 
 @storedm.command(name='remove', description='Shows you everything you are set to recieve a DM for')
 async def cmdStoreDMAbilty(ctx, flag: Option(str, "ABILITY/BRAND/GEAR to stop DMing you with when it appears in the store", required=True)):
+	if ctx.guild == None:
+		await ctx.respond("Can't DM me with this command.")
+		return
+		
 	await serverUtils.increment_cmd(ctx, 'storedm') 
 	await nsoHandler.removeStoreDM(ctx, [ str(flag) ])
 
