@@ -275,13 +275,17 @@ class serverUtils():
 
 	async def increment_cmd(self, ctx, cmd):
 		#Needs a try catch to prevent failures if mysql is acting up to allow slash commands to not have repetitive code for handling the exception there
+		#This will also catch DM'ed slash commands trying to be incremented
 		try:
 			if cmd not in self.valid_commands['base'] and cmd not in self.valid_commands['base_sn'] and cmd not in self.valid_commands['user_sn'] and cmd not in self.valid_commands['hybrid_sn'] and cmd not in self.valid_commands['voice']:
 				return
 
 			cur = await self.sqlBroker.connect()
 			stmt = "INSERT INTO commandcounts (serverid, command, count) VALUES (%s, %s, 1) ON DUPLICATE KEY UPDATE count = count + 1;"
-			await cur.execute(stmt, (ctx.guild.id, cmd,))
+			if ctx.guild == None:
+				await cur.execute(stmt, ('0', cmd,))
+			else:
+				await cur.execute(stmt, (ctx.guild.id, cmd,))
 			await self.sqlBroker.commit(cur)
 		except:
 			pass
