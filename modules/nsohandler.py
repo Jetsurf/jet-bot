@@ -16,7 +16,7 @@ class nsoHandler():
 		self.cmdOrder = cmdOrder
 		self.app_timezone_offset = str(int((time.mktime(time.gmtime()) - time.mktime(time.localtime()))/60))
 		self.scheduler = AsyncIOScheduler()
-		self.scheduler.add_job(self.doStoreDM, 'cron', minute="*")#hour="*/2", minute='5') 
+		self.scheduler.add_job(self.doStoreDM, 'cron', hour="*/2", minute='5') 
 		self.scheduler.add_job(self.updateS2JSON, 'cron', hour="*/2", minute='0', second='15')
 		self.scheduler.add_job(self.doFeed, 'cron', hour="*/2", minute='0', second='25')
 		self.scheduler.start()
@@ -89,7 +89,11 @@ class nsoHandler():
 		embed.title = "Rotation Feed"
 
 		if mapflag:
-			turf, ranked, league = await self.maps(offset=0, flag=1)
+			data = self.maps(offset=0)
+			turf = data['turf']
+			ranked = data['ranked']
+			league = data['league']
+
 			embed.add_field(name="Maps", value="Maps currently on rotation", inline=False)
 			embed.add_field(name="<:turfwar:550107083911987201> Turf War", value=f"{turf['mapA']['name']}\n{turf['mapB']['name']}", inline=True)
 			embed.add_field(name=f"<:ranked:550107084684001350> Ranked: {ranked['rule']['name']}", value=f"{ranked['mapA']['name']}\n{ranked['mapB']['name']}", inline=True)
@@ -1083,51 +1087,20 @@ class nsoHandler():
 		embed.set_footer(text=f"Next Item In {str(hours)} Hours {str(minutes)} minutes")
 		await ctx.respond(embed=embed)
 
-	async def maps(self, ctx=None, offset=0, flag=0):
-		theTime = int(time.time())
-		trfWar = self.mapsJSON['regular']
-		ranked = self.mapsJSON['gachi']
-		league = self.mapsJSON['league']
+	def mapsEmbed(self, offset=0) -> discord.Embed:
 		embed = discord.Embed(colour=0x3FFF33)
+		theTime = int(time.time())
+
+		data = self.maps(offset=offset)
+		turf = data['turf']
+		ranked = data['ranked']
+		league = data['league']
+		end = turf['end']
 
 		if offset == 0:
 			embed.title = "Current Splatoon 2 Maps"
 		elif offset == 1:
 			embed.title = "Upcoming Splatoon 2 Maps"
-
-		mapA = trfWar[offset]['stage_a']
-		mapB = trfWar[offset]['stage_b']
-		end = trfWar[offset]['end_time']
-		if flag == 0:
-			embed.add_field(name="<:turfwar:550103899084816395> Turf War", value=f"{mapA['name']}\n{mapB['name']}", inline=True)
-		if flag == 1:
-			turf = {}
-			turf['mapA'] = mapA
-			turf['mapB'] = mapB
-
-		mapA = ranked[offset]['stage_a']
-		mapB = ranked[offset]['stage_b']
-		game = ranked[offset]['rule']
-
-		if flag == 0:
-			embed.add_field(name=f"<:ranked:550104072456372245> Ranked: {game['name']}", value=mapA['name'] + "\n" + mapB['name'], inline=True)
-		if flag == 1:
-			ranked = {}
-			ranked['mapA'] = mapA
-			ranked['mapB'] = mapB
-			ranked['rule'] = game
-
-		mapA = league[offset]['stage_a']
-		mapB = league[offset]['stage_b']
-		game = league[offset]['rule']
-
-		if flag == 0:
-			embed.add_field(name=f"<:league:550104147463110656> League: {game['name']}", value=mapA['name'] + "\n" + mapB['name'], inline=True)
-		if flag == 1:
-			league = {}
-			league['mapA'] = mapA
-			league['mapB'] = mapB
-			league['rule'] = game
 
 		timeRemaining = end - theTime
 		timeRemaining = timeRemaining % 86400
@@ -1135,16 +1108,45 @@ class nsoHandler():
 		timeRemaining = timeRemaining % 3600
 		minutes = int(timeRemaining / 60)
 
+		embed.add_field(name="<:turfwar:550103899084816395> Turf War", value=f"{turf['stage_a']['name']}\n{turf['stage_a']['name']}", inline=True)
+		embed.add_field(name=f"<:ranked:550104072456372245> Ranked: {ranked['rule']['name']}", value=f"{ranked['stage_a']['name']}\n{ranked['stage_b']['name']}", inline=True)
+		embed.add_field(name=f"<:league:550104147463110656> League: {league['rule']['name']}", value=f"{league['stage_a']['name']}\n{league['stage_b']['name']}", inline=True)
+
 		if offset == 0:
 			embed.add_field(name="Time Remaining", value=f"{str(hours)} Hours, and {str(minutes)} minutes", inline=False)
 		elif offset >= 1:
 			hours = hours - 2
 			embed.add_field(name="Time Until Map Rotation", value=f"{str(hours)} Hours, and {str(minutes)} minutes", inline=False)
 
-		if flag == 0:
-			await ctx.respond(embed=embed)
-		if flag == 1:
-			return turf, ranked, league
+		return embed
+
+	def maps(self, offset=0):
+		
+		trfWar = self.mapsJSON['regular']
+		ranked = self.mapsJSON['gachi']
+		league = self.mapsJSON['league']
+		
+		turf = {}
+		turf['mapA'] = trfWar[offset]['stage_a']
+		turf['mapB'] = trfWar[offset]['stage_b']
+		turf['end']  = trfWar[offset]['end_time']
+
+		rnk = {}
+		rnk['mapA'] = ranked[offset]['stage_a']
+		rnk['mapB'] = ranked[offset]['stage_b']
+		rnk['rule'] = ranked[offset]['rule']
+
+		lge = {}
+		lge['mapA'] = league[offset]['stage_a']
+		lge['mapB'] = league[offset]['stage_b']
+		lge['rule'] = league[offset]['rule']
+
+		data = {}
+		data['turf']   = turf
+		data['ranked'] = rnk
+		data['league'] = lge
+
+		return data
 
 	async def srParser(self, ctx=None, getNext=0, flag=0):
 		theTime = int(time.time())
