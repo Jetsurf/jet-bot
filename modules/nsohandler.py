@@ -13,7 +13,7 @@ class nsoHandler():
 		self.sqlBroker = mysqlHandler
 		self.app_timezone_offset = str(int((time.mktime(time.gmtime()) - time.mktime(time.localtime()))/60))
 		self.scheduler = AsyncIOScheduler()
-		self.scheduler.add_job(self.doStoreDM, 'cron', hour="*/2", minute='5') 
+		self.scheduler.add_job(self.doStoreDM, 'cron', minute='*')#hour="*/2", minute='5') 
 		self.scheduler.add_job(self.updateS2JSON, 'cron', hour="*/2", minute='0', second='15')
 		self.scheduler.add_job(self.doFeed, 'cron', hour="*/2", minute='0', second='25')
 		self.scheduler.start()
@@ -286,8 +286,8 @@ class nsoHandler():
 		except:
 			return
 
+		cur = await self.sqlBroker.connect()
 		if 'stop' in resp.content.lower():
-			cur = await self.sqlBroker.connect()
 			stmt = "SELECT COUNT(*) FROM storedms WHERE (clientid = %s) AND ((ability = %s) OR (brand = %s) OR (gearname = %s))"
 			await cur.execute(stmt, (theMem.id, theSkill, theBrand, theType, ))
 			count = await cur.fetchone()
@@ -367,6 +367,7 @@ class nsoHandler():
 				await self.sqlBroker.commit(cur)
 
 		elif 'order' in resp.content.lower():
+			await self.sqlBroker.close(cur)
 			print(f"Ordering gear for: {str(resp.author.name)}")
 			await self.orderGearCommand(resp, order=5)
 		else:
@@ -375,6 +376,7 @@ class nsoHandler():
 			stmt = 'SELECT ability, brand, gearname FROM storedms WHERE (clientid = %s) AND ((ability = %s) OR (brand = %s) OR (gearname = %s))'
 			await cur.execute(stmt, (theMem.id, theSkill, theBrand, theType, ))
 			fields = await cur.fetchall()
+			await self.sqlBroker.close(cur)
 			string = "Didn't understand that. The item I notified you about will be on the store for another 10 hours. I'll DM you again when gear with "
 			for i in fields:
 				if i[0] != None:

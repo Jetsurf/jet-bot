@@ -289,7 +289,7 @@ class Nsotoken():
 			'User-Agent': f'OnlineLounge/{self.nsoAppVer} NASDKAPI Android',
 			'Accept-Language': 'en-US',
 			'Accept': 'application/json',
-			'Authorization': 'Bearer ' + id_response["access_token"],
+			'Authorization': f'Bearer {id_response["access_token"]}',
 			'Host': 'api.accounts.nintendo.com',
 			'Connection': 'Keep-Alive',
 			'Accept-Encoding': 'gzip'
@@ -306,7 +306,7 @@ class Nsotoken():
 			'Accept-Language': 'en-US',
 			'User-Agent': f'com.nintendo.znca/{self.nsoAppVer} (Android/7.1.2)',
 			'Accept': 'application/json',
-			'X-ProductVersion': self.nsoAppVer,
+			'X-ProductVersion': f'{self.nsoAppVer}',
 			'Content-Type': 'application/json; charset=utf-8',
 			'Connection': 'Keep-Alive',
 			'Authorization': 'Bearer',
@@ -314,7 +314,7 @@ class Nsotoken():
 			'X-Platform': 'Android',
 			'Accept-Encoding': 'gzip'
 		}
-
+		print(f"HEAD {str(head)}")
 		idToken = id_response["access_token"]
 		flapg_nso = self.call_flapg(idToken, guid, timestamp, "nso")
 		
