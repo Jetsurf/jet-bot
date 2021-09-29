@@ -16,7 +16,7 @@ class nsoHandler():
 		self.cmdOrder = cmdOrder
 		self.app_timezone_offset = str(int((time.mktime(time.gmtime()) - time.mktime(time.localtime()))/60))
 		self.scheduler = AsyncIOScheduler()
-		self.scheduler.add_job(self.doStoreDM, 'cron', hour="*/2", minute='5') 
+		self.scheduler.add_job(self.doStoreDM, 'cron', minute="*")#hour="*/2", minute='5') 
 		self.scheduler.add_job(self.updateS2JSON, 'cron', hour="*/2", minute='0', second='15')
 		self.scheduler.add_job(self.doFeed, 'cron', hour="*/2", minute='0', second='25')
 		self.scheduler.start()
@@ -353,7 +353,12 @@ class nsoHandler():
 			else:
 				stmt = 'DELETE FROM storedms WHERE clientid=%s AND gearname=%s'	
 		else:
-			await ctx.respond(f"Doesn't look like you are set to receive a DM when {term} appears in the store.")
+			if match1.isValid():
+				await ctx.respond(f"Doesn't look like you are set to receive a DM when gear with {term} appears in the store.")
+			elif match2.isValid():
+				await ctx.respond(f"Doesn't look like you are set to receive a DM when gear by {term} appears in the store.")
+			else:
+				await ctx.respond(f"Doesn't look like you are set to receive a DM when {term} appears in the store.")
 			return
 
 		await cur.execute(stmt, (str(ctx.user.id), term,))
@@ -428,19 +433,16 @@ class nsoHandler():
 		print(f"Messaged {theMem.name}")
 
 		def check1(m):
-			if isinstance(m.channel, discord.DMChannel) and m.channel.recipient.name == theMem.name and not m.author.bot:
-				return True
-			else:
-				return False
-
+			return True if isinstance(m.channel, discord.channel.DMChannel) and m.author.name == theMem.name and not m.author.bot else False
+				
 		# Discord.py changed timeouts to throw exceptions...
 		try:
 			resp = await self.client.wait_for('message', timeout=7100, check=check1)
 		except:
 			return
 
+		cur = await self.sqlBroker.connect()
 		if 'stop' in resp.content.lower():
-			cur = await self.sqlBroker.connect()
 			stmt = "SELECT COUNT(*) FROM storedms WHERE (clientid = %s) AND ((ability = %s) OR (brand = %s) OR (gearname = %s))"
 			await cur.execute(stmt, (theMem.id, theSkill, theBrand, theType, ))
 			count = await cur.fetchone()
@@ -520,9 +522,10 @@ class nsoHandler():
 				await self.sqlBroker.commit(cur)
 
 		elif 'order' in resp.content.lower():
+			await self.sqlBroker.close(cur)
 			context = messagecontext.MessageContext(resp)
-			print(f"Ordering gear for: {str(resp.author.name)}")
-			await self.orderGearCommand(context, order=5)
+			print(f"Ordering gear for: {str(context.user.name)}")
+			await self.orderGearCommand(context, order=5, is_slash=False, override=True)
 		else:
 			#Response but nothing understood
 			print(f"Keeping {theMem.name} in DM's")
@@ -571,10 +574,11 @@ class nsoHandler():
 
 			asyncio.ensure_future(self.handleDM(theMem, theGear))
 
-	async def getStoreJSON(self, message):
+	async def getStoreJSON(self, ctx):
 		theGear = self.storeJSON['merchandises'][5]
-		await message.channel.send(f"```{str(theGear)}```")
+		await ctx.respond(f"```{str(theGear)}```")
 
+	#TODO: Convert this owner only command
 	async def getRawJSON(self, message):
 		if not await self.checkDuplicate(message.author.id):
 			await message.channel.send("You don't have a token setup with me! Please DM me !token with how to get one setup!")
@@ -920,7 +924,7 @@ class nsoHandler():
 		embed.add_field(name="Directions", value=dirs, inline=False)
 		return embed
 
-	async def orderGearCommand(self, ctx, args=None, order=-1):
+	async def orderGearCommand(self, ctx, args=None, order=-1, override=False, is_slash=True):
 
 		def check(m):
 			return m.author == ctx.user and m.channel == ctx.channel
@@ -941,7 +945,7 @@ class nsoHandler():
 			merchid = self.storeJSON['merchandises'][order]['id']
 		elif args != None:
 			if len(args) == 0:
-				await ctx.respond("I need an item to order, please use 'ID to order' from splatnetgear!")
+				await ctx.respond("I need an item to order, please use 'ID to order' from `/store currentgear!`")
 				return
 
 			# Build a list of SplatStoreMerch items to match against
@@ -953,7 +957,7 @@ class nsoHandler():
 			# Try the match
 			match = self.splatInfo.matchItems("store merchandise", merchitems, " ".join(args))
 			if not match.isValid():
-				await ctx.respond(match.errorMessage("Try command 'splatnetgear' for a list."))
+				await ctx.respond(match.errorMessage("Try command `/store currentgear` for a list."))
 				return
 
 			merchid = match.get().merchid()
@@ -961,11 +965,12 @@ class nsoHandler():
 			await ctx.respond("Order called improperly! Please report this to my support discord!")
 			return
 
-		await self.orderGear(ctx, merchid, confirm = (order == -1))
+		await self.orderGear(ctx, merchid, override=override, is_slash=is_slash)
 
-	async def orderGear(self, ctx, merchid, confirm = True):
-		# Filter for incoming messages, this is still using reular message objects
-		messageCheck = lambda m: (m.author.id == ctx.user.id) and (m.channel.id == ctx.channel.id)
+	async def orderGear(self, ctx, merchid, override=False, is_slash=True):
+		# Filter for incoming messages, this is still using regular message objects
+		def messageCheck(m):
+			return (m.author.id == ctx.user.id) and (m.channel.id == ctx.channel.id)
 
 		thejson = await self.getNSOJSON(ctx, self.app_head, "https://app.splatoon2.nintendo.net/api/timeline")
 		if thejson == None:
@@ -982,7 +987,8 @@ class nsoHandler():
 		gearToBuy = merches[0]
 		orderedFlag = 'ordered_info' in thejson
 
-		if confirm:
+		#confirm controls wether we ask for confirmation in a message context
+		if not is_slash and not override:
 			embed = self.makeGearEmbed(gearToBuy, f"{ctx.user.name} - Order gear?", "Respond with 'yes' to place your order, 'no' to cancel")
 			await ctx.respond(embed=embed)
 			confirmation = await self.client.wait_for('message', check=messageCheck)
@@ -992,24 +998,38 @@ class nsoHandler():
 
 		if not orderedFlag:
 			if await self.postNSOStore(ctx, gearToBuy['id'], tmp_app_head_shop):
-				await message.channel.send(f"{ctx.user.name} - ordered!")
+				await ctx.respond(f"{ctx.user.name} - ordered!")
 			else:
-				await message.channel.send(f"{ctx.user.name} - failed to order")
+				await ctx.respond(f"{ctx.user.name} - failed to order")
 		else:
 			ordered = thejson['ordered_info']
-			embed = self.makeGearEmbed(ordered, f"{message.author.name}, you already have an item on order!", "Respond with 'yes' to replace your order, 'no' to cancel")
-			await message.channel.send(embed=embed)
-			confirmation = await self.client.wait_for('message', check=messageCheck)
-			if 'yes' in confirmation.content.lower():
+			if not override and is_slash:
+				embed = self.makeGearEmbed(ordered, f"{ctx.user.name}, you already have an item on order!", "Run this command with override set to True to order")
+				await ctx.respond(embed=embed)
+				return
+			elif not is_slash:
+				embed = self.makeGearEmbed(ordered, f"{ctx.user.name}, you already have an item on order!", "Respond with 'yes' to replace your order, 'no' to cancel")
+				await ctx.respond(embed=embed)
+						
+			if not is_slash:
+				confirmation = await self.client.wait_for('message', check=messageCheck)
+				if 'yes' in confirmation.content.lower():
+					if await self.postNSOStore(ctx, gearToBuy['id'], tmp_app_head_shop, override=True):
+						await ctx.respond(f"{ctx.user.name} - ordered!")
+					else:
+						await ctx.respond(f"{ctx.user.name} - failed to order")
+			elif is_slash and override: 
 				if await self.postNSOStore(ctx, gearToBuy['id'], tmp_app_head_shop, override=True):
-					await ctx.respond(f"{ctx.user.name} - ordered!")
+					embed = self.makeGearEmbed(gearToBuy, f"{ctx.user.name} ordered!", "Go talk to Murch in game to get it!")
+					await ctx.respond(embed=embed)
 				else:
-					await ctx.respond(f"{ctx.user.name} - failed to order")
+					embed = self.makeGearEmbed(gearToBuy, f"{ctx.user.name}, failed to order", "You can try running this command again, but there is likely an issue with NSO")
+					await ctx.respond(embed=embed)
 			else:
-				await ctx.channel.send(f"{ctx.user.name} - order canceled")
+				await ctx.channel.send(f"{ctx.user.name} - something went wrong...")
 
-	async def postNSOStore(self, message, gid, app_head, override=False):
-		iksm = await self.nsotoken.get_iksm_token_mysql(message.author.id)
+	async def postNSOStore(self, ctx, gid, app_head, override=False):
+		iksm = await self.nsotoken.get_iksm_token_mysql(ctx.user.id)
 		url = f"https://app.splatoon2.nintendo.net/api/onlineshop/order/{gid}"
 		if override:
 			payload = { "override" : 1 }

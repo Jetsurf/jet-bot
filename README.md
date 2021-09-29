@@ -27,14 +27,13 @@ Requires a mysql backend, configured in discordbot.json.
 An example configuration file is given at discordbot.json.example.
 This file needs to be completed and moved to discordbot.json.
 
-Soundsdir is a directory to place soundclips to play with the !file
-command.
+Soundsdir is a directory to place soundclips to play with the /voice playsound command.
 
 You can also configure some settings at runtime with [admin commands](#admin-commands).
 
 ## Commands
 
-NOTE: This bot is now using slash commands, message commands still work, but are deprecated and will go away once discord disables messaging for bots
+NOTE: This bot is now using slash commands, message commands still work (run !help), but are deprecated and will go away once discord disables messaging for bots
 The following sections list the different commands that are available.
 
 ### Admin commands
@@ -67,10 +66,6 @@ There are a few admin commands to configure the bot. To run these commands, you 
  
 ### Splatoon General Info Commands
 
- - `/store currentgear` : Gets all of the current gear for sale on SplatNet
- - `/store dm add FLAG` : DM's you when a piece of gear with FLAG (Ability/Brand/Gear Name) appears in the SplatNet store. Can't DM the bot with this.
- - `/store dm list` : DM's you when a piece of gear made by BRAND appears in the store. Can't DM the bot with this.
- - `/store dm remove FLAG` : Removes you from receiving DM's when a piece of gear with FLAG (Ability/Brand/Gear Name) appears in the SplatNet store. Can't DM the bot with this.
  - `/maps current` : Displays the current Splatoon 2 Gamemodes/Maps
  - `/maps next NUM` : Displays the upcoming Splatoon 2 Gamemodes/Maps NUM rotations in the future
  - `/maps currentsr` : Displays the current Splatoon 2 Salmon Run Map/Weapons
@@ -78,6 +73,10 @@ There are a few admin commands to configure the bot. To run these commands, you 
  - `/maps random NUM` : Generates a list of random maps (1-10, NUM is optional for just 1 random map)
  - `/maps callout MAP` : Provides a map with callout locations
  - `/maps list` : Shows all Splatoon 2 maps w/ abbreviations
+ - `/store currentgear` : Gets all of the current gear for sale on SplatNet
+ - `/store dm add FLAG` : DM's you when a piece of gear with FLAG (Ability/Brand/Gear Name) appears in the SplatNet store. Can't DM the bot with this.
+ - `/store dm list` : DM's you when a piece of gear made by BRAND appears in the store. Can't DM the bot with this.
+ - `/store dm remove FLAG` : Removes you from receiving DM's when a piece of gear with FLAG (Ability/Brand/Gear Name) appears in the SplatNet store. Can't DM the bot with this.
  - `/weapons random NUM` : Generates a list of random weapons (1-10, NUM is optional for just 1 random weapon)
  - `/weapons info WEAP` : Gets Sub/Special/Level/Points for special for WEAP
  - `/weapons sub SUB` : Gets all weapons with the subweapon SUB
@@ -88,14 +87,14 @@ There are a few admin commands to configure the bot. To run these commands, you 
 
 The following commands require you to DM the bot with !token and follow the instructions. DM !deletetoken to remove all tokens from the bot.
 
- - `/rank` : Shows your ranks in the ranked gamemodes
- - `/stats` : Shows various stats from your gameplay
- - `/srstats` : Shows various stats from Salmon Run
+ - `/stats battle NUM` : Gets stats from NUM last battle (1 is latest, upto 50)
+ - `/stats rank` : Shows your ranks in the ranked gamemodes
+ - `/stats multi` : Shows various stats from your gameplay
+ - `/stats sr` : Shows various stats from Salmon Run
+ - `/stats maps MAP` : Pulls stats for a specific map
  - `/store order ID/ITEM NAME` : !splatnetgear provides an ID. Use either the ID or the name of an item on the store to order it
- - `/battle last` : Gets stats from the last battle you played
- - `/battle num NUM` : Gets stats from NUM last battle (1 is last, upto 50)
  - `/weapons stats WEAPON` : Pulls stats for a specific weapon
- - `/maps stats MAP` : Pulls stats for a specific map
+
 
  ### Bot Info Commands
  

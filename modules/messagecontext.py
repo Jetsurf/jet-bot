@@ -10,10 +10,6 @@ class MessageContext:
 		return self.message.channel
 
 	@property
-	def channel(self):
-		return self.message.channel.id
-
-	@property
 	def guild(self):
 		return self.message.channel.guild
 

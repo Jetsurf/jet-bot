@@ -45,6 +45,8 @@ weapon = SlashCommandGroup("weapons", 'Commands realted to weapons for Splatoon 
 admin = SlashCommandGroup('admin', 'Commands that require guild admin privledges to run')
 voice = SlashCommandGroup('voice', 'Commands related to voice functions')
 store = SlashCommandGroup('store', 'Commands related to the Splatoon 2 store')
+stats = SlashCommandGroup('stats', 'Commands related to Splatoon 2 gameplay stats')
+
 dm = admin.command_group(name='dm', description="Admin commands related to DM's on users leaving")
 feed = admin.command_group(name='feed', description="Admin commands related to SplatNet rotation feeds")
 announce = admin.command_group(name='announcements', description="Admin commands related to developer annoucenments")
@@ -92,9 +94,10 @@ async def cmdStoreCurrent(ctx):
 	await nsoHandler.gearParser(ctx)
 
 @store.command(name='order', description='Orders gear from the SplatNet store')
-async def cmdOrder(ctx, order: Option(str, "ID or NAME of the gear to order from the store (get both from /splatnetgear)", required=True)):
+async def cmdOrder(ctx, order: Option(str, "ID or NAME of the gear to order from the store (get both from /splatnetgear)", required=True), override: Option(bool, "Override if you have an item already on order", required=False)):
+	print(f"Ordering gear for user: {ctx.user.name} and id {str(ctx.user.id)}")
 	await serverUtils.increment_cmd(ctx, 'order')
-	await nsoHandler.orderGearCommand(ctx, args=[str(order)])
+	await nsoHandler.orderGearCommand(ctx, args=[str(order)], override=override if override != None else False)
 
 @storedm.command(name='add', description='Sends a DM when gear with this ability appears in the store')
 async def cmdStoreDMAbilty(ctx, flag: Option(str, "ABILITY/BRAND/GEAR to DM you with when it appears in the store", required=True)):
@@ -118,7 +121,7 @@ async def cmdStoreDMAbilty(ctx, flag: Option(str, "ABILITY/BRAND/GEAR to stop DM
 	if ctx.guild == None:
 		await ctx.respond("Can't DM me with this command.")
 		return
-		
+
 	await serverUtils.increment_cmd(ctx, 'storedm') 
 	await nsoHandler.removeStoreDM(ctx, [ str(flag) ])
 
@@ -251,7 +254,7 @@ async def cmdMapsStats(ctx):
 	await serverUtils.increment_cmd(ctx, 'maps')
 	await nsoHandler.cmdMaps(ctx, args=[ 'list' ])
 
-@maps.command(name='stats', description="Shows Splatoon 2 gameplay stats for a map")
+@stats.command(name='maps', description="Shows Splatoon 2 gameplay stats for a map")
 async def cmdMapsStats(ctx, map: Option(str, "Map to show stats for", choices=[ themap.name() for themap in splatInfo.getAllMaps() ] ,required=True)):
 	await serverUtils.increment_cmd(ctx, 'maps')
 	await nsoHandler.cmdMaps(ctx, args=[ 'stats', str(map)])
@@ -303,29 +306,29 @@ async def cmdWeapSub(ctx, sub: Option(str, "Name of the sub to get matching weap
 
 	await nsoHandler.cmdWeaps(ctx, args=[ 'sub', str(sub) ])
 
-@client.slash_command(name='rank', description='Get your ranks in ranked mode from S2 SplatNet')
+@stats.command(name='ranks', description='Get your ranks in ranked mode from S2 SplatNet')
 async def cmdRanks(ctx):
 	await serverUtils.increment_cmd(ctx, 'rank')
 	await nsoHandler.getRanks(ctx)
 
-@client.slash_command(name='srstats', description='Get your Salmon Run stats from S2 SplatNet')
+@stats.command(name='sr', description='Get your Salmon Run stats from S2 SplatNet')
 async def cmdSRStats(ctx):
 	await serverUtils.increment_cmd(ctx, 'srstats')
 	await nsoHandler.getSRStats(ctx)
 
-@client.slash_command(name='stats', description='Get your gameplay stats from S2 SplatNet ')
+@stats.command(name='multi', description='Get your multiplayer stats from S2 SplatNet ')
 async def cmdStats(ctx):
 	await serverUtils.increment_cmd(ctx, 'stats')
 	await nsoHandler.getStats(ctx)
 
-@client.slash_command(name='battle', description='Get stats from a battle (1-50)')
+@stats.command(name='battle', description='Get stats from a battle (1-50)')
 async def cmdBattle(ctx, battlenum: Option(int, "Battle Number, 1 being latest, 50 max", required=True, default=1)):
 	await serverUtils.increment_cmd(ctx, 'battle')
 	await nsoHandler.cmdBattles(ctx, battlenum)
 
-#TODO: COMMENT THIS OUT! NEEDS GUILD RESTRICTION
-@client.slash_command(name='eval', description="Eval a code block Owners only.")
-async def cmdEval(ctx, code: Option(str, "The code block to eval", required=True, default='``````')):
+#TODO: NEEDS GUILD RESTRICTION - need to dynamically load the home server
+@client.slash_command(name='eval', description="Eval a code block (Owners only)")
+async def cmdEval(ctx, code: Option(str, "The code block to eval", required=True)):
 	await doEval(ctx, code, slash=True)
 
 @voice.command(name='join', description='Join a voice chat channel')
@@ -665,7 +668,7 @@ async def doEval(ctx, codeblk, slash=False):
 			else:
 				embed.add_field(name="Result", value=out, inline=False)
 
-			await message.channel.send(embed=embed)
+			await ctx.respond(embed=embed)
 		else:
 			await ctx.respond("Please provide code in a block")
 
@@ -738,7 +741,7 @@ async def on_message(message):
 	elif cmd == 'reloadnsoapp' and message.author in owners:
 		await resetNSOVer(message)
 	elif cmd == 'storejson' and message.author in owners:
-		await nsoHandler.getStoreJSON(message)
+		await nsoHandler.getStoreJSON(context)
 	elif cmd == 'admin':
 		if message.guild.get_member(message.author.id) == None:
 			await client.get_guild(message.guild.id).chunk()
@@ -798,7 +801,7 @@ async def on_message(message):
 		await nsoHandler.getRanks(context)
 	elif cmd == 'order':
 		print(f"Ordering gear for user: {message.author.name} and id {str(message.author.id)}")
-		await nsoHandler.orderGearCommand(context, args=args)
+		await nsoHandler.orderGearCommand(context, args=args, is_slash=False)
 	elif cmd == 'stats':
 		await nsoHandler.getStats(context)
 	elif cmd == 'srstats':
@@ -899,6 +902,7 @@ print('Logging into discord')
 client.add_application_command(store)
 client.add_application_command(maps)
 client.add_application_command(weapon)
+client.add_application_command(stats)
 client.add_application_command(voice)
 client.add_application_command(admin)
 
