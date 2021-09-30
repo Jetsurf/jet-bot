@@ -521,8 +521,9 @@ async def on_ready():
 		nsoTokens = nsotoken.Nsotoken(client, mysqlHandler, nsoAppVer)
 		nsoHandler = nsohandler.nsoHandler(client, mysqlHandler, nsoTokens, splatInfo, cmdOrder)
 		acHandler = achandler.acHandler(client, mysqlHandler, nsoTokens)
-		await nsoHandler.updateS2JSON()
 		await mysqlHandler.startUp()
+		await nsoHandler.updateS2JSON()
+		await nsoHandler.updateAppVersion()
 		print('Done\n------')
 		await client.change_presence(status=discord.Status.online, activity=discord.Game("Use !help for directions!"))
 	else:
