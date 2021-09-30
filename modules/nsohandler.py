@@ -95,28 +95,25 @@ class nsoHandler():
 			league = data['league']
 
 			embed.add_field(name="Maps", value="Maps currently on rotation", inline=False)
-			embed.add_field(name="<:turfwar:550107083911987201> Turf War", value=f"{turf['mapA']['name']}\n{turf['mapB']['name']}", inline=True)
-			embed.add_field(name=f"<:ranked:550107084684001350> Ranked: {ranked['rule']['name']}", value=f"{ranked['mapA']['name']}\n{ranked['mapB']['name']}", inline=True)
-			embed.add_field(name=f"<:league:550107083660328971> League: {league['rule']['name']}", value=f"{league['mapA']['name']}\n{league['mapB']['name']}", inline=True)
+			embed.add_field(name="<:turfwar:550107083911987201> Turf War", value=f"{turf['stage_a']['name']}\n{turf['stage_b']['name']}", inline=True)
+			embed.add_field(name=f"<:ranked:550107084684001350> Ranked: {ranked['rule']['name']}", value=f"{ranked['stage_a']['name']}\n{ranked['stage_b']['name']}", inline=True)
+			embed.add_field(name=f"<:league:550107083660328971> League: {league['rule']['name']}", value=f"{league['stage_a']['name']}\n{league['stage_b']['name']}", inline=True)
 
 		if srflag:
 			flag = 0
-			srdata = await self.srParser(getNext=0, flag=1)
+			srdata = self.srParser()
 			if srdata == None:
-				srdata = await self.srParser(getNext=1, flag=1)
+				srdata = self.srParser(getNext=True)
 				flag = 1
 
-			timeRemaining = srdata['time']
-			days = int(timeRemaining / 86400)
-			timeRemaining = timeRemaining % 86400
-			hours = int(timeRemaining / 3600)
-			timeRemaining = timeRemaining % 3600
-			minutes = int(timeRemaining / 60)
+			days = srdata['days']
+			hours = srdata['hours']
+			mins = srdata['mins']
 
 			if flag == 1:
 				embed.add_field(name="Salmon Run", value="Next SR Rotation", inline=False)
 				embed.add_field(name='Map', value=srdata['map']['name'], inline=True)
-				embed.add_field(name='Weapons', value=srdata['weapons'], inline=True)
+				embed.add_field(name='Weapons', value=srdata['weapons'].replace('\n', ', ', 3), inline=True)
 				embed.add_field(name='Time Until SR Rotation', value=f"{str(days)} Days, {str(hours)} Hours, and {str(minutes)} Minutes", inline=False)
 			else:
 				embed.add_field(name="Salmon Run", value="Current SR Rotation", inline=False)
@@ -1089,79 +1086,107 @@ class nsoHandler():
 
 	def mapsEmbed(self, offset=0) -> discord.Embed:
 		embed = discord.Embed(colour=0x3FFF33)
-		theTime = int(time.time())
-
+		
 		data = self.maps(offset=offset)
 		turf = data['turf']
 		ranked = data['ranked']
 		league = data['league']
-		end = turf['end']
+		hours = data['hours']
+		mins = data['mins']
 
 		if offset == 0:
 			embed.title = "Current Splatoon 2 Maps"
 		elif offset == 1:
 			embed.title = "Upcoming Splatoon 2 Maps"
 
-		timeRemaining = end - theTime
-		timeRemaining = timeRemaining % 86400
-		hours = int(timeRemaining / 3600)
-		timeRemaining = timeRemaining % 3600
-		minutes = int(timeRemaining / 60)
-
 		embed.add_field(name="<:turfwar:550103899084816395> Turf War", value=f"{turf['stage_a']['name']}\n{turf['stage_a']['name']}", inline=True)
 		embed.add_field(name=f"<:ranked:550104072456372245> Ranked: {ranked['rule']['name']}", value=f"{ranked['stage_a']['name']}\n{ranked['stage_b']['name']}", inline=True)
 		embed.add_field(name=f"<:league:550104147463110656> League: {league['rule']['name']}", value=f"{league['stage_a']['name']}\n{league['stage_b']['name']}", inline=True)
 
 		if offset == 0:
-			embed.add_field(name="Time Remaining", value=f"{str(hours)} Hours, and {str(minutes)} minutes", inline=False)
+			embed.add_field(name="Time Remaining", value=f"{str(hours)} Hours, and {str(mins)} minutes", inline=False)
 		elif offset >= 1:
 			hours = hours - 2
-			embed.add_field(name="Time Until Map Rotation", value=f"{str(hours)} Hours, and {str(minutes)} minutes", inline=False)
+			embed.add_field(name="Time Until Map Rotation", value=f"{str(hours)} Hours, and {str(mins)} minutes", inline=False)
 
 		return embed
 
 	def maps(self, offset=0):
-		
+		theTime = int(time.time())
 		trfWar = self.mapsJSON['regular']
 		ranked = self.mapsJSON['gachi']
 		league = self.mapsJSON['league']
 		
 		turf = {}
-		turf['mapA'] = trfWar[offset]['stage_a']
-		turf['mapB'] = trfWar[offset]['stage_b']
+		turf['stage_a'] = trfWar[offset]['stage_a']
+		turf['stage_b'] = trfWar[offset]['stage_b']
 		turf['end']  = trfWar[offset]['end_time']
 
+		end   = trfWar[offset]['end_time']
+		theTime  = end - theTime
+		theTime  = theTime % 86400
+		hours = int(theTime / 3600)
+		theTime  = theTime % 3600
+		mins  = int(theTime / 60)
+
 		rnk = {}
-		rnk['mapA'] = ranked[offset]['stage_a']
-		rnk['mapB'] = ranked[offset]['stage_b']
+		rnk['stage_a'] = ranked[offset]['stage_a']
+		rnk['stage_b'] = ranked[offset]['stage_b']
 		rnk['rule'] = ranked[offset]['rule']
 
 		lge = {}
-		lge['mapA'] = league[offset]['stage_a']
-		lge['mapB'] = league[offset]['stage_b']
+		lge['stage_a'] = league[offset]['stage_a']
+		lge['stage_b'] = league[offset]['stage_b']
 		lge['rule'] = league[offset]['rule']
 
 		data = {}
+		data['hours']  = hours
+		data['mins']   = mins
 		data['turf']   = turf
 		data['ranked'] = rnk
 		data['league'] = lge
 
 		return data
 
-	async def srParser(self, ctx=None, getNext=0, flag=0):
-		theTime = int(time.time())
-		currentSR = self.srJSON['details']
-		gotData = 0
-		start = 0
-		end = 0
+	def srEmbed(self, getNext=False) -> discord.Embed:
 		embed = discord.Embed(colour=0xFF8633)
-		theString = ''	
-		srdata = {}
+
+		data = self.srParser(getNext=getNext)
+		if data == None:
+			data = self.srParser(getNext=True)
+			getNext=True
+
+		weaps = data['weapons']
+		map = data['map']
+		days = data['days']
+		hours = data['hours']
+		mins = data['mins']
 
 		if getNext == 0:
 			embed.title = "Current Salmon Run"
 		else:
 			embed.title = "Upcoming Salmon Run"
+
+		embed.set_thumbnail(url=f"https://splatoon2.ink/assets/splatnet{map['image']}")
+		embed.add_field(name='Map', value=map['name'], inline=False)
+		embed.add_field(name='Weapons', value=weaps, inline=False)
+
+		if getNext:
+			embed.add_field(name='Time Until Rotation', value=f"{str(days)} Days, {str(hours)} Hours, and {str(mins)} Minutes")
+		else:
+			embed.add_field(name="Time Remaining ", value=f"{str(days)} Days, {str(hours)} Hours, and {str(mins)} Minutes")
+
+		return embed
+
+	def srParser(self, getNext=False):
+		theTime = int(time.time())
+		currentSR = self.srJSON['details']
+		gotData = 0
+		start = 0
+		end = 0
+		
+		theString = ''	
+		srdata = {}
 
 		for i in currentSR:
 			gotData = 0
@@ -1174,16 +1199,13 @@ class nsoHandler():
 				gotData = 1
 
 			if (gotData == 1 and getNext == 0) or (gotData == 0 and getNext == 1):
-				if flag == 0:
-					embed.set_thumbnail(url=f"https://splatoon2.ink/assets/splatnet{map['image']}")
-					embed.add_field(name='Map', value=map['name'], inline=False)
-				else:
-					srdata['thumb'] = f"https://splatoon2.ink/assets/splatnet{map['image']}"
-					srdata['map'] = map
+				srdata['thumb'] = f"https://splatoon2.ink/assets/splatnet{map['image']}"
+				srdata['map'] = map
+
 				for j in i['weapons']:
-					try:
+					if 'weapon' in j:
 						weap = j['weapon']
-					except:
+					else:
 						weap = j['coop_special_weapon']
 					theString = f"{theString}{weap['name']}\n"
 				break
@@ -1191,39 +1213,29 @@ class nsoHandler():
 			elif gotData == 1 and getNext == 1:
 				gotData = 0
 				continue
-		if flag == 0:
-			embed.add_field(name='Weapons', value=theString, inline=False)
-		else:
-			srdata['weapons'] = theString
+
+		srdata['weapons'] = theString
 
 		if gotData == 0 and getNext == 0:
-			if flag == 0:
-				await message.channel.send('No SR Currently Running')
-				return
-			else:
-				return None
+			return None
 		elif getNext == 1:
-			timeRemaining = start - theTime
+			timeleft = start - theTime
 		else:
-			timeRemaining = end - theTime
+			timeleft = end - theTime
 
-		srdata['time'] = timeRemaining
+		srdata['time'] = timeleft
 
-		days = int(timeRemaining / 86400)
-		timeRemaining = timeRemaining % 86400
-		hours = int(timeRemaining / 3600)
-		timeRemaining = timeRemaining % 3600
-		minutes = int(timeRemaining / 60)
+		days = int(end / 86400)
+		timeleft = timeleft % 86400
+		hours = int(timeleft / 3600)
+		timeleft = timeleft % 3600
+		mins = int(timeleft / 60)
 
-		if getNext == 1:
-			embed.add_field(name='Time Until Rotation', value=f"{str(days)} Days, {str(hours)} Hours, and {str(minutes)} Minutes")
-		else:
-			embed.add_field(name="Time Remaining ", value=f"{str(days)} Days, {str(hours)} Hours, and {str(minutes)} Minutes")
+		srdata['days'] = days
+		srdata['hours'] = hours
+		srdata['mins'] = mins
 
-		if flag == 0:
-			await ctx.respond(embed=embed)
-		if flag == 1:
-			return srdata
+		return srdata
 
 	async def battleParser(self, ctx, num=1):
 		if not await self.checkDuplicate(ctx.user.id):

@@ -238,12 +238,12 @@ async def cmdNextMaps(ctx, rotation: Option(int, "Map Rotations ahead to show, m
 @maps.command(name='nextsr', description='Shows map/weapons for the next Salmon Run rotation')
 async def cmdNextSR(ctx):
 	await serverUtils.increment_cmd(ctx, 'nextsr')
-	await nsoHandler.srParser(ctx, 1)
+	await ctx.respond(embed=nsoHandler.srEmbed(getNext=True))
 
 @maps.command(name='currentsr', description='Shows map/weapons for the current Salmon Run rotation')
 async def cmdCurrentSR(ctx):
 	await serverUtils.increment_cmd(ctx, 'currentsr')
-	await nsoHandler.srParser(ctx)
+	await ctx.respond(embed=nsoHandler.srParser())
 
 @maps.command(name='callout', description="Shows callout locations for a Splatoon 2 map")
 async def cmdMapsCallout(ctx, map: Option(str, "Map to show callout locations for", choices=[ themap.name() for themap in splatInfo.getAllMaps() ] ,required=True)):
@@ -828,15 +828,15 @@ async def on_message(message):
 		else:
 			await serverVoices[theServer].joinVoiceChannel(context, args)
 	elif cmd == 'currentmaps':
-		await nsoHandler.maps(context)
+		await message.channel.send(embed=nsoHandler.mapsEmbed())
 	elif cmd == 'nextmaps':
-		await nsoHandler.maps(context, offset=min(11, message.content.count('next')))
+		await message.channel.send(embed=nsoHandler.mapsEmbed(offset=min(11, message.content.count('next'))))
 	elif cmd == 'currentsr':
-		await nsoHandler.srParser(context)
+		await messasge.channel.send(embed=nsoHandler.srEmbed())
 	elif cmd == 'splatnetgear':
 		await nsoHandler.gearParser(context)
 	elif cmd == 'nextsr':
-		await nsoHandler.srParser(context, 1)
+		await message.channel.send(embed=nsoHandler.srEmbed(getNext=True))
 	elif (cmd == 'map') or (cmd == 'maps'):
 		await nsoHandler.cmdMaps(context, args)
 	elif (cmd == 'weapon') or (cmd == 'weapons'):
