@@ -243,7 +243,7 @@ async def cmdNextSR(ctx):
 @maps.command(name='currentsr', description='Shows map/weapons for the current Salmon Run rotation')
 async def cmdCurrentSR(ctx):
 	await serverUtils.increment_cmd(ctx, 'currentsr')
-	await ctx.respond(embed=nsoHandler.srParser())
+	await ctx.respond(embed=nsoHandler.srEmbed(getNext=False))
 
 @maps.command(name='callout', description="Shows callout locations for a Splatoon 2 map")
 async def cmdMapsCallout(ctx, map: Option(str, "Map to show callout locations for", choices=[ themap.name() for themap in splatInfo.getAllMaps() ] ,required=True)):
