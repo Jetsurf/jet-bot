@@ -243,7 +243,7 @@ async def cmdNextSR(ctx):
 @maps.command(name='currentsr', description='Shows map/weapons for the current Salmon Run rotation')
 async def cmdCurrentSR(ctx):
 	await serverUtils.increment_cmd(ctx, 'currentsr')
-	await ctx.respond(embed=nsoHandler.srParser())
+	await ctx.respond(embed=nsoHandler.srEmbed(getNext=False))
 
 @maps.command(name='callout', description="Shows callout locations for a Splatoon 2 map")
 async def cmdMapsCallout(ctx, map: Option(str, "Map to show callout locations for", choices=[ themap.name() for themap in splatInfo.getAllMaps() ] ,required=True)):
@@ -521,8 +521,9 @@ async def on_ready():
 		nsoTokens = nsotoken.Nsotoken(client, mysqlHandler, nsoAppVer)
 		nsoHandler = nsohandler.nsoHandler(client, mysqlHandler, nsoTokens, splatInfo, cmdOrder)
 		acHandler = achandler.acHandler(client, mysqlHandler, nsoTokens)
-		await nsoHandler.updateS2JSON()
 		await mysqlHandler.startUp()
+		await nsoHandler.updateS2JSON()
+		await nsoHandler.updateAppVersion()
 		print('Done\n------')
 		await client.change_presence(status=discord.Status.online, activity=discord.Game("Use !help for directions!"))
 	else:
