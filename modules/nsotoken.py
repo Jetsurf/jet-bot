@@ -179,7 +179,7 @@ class Nsotoken():
 			await message.channel.send("Something went wrong! Join my support discord and report that something broke!")
 
 	def get_hash(self, id_token, timestamp):
-		version = '1.5.11'
+		version = '1.5.13'
 		api_app_head = { 'User-Agent': f"splatnet2statink/{version}" }
 		api_body = { 'naIdToken': id_token, 'timestamp': timestamp }
 		api_response = requests.post("https://elifessler.com/s2s/api/gen2", headers=api_app_head, data=api_body)
@@ -189,7 +189,7 @@ class Nsotoken():
 			print("stat.ink: RATE LIMITED")
 			return 429
 		elif '200' not in str(api_response):
-			print(f"ERROR IN stat.ink CALL: {str(api_response)}")
+			print(f"ERROR IN stat.ink CALL: {str(api_response) + str(api_response.text)}")
 			return None
 		else:
 			return json.loads(api_response.text)["hash"]

@@ -111,15 +111,17 @@ class nsoHandler():
 			mins = srdata['mins']
 
 			if flag == 1:
-				embed.add_field(name="Salmon Run", value="Next SR Rotation", inline=False)
-				embed.add_field(name='Map', value=srdata['map']['name'], inline=True)
-				embed.add_field(name='Weapons', value=srdata['weapons'].replace('\n', ', ', 3), inline=True)
-				embed.add_field(name='Time Until SR Rotation', value=f"{str(days)} Days, {str(hours)} Hours, and {str(minutes)} Minutes", inline=False)
+				titleval = 'Next SR Rotation'
+				timename = 'Time Remaining for SR Rotation'
 			else:
-				embed.add_field(name="Salmon Run", value="Current SR Rotation", inline=False)
-				embed.add_field(name='Map', value=srdata['map']['name'], inline=True)
-				embed.add_field(name='Weapons', value=srdata['weapons'].replace('\n', ', ', 3), inline=True)
-				embed.add_field(name="Time Remaining for SR Rotation", value=f"{str(days)} Days, {str(hours)} Hours, and {str(minutes)} Minutes", inline=False)
+				titleval = 'Current SR Rotation'
+				timename = 'Time Until SR Rotation'
+			#TODO Check this
+			embed.add_field(name="Salmon Run", value=titleval, inline=False)
+			embed.add_field(name='Map', value=srdata['map']['name'], inline=True)
+			embed.add_field(name='Weapons', value=srdata['weapons'].replace('\n', ', ', 3), inline=True)
+			embed.add_field(name=timename, value=f"{str(days)} Days, {str(hours)} Hours, and {str(mins)} Minutes", inline=False)
+
 		if gearflag:
 			gear = await self.gearParser(flag=1)
 			embed.add_field(name="Gear", value="Gear on rotation", inline=False)
@@ -128,7 +130,7 @@ class nsoHandler():
 			if 'frequent_skill' in gear['gear']['brand']:
 				embed.add_field(name="Ability/Common Sub", value=f"{gear['skill']['name']}/{gear['gear']['brand']['frequent_skill']['name']}", inline=True)
 			else:
-				embed.add_field(name="Ability/Common Sub", value=f"{gear['skill']['name']}/None", inline=True)				
+				embed.add_field(name="Ability/Common Sub", value=f"{gear['skill']['name']}/None", inline=True)
 
 		return embed
 
@@ -1255,7 +1257,7 @@ class nsoHandler():
 		battletype = thebattle['game_mode']['name']
 		battleid = thebattle['battle_number']
 
-		fullbattle = await self.getNSOJSON(ctx, self.app_head, "https://app.splatoon2.nintendo.net/api/results/" + battleid)
+		fullbattle = await self.getNSOJSON(ctx, self.app_head, f"https://app.splatoon2.nintendo.net/api/results/{battlelid}")
 		enemyteam = fullbattle['other_team_members']
 		myteam = fullbattle['my_team_members']
 		mystats = fullbattle['player_result']
