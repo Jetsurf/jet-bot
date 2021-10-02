@@ -46,6 +46,7 @@ admin = SlashCommandGroup('admin', 'Commands that require guild admin privledges
 voice = SlashCommandGroup('voice', 'Commands related to voice functions')
 store = SlashCommandGroup('store', 'Commands related to the Splatoon 2 store')
 stats = SlashCommandGroup('stats', 'Commands related to Splatoon 2 gameplay stats')
+acnh = SlashCommandGroup('acnh', "Commands related to Animal Crossing New Horizons")
 
 dm = admin.command_group(name='dm', description="Admin commands related to DM's on users leaving")
 feed = admin.command_group(name='feed', description="Admin commands related to SplatNet rotation feeds")
@@ -87,6 +88,11 @@ def loadConfig():
 	except Exception as e:
 		print(f"Failed to load config: {str(e)}")
 		quit(1)
+
+@acnh.command(name='passport', description="Posts your ACNH Passport")
+async def cmdACNHPassport(ctx):
+	await serverUtils.increment_cmd(ctx, 'passport')
+	await acHandler.passport(ctx)
 
 @store.command(name='currentgear', description="See the current gear on the SplatNet store")
 async def cmdStoreCurrent(ctx):
@@ -452,25 +458,33 @@ async def cmdVoicePlaySound(ctx, sound: Option(str, "Sound clip to play, get wit
 	else:
 		await ctx.respond("Not connected to voice.")
 
+@admin.command(name='playlist', description="Adds a URL or the current video to my playlist for /voice playrandom")
+async def cmdPlaylistAdd(ctx, url: Option(str, "URL to add to my playlist", required=False)):
+	if ctx.guild == None:
+		await ctx.respond("Can't DM me with this command.")
+		return
+
+	if await checkIfAdmin(ctx):
+		await serverVoices[ctx.guild.id].addGuildList(ctx, [ 'playlist', url ])
+	else:
+		await ctx.respond("You aren't a guild administrator")
+
+@admin.command(name='blacklist', description="Adds a URL or the current video to my playlist for /voice playrandom")
+async def cmdPlaylistAdd(ctx, url: Option(str, "URL to add to my playlist", required=False)):
+	if ctx.guild == None:
+		await ctx.respond("Can't DM me with this command.")
+		return
+
+	if await checkIfAdmin(ctx):
+		await serverVoices[ctx.guild.id].addGuildList(ctx, [ 'blacklist', url ])
+	else:
+		await ctx.respond("You aren't a guild administrator")
+
 async def checkIfAdmin(ctx):
 	if ctx.guild.get_member(ctx.user.id) == None:
 		await client.get_guild(ctx.guild.id).chunk()
 
 	return ctx.user.guild_permissions.administrator
-
-async def resetNSOVer(message):
-	global nsoAppVer, nsoTokens
-
-	try:
-		with open('./config/discordbot.json', 'r') as json_config:
-			configData = json.load(json_config)
-			nsoAppVer = configData['nso_app_ver']
-			await nsoTokens.reloadNSOAppVer(nsoAppVer)
-	except:
-		await message.channel.send("Issue loading config file... whats up with that?")
-		return
-
-	await message.channel.send(f"Reloaded NSO Version from config with version: {nsoAppVer}")
 
 @client.event
 async def on_ready():
@@ -739,8 +753,6 @@ async def on_message(message):
 		await doEval(context)
 	elif cmd == 'getcons' and message.author in owners:
 		await mysqlHandler.printCons(message)
-	elif cmd == 'reloadnsoapp' and message.author in owners:
-		await resetNSOVer(message)
 	elif cmd == 'storejson' and message.author in owners:
 		await nsoHandler.getStoreJSON(context)
 	elif cmd == 'admin':
@@ -754,9 +766,9 @@ async def on_message(message):
 				return
 			subcommand = args[0].lower()
 			if subcommand == 'playlist':
-				await serverVoices[theServer].addPlaylist(message)
+				await serverVoices[theServer].addGuildList(context, args)
 			elif subcommand == 'blacklist':
-				await serverVoices[theServer].addBlacklist(message)
+				await serverVoices[theServer].addGuildList(context, args)
 			elif subcommand == 'wtfboom':
 				await serverVoices[theServer].playWTF(message)
 			elif subcommand == 'tts':
@@ -810,7 +822,7 @@ async def on_message(message):
 	elif cmd == 'storedm':
 		await nsoHandler.addStoreDM(context, args)
 	elif cmd == 'passport':
-		await acHandler.passport(message)
+		await acHandler.passport(context)
 	elif cmd == 'github':
 		await channel.send('Here is my github page! : https://github.com/Jetsurf/jet-bot')
 	elif cmd == 'support':
@@ -906,6 +918,7 @@ client.add_application_command(weapon)
 client.add_application_command(stats)
 client.add_application_command(voice)
 client.add_application_command(admin)
+client.add_application_command(acnh)
 
 sys.stdout.flush()
 sys.stderr.flush()

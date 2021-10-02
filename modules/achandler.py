@@ -41,8 +41,8 @@ class acHandler():
 			'_park_session' : 'tmp'
 		}
 
-	async def getNSOJSON(self, message, header, url):
-		tokens = await self.nsotoken.get_ac_mysql(message.author.id)
+	async def getNSOJSON(self, ctx, header, url):
+		tokens = await self.nsotoken.get_ac_mysql(ctx.user.id)
 		gtoken = tokens[0]
 		parktoken = tokens[1]
 		bearer = tokens[2]
@@ -61,7 +61,7 @@ class acHandler():
 			thejson = json.loads(r.text)
 
 		if '401' in str(r):
-			tokens = await self.nsotoken.do_iksm_refresh(message, 'ac')
+			tokens = await self.nsotoken.do_iksm_refresh(ctx, 'ac')
 			if tokens == None:			
 				return
 
@@ -86,15 +86,15 @@ class acHandler():
 
 		return thejson
 
-	async def passport(self, message):
-		userjson = await self.getNSOJSON(message, self.user_app_head, 'https://web.sd.lp1.acbaa.srv.nintendo.net/api/sd/v1/users')
+	async def passport(self, ctx):
+		userjson = await self.getNSOJSON(ctx, self.user_app_head, 'https://web.sd.lp1.acbaa.srv.nintendo.net/api/sd/v1/users')
 		if userjson == None:
 			return
 		else:
 			user = userjson['users'][0]
 
-		detaileduser = await self.getNSOJSON(message, self.user_auth_app_head, 'https://web.sd.lp1.acbaa.srv.nintendo.net/api/sd/v1/users/' + user['id'] + '/profile?language=en-US')
-		landjson = await self.getNSOJSON(message, self.user_auth_app_head, 'https://web.sd.lp1.acbaa.srv.nintendo.net/api/sd/v1/lands/' + user['land']['id'] + '/profile?language=en-US')
+		detaileduser = await self.getNSOJSON(ctx, self.user_auth_app_head, 'https://web.sd.lp1.acbaa.srv.nintendo.net/api/sd/v1/users/' + user['id'] + '/profile?language=en-US')
+		landjson = await self.getNSOJSON(ctx, self.user_auth_app_head, 'https://web.sd.lp1.acbaa.srv.nintendo.net/api/sd/v1/lands/' + user['land']['id'] + '/profile?language=en-US')
 		profilepic = requests.get(user['image'])
 		profileid = re.search('(?<=user_profile/).*(?=\?)', user['image']).group()
 
@@ -117,5 +117,5 @@ class acHandler():
 
 		embed.add_field(name="NPC's (Name - Birthday)", value=npcstring, inline=True)
 
-		await message.channel.send(embed=embed)
+		await ctx.respond(embed=embed)
 		print("Got a passport!")

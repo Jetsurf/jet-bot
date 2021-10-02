@@ -259,14 +259,8 @@ class voiceServer():
 
 	async def listCheck(self, theList, theURL):
 		cur = await self.sqlBroker.connect()
-		stmt = "SELECT COUNT(*) FROM "
-
-		if theList == 0:
-			stmt = stmt + "playlist "
-		else:
-			stmt = stmt + "blacklist "
-
-		stmt = stmt + "WHERE serverid = %s AND url = %s"
+		
+		stmt = f"SELECT COUNT(*) FROM {theList} WHERE serverid = %s AND url = %s"
 		await cur.execute(stmt, (self.server, theURL,))
 		count = await cur.fetchone()
 		await self.sqlBroker.commit(cur)
@@ -275,23 +269,18 @@ class voiceServer():
 		else:
 			return False
 
-	async def listAdd(self, theList, toAdd, message):
+	async def listAdd(self, ctx, toAdd, theList):
 		cur = await self.sqlBroker.connect()
-		stmt = "INSERT INTO "
 
-		if theList == 0:
-			stmt = stmt + "playlist "
-		else:
-			stmt = stmt + "blacklist "
-
-		stmt = stmt + "(serverid, url) VALUES(%s, %s)"
+		stmt = f"INSERT INTO {theList} (serverid, url) VALUES(%s, %s)"
 		input = (self.server, toAdd,)
 		await cur.execute(stmt, input)
 		if cur.lastrowid != None:
 			await self.sqlBroker.commit(cur)
+			return True
 		else:
 			await self.sqlBroker.rollback(cur)
-			await message.channel.send("Something went wrong!")
+			return False
 
 	async def playRandom(self, ctx, numToQueue):
 		cur = await self.sqlBroker.connect()
@@ -332,34 +321,22 @@ class voiceServer():
 		elif numToQueue > 1:
 			await ctx.respond(f"Added {str(numToQueue)} more song(s) to the queue from my playlist")
 
-	async def addPlaylist(self, message):
-		toAdd = ''
-		if 'https' in message.content:
-			toAdd = message.content.split(' ', 2)[2]
-		elif self.source != None:
-			toAdd = self.source.yturl
+	async def addGuildList(self, ctx, args):
+		if len(set(args)) == 1:
+			if self.source.yturl != None and await self.listCheck(args[0], self.source.yturl):
+				if await self.listAdd(ctx, args[0], args[1]):
+					await ctx.respond(f"Added URL: {self.source.yturl} to the {args[0]}")
+				else:
+					await ctx.respond(f"Error adding to the {args[0]}")
+			else:
+				await ctx.respond("I'm not playing anything")
 		else:
-			await message.channel.send('Im not playing anything, pass me a url to add to the playlist')
-			return
-		
-		if not await self.listCheck(0, toAdd):
-			await self.listAdd(0, toAdd, message)
-			await message.add_reaction('👍')
-		else:
-			await message.channel.send('That is already in my playlist!')
-
-	async def addBlacklist(self, message):
-		toAdd = ''
-		if 'https' in message.content:
-			toAdd = message.content.split(' ', 2)[2]
-		elif self.source != None:
-			toAdd = self.source.yturl
-		else:
-			await message.channel.send('Im not playing anything, pass me a url to add to the playlist')
-			return
-		
-		if not await self.listCheck(1, toAdd):
-			await self.listAdd(1, toAdd, message)
-			await message.add_reaction('👍')
-		else:
-			await message.channel.send('That is already in my blacklist!')
+			if 'https' in args[1] and not await self.listCheck(args[0], args[1]):
+				if await self.listAdd(ctx, args[1], args[0]):
+					await ctx.respond(f"Added URL: {args[1]} to the {args[0]}")
+				else:
+					await ctx.respond(f"Error adding to the {args[0]}")
+			elif 'https' not in args[1]:
+				await ctx.respond("I need a proper url to add")
+			else:
+				await ctx.respond(f"URL: {args[1]} is already in my {args[0]}")

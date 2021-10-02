@@ -1273,9 +1273,7 @@ class nsoHandler():
 		else:
 			timeleft = end - theTime
 
-		srdata['time'] = timeleft
-
-		days = int(end / 86400)
+		days = int(timeleft / 86400)
 		timeleft = timeleft % 86400
 		hours = int(timeleft / 3600)
 		timeleft = timeleft % 3600

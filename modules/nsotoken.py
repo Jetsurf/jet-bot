@@ -37,7 +37,7 @@ class Nsotoken():
 			await self.sqlBroker.rollback(cur)
 			await message.channel.send("Something went wrong! If you want to report this, join my support discord and let the devs know what you were doing!")
 
-	async def addToken(self, message, token, session_token):
+	async def addToken(self, ctx, token, session_token):
 		now = datetime.now()
 		formatted_date = now.strftime('%Y-%m-%d %H:%M:%S')
 
@@ -48,17 +48,17 @@ class Nsotoken():
 
 		cur = await self.sqlBroker.connect()
 
-		if await self.checkDuplicate(str(message.author.id), cur):
+		if await self.checkDuplicate(str(ctx.user.id), cur):
 			if ac_g != None:
 				stmt = "UPDATE tokens SET gtoken = %s, park_session = %s, ac_bearer = %s, session_token = %s, iksm_time = %s WHERE clientid = %s"
-				input = (str(ac_g), str(ac_p), str(ac_b), str(session_token), formatted_date, str(message.author.id),)
+				input = (str(ac_g), str(ac_p), str(ac_b), str(session_token), formatted_date, str(ctx.user.id),)
 			elif s2 != None:
 				print("Updating S2 token + " + s2)
 				stmt = "UPDATE tokens SET token = %s, session_token = %s, iksm_time = %s WHERE clientid = %s"
-				input = (str(s2), str(session_token), formatted_date, str(message.author.id),)
+				input = (str(s2), str(session_token), formatted_date, str(ctx.user.id),)
 		else:
 			stmt = "INSERT INTO tokens (clientid, session_time, session_token) VALUES(%s, %s, %s)"
-			input = (str(message.author.id), formatted_date, str(session_token),)
+			input = (str(ctx.user.id), formatted_date, str(session_token),)
 
 		await cur.execute(stmt, input)
 		if cur.lastrowid != None:
@@ -194,27 +194,26 @@ class Nsotoken():
 		else:
 			return json.loads(api_response.text)["hash"]
 
-	async def do_iksm_refresh(self, message, game='s2'):
-		session_token = await self.get_session_token_mysql(message.author.id)
-		await message.channel.trigger_typing()
+	async def do_iksm_refresh(self, ctx, game='s2'):
+		session_token = await self.get_session_token_mysql(ctx.user.id)
 		keys = self.setup_nso(session_token, game)
 		
 		if keys == 404 or keys == 429:
-			await message.channel.send("Temporary issue with NSO logins. Please try again in a few minutes")
+			await ctx.respond("Temporary issue with NSO logins. Please try again in a few minutes")
 			return None
 		if keys == None:
-			await message.channel.send("Error getting token, I have logged this for my owners")
+			await ctx.respond("Error getting token, I have logged this for my owners")
 			return None
 
-		await self.addToken(message, keys, session_token)
+		await self.addToken(ctx, keys, session_token)
 
 		if game == 's2':
 			return keys['s2']
 		else:
 			return keys
 
-	async def do_ac_refresh(self, message):
-		return await self.do_iksm_refresh(message, 'ac')
+	async def do_ac_refresh(self, ctx):
+		return await self.do_iksm_refresh(ctx, 'ac')
 
 	def get_session_token(self, session_token_code, auth_code_verifier):
 		head = {
