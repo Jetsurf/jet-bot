@@ -95,6 +95,8 @@ The following commands require you to DM the bot with !token and follow the inst
  - `/store order ID/ITEM NAME` : !splatnetgear provides an ID. Use either the ID or the name of an item on the store to order it
  - `/weapons stats WEAPON` : Pulls stats for a specific weapon
 
+### Animal Crossing: New Horizons Commands
+ - `/acnh passport` : Posts your passport for Animal Crossing: New Horizons
 
  ### Bot Info Commands
  
