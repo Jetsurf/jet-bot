@@ -197,7 +197,7 @@ class voiceServer():
 
 	async def setupPlay(self, ctx, args):
 		if 'https://' in args[0]:
-			if await self.listCheck(1, args[0]):
+			if await self.listCheck('blacklist', args[0]):
 				print(f"{ctx.user.name} tried to play a blacklisted video")
 				await ctx.respond("Sorry, I can't play that")
 				return
@@ -240,7 +240,7 @@ class voiceServer():
 				else:
 					await ctx.respond("Don't know where to search, try !play youtube SEARCH or !play soundcloud SEARCH")
 					return
-				if await self.listCheck(1, theURL):
+				if await self.listCheck('blacklist', theURL):
 					print(f"{ctx.user.name} tried to play a blacklisted video")
 					await ctx.respond("Sorry, I can't play that")
 					return
@@ -259,7 +259,7 @@ class voiceServer():
 
 	async def listCheck(self, theList, theURL):
 		cur = await self.sqlBroker.connect()
-		
+
 		stmt = f"SELECT COUNT(*) FROM {theList} WHERE serverid = %s AND url = %s"
 		await cur.execute(stmt, (self.server, theURL,))
 		count = await cur.fetchone()
@@ -292,7 +292,7 @@ class voiceServer():
 		await self.sqlBroker.close(cur)
 
 		if len(x) == 0:
-			await ctx.respond("You have nothing added to your playlist, use !admin playlist URL to add songs!")
+			await ctx.respond("You have nothing added to your playlist, use /admin playlist URL to add songs!")
 			return
 
 		print("Playing random")

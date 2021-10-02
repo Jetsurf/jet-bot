@@ -345,6 +345,15 @@ async def cmdVoiceJoin(ctx, channel: Option(discord.VoiceChannel, "Voice Channel
 	else:
 		await serverVoices[ctx.guild.id].joinVoiceChannel(ctx, channel)
 
+@voice.command(name='leave', description="Disconnects the bot from voice")
+async def cmdVoiceLeave(ctx):
+	await serverUtils.increment_cmd(ctx, 'leavevoice')
+	if serverVoices[ctx.guild.id] != None:
+		await serverVoices[ctx.guild.id].vclient.disconnect()
+		await ctx.respond("Disconnected from voice", ephemeral=True)
+	else:
+		await ctx.respond("Not connected to voice", ephemeral=True)
+
 @voice.command(name='volume', description='Changes the volume while in voice chat')
 async def cmdVoiceVolume(ctx, vol: Option(int, "What to change the volume to 1-60% (7\% is default)"), required=True):
 	await serverUtils.increment_cmd(ctx, 'volume')
@@ -397,7 +406,7 @@ async def cmdVoiceEnd(ctx):
 	await serverUtils.increment_cmd(ctx, 'stop')
 	if serverVoices[ctx.guild.id].vclient is not None:
 		if serverVoices[ctx.guild.id].source is not None:
-			serverVoices[theServer].end()
+			serverVoices[ctx.guild.id].end()
 			await ctx.respond("Stopped playing all videos")
 		else:
 			await ctx.respond("Not playing anything.")
@@ -410,7 +419,7 @@ async def cmdVoicePlayRandom(ctx, num: Option(int, "Number of videos to queue up
 	if num < 0:
 		await ctx.respond("Num needs to be greater than 0.")
 	else:
-		await serverVoices[theServer].playRandom(context, num)
+		await serverVoices[ctx.guild.id].playRandom(ctx, num)
 
 @voice.command(name='currentvid', description="Shows the currently playing video")
 async def cmdVoiceCurrent(ctx):
