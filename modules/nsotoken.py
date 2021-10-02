@@ -3,6 +3,8 @@ import mysqlhandler, nsohandler
 import requests, json, re, sys, uuid, time
 import os, base64, hashlib, random, string
 from datetime import datetime
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+import googleplay
 
 class Nsotoken():
 	def __init__(self, client, mysqlhandler, nsoAppVer):
@@ -10,6 +12,59 @@ class Nsotoken():
 		self.session = requests.Session()
 		self.sqlBroker = mysqlhandler
 		self.nsoAppVer = nsoAppVer
+		self.scheduler = AsyncIOScheduler()
+		self.scheduler.add_job(self.updateAppVersion, 'cron', hour="3", minute='0', second='35')
+
+	async def ensureAppVersionTable(self, cur):
+		await cur.execute("SHOW TABLES LIKE 'nso_app_version'")
+		row = await cur.fetchone()
+		await self.sqlBroker.c_commit(cur)
+		if row == None:
+			await cur.execute("CREATE TABLE nso_app_version (version VARCHAR(32) NOT NULL, updatetime DATETIME NOT NULL)")
+			await self.sqlBroker.c_commit(cur)
+
+	async def getAppVersion(self):
+		cur = await self.sqlBroker.connect()
+		await self.ensureAppVersionTable(cur)
+
+		await cur.execute("SELECT version, UNIX_TIMESTAMP(updatetime) AS updatetime FROM nso_app_version")
+		row = await cur.fetchone()
+		await self.sqlBroker.c_commit(cur)
+		await self.sqlBroker.close(cur)
+
+		if row:
+			return {'version': row[0], 'updatetime': row[1]}
+
+		return None
+
+	async def updateAppVersion(self):
+		oldInfo = await self.getAppVersion()
+		if oldInfo != None:
+			age = time.time() - oldInfo['updatetime']
+			if age < 3600:
+				print("Skipping NSO version check -- cached data is recent")
+				return
+
+		gp = googleplay.GooglePlay()
+		newVersion = gp.getAppVersion("com.nintendo.znca")
+		if newVersion == None:
+			print(f"Couldn't retrieve NSO app version?")
+			return
+
+		cur = await self.sqlBroker.connect()
+
+		if (oldInfo == None) or (oldInfo['version'] != newVersion):
+			# Version was updated
+			await cur.execute("DELETE FROM nso_app_version")
+			await cur.execute("INSERT INTO nso_app_version (version, updatetime) VALUES (%s, NOW())", (newVersion,))
+			print(f"Updated NSO version: {oldInfo['version'] if oldInfo else '(none)'} -> {newVersion}")
+		else:
+			# No version change, so just bump the timestamp
+			await cur.execute("UPDATE nso_app_version SET updatetime = NOW()")
+
+		await self.sqlBroker.c_commit(cur)
+		await self.sqlBroker.close(cur)
+		return
 
 	async def reloadNSOAppVer(self, nsoAppVer):
 		self.nsoAppVer = nsoAppVer

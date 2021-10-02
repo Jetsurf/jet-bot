@@ -546,7 +546,7 @@ async def on_ready():
 		acHandler = achandler.acHandler(client, mysqlHandler, nsoTokens)
 		await mysqlHandler.startUp()
 		await nsoHandler.updateS2JSON()
-		await nsoHandler.updateAppVersion()
+		await nsoTokens.updateAppVersion()
 		print('Done\n------')
 		await client.change_presence(status=discord.Status.online, activity=discord.Game("Use !help for directions!"))
 	else:

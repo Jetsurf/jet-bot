@@ -5,7 +5,6 @@ import json, os
 import urllib, urllib.request
 import splatinfo
 import messagecontext
-import googleplay
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from discord.app import *
 
@@ -20,7 +19,6 @@ class nsoHandler():
 		self.scheduler.add_job(self.doStoreDM, 'cron', hour="*/2", minute='5') 
 		self.scheduler.add_job(self.updateS2JSON, 'cron', hour="*/2", minute='0', second='15')
 		self.scheduler.add_job(self.doFeed, 'cron', hour="*/2", minute='0', second='25')
-		self.scheduler.add_job(self.updateAppVersion, 'cron', hour="3", minute='0', second='35')
 		self.scheduler.start()
 		self.mapJSON = None
 		self.storeJSON = None
@@ -59,52 +57,6 @@ class nsoHandler():
 			'Accept-Encoding': 'gzip, deflate',
 			'Accept-Language': 'en-us'
 		}
-
-	async def ensureAppVersionTable(self, cur):
-		await cur.execute("SHOW TABLES LIKE 'nso_app_version'")
-		row = await cur.fetchone()
-		await self.sqlBroker.c_commit(cur)
-		if row == None:
-			await cur.execute("CREATE TABLE nso_app_version (version VARCHAR(32) NOT NULL, updatetime DATETIME NOT NULL)")
-			await self.sqlBroker.c_commit(cur)
-
-	async def getAppVersion(self):
-		cur = await self.sqlBroker.connect()
-		await self.ensureAppVersionTable(cur)
-
-		await cur.execute("SELECT version, UNIX_TIMESTAMP(updatetime) AS updatetime FROM nso_app_version")
-		row = await cur.fetchone()
-		await self.sqlBroker.c_commit(cur)
-		await self.sqlBroker.close(cur)
-
-		if row:
-			return {'version': row[0], 'updatetime': row[1]}
-
-		return None
-
-	async def updateAppVersion(self):
-		oldInfo = await self.getAppVersion()
-		if oldInfo != None:
-			age = time.time() - oldInfo['updatetime']
-			if age < 3600:
-				print("Skipping NSO version check -- cached data is recent")
-				return
-
-		gp = googleplay.GooglePlay()
-		newVersion = gp.getAppVersion("com.nintendo.znca")
-		if newVersion == None:
-			print(f"Couldn't retrieve NSO app version?")
-			return
-
-		if (oldInfo == None) or (oldInfo['version'] != newVersion):
-			cur = await self.sqlBroker.connect()
-			await cur.execute("DELETE FROM nso_app_version")
-			await cur.execute("INSERT INTO nso_app_version (version, updatetime) VALUES (%s, NOW())", (newVersion,))
-			await self.sqlBroker.c_commit(cur)
-			await self.sqlBroker.close(cur)
-			print(f"Updated NSO version: {oldInfo['version'] if oldInfo else '(none)'} -> {newVersion}")
-
-		return
 
 	async def doFeed(self):
 		cur = await self.sqlBroker.connect()
