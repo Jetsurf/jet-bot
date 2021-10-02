@@ -5,6 +5,7 @@ import json, os
 import urllib, urllib.request
 import splatinfo
 import messagecontext
+import io
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from discord.app import *
 
@@ -615,14 +616,9 @@ class nsoHandler():
 			results_list = requests.get(url, headers=header, cookies=dict(iksm_session=iksm))
 			thejson = json.loads(results_list.text)
 
-		with open(f"../{jsontype}.json", "w") as f:
-			json.dump(thejson, f)
-
-		with open(f"../{jsontype}.json", "r") as f:
-			jsonToSend = discord.File(fp=f)
-			await message.channel.send(file=jsonToSend)
-
-		os.remove(f"../{jsontype}.json")
+		f = io.StringIO(results_list.text)
+		jsonToSend = discord.File(fp=f, filename = 'data.json')
+		await message.channel.send(file=jsonToSend)
 
 	async def checkDuplicate(self, id):
 		cur = await self.sqlBroker.connect()
