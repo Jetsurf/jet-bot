@@ -181,7 +181,9 @@ class voiceServer():
 	def get_yt_json(self, soup):
 		scripts = soup.find_all("script")
 		for s in scripts:
-			text = s.get_text()
+			text = s.string
+			if text == None:
+				continue
 			if (re.search(r'var ytInitialData =', text)):
 				text = re.sub(r'^\s*var ytInitialData\s*=\s*', '', text)  # Slice off leading JS
 				text = re.sub(r';\s*$', '', text)  # Slice off trailing semicolon
