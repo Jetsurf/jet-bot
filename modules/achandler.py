@@ -60,7 +60,7 @@ class acHandler():
 			r = requests.get(url, headers=header, cookies=self.user_pcookie)
 			thejson = json.loads(r.text)
 
-		if '401' in str(r):
+		if r.status_code == 401:
 			tokens = await self.nsotoken.do_iksm_refresh(ctx, 'ac')
 			if tokens == None:			
 				return
@@ -80,7 +80,7 @@ class acHandler():
 				r = requests.get(url, headers=header, cookies=self.user_pcookie)
 				thejson = json.loads(r.text)
 
-			if '401' in str(r):
+			if r.status_code == 401:
 				print("FAILURE TO RENEW AC TOKENS")
 				return None
 

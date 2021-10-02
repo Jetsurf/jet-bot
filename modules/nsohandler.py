@@ -1089,7 +1089,7 @@ class nsoHandler():
 			response = requests.post(url, headers=app_head, cookies=dict(iksm_session=iksm))
 		resp = json.loads(response.text)
 
-		return '200' in str(response)
+		return response.status_code == 200
 
 	async def gearParser(self, ctx=None, flag=0):
 		theTime = int(time.time())

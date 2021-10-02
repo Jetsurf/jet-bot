@@ -182,17 +182,17 @@ class Nsotoken():
 		version = '1.5.13'
 		api_app_head = { 'User-Agent': f"splatnet2statink/{version}" }
 		api_body = { 'naIdToken': id_token, 'timestamp': timestamp }
-		api_response = requests.post("https://elifessler.com/s2s/api/gen2", headers=api_app_head, data=api_body)
-		print("S2API RESPONSE: " + str(api_response))
+		response = requests.post("https://elifessler.com/s2s/api/gen2", headers=api_app_head, data=api_body)
+		print(f"S2API RESPONSE: {response.status_code} {response.reason}")
 
-		if '429' in str(api_response):
+		if response.status_code == 429:
 			print("stat.ink: RATE LIMITED")
 			return 429
-		elif '200' not in str(api_response):
-			print(f"ERROR IN stat.ink CALL: {str(api_response) + str(api_response.text)}")
+		elif response.status_code != 200:
+			print(f"ERROR IN stat.ink CALL: {response.text}")
 			return None
 		else:
-			return json.loads(api_response.text)["hash"]
+			return json.loads(response.text)["hash"]
 
 	async def do_iksm_refresh(self, ctx, game='s2'):
 		session_token = await self.get_session_token_mysql(ctx.user.id)
@@ -232,8 +232,8 @@ class Nsotoken():
 		}
 		
 		r = self.session.post('https://accounts.nintendo.com/connect/1.0.0/api/session_token', headers=head, data=body)
-		if '200' not in str(r):
-			print(f"ERROR IN SESSION TOKEN: {str(r.text)}")
+		if r.status_code != 200:
+			print(f"ERROR IN SESSION TOKEN {r.status_code} {r.reason}: {str(r.text)}")
 			return None
 		else:
 			return json.loads(r.text)["session_token"]
@@ -247,16 +247,16 @@ class Nsotoken():
 			'x-ver':   '3',
 			'x-iid':   login
 		}
-		api_response = requests.get("https://flapg.com/ika2/api/login?public", headers=api_app_head)
-		print(f"FLAPG API RESPONSE: {str(api_response)}")
-		if '404' in str(api_response):
+		response = requests.get("https://flapg.com/ika2/api/login?public", headers=api_app_head)
+		print(f"FLAPG API RESPONSE: {response.status_code} {response.reason}")
+		if response.status_code == 404:
 			print("ISSUE WITH FLAPG - 404")
 			return 404
-		elif '200' not in str(api_response):
-			print(f"ERROR IN FLAPGAPI: {str(api_response)} and JSON : {str(api_response.text)}")
+		elif response.status_code != 200:
+			print(f"ERROR IN FLAPGAPI: {str(response)} and JSON : {str(response.text)}")
 			return None
 		else:
-			return json.loads(api_response.text)["result"]
+			return json.loads(response.text)["result"]
 
 	def setup_nso(self, session_token, game='s2'):
 		timestamp = int(time.time())
@@ -280,8 +280,8 @@ class Nsotoken():
 
 		r = requests.post("https://accounts.nintendo.com/connect/1.0.0/api/token", headers=head, json=body)
 		id_response = json.loads(r.text)
-		if '200' not in str(r):
-			print(f"NSO ERROR IN API TOKEN: {str(id_response)}")
+		if r.status_code != 200:
+			print(f"NSO ERROR IN API TOKEN {r.status_code} {r.reason}: {str(id_response)}")
 			return
 
 		head = {
@@ -296,8 +296,8 @@ class Nsotoken():
 
 		r = requests.get("https://api.accounts.nintendo.com/2.0.0/users/me", headers=head)
 		user_info = json.loads(r.text)
-		if '200' not in str(r):
-			print(f"NSO ERROR IN USER LOGIN: {str(user_info)}")
+		if r.status_code != 200:
+			print(f"NSO ERROR IN USER LOGIN {r.response} {r.reason}: {str(user_info)}")
 			return
 
 		head = {
@@ -337,8 +337,8 @@ class Nsotoken():
 
 		r = requests.post("https://api-lp1.znc.srv.nintendo.net/v1/Account/Login", headers=head, json=body)
 		splatoon_token = json.loads(r.text)
-		if '200' not in str(r):
-			print(f"NSO ERROR IN LOGIN: {str(splatoon_token)}")
+		if r.status_code != 200:
+			print(f"NSO ERROR IN LOGIN {r.status_code} {r.reason}: {str(splatoon_token)}")
 			return None
 
 		try:
@@ -385,8 +385,8 @@ class Nsotoken():
 
 		r = requests.post("https://api-lp1.znc.srv.nintendo.net/v2/Game/GetWebServiceToken", headers=head, json=body)
 		token = json.loads(r.text)
-		if '200' not in str(r):
-			print(f"NSO ERROR IN GETWEBSERVICETOKEN: {str(token)}")
+		if r.status_code != 200:
+			print(f"NSO ERROR IN GETWEBSERVICETOKEN {r.status_code} {r.reason}: {str(token)}")
 			return None
 
 		head = {
@@ -433,8 +433,8 @@ class Nsotoken():
 		else:
 			head['Host'] = 'app.splatoon2.nintendo.net'
 			r = requests.get("https://app.splatoon2.nintendo.net/?lang=en-US", headers=head)
-			if '200' not in str(r):
-				print(f"ERROR IN GETTING IKSM: {str(r.text)}")
+			if r.status_code != 200:
+				print(f"ERROR IN GETTING IKSM {r.status_code} {r.reason}: {str(r.text)}")
 				return None
 			else:
 				print("Got a S2 token!")
