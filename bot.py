@@ -122,13 +122,13 @@ async def cmdStoreDMAbilty(ctx):
 	await serverUtils.increment_cmd(ctx, 'storedm') 
 	await nsoHandler.listStoreDM(ctx)
 
-@storedm.command(name='remove', description='Shows you everything you are set to recieve a DM for')
+@storedm.command(name='remove', description='Removes you from being DMed when gear with FLAG appears in the storer')
 async def cmdStoreDMAbilty(ctx, flag: Option(str, "ABILITY/BRAND/GEAR to stop DMing you with when it appears in the store", required=True)):
 	if ctx.guild == None:
 		await ctx.respond("Can't DM me with this command.")
 		return
 
-	await serverUtils.increment_cmd(ctx, 'storedm') 
+	await serverUtils.increment_cmd(ctx, 'storedm')
 	await nsoHandler.removeStoreDM(ctx, [ str(flag) ])
 
 @client.slash_command(name='support', description='Sends a discord invite to my support guild.')
@@ -333,9 +333,9 @@ async def cmdBattle(ctx, battlenum: Option(int, "Battle Number, 1 being latest, 
 	await nsoHandler.cmdBattles(ctx, battlenum)
 
 #TODO: NEEDS GUILD RESTRICTION - need to dynamically load the home server
-@client.slash_command(name='eval', description="Eval a code block (Owners only)")
-async def cmdEval(ctx, code: Option(str, "The code block to eval", required=True)):
-	await doEval(ctx, code, slash=True)
+#@client.slash_command(name='eval', description="Eval a code block (Owners only)")
+#async def cmdEval(ctx, code: Option(str, "The code block to eval", required=True)):
+	#await doEval(ctx, code, slash=True)
 
 @voice.command(name='join', description='Join a voice chat channel')
 async def cmdVoiceJoin(ctx, channel: Option(discord.VoiceChannel, "Voice Channel to join", required=False)):
