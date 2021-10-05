@@ -22,7 +22,6 @@ client = discord.Bot(intents=intents, chunk_guilds_at_startup=False)
 commandParser = None
 serverConfig = None
 mysqlHandler = None
-nsoAppVer = ''
 #nsoHandler = None
 nsoTokens = None
 serverVoices = {}
@@ -41,7 +40,7 @@ url = ''
 #SubCommand Groups
 cmdGroups = {}
 maps = SlashCommandGroup('maps', 'Commands related to maps for Splatoon 2')
-weapon = SlashCommandGroup("weapons", 'Commands realted to weapons for Splatoon 2')
+weapon = SlashCommandGroup('weapons', 'Commands realted to weapons for Splatoon 2')
 admin = SlashCommandGroup('admin', 'Commands that require guild admin privledges to run')
 voice = SlashCommandGroup('voice', 'Commands related to voice functions')
 store = SlashCommandGroup('store', 'Commands related to the Splatoon 2 store')
@@ -49,10 +48,10 @@ stats = SlashCommandGroup('stats', 'Commands related to Splatoon 2 gameplay stat
 acnh = SlashCommandGroup('acnh', "Commands related to Animal Crossing New Horizons")
 
 dm = admin.command_group(name='dm', description="Admin commands related to DM's on users leaving")
-feed = admin.command_group(name='feed', description="Admin commands related to SplatNet rotation feeds")
-announce = admin.command_group(name='announcements', description="Admin commands related to developer annoucenments")
-play = voice.command_group(name="play", description="Commands realted to playing audio")
-storedm = store.command_group('dm', "Commands related to DM'ing on store changes")
+feed = admin.command_group(name='feed', description='Admin commands related to SplatNet rotation feeds')
+announce = admin.command_group(name='announcements', description='Admin commands related to developer annoucenments')
+play = voice.command_group(name='play', description='Commands realted to playing audio')
+storedm = store.command_group('dm', description="Commands related to DM'ing on store changes")
 
 class blank():
 	def __init__(self):
@@ -110,7 +109,7 @@ async def cmdStoreDMAbilty(ctx, flag: Option(str, "ABILITY/BRAND/GEAR to DM you 
 	if ctx.guild == None:
 		await ctx.respond("Can't DM me with this command.")
 		return
-	await serverUtils.increment_cmd(ctx, 'storedm') 
+	await serverUtils.increment_cmd(ctx, 'storedm')
 	await nsoHandler.addStoreDM(ctx, [ str(flag) ], True)
 
 @storedm.command(name='list', description='Shows you everything you are set to recieve a DM for')
@@ -119,7 +118,7 @@ async def cmdStoreDMAbilty(ctx):
 		await ctx.respond("Can't DM me with this command.")
 		return
 
-	await serverUtils.increment_cmd(ctx, 'storedm') 
+	await serverUtils.increment_cmd(ctx, 'storedm')
 	await nsoHandler.listStoreDM(ctx)
 
 @storedm.command(name='remove', description='Removes you from being DMed when gear with FLAG appears in the storer')
@@ -137,7 +136,7 @@ async def cmdSupport(ctx):
 
 @client.slash_command(name='github', description='Sends a link to my github page')
 async def cmdGithub(ctx):
-	await ctx.respond('Here is my github page! : https://github.com/Jetsurf/jet-bot')
+	await ctx.respond('Here is my github page! : https://github.com/Jetsurf/jet-bot', ephemeral=True)
 
 @announce.command(name='set', description="Sets a chat channel to receive announcements from my developers")
 async def cmdDMAdd(ctx, channel: Option(discord.TextChannel, "Channel to set to receive announcements", required=True)):
@@ -383,7 +382,7 @@ async def cmdVoicePlaySearch(ctx, source: Option(str, "Source to search", choice
 		theList = []
 		for i in itertools.chain([ source ], search.split()):
 			theList.append(i)
-		
+
 		print(f"{theList}")
 		await serverVoices[ctx.guild.id].setupPlay(ctx, theList)
 
@@ -400,7 +399,7 @@ async def cmdVoiceSkip(ctx):
 			await ctx.respond("Not playing anything")
 	else:
 		ctx.respond("Not connected to voice")
-			
+
 @voice.command(name='end', description="Stops playing all videos")
 async def cmdVoiceEnd(ctx):
 	await serverUtils.increment_cmd(ctx, 'stop')
