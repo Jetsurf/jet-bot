@@ -118,7 +118,7 @@ class serverUtils():
 				await ctx.respond("Ok, adding Gear rotations to the feed. ")
 				gearflag = True
 			else:
-				await ctx.respond("Ok, not adding Salmon Run rotations to the feed.")
+				await ctx.respond("Ok, not adding Gear rotations to the feed.")
 		elif chan != None and args[3] == True:
 			mapflag = args[0]
 			srflag = args[1]
