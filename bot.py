@@ -161,7 +161,7 @@ async def cmdDMRemove(ctx):
 		else:
 			await ctx.respond(f"Current announcement channel is: {channel.name}")
 	else:
-		await ctx.respond("You aren't a guild administrator")
+		await ctx.respond("You aren't a guild administrator", ephemeral=True)
 
 @announce.command(name='remove', description="Removes you from being DM'ed on users leaving")
 async def cmdDMRemove(ctx):
@@ -221,7 +221,7 @@ async def cmdDMAdd(ctx):
 	if await checkIfAdmin(ctx):
 		await serverUtils.addDM(ctx)
 	else:
-		await ctx.respond("You aren't a guild administrator")
+		await ctx.respond("You aren't a guild administrator", ephemeral=True)
 
 @maps.command(name='current', description='Shows current map rotation for Turf War/Ranked/League')
 async def cmdCurrentMaps(ctx):
@@ -348,7 +348,7 @@ async def cmdVoiceLeave(ctx):
 	await serverUtils.increment_cmd(ctx, 'leavevoice')
 	if serverVoices[ctx.guild.id] != None:
 		await serverVoices[ctx.guild.id].vclient.disconnect()
-		await ctx.respond("Disconnected from voice", ephemeral=True)
+		await ctx.respond("Disconnected from voice")
 	else:
 		await ctx.respond("Not connected to voice", ephemeral=True)
 
@@ -362,9 +362,9 @@ async def cmdVoiceVolume(ctx, vol: Option(int, "What to change the volume to 1-6
 			await ctx.respond(f"Setting Volume to {str(vol)}%")
 			serverVoices[ctx.guild.id].source.volume = float(int(vol) / 100)
 		else:
-			await ctx.respond("Not playing anything")
+			await ctx.respond("Not playing anything", ephemeral=True)
 	else:
-		await ctx.respond("Not connected to voice")
+		await ctx.respond("Not connected to voice", ephemeral=True)
 
 @play.command(name='url', description='Plays a video from a URL')
 async def cmdVoicePlayUrl(ctx, url: Option(str, "URL of the video to play")):
@@ -372,7 +372,7 @@ async def cmdVoicePlayUrl(ctx, url: Option(str, "URL of the video to play")):
 	if serverVoices[ctx.guild.id].vclient is not None:
 		await serverVoices[ctx.guild.id].setupPlay(ctx, [ str(url) ])
 	else:
-		await ctx.respond("Not connected to voice")
+		await ctx.respond("Not connected to voice", ephemeral=True)
 
 @play.command(name='search', description="Searches SOURCE for a playable video/song")
 async def cmdVoicePlaySearch(ctx, source: Option(str, "Source to search", choices=[ 'youtube', 'soundcloud' ], default='youtube', required=True), search: Option(str, "Video to search for", required = True)):
@@ -386,8 +386,8 @@ async def cmdVoicePlaySearch(ctx, source: Option(str, "Source to search", choice
 		await serverVoices[ctx.guild.id].setupPlay(ctx, theList)
 
 	else:
-		await ctx.respond("Not connected to voice")
-Q
+		await ctx.respond("Not connected to voice", ephemeral=True)
+
 @voice.command(name='skip', description="Skips the currently playing song")
 async def cmdVoiceSkip(ctx):
 	await serverUtils.increment_cmd(ctx, 'skip')
@@ -395,9 +395,9 @@ async def cmdVoiceSkip(ctx):
 		if serverVoices[ctx.guild.id].source is not None:
 			await serverVoices[ctx.guild.id].stop(ctx)
 		else:
-			await ctx.respond("Not playing anything")
+			await ctx.respond("Not playing anything", ephemeral=True)
 	else:
-		ctx.respond("Not connected to voice")
+		ctx.respond("Not connected to voice", ephemeral=True)
 
 @voice.command(name='end', description="Stops playing all videos")
 async def cmdVoiceEnd(ctx):
@@ -407,15 +407,15 @@ async def cmdVoiceEnd(ctx):
 			serverVoices[ctx.guild.id].end()
 			await ctx.respond("Stopped playing all videos")
 		else:
-			await ctx.respond("Not playing anything.")
+			await ctx.respond("Not playing anything.", ephemeral=True)
 	else:
-		await ctx.respond("Not connected to voice")
+		await ctx.respond("Not connected to voice", ephemeral=True)
 
 @voice.command(name='playrandom', description="Plays a number of videos from this servers playlist")
 async def cmdVoicePlayRandom(ctx, num: Option(int, "Number of videos to queue up", required=True)):
 	await serverUtils.increment_cmd(ctx, 'playrandom')
 	if num < 0:
-		await ctx.respond("Num needs to be greater than 0.")
+		await ctx.respond("Num needs to be greater than 0.", ephemeral=True)
 	else:
 		await serverVoices[ctx.guild.id].playRandom(ctx, num)
 
@@ -426,9 +426,9 @@ async def cmdVoiceCurrent(ctx):
 		if serverVoices[ctx.guild.id].source is not None:
 			await ctx.respond(f"Currently Playing Video: {serverVoices[ctx.guild.id].source.yturl}")
 		else:
-			await ctx.respond("I'm not playing anything.")
+			await ctx.respond("I'm not playing anything.", ephemeral=True)
 	else:
-		await ctx.respond("Not connected to voice")
+		await ctx.respond("Not connected to voice", ephemeral=True)
 
 @voice.command(name='queue', description="Shows the current queue of videos to play")
 async def cmdVoiceQueue(ctx):
@@ -436,7 +436,7 @@ async def cmdVoiceQueue(ctx):
 	if serverVoices[ctx.guild.id].vclient is not None:
 		await serverVoices[theServer].printQueue(context)
 	else:
-		await ctx.respond("Not connected to voice.")
+		await ctx.respond("Not connected to voice.", ephemeral=True)
 
 @voice.command(name='disconnect', description="Disconnects me from voice")
 async def cmdVoiceDisconnect(ctx):
@@ -446,7 +446,7 @@ async def cmdVoiceDisconnect(ctx):
 		serverVoices[ctx.guild.id].vclient = None
 		await ctx.respond("Disconnected from voice.")
 	else:
-		await ctx.respond("Not connected to voice.")
+		await ctx.respond("Not connected to voice.", ephemeral=True)
 
 @voice.command(name='sounds', description="Shows sounds I can play with /voice soundclip")
 async def cmdVoiceSounds(ctx):
@@ -460,10 +460,10 @@ async def cmdVoiceSounds(ctx):
 @voice.command(name='playsound', description="Plays one of my sound clips in voice")
 async def cmdVoicePlaySound(ctx, sound: Option(str, "Sound clip to play, get with /voice sounds")):
 	if serverVoices[ctx.guild.id].vclient is not None:
-		await ctx.respond(f"Attempting to play: {sound}")
+		await ctx.respond(f"Attempting to play: {sound}", ephemeral=True)
 		await serverVoices[ctx.guild.id].playSound(sound)
 	else:
-		await ctx.respond("Not connected to voice.")
+		await ctx.respond("Not connected to voice.", ephemeral=True)
 
 @admin.command(name='playlist', description="Adds a URL or the current video to my playlist for /voice playrandom")
 async def cmdPlaylistAdd(ctx, url: Option(str, "URL to add to my playlist", required=False)):
@@ -474,7 +474,7 @@ async def cmdPlaylistAdd(ctx, url: Option(str, "URL to add to my playlist", requ
 	if await checkIfAdmin(ctx):
 		await serverVoices[ctx.guild.id].addGuildList(ctx, [ 'playlist', url ])
 	else:
-		await ctx.respond("You aren't a guild administrator")
+		await ctx.respond("You aren't a guild administrator", ephemeral=True)
 
 @admin.command(name='blacklist', description="Adds a URL or the current video to my blacklist to never play")
 async def cmdBlacklistAdd(ctx, url: Option(str, "URL to add to my blacklist", required=False)):
@@ -485,7 +485,7 @@ async def cmdBlacklistAdd(ctx, url: Option(str, "URL to add to my blacklist", re
 	if await checkIfAdmin(ctx):
 		await serverVoices[ctx.guild.id].addGuildList(ctx, [ 'blacklist', url ])
 	else:
-		await ctx.respond("You aren't a guild administrator")
+		await ctx.respond("You aren't a guild administrator", ephemeral=True)
 
 async def checkIfAdmin(ctx):
 	if ctx.guild.get_member(ctx.user.id) == None:
