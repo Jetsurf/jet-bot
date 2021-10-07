@@ -1,7 +1,8 @@
-discord.py>=1.5.0
+pycord>=1.8.0
 pymysql
 aiomysql
 apscheduler
 youtube_dl
 bs4
 pynacl
+html5lib
