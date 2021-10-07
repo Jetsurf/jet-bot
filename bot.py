@@ -61,7 +61,7 @@ class blank():
 nsoHandler = blank()
 
 def loadConfig():
-	global token, nsoAppVer, soundsDir, helpfldr, mysqlHandler, dev, head, url, hs
+	global token, soundsDir, helpfldr, mysqlHandler, dev, head, url, hs
 	try:
 		with open('./config/discordbot.json', 'r') as json_config:
 			configData = json.load(json_config)
@@ -98,12 +98,12 @@ async def cmdStoreCurrent(ctx):
 	await nsoHandler.gearParser(ctx)
 
 @store.command(name='order', description='Orders gear from the SplatNet store')
-async def cmdOrder(ctx, order: Option(str, "ID or NAME of the gear to order from the store (get both from /splatnetgear)", required=True), override: Option(bool, "Override if you have an item already on order", required=False)):
+async def cmdOrder(ctx, order: Option(str, "ID or NAME of the gear to order from the store (get both from /store currentgear)", required=True), override: Option(bool, "Override if you have an item already on order", required=False)):
 	print(f"Ordering gear for user: {ctx.user.name} and id {str(ctx.user.id)}")
 	await serverUtils.increment_cmd(ctx, 'order')
 	await nsoHandler.orderGearCommand(ctx, args=[str(order)], override=override if override != None else False)
 
-@storedm.command(name='add', description='Sends a DM when gear with this ability appears in the store')
+@storedm.command(name='add', description='Sends a DM when gear with ABILITY/BRAND/GEAR appears in the store')
 async def cmdStoreDMAbilty(ctx, flag: Option(str, "ABILITY/BRAND/GEAR to DM you with when it appears in the store", required=True)):
 	if ctx.guild == None:
 		await ctx.respond("Can't DM me with this command.")
@@ -496,7 +496,7 @@ async def checkIfAdmin(ctx):
 @client.event
 async def on_ready():
 	global client, soundsDir, mysqlHandler, serverUtils, serverVoices, splatInfo, helpfldr, hs
-	global nsoHandler, nsoTokens, head, url, dev, owners, commandParser, doneStartup, acHandler, nsoAppVer
+	global nsoHandler, nsoTokens, head, url, dev, owners, commandParser, doneStartup, acHandler
 
 	if not doneStartup:
 		print('Logged in as,', client.user.name, client.user.id)
@@ -539,7 +539,7 @@ async def on_ready():
 		serverConfig = serverconfig.ServerConfig(mysqlHandler)
 		commandParser = commandparser.CommandParser(serverConfig, client.user.id)
 		serverUtils = serverutils.serverUtils(client, mysqlHandler, serverConfig, helpfldr)
-		nsoTokens = nsotoken.Nsotoken(client, mysqlHandler, nsoAppVer)
+		nsoTokens = nsotoken.Nsotoken(client, mysqlHandler)
 		nsoHandler = nsohandler.nsoHandler(client, mysqlHandler, nsoTokens, splatInfo, cmdOrder)
 		acHandler = achandler.acHandler(client, mysqlHandler, nsoTokens)
 		await mysqlHandler.startUp()
