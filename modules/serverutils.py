@@ -178,10 +178,10 @@ class serverUtils():
 			channelname = args.name
 
 		if channelid == None:
-			await ctx.respond("Could not find a channel with name: {channelname}")
+			await ctx.respond(f"Could not find a channel with name: {channelname}")
 		else:
 			await self.serverConfig.setConfigValue(ctx.guild.id, 'announcement.channelid', channelid)
-			await ctx.respond("Set announcement channel to: " + channelname)
+			await ctx.respond(f"Set announcement channel to: {channelname}")
 
 	async def getAnnounceChannel(self, serverid):
 		channelid = await self.serverConfig.getConfigValue(serverid, 'announcement.channelid')
@@ -193,7 +193,7 @@ class serverUtils():
 
 	async def doAnnouncement(self, message):
 		announcemsg = message.content.split(None, 1)[1]
-		print("Sending announcement: " + announcemsg)
+		print("Sending announcement: {announcemsg}")
 
 		for guild in self.client.guilds:
 			channel = await self.getAnnounceChannel(guild.id)

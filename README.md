@@ -76,7 +76,7 @@ There are a few admin commands to configure the bot. To run these commands, you 
  - `/maps list` : Shows all Splatoon 2 maps w/ abbreviations
  - `/store currentgear` : Gets all of the current gear for sale on SplatNet
  - `/store dm add FLAG` : DM's you when a piece of gear with FLAG (Ability/Brand/Gear Name) appears in the SplatNet store. Can't DM the bot with this.
- - `/store dm list` : Shows you all FLAGS you are subscribed to for when gear iwth FLAG appears in the store. Can't DM the bot with this.
+ - `/store dm list` : Shows you all FLAGS you are subscribed to for when gear with FLAG appears in the store. Can't DM the bot with this.
  - `/store dm remove FLAG` : Removes you from receiving DM's when a piece of gear with FLAG (Ability/Brand/Gear Name) appears in the SplatNet store. Can't DM the bot with this.
  - `/weapons random NUM` : Generates a list of random weapons (1-10, NUM is optional for just 1 random weapon)
  - `/weapons info WEAP` : Gets Sub/Special/Level/Points for special for WEAP
