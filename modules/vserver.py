@@ -316,7 +316,7 @@ class voiceServer():
 
 			self.ytQueue.put(tempPlayer)
 			if self.source == None and self.vclient != None:
-				await message.channel.send("Playing : " + x[toPlay[0] - 1][0])
+				await ctx.respond("Playing : " + x[toPlay[0] - 1][0])
 			self.play()
 		if numToQueue > 1 and self.source == None:
 			await ctx.respond(f"Also queued {str(numToQueue - 1)} more song(s) from my playlist")

@@ -79,6 +79,7 @@ class Nsotoken():
 		else:
 			return False
 
+	#This stays as message objects as !deletetokens is a DM only command
 	async def delete_tokens(self, message):
 		cur = await self.sqlBroker.connect()
 		print("Deleting token")
@@ -154,6 +155,7 @@ class Nsotoken():
 			return None
 		return session_token[0][0]
 
+	#This stays as a message object as !token is DM only
 	async def login(self, message, flag=-1):
 		cur = await self.sqlBroker.connect()
 		dupe = await self.checkDuplicate(message.author.id, cur)

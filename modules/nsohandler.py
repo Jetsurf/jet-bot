@@ -986,7 +986,6 @@ class nsoHandler():
 		gearToBuy = merches[0]
 		orderedFlag = 'ordered_info' in thejson
 
-		#confirm controls wether we ask for confirmation in a message context
 		if not is_slash and not override:
 			embed = self.makeGearEmbed(gearToBuy, f"{ctx.user.name} - Order gear?", "Respond with 'yes' to place your order, 'no' to cancel")
 			await ctx.respond(embed=embed)
