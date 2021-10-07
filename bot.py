@@ -71,7 +71,6 @@ def loadConfig():
 		soundsDir = configData['soundsdir']
 		helpfldr = configData['help']
 		hs = configData['home_server']
-		nsoAppVer = configData['nso_app_ver']
 
 		try:
 			dbid = configData['discordbotid']
@@ -759,7 +758,7 @@ async def on_message(message):
 		print("Failed to increment command... issue with MySQL?")
 
 	if cmd == 'eval':
-		await doEval(context)
+		await doEval(context, None)
 	elif cmd == 'getcons' and message.author in owners:
 		await mysqlHandler.printCons(message)
 	elif cmd == 'storejson' and message.author in owners:

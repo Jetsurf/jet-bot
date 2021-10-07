@@ -13,9 +13,9 @@ class MessageContext:
 	def guild(self):
 		return self.message.channel.guild
 
-#	@property
-#	def message(self):
-#        	return self.message
+	@property
+	def content(self):
+        	return self.message.content
 
 	@property
 	def user(self):
@@ -28,4 +28,5 @@ class MessageContext:
 	@property
 	def send(self):
 		return self.message.channel.send
+
 
