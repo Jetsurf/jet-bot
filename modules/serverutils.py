@@ -178,7 +178,7 @@ class serverUtils():
 			channelname = args.name
 
 		if channelid == None:
-			await ctx.respond("Could not find a channel with name: " + channelname)
+			await ctx.respond("Could not find a channel with name: {channelname}")
 		else:
 			await self.serverConfig.setConfigValue(ctx.guild.id, 'announcement.channelid', channelid)
 			await ctx.respond("Set announcement channel to: " + channelname)
@@ -200,7 +200,7 @@ class serverUtils():
 			if channel == None:
 				continue
 			else:
-				await channel.send("ANNOUNCEMENT: " + announcemsg)
+				await channel.send(f"ANNOUNCEMENT: {announcemsg}")
 
 	async def stopAnnouncements(self, ctx):
 		await self.serverConfig.removeConfigValue(ctx.guild.id, "announcement.channelid")
@@ -254,7 +254,7 @@ class serverUtils():
 					else:
 						theString = theString + line
 			embed.add_field(name='Commands', value=theString, inline=False)	
-			embed.set_footer(text="If you want something added or want to report a bug/error, run " + prefix + "support")
+			embed.set_footer(text="If you want something added or want to report a bug/error, run /support")
 		await message.channel.send(embed=embed)
 
 	async def report_cmd_totals(self, message):
@@ -268,8 +268,8 @@ class serverUtils():
 				stmt = "SELECT IFNULL(SUM(count), 0) FROM commandcounts WHERE (command = %s)"
 				await cur.execute(stmt, (cmd,))
 				count = await cur.fetchone()
-				theString = theString + "**" + cmd + "** : " + str(count[0]) + "\n"
-			embed.add_field(name="**" + cmd_set + "**", value=theString, inline=True)
+				theString = f"{theString} **{cmd}** : {str(count[0])}\n"
+			embed.add_field(name=f"**{cmd_set}**", value=theString, inline=True)
 		await self.sqlBroker.close(cur)
 		await message.channel.send(embed=embed)
 
@@ -300,7 +300,7 @@ class serverUtils():
 		await cur.execute(stmt, (ctx.guild.id, ctx.user.id,))
 		if cur.lastrowid != None:
 			await self.sqlBroker.commit(cur)
-			await ctx.respond("Added " + ctx.user.name + " to my DM list!")
+			await ctx.respond(f"Added {ctx.user.name} to my DM list!")
 		else:
 			await self.sqlBroker.rollback(cur)
 			await ctx.respond("Something went wrong!")
@@ -315,7 +315,7 @@ class serverUtils():
 		await cur.execute(stmt, (ctx.guild.id, str(ctx.user.id),))
 		if cur.lastrowid != None:
 			await self.sqlBroker.commit(cur)
-			await ctx.respond("Removed " + ctx.user.name + " from my DM list!")
+			await ctx.respond(f"Removed {ctx.user.name} from my DM list!")
 		else:
 			await self.sqlBroker.rollback(cur)
 			await ctx.respond("Something went wrong!")
@@ -342,8 +342,8 @@ class serverUtils():
 		await cur.execute(stmt, input)
 		if cur.lastrowid != None:
 			await self.sqlBroker.commit(cur)
-			print("Cleaned up DB on server " + str(serverid))
+			print(f"Cleaned up DB on server {str(serverid)}")
 		else:
 			await self.sqlBroker.rollback(cur)
-			print("Error on DB cleanup for server " + str(serverid))
+			print(f"Error on DB cleanup for server {str(serverid)}")
 

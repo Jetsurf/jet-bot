@@ -532,7 +532,6 @@ async def on_ready():
 	if not doneStartup:
 		print("Doing Startup...")
 		for server in client.guilds:
-			#Don't recreate serverVoices on reconnect
 			if server.id not in serverVoices:
 				serverVoices[server.id] = vserver.voiceServer(client, mysqlHandler, server.id, soundsDir)
 
