@@ -411,13 +411,16 @@ async def cmdVoiceEnd(ctx):
 	else:
 		await ctx.respond("Not connected to voice", ephemeral=True)
 
-@voice.command(name='playrandom', description="Plays a number of videos from this servers playlist")
+@play.command(name='random', description="Plays a number of videos from this servers playlist")
 async def cmdVoicePlayRandom(ctx, num: Option(int, "Number of videos to queue up", required=True)):
 	await serverUtils.increment_cmd(ctx, 'playrandom')
 	if num < 0:
 		await ctx.respond("Num needs to be greater than 0.", ephemeral=True)
 	else:
-		await serverVoices[ctx.guild.id].playRandom(ctx, num)
+		if serverVoices[ctx.guild.id].vclient is not None:
+			await serverVoices[ctx.guild.id].playRandom(ctx, num)
+		else:
+			await ctx.respond("Not connected to voice", ephemeral=True)
 
 @voice.command(name='currentvid', description="Shows the currently playing video")
 async def cmdVoiceCurrent(ctx):
