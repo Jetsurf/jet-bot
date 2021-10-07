@@ -292,6 +292,7 @@ class voiceServer():
 		await cur.execute(stmt, (self.server,))
 		x = await cur.fetchall()
 		await self.sqlBroker.close(cur)
+		response = ""
 
 		if len(x) == 0:
 			await ctx.respond("You have nothing added to your playlist, use /admin playlist URL to add songs!")
@@ -316,12 +317,15 @@ class voiceServer():
 
 			self.ytQueue.put(tempPlayer)
 			if self.source == None and self.vclient != None:
-				await ctx.respond("Playing : " + x[toPlay[0] - 1][0])
-			self.play()
+				response = f"Playing : {x[toPlay[0] - 1][0]}\n"
+				self.play()
+
 		if numToQueue > 1 and self.source == None:
-			await ctx.respond(f"Also queued {str(numToQueue - 1)} more song(s) from my playlist")
+			response = response + f"Also queued {str(numToQueue)} more song(s) from my playlist"
 		elif numToQueue > 1:
-			await ctx.respond(f"Added {str(numToQueue)} more song(s) to the queue from my playlist")
+			response = response + f"Added {str(numToQueue - 1)} more song(s) to the queue from my playlist"
+
+		await ctx.respond(response)
 
 	async def addGuildList(self, ctx, args):
 		if len(set(args)) == 1:

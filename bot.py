@@ -434,7 +434,7 @@ async def cmdVoiceCurrent(ctx):
 async def cmdVoiceQueue(ctx):
 	await serverUtils.increment_cmd(ctx, 'queue')
 	if serverVoices[ctx.guild.id].vclient is not None:
-		await serverVoices[theServer].printQueue(context)
+		await serverVoices[ctx.guild.id].printQueue(ctx)
 	else:
 		await ctx.respond("Not connected to voice.", ephemeral=True)
 
