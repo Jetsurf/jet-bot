@@ -56,13 +56,14 @@ There are a few admin commands to configure the bot. To run these commands, you 
    are currently connected to.
  - `/voice play url URL` : Play/Queue Up a website to Play from URL
  - `/voice play search SOURCE SEARCH` : Searches SOURCE for SEARCH to play
+ - `/voice playsound SOUND` : Plays a soundclip if joined in voice (get from `/voice sounds`)
  - `/voice playrandom NUM` : Plays a random url from my playlist.
  - `/voice currentvid` : Displays the currently playing Song/Video
  - `/voice queue` : Displays my current queue of songs to play
  - `/voice skip` : Stop a current playing video and play the next one
  - `/voice end` : Stops all music playback
  - `/voice volume` : Sets my global voice volume (Youtube defaults to 7%, caps at 60% vol)
- - `/voice sounds` : List all possible sounds, prepend ! to play
+ - `/voice sounds` : List all possible sounds for `/voice playsound` to play
  
 ### Splatoon General Info Commands
 
@@ -75,7 +76,7 @@ There are a few admin commands to configure the bot. To run these commands, you 
  - `/maps list` : Shows all Splatoon 2 maps w/ abbreviations
  - `/store currentgear` : Gets all of the current gear for sale on SplatNet
  - `/store dm add FLAG` : DM's you when a piece of gear with FLAG (Ability/Brand/Gear Name) appears in the SplatNet store. Can't DM the bot with this.
- - `/store dm list` : DM's you when a piece of gear made by BRAND appears in the store. Can't DM the bot with this.
+ - `/store dm list` : Shows you all FLAGS you are subscribed to for when gear iwth FLAG appears in the store. Can't DM the bot with this.
  - `/store dm remove FLAG` : Removes you from receiving DM's when a piece of gear with FLAG (Ability/Brand/Gear Name) appears in the SplatNet store. Can't DM the bot with this.
  - `/weapons random NUM` : Generates a list of random weapons (1-10, NUM is optional for just 1 random weapon)
  - `/weapons info WEAP` : Gets Sub/Special/Level/Points for special for WEAP
@@ -85,14 +86,14 @@ There are a few admin commands to configure the bot. To run these commands, you 
  
 ### Splatoon 2 Splatnet Commands
 
-The following commands require you to DM the bot with !token and follow the instructions. DM !deletetoken to remove all tokens from the bot.
+The following commands require you to DM the bot with `!token` and follow the instructions. DM `!deletetoken` to remove all tokens from the bot.
 
  - `/stats battle NUM` : Gets stats from NUM last battle (1 is latest, upto 50)
  - `/stats rank` : Shows your ranks in the ranked gamemodes
  - `/stats multi` : Shows various stats from your gameplay
  - `/stats sr` : Shows various stats from Salmon Run
  - `/stats maps MAP` : Pulls stats for a specific map
- - `/store order ID/ITEM NAME` : !splatnetgear provides an ID. Use either the ID or the name of an item on the store to order it
+ - `/store order ID/ITEM NAME` : `/store currentgear` provides an ID. Use either the ID or the name of an item on the store to order it
  - `/weapons stats WEAPON` : Pulls stats for a specific weapon
 
 ### Animal Crossing: New Horizons Commands

@@ -387,7 +387,7 @@ async def cmdVoicePlaySearch(ctx, source: Option(str, "Source to search", choice
 
 	else:
 		await ctx.respond("Not connected to voice")
-
+Q
 @voice.command(name='skip', description="Skips the currently playing song")
 async def cmdVoiceSkip(ctx):
 	await serverUtils.increment_cmd(ctx, 'skip')
@@ -476,8 +476,8 @@ async def cmdPlaylistAdd(ctx, url: Option(str, "URL to add to my playlist", requ
 	else:
 		await ctx.respond("You aren't a guild administrator")
 
-@admin.command(name='blacklist', description="Adds a URL or the current video to my playlist for /voice playrandom")
-async def cmdPlaylistAdd(ctx, url: Option(str, "URL to add to my playlist", required=False)):
+@admin.command(name='blacklist', description="Adds a URL or the current video to my blacklist to never play")
+async def cmdBlacklistAdd(ctx, url: Option(str, "URL to add to my blacklist", required=False)):
 	if ctx.guild == None:
 		await ctx.respond("Can't DM me with this command.")
 		return
@@ -606,7 +606,7 @@ async def on_guild_remove(server):
 
 @client.event
 async def on_voice_state_update(mem, before, after):
-	global client, serverVoices, mysqlHandler, soundsDir, serverUtils
+	global client, serverVoices, mysqlHandler, soundsDir, serverUtils, doneStartup
 
 	#Don't care if during startup
 	if not doneStartup:
@@ -623,8 +623,9 @@ async def on_voice_state_update(mem, before, after):
 	if mem.id == client.user.id and after.channel == None:
 		print(f"Disconnect, recreating vserver for {str(before.channel.guild.id)}")
 		try:
-			if serverVoices[server].vclient == None:
+			if serverVoices[server].vclient != None:
 				await serverVoices[server].vclient.disconnect()
+				serverVoices[server].vclient = None
 		except Exception as e:
 			print(traceback.format_exc())
 			print("Issue in voice disconnect?? Recreating anyway")
