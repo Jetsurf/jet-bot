@@ -460,7 +460,7 @@ async def cmdVoiceSounds(ctx):
 	theSounds = theSounds.replace('\n', ', ')
 	await ctx.respond(f"Current Sounds:\n```{theSounds}```")
 
-@voice.command(name='playsound', description="Plays one of my sound clips in voice")
+@play.command(name='sound', description="Plays one of my sound clips in voice")
 async def cmdVoicePlaySound(ctx, sound: Option(str, "Sound clip to play, get with /voice sounds")):
 	if serverVoices[ctx.guild.id].vclient is not None:
 		await ctx.respond(f"Attempting to play: {sound}", ephemeral=True)

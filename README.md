@@ -56,8 +56,8 @@ There are a few admin commands to configure the bot. To run these commands, you 
    are currently connected to.
  - `/voice play url URL` : Play/Queue Up a website to Play from URL
  - `/voice play search SOURCE SEARCH` : Searches SOURCE for SEARCH to play
- - `/voice playsound SOUND` : Plays a soundclip if joined in voice (get from `/voice sounds`)
- - `/voice playrandom NUM` : Plays a random url from my playlist.
+ - `/voice play sound SOUND` : Plays a soundclip if in voice chat (get from `/voice sounds`)
+ - `/voice play random NUM` : Plays a random url from my playlist.
  - `/voice currentvid` : Displays the currently playing Song/Video
  - `/voice queue` : Displays my current queue of songs to play
  - `/voice skip` : Stop a current playing video and play the next one
