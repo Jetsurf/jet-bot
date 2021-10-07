@@ -209,7 +209,7 @@ class Nsotoken():
 				await message.channel.send("Ok, stopping the token setup")
 				return
 			elif 'npf71b963c1b7b6d119' not in accounturl:
-				await message.channel.send("Invalid URL, please copy the link in \"Select this person\" (or stop to cancel).")				
+				await message.channel.send("Invalid URL, please copy the link in \"Select this person\" (or stop to cancel).")
 			else:
 				break
 
@@ -239,14 +239,14 @@ class Nsotoken():
 		version = '1.5.13'
 		api_app_head = { 'User-Agent': f"splatnet2statink/{version}" }
 		api_body = { 'naIdToken': id_token, 'timestamp': timestamp }
-		response = requests.post("https://elifessler.com/s2s/api/gen2", headers=api_app_head, data=api_body)
-		print(f"S2API RESPONSE: {response.status_code} {response.reason}")
+		r = requests.post("https://elifessler.com/s2s/api/gen2", headers=api_app_head, data=api_body)
+		print(f"S2API RESPONSE: {r.status_code} {r.reason}")
 
-		if response.status_code == 429:
+		if r.status_code == 429:
 			print("stat.ink: RATE LIMITED")
 			return 429
-		elif response.status_code != 200:
-			print(f"ERROR IN stat.ink CALL: {response.text}")
+		elif r.status_code != 200:
+			print(f"ERROR IN stat.ink CALL {r.status_code} {r.reason}: {r.text}")
 			return None
 		else:
 			return json.loads(response.text)["hash"]
@@ -254,7 +254,7 @@ class Nsotoken():
 	async def do_iksm_refresh(self, ctx, game='s2'):
 		session_token = await self.get_session_token_mysql(ctx.user.id)
 		keys = self.setup_nso(session_token, game)
-		
+
 		if keys == 404 or keys == 429:
 			await ctx.respond("Temporary issue with NSO logins. Please try again in a few minutes")
 			return None
@@ -287,7 +287,7 @@ class Nsotoken():
 			'session_token_code':          session_token_code,
 			'session_token_code_verifier': auth_code_verifier.replace(b"=", b"")
 		}
-		
+
 		r = self.session.post('https://accounts.nintendo.com/connect/1.0.0/api/session_token', headers=head, data=body)
 		if r.status_code != 200:
 			print(f"ERROR IN SESSION TOKEN {r.status_code} {r.reason}: {str(r.text)}")
@@ -304,13 +304,13 @@ class Nsotoken():
 			'x-ver':   '3',
 			'x-iid':   login
 		}
-		response = requests.get("https://flapg.com/ika2/api/login?public", headers=api_app_head)
-		print(f"FLAPG API RESPONSE: {response.status_code} {response.reason}")
-		if response.status_code == 404:
+		r = requests.get("https://flapg.com/ika2/api/login?public", headers=api_app_head)
+		print(f"FLAPG API RESPONSE: {r.status_code} {r.reason}")
+		if r.status_code == 404:
 			print("ISSUE WITH FLAPG - 404")
 			return 404
-		elif response.status_code != 200:
-			print(f"ERROR IN FLAPGAPI: {str(response)} and JSON : {str(response.text)}")
+		elif r.status_code != 200:
+			print(f"ERROR IN FLAPGAPI: {r.status_code} {r.reason} : {r.text}")
 			return None
 		else:
 			return json.loads(response.text)["result"]
@@ -324,7 +324,6 @@ class Nsotoken():
 			'Accept-Encoding': 'gzip',
 			'Content-Type': 'application/json; charset=utf-8',
 			'Accept-Language': 'en-US',
-			'Content-Length': '439',
 			'Accept': 'application/json',
 			'Connection': 'Keep-Alive',
 			'User-Agent': f'OnlineLounge/{self.nsoAppVer} NASDKAPI Android'
@@ -366,20 +365,19 @@ class Nsotoken():
 			'Content-Type': 'application/json; charset=utf-8',
 			'Connection': 'Keep-Alive',
 			'Authorization': 'Bearer',
-			'Content-Length': '1036',
 			'X-Platform': 'Android',
 			'Accept-Encoding': 'gzip'
 		}
 
 		idToken = id_response["access_token"]
 		flapg_nso = self.call_flapg(idToken, guid, timestamp, "nso")
-		
+
 		if flapg_nso == 404 or flapg_nso == 429:
 			return flapg_nso
 		elif flapg_nso == None:
 			print("ERROR IN FLAPGAPI NSO CALL")
 			return None
-		
+
 		parameter = {
 			'f':          flapg_nso["f"],
 			'naIdToken':  flapg_nso["p1"],
@@ -421,7 +419,6 @@ class Nsotoken():
 			'Content-Type': 'application/json; charset=utf-8',
 			'Connection': 'Keep-Alive',
 			'Authorization': f'Bearer {splatoon_token["result"]["webApiServerCredential"]["accessToken"]}',
-			'Content-Length': '37',
 			'X-Platform': 'Android',
 			'Accept-Encoding': 'gzip'
 		}
