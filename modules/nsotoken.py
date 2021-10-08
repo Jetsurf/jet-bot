@@ -204,7 +204,7 @@ class Nsotoken():
 			else:
 				break
 
-		await ctx.channel.trigger_typing()
+		await ctx.defer()
 		session_token_code = re.search('session_token_code=(.*)&', accounturl)
 		if session_token_code == None:
 			print(f"Issue with account url: {str(accounturl)}")

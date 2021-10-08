@@ -29,4 +29,6 @@ class MessageContext:
 	def send(self):
 		return self.message.channel.send
 
-
+	@property
+	def defer(self):
+		return self.message.channel.trigger_typing
