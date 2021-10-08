@@ -219,7 +219,7 @@ class Nsotoken():
 			await message.channel.send("Error in account url. Issue is logged, but you can report this in my support guild")
 			return
 
-		session_token_code = self.get_session_token(session_token_code.group(0)[19:-1], auth_code_verifier)
+		session_token_code = await self.get_session_token(session_token_code.group(0)[19:-1], auth_code_verifier)
 
 		if session_token_code == None:
 			await message.channel.send("Something went wrong! Make sure you are also using the latest link I gave you to sign in. If so, join my support discord and report that something broke!")
@@ -252,7 +252,7 @@ class Nsotoken():
 
 	async def do_iksm_refresh(self, ctx, game='s2'):
 		session_token = await self.get_session_token_mysql(ctx.user.id)
-		keys = self.setup_nso(session_token, game)
+		keys = await self.setup_nso(session_token, game)
 
 		if keys == 404 or keys == 429:
 			await ctx.respond("Temporary issue with NSO logins. Please try again in a few minutes")
@@ -271,9 +271,15 @@ class Nsotoken():
 	async def do_ac_refresh(self, ctx):
 		return await self.do_iksm_refresh(ctx, 'ac')
 
-	def get_session_token(self, session_token_code, auth_code_verifier):
+	async def get_session_token(self, session_token_code, auth_code_verifier):
+		nsoAppInfo = await self.getAppVersion()
+		if nsoAppInfo == None:
+                        print("get_session_token(): No known NSO app version")
+                        return None
+		nsoAppVer = nsoAppInfo['version']
+
 		head = {
-			'User-Agent':      f'OnlineLounge/{self.nsoAppVer} NASDKAPI Android',
+			'User-Agent':      f'OnlineLounge/{nsoAppVer} NASDKAPI Android',
 			'Accept-Language': 'en-US',
 			'Accept':          'application/json',
 			'Content-Type':    'application/x-www-form-urlencoded',
@@ -314,7 +320,13 @@ class Nsotoken():
 		else:
 			return json.loads(r.text)["result"]
 
-	def setup_nso(self, session_token, game='s2'):
+	async def setup_nso(self, session_token, game='s2'):
+		nsoAppInfo = await self.getAppVersion()
+		if nsoAppInfo == None:
+			print("setup_nso(): No known NSO app version")
+			return None
+		nsoAppVer = nsoAppInfo['version']
+
 		timestamp = int(time.time())
 		guid = str(uuid.uuid4())
 
@@ -325,7 +337,7 @@ class Nsotoken():
 			'Accept-Language': 'en-US',
 			'Accept': 'application/json',
 			'Connection': 'Keep-Alive',
-			'User-Agent': f'OnlineLounge/{self.nsoAppVer} NASDKAPI Android'
+			'User-Agent': f'OnlineLounge/{nsoAppVer} NASDKAPI Android'
 		}
 		body = {
 			'client_id': '71b963c1b7b6d119',
@@ -340,7 +352,7 @@ class Nsotoken():
 			return
 
 		head = {
-			'User-Agent': f'OnlineLounge/{self.nsoAppVer} NASDKAPI Android',
+			'User-Agent': f'OnlineLounge/{nsoAppVer} NASDKAPI Android',
 			'Accept-Language': 'en-US',
 			'Accept': 'application/json',
 			'Authorization': 'Bearer ' + id_response["access_token"],
@@ -358,9 +370,9 @@ class Nsotoken():
 		head = {
 			'Host': 'api-lp1.znc.srv.nintendo.net',
 			'Accept-Language': 'en-US',
-			'User-Agent': f'com.nintendo.znca/{self.nsoAppVer} (Android/7.1.2)',
+			'User-Agent': f'com.nintendo.znca/{nsoAppVer} (Android/7.1.2)',
 			'Accept': 'application/json',
-			'X-ProductVersion': self.nsoAppVer,
+			'X-ProductVersion': nsoAppVer,
 			'Content-Type': 'application/json; charset=utf-8',
 			'Connection': 'Keep-Alive',
 			'Authorization': 'Bearer',
@@ -412,9 +424,9 @@ class Nsotoken():
 
 		head = {
 			'Host': 'api-lp1.znc.srv.nintendo.net',
-			'User-Agent': f'com.nintendo.znca/{self.nsoAppVer} (Android/7.1.2)',
+			'User-Agent': f'com.nintendo.znca/{nsoAppVer} (Android/7.1.2)',
 			'Accept': 'application/json',
-			'X-ProductVersion': self.nsoAppVer,
+			'X-ProductVersion': nsoAppVer,
 			'Content-Type': 'application/json; charset=utf-8',
 			'Connection': 'Keep-Alive',
 			'Authorization': f'Bearer {splatoon_token["result"]["webApiServerCredential"]["accessToken"]}',
