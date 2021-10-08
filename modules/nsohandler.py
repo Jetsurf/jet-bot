@@ -779,7 +779,7 @@ class nsoHandler():
 		totalloss = thejson['records']['lose_count']
 		recentwins = thejson['records']['recent_win_count']
 		recentloss = thejson['records']['recent_lose_count']
-		if recentloss > 0:
+		if recentloss + recentwins > 0:
 			recentperc = "{:.0%}".format(recentwins/(recentwins + recentloss))
 			totalperc = "{:.0%}".format(totalwins/(totalwins + totalloss))
 		else:
