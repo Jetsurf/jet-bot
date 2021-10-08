@@ -779,6 +779,8 @@ class nsoHandler():
 		totalloss = thejson['records']['lose_count']
 		recentwins = thejson['records']['recent_win_count']
 		recentloss = thejson['records']['recent_lose_count']
+		recentperc = "{:.0%}".format(recentwins/(recentwins + recentloss))
+		totalperc = "{:.0%}".format(totalwins/(totalwins + totalloss))
 		maxleagueteam = thejson['records']['player']['max_league_point_team']
 		maxleaguepair = thejson['records']['player']['max_league_point_pair']
 		species = thejson['records']['player']['player_type']['species']
@@ -807,7 +809,7 @@ class nsoHandler():
 
 		embed.title = f"{str(name)} - {species} {gender} - Stats"
 		embed.add_field(name='Turf Inked', value=f"Squid: {str(turfsquid)}\nOcto: {str(turfocto)}\nTotal: {str(turfinked)}", inline=True)
-		embed.add_field(name='Wins/Losses', value=f"Last 50: {str(recentwins)}/{str(recentloss)}\nTotal: {str(totalwins)}/{str(totalloss)}", inline=True)
+		embed.add_field(name='Wins/Losses/% Wins', value=f"Last 50: {str(recentwins)}/{str(recentloss)}/{recentperc}\nTotal: {str(totalwins)}/{str(totalloss)}/{totalperc}", inline=True)
 		embed.add_field(name='Top League Points', value=f"Team League: {str(maxleagueteam)}\nPair League: {str(maxleaguepair)}", inline=True)
 		embed.add_field(name='Team League Medals', value=f"Gold: {str(leagueteamgold)}\nSilver: {str(leagueteamsilver)}\nBronze: {str(leagueteambronze)}\nUnranked: {str(leagueteamnone)}", inline=True)
 		embed.add_field(name='Pair League Medals', value=f"Gold: {str(leaguepairgold)}\nSilver: {str(leaguepairsilver)}\nBronze: {str(leaguepairbronze)}\nUnranked: {str(leaguepairnone)}", inline=True)
