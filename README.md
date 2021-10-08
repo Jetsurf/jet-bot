@@ -38,9 +38,9 @@ The following sections list the different commands that are available.
 
 ### Admin commands
 
-There are a few admin commands to configure the bot. To run these commands, you need the administrator role in your discord server.
+There are a few admin commands to configure the bot. To run these commands, you need the administrator role in your discord server. Can't DM the bot with any of these commands
 
- - `/admin playlist URL`: Add the given URL to the `/voice playrandom` playlist
+ - `/admin playlist URL`: Add the given URL to the `/voice play random` playlist
  - `/admin blacklist URL`: Prevent the video at the URL from ever being played
  - `/admin dm add`: Subscribe to DMs on users leaving the server
  - `/admin dm remove`: Unsubscribe from DMs on users leaving the server
@@ -52,23 +52,24 @@ There are a few admin commands to configure the bot. To run these commands, you 
 
 ### Music Commands
 
- - `/voice join CHANNEL` : Join a Voice Channel. If no channel is provided, joins the voice channel you are connected to
-   are currently connected to.
+These commands cannot be used in DM's.
+
+ - `/voice join CHANNEL` : Join a Voice Channel. If no channel is provided, joins the voice channel you are currently connected to.
  - `/voice play url URL` : Play/Queue Up a website to Play from URL
  - `/voice play search SOURCE SEARCH` : Searches SOURCE for SEARCH to play
- - `/voice playsound SOUND` : Plays a soundclip if joined in voice (get from `/voice sounds`)
- - `/voice playrandom NUM` : Plays a random url from my playlist.
- - `/voice currentvid` : Displays the currently playing Song/Video
+ - `/voice play sound SOUND` : Plays a soundclip if in voice chat (get from `/voice sounds`)
+ - `/voice play random NUM` : Plays a random url from my playlist.
+ - `/voice currentsong` : Displays the currently playing Song/Video
  - `/voice queue` : Displays my current queue of songs to play
  - `/voice skip` : Stop a current playing video and play the next one
  - `/voice end` : Stops all music playback
- - `/voice volume` : Sets my global voice volume (Youtube defaults to 7%, caps at 60% vol)
- - `/voice sounds` : List all possible sounds for `/voice playsound` to play
+ - `/voice volume` : Sets my voice volume for the current song (Youtube defaults to 7%, caps at 60% vol)
+ - `/voice sounds` : List all possible sounds for `/voice play sound` to play
  
 ### Splatoon General Info Commands
 
  - `/maps current` : Displays the current Splatoon 2 Gamemodes/Maps
- - `/maps next NUM` : Displays the upcoming Splatoon 2 Gamemodes/Maps NUM rotations in the future
+ - `/maps next NUM` : Displays the upcoming Splatoon 2 Gamemodes/Maps NUM rotations in the future (1-11)
  - `/maps currentsr` : Displays the current Splatoon 2 Salmon Run Map/Weapons
  - `/maps nextsr` : Displays the next Splatoon 2 Salmon Run Map/Weapons
  - `/maps random NUM` : Generates a list of random maps (1-10, NUM is optional for just 1 random map)
@@ -78,7 +79,7 @@ There are a few admin commands to configure the bot. To run these commands, you 
  - `/store dm add FLAG` : DM's you when a piece of gear with FLAG (Ability/Brand/Gear Name) appears in the SplatNet store. Can't DM the bot with this.
  - `/store dm list` : Shows you all FLAGS you are subscribed to for when gear with FLAG appears in the store. Can't DM the bot with this.
  - `/store dm remove FLAG` : Removes you from receiving DM's when a piece of gear with FLAG (Ability/Brand/Gear Name) appears in the SplatNet store. Can't DM the bot with this.
- - `/weapons random NUM` : Generates a list of random weapons (1-10, NUM is optional for just 1 random weapon)
+ - `/weapons random NUM` : Generates a list of random weapons (1-10), NUM is optional for just 1 random weapon)
  - `/weapons info WEAP` : Gets Sub/Special/Level/Points for special for WEAP
  - `/weapons sub SUB` : Gets all weapons with the subweapon SUB
  - `/weapons special SPECIAL` : Gets all weapons with the special SPECIAL

@@ -146,7 +146,7 @@ async def cmdDMAdd(ctx, channel: Option(discord.TextChannel, "Channel to set to 
 	if await checkIfAdmin(ctx):
 		await serverUtils.setAnnounceChannel(ctx, channel)
 	else:
-		await ctx.respond("You aren't a guild administrator")
+		await ctx.respond("You aren't a guild administrator", ephemeral=True)
 
 @announce.command(name='get', description="Gets the channel that is set to receive annoucements")
 async def cmdDMRemove(ctx):
@@ -188,7 +188,7 @@ async def cmdAdminFeed(ctx, map: Option(bool, "Enable maps in the feed?", requir
 		else:
 			await serverUtils.createFeed(ctx, args=args)
 	else:
-		await ctx.respond("You aren't a guild administrator")
+		await ctx.respond("You aren't a guild administrator", ephemeral=True)
 
 @feed.command(name='delete', description="Deletes a feed from a channel")
 async def cmdAdminDeleteFeed(ctx):
@@ -199,7 +199,7 @@ async def cmdAdminDeleteFeed(ctx):
 	if await checkIfAdmin(ctx):
 		await serverUtils.deleteFeed(ctx, is_slash=True, bypass=True)
 	else:
-		await ctx.respond("You aren't a guild administrator")
+		await ctx.respond("You aren't a guild administrator", ephemeral=True)
 
 @dm.command(name='remove', description="Removes you from being DM'ed on users leaving")
 async def cmdDMRemove(ctx):
@@ -210,7 +210,7 @@ async def cmdDMRemove(ctx):
 	if await checkIfAdmin(ctx):
 		await serverUtils.removeDM(ctx)
 	else:
-		await ctx.respond("You aren't a guild administrator")
+		await ctx.respond("You aren't a guild administrator", ephemeral=True)
 
 @dm.command(name='add', description="Adds you to DM's on users leaving")
 async def cmdDMAdd(ctx):
@@ -337,6 +337,10 @@ async def cmdBattle(ctx, battlenum: Option(int, "Battle Number, 1 being latest, 
 
 @voice.command(name='join', description='Join a voice chat channel')
 async def cmdVoiceJoin(ctx, channel: Option(discord.VoiceChannel, "Voice Channel to join", required=False)):
+	if ctx.guild == None:
+		await ctx.respond("Can't DM me with this command.")
+		return
+
 	await serverUtils.increment_cmd(ctx, 'join')
 	if channel == None:
 		await serverVoices[ctx.guild.id].joinVoiceChannel(ctx, [])
@@ -345,6 +349,10 @@ async def cmdVoiceJoin(ctx, channel: Option(discord.VoiceChannel, "Voice Channel
 
 @voice.command(name='leave', description="Disconnects the bot from voice")
 async def cmdVoiceLeave(ctx):
+	if ctx.guild == None:
+		await ctx.respond("Can't DM me with this command.")
+		return
+
 	await serverUtils.increment_cmd(ctx, 'leavevoice')
 	if serverVoices[ctx.guild.id] != None:
 		await serverVoices[ctx.guild.id].vclient.disconnect()
@@ -354,6 +362,10 @@ async def cmdVoiceLeave(ctx):
 
 @voice.command(name='volume', description='Changes the volume while in voice chat')
 async def cmdVoiceVolume(ctx, vol: Option(int, "What to change the volume to 1-60% (7\% is default)"), required=True):
+	if ctx.guild == None:
+		await ctx.respond("Can't DM me with this command.")
+		return
+
 	await serverUtils.increment_cmd(ctx, 'volume')
 	if serverVoices[ctx.guild.id].vclient != None:
 		if vol > 60:
@@ -368,6 +380,10 @@ async def cmdVoiceVolume(ctx, vol: Option(int, "What to change the volume to 1-6
 
 @play.command(name='url', description='Plays a video from a URL')
 async def cmdVoicePlayUrl(ctx, url: Option(str, "URL of the video to play")):
+	if ctx.guild == None:
+		await ctx.respond("Can't DM me with this command.")
+		return
+
 	await serverUtils.increment_cmd(ctx, 'play')
 	if serverVoices[ctx.guild.id].vclient is not None:
 		await serverVoices[ctx.guild.id].setupPlay(ctx, [ str(url) ])
@@ -376,6 +392,10 @@ async def cmdVoicePlayUrl(ctx, url: Option(str, "URL of the video to play")):
 
 @play.command(name='search', description="Searches SOURCE for a playable video/song")
 async def cmdVoicePlaySearch(ctx, source: Option(str, "Source to search", choices=[ 'youtube', 'soundcloud' ], default='youtube', required=True), search: Option(str, "Video to search for", required = True)):
+	if ctx.guild == None:
+		await ctx.respond("Can't DM me with this command.")
+		return
+
 	await serverUtils.increment_cmd(ctx, 'play')
 	if serverVoices[ctx.guild.id].vclient is not None:
 		theList = []
@@ -390,6 +410,10 @@ async def cmdVoicePlaySearch(ctx, source: Option(str, "Source to search", choice
 
 @voice.command(name='skip', description="Skips the currently playing song")
 async def cmdVoiceSkip(ctx):
+	if ctx.guild == None:
+		await ctx.respond("Can't DM me with this command.")
+		return
+
 	await serverUtils.increment_cmd(ctx, 'skip')
 	if serverVoices[ctx.guild.id].vclient is not None:
 		if serverVoices[ctx.guild.id].source is not None:
@@ -401,6 +425,10 @@ async def cmdVoiceSkip(ctx):
 
 @voice.command(name='end', description="Stops playing all videos")
 async def cmdVoiceEnd(ctx):
+	if ctx.guild == None:
+		await ctx.respond("Can't DM me with this command.")
+		return
+
 	await serverUtils.increment_cmd(ctx, 'stop')
 	if serverVoices[ctx.guild.id].vclient is not None:
 		if serverVoices[ctx.guild.id].source is not None:
@@ -413,6 +441,10 @@ async def cmdVoiceEnd(ctx):
 
 @play.command(name='random', description="Plays a number of videos from this servers playlist")
 async def cmdVoicePlayRandom(ctx, num: Option(int, "Number of videos to queue up", required=True)):
+	if ctx.guild == None:
+		await ctx.respond("Can't DM me with this command.")
+		return
+
 	await serverUtils.increment_cmd(ctx, 'playrandom')
 	if num < 0:
 		await ctx.respond("Num needs to be greater than 0.", ephemeral=True)
@@ -422,8 +454,12 @@ async def cmdVoicePlayRandom(ctx, num: Option(int, "Number of videos to queue up
 		else:
 			await ctx.respond("Not connected to voice", ephemeral=True)
 
-@voice.command(name='currentvid', description="Shows the currently playing video")
+@voice.command(name='currentsong', description="Shows the currently playing video")
 async def cmdVoiceCurrent(ctx):
+	if ctx.guild == None:
+		await ctx.respond("Can't DM me with this command.")
+		return
+
 	await serverUtils.increment_cmd(ctx, 'currentsong')
 	if serverVoices[ctx.guild.id].vclient is not None:
 		if serverVoices[ctx.guild.id].source is not None:
@@ -435,6 +471,10 @@ async def cmdVoiceCurrent(ctx):
 
 @voice.command(name='queue', description="Shows the current queue of videos to play")
 async def cmdVoiceQueue(ctx):
+	if ctx.guild == None:
+		await ctx.respond("Can't DM me with this command.")
+		return
+
 	await serverUtils.increment_cmd(ctx, 'queue')
 	if serverVoices[ctx.guild.id].vclient is not None:
 		await serverVoices[ctx.guild.id].printQueue(ctx)
@@ -443,6 +483,10 @@ async def cmdVoiceQueue(ctx):
 
 @voice.command(name='disconnect', description="Disconnects me from voice")
 async def cmdVoiceDisconnect(ctx):
+	if ctx.guild == None:
+		await ctx.respond("Can't DM me with this command.")
+		return
+
 	await serverUtils.increment_cmd(ctx, 'leavevoice')
 	if serverVoices[ctx.guild.id] != None:
 		await serverVoices[ctx.guild.id].vclient.disconnect()
@@ -453,6 +497,10 @@ async def cmdVoiceDisconnect(ctx):
 
 @voice.command(name='sounds', description="Shows sounds I can play with /voice soundclip")
 async def cmdVoiceSounds(ctx):
+	if ctx.guild == None:
+		await ctx.respond("Can't DM me with this command.")
+		return
+
 	await serverUtils.increment_cmd(ctx, 'sounds')
 	theSounds = subprocess.check_output(["ls", soundsDir])
 	theSounds = theSounds.decode("utf-8")
@@ -460,7 +508,7 @@ async def cmdVoiceSounds(ctx):
 	theSounds = theSounds.replace('\n', ', ')
 	await ctx.respond(f"Current Sounds:\n```{theSounds}```")
 
-@voice.command(name='playsound', description="Plays one of my sound clips in voice")
+@play.command(name='sound', description="Plays one of my sound clips in voice")
 async def cmdVoicePlaySound(ctx, sound: Option(str, "Sound clip to play, get with /voice sounds")):
 	if serverVoices[ctx.guild.id].vclient is not None:
 		await ctx.respond(f"Attempting to play: {sound}", ephemeral=True)
@@ -469,7 +517,7 @@ async def cmdVoicePlaySound(ctx, sound: Option(str, "Sound clip to play, get wit
 		await ctx.respond("Not connected to voice.", ephemeral=True)
 
 @admin.command(name='playlist', description="Adds a URL or the current video to my playlist for /voice playrandom")
-async def cmdPlaylistAdd(ctx, url: Option(str, "URL to add to my playlist", required=False)):
+async def cmdPlaylistAdd(ctx, url: Option(str, "URL to add to my playlist", required=True)):
 	if ctx.guild == None:
 		await ctx.respond("Can't DM me with this command.")
 		return
@@ -480,7 +528,7 @@ async def cmdPlaylistAdd(ctx, url: Option(str, "URL to add to my playlist", requ
 		await ctx.respond("You aren't a guild administrator", ephemeral=True)
 
 @admin.command(name='blacklist', description="Adds a URL or the current video to my blacklist to never play")
-async def cmdBlacklistAdd(ctx, url: Option(str, "URL to add to my blacklist", required=False)):
+async def cmdBlacklistAdd(ctx, url: Option(str, "URL to add to my blacklist", required=True)):
 	if ctx.guild == None:
 		await ctx.respond("Can't DM me with this command.")
 		return
@@ -628,7 +676,6 @@ async def on_voice_state_update(mem, before, after):
 		try:
 			if serverVoices[server].vclient != None:
 				await serverVoices[server].vclient.disconnect()
-				serverVoices[server].vclient = None
 		except Exception as e:
 			print(traceback.format_exc())
 			print("Issue in voice disconnect?? Recreating anyway")
@@ -725,8 +772,6 @@ async def on_message(message):
 				await nsoHandler.getRawJSON(message)
 			elif '!announce' in command:
 				await serverUtils.doAnnouncement(message)
-			elif '!reloadnsoapp' in command:
-				await resetNSOVer(message)
 		if '!token' in command:
 			await nsoTokens.login(message)
 		elif '!deletetoken' in command:
@@ -766,10 +811,7 @@ async def on_message(message):
 	elif cmd == 'storejson' and message.author in owners:
 		await nsoHandler.getStoreJSON(context)
 	elif cmd == 'admin':
-		if message.guild.get_member(message.author.id) == None:
-			await client.get_guild(message.guild.id).chunk()
-
-		if message.author.guild_permissions.administrator:
+		if await checkIfAdmin(context):
 			if len(args) == 0:
 				await message.channel.send("Options for admin commands are playlist, blacklist, dm, prefix, announcement, and feed")
 				await serverUtils.print_help(message, prefix)

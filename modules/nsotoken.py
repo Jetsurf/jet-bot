@@ -28,8 +28,7 @@ class Nsotoken():
 
 		await cur.execute("SELECT version, UNIX_TIMESTAMP(updatetime) AS updatetime FROM nso_app_version")
 		row = await cur.fetchone()
-		await self.sqlBroker.c_commit(cur)
-		await self.sqlBroker.close(cur)
+		await self.sqlBroker.commit(cur)
 
 		if row:
 			return {'version': row[0], 'updatetime': row[1]}
@@ -61,13 +60,8 @@ class Nsotoken():
 			# No version change, so just bump the timestamp
 			await cur.execute("UPDATE nso_app_version SET updatetime = NOW()")
 
-		await self.sqlBroker.c_commit(cur)
-		await self.sqlBroker.close(cur)
+		await self.sqlBroker.commit(cur)
 		return
-
-	async def reloadNSOAppVer(self, nsoAppVer):
-		self.nsoAppVer = nsoAppVer
-		return self.nsoAppVer
 
 	async def checkDuplicate(self, id, cur):
 		stmt = "SELECT COUNT(*) FROM tokens WHERE clientid = %s"
