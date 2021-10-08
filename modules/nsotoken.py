@@ -63,10 +63,6 @@ class Nsotoken():
 		await self.sqlBroker.commit(cur)
 		return
 
-	async def reloadNSOAppVer(self, nsoAppVer):
-		self.nsoAppVer = nsoAppVer
-		return self.nsoAppVer
-
 	async def checkDuplicate(self, id, cur):
 		stmt = "SELECT COUNT(*) FROM tokens WHERE clientid = %s"
 		await cur.execute(stmt, (str(id),))
