@@ -8,7 +8,6 @@ class mysqlHandler():
 		self.__pw = pw
 		self.__db = db
 		self.pool = None
-		self.contime = {}
 		self.cons = {}
 
 	async def startUp(self):
