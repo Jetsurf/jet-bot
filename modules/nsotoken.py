@@ -230,7 +230,7 @@ class Nsotoken():
 		version = '1.5.13'
 		api_app_head = { 'User-Agent': f"splatnet2statink/{version}" }
 		api_body = { 'naIdToken': id_token, 'timestamp': timestamp }
-		r = requests.post("https://elifessler.com/s2s/api/gen2", headers=api_app_head, data=api_body)
+		r = self.session.post("https://elifessler.com/s2s/api/gen2", headers=api_app_head, data=api_body)
 		print(f"S2API RESPONSE: {r.status_code} {r.reason}")
 
 		if r.status_code == 429:
@@ -301,7 +301,7 @@ class Nsotoken():
 			'x-ver':   '3',
 			'x-iid':   login
 		}
-		r = requests.get("https://flapg.com/ika2/api/login?public", headers=api_app_head)
+		r = self.session.get("https://flapg.com/ika2/api/login?public", headers=api_app_head)
 		print(f"FLAPG API RESPONSE: {r.status_code} {r.reason}")
 		if r.status_code == 404:
 			print("ISSUE WITH FLAPG - 404")
@@ -337,7 +337,8 @@ class Nsotoken():
 			'grant_type': 'urn:ietf:params:oauth:grant-type:jwt-bearer-session-token'
 		}
 
-		r = requests.post("https://accounts.nintendo.com/connect/1.0.0/api/token", headers=head, json=body)
+		self.session.cookies.clear()
+		r = self.session.post("https://accounts.nintendo.com/connect/1.0.0/api/token", headers=head, json=body)
 		id_response = json.loads(r.text)
 		if r.status_code != 200:
 			print(f"NSO ERROR IN API TOKEN {r.status_code} {r.reason}: {str(id_response)}")
@@ -353,7 +354,7 @@ class Nsotoken():
 			'Accept-Encoding': 'gzip'
 		}
 
-		r = requests.get("https://api.accounts.nintendo.com/2.0.0/users/me", headers=head)
+		r = self.session.get("https://api.accounts.nintendo.com/2.0.0/users/me", headers=head)
 		user_info = json.loads(r.text)
 		if r.status_code != 200:
 			print(f"NSO ERROR IN USER LOGIN {r.response} {r.reason}: {str(user_info)}")
@@ -393,7 +394,7 @@ class Nsotoken():
 		body = {}
 		body["parameter"] = parameter
 
-		r = requests.post("https://api-lp1.znc.srv.nintendo.net/v1/Account/Login", headers=head, json=body)
+		r = self.session.post("https://api-lp1.znc.srv.nintendo.net/v1/Account/Login", headers=head, json=body)
 		splatoon_token = json.loads(r.text)
 		if r.status_code != 200:
 			print(f"NSO ERROR IN LOGIN {r.status_code} {r.reason}: {str(splatoon_token)}")
@@ -440,7 +441,7 @@ class Nsotoken():
 		body = {}
 		body["parameter"] = parameter
 
-		r = requests.post("https://api-lp1.znc.srv.nintendo.net/v2/Game/GetWebServiceToken", headers=head, json=body)
+		r = self.session.post("https://api-lp1.znc.srv.nintendo.net/v2/Game/GetWebServiceToken", headers=head, json=body)
 		token = json.loads(r.text)
 		if r.status_code != 200:
 			print(f"NSO ERROR IN GETWEBSERVICETOKEN {r.status_code} {r.reason}: {str(token)}")
@@ -463,7 +464,7 @@ class Nsotoken():
 		keys = {}
 		if game == 'ac':
 			head['Host'] = 'web.sd.lp1.acbaa.srv.nintendo.net'
-			r = requests.get("https://web.sd.lp1.acbaa.srv.nintendo.net/?lang=en-US&na_country=US&na_lang=en-US", headers=head)
+			r = self.session.get("https://web.sd.lp1.acbaa.srv.nintendo.net/?lang=en-US&na_country=US&na_lang=en-US", headers=head)
 			if r.cookies['_gtoken'] == None:
 				print(f"ERROR IN GETTING AC _GTOKEN: {str(r.text)}")
 				return None
@@ -471,11 +472,11 @@ class Nsotoken():
 				print("Got a AC token, getting park_session")
 				gtoken = r.cookies["_gtoken"]
 
-				r = requests.get('https://web.sd.lp1.acbaa.srv.nintendo.net/api/sd/v1/users', headers=head, cookies=dict(_gtoken=gtoken))
+				r = self.session.get('https://web.sd.lp1.acbaa.srv.nintendo.net/api/sd/v1/users', headers=head, cookies=dict(_gtoken=gtoken))
 				thejson = json.loads(r.text)
 				if thejson['users']:
 					head['Referer'] = "https://web.sd.lp1.acbaa.srv.nintendo.net/?lang=en-US&na_country=US&na_lang=en-US"
-					r = requests.post("https://web.sd.lp1.acbaa.srv.nintendo.net/api/sd/v1/auth_token", headers=head, data=dict(userId=thejson['users'][0]['id']), cookies=dict(_gtoken=gtoken))
+					r = self.session.post("https://web.sd.lp1.acbaa.srv.nintendo.net/api/sd/v1/auth_token", headers=head, data=dict(userId=thejson['users'][0]['id']), cookies=dict(_gtoken=gtoken))
 					bearer = json.loads(r.text)
 					if r.cookies['_park_session'] == None or 'token' not in bearer:
 						print("ERROR GETTING AC _PARK_SESSION/BEARER")
@@ -489,7 +490,7 @@ class Nsotoken():
 					return None
 		else:
 			head['Host'] = 'app.splatoon2.nintendo.net'
-			r = requests.get("https://app.splatoon2.nintendo.net/?lang=en-US", headers=head)
+			r = self.session.get("https://app.splatoon2.nintendo.net/?lang=en-US", headers=head)
 			if r.status_code != 200:
 				print(f"ERROR IN GETTING IKSM {r.status_code} {r.reason}: {str(r.text)}")
 				return None
