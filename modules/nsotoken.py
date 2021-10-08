@@ -72,19 +72,18 @@ class Nsotoken():
 		else:
 			return False
 
-	#This stays as message objects as !deletetokens is a DM only command
-	async def delete_tokens(self, message):
+	async def delete_tokens(self, ctx):
 		cur = await self.sqlBroker.connect()
 		print("Deleting token")
 		stmt = "DELETE FROM tokens WHERE clientid = %s"
-		input = (message.author.id,)
+		input = (ctx.user.id,)
 		await cur.execute(stmt, input)
 		if cur.lastrowid != None:
 			await self.sqlBroker.commit(cur)
-			await message.channel.send("Tokens deleted!")
+			await ctx.send("Tokens deleted!")
 		else:
 			await self.sqlBroker.rollback(cur)
-			await message.channel.send("Something went wrong! If you want to report this, join my support discord and let the devs know what you were doing!")
+			await ctx.send("Something went wrong! If you want to report this, join my support discord and let the devs know what you were doing!")
 
 	async def addToken(self, ctx, token, session_token):
 		now = datetime.now()
@@ -148,14 +147,13 @@ class Nsotoken():
 			return None
 		return session_token[0][0]
 
-	#This stays as a message object as !token is DM only
-	async def login(self, message, flag=-1):
+	async def login(self, ctx, flag=-1):
 		cur = await self.sqlBroker.connect()
-		dupe = await self.checkDuplicate(message.author.id, cur)
+		dupe = await self.checkDuplicate(ctx.user.id, cur)
 		await self.sqlBroker.close(cur)
 
 		if dupe:
-			await message.channel.send("You already have a token setup with me, if you need to refresh your token (due to an issue), DM me !deletetoken to perform this again.")
+			await ctx.send("You already have a token setup with me, if you need to refresh your token (due to an issue), DM me !deletetoken to perform this again.")
 			return
 
 		auth_state = base64.urlsafe_b64encode(os.urandom(36))
@@ -187,46 +185,46 @@ class Nsotoken():
 
 		post_login = r.history[0].url
 
-		await message.channel.send(f"Navigate to this URL in your browser: {post_login}")
-		await message.channel.send("Log in, right click the \"Select this person\" button, copy the link address, and paste it back to me or 'stop' to cancel.")
-		await message.channel.send("https://db-files.crmea.de/images/bot/nsohowto.png")
+		await ctx.send(f"Navigate to this URL in your browser: {post_login}")
+		await ctx.send("Log in, right click the \"Select this person\" button, copy the link address, and paste it back to me or 'stop' to cancel.")
+		await ctx.send("https://db-files.crmea.de/images/bot/nsohowto.png")
 
 		while True:
 			def check(m):
-				return m.author == message.author and m.channel == message.channel
+				return m.author == ctx.user and m.channel == ctx.channel
 
 			accounturl = await self.client.wait_for('message', check=check)
 			accounturl = accounturl.content
 
 			if 'stop' in accounturl.lower():
-				await message.channel.send("Ok, stopping the token setup")
+				await ctx.send("Ok, stopping the token setup")
 				return
 			elif 'npf71b963c1b7b6d119' not in accounturl:
-				await message.channel.send("Invalid URL, please copy the link in \"Select this person\" (or stop to cancel).")
+				await ctx.send("Invalid URL, please copy the link in \"Select this person\" (or stop to cancel).")
 			else:
 				break
 
-		await message.channel.trigger_typing()
+		await ctx.channel.trigger_typing()
 		session_token_code = re.search('session_token_code=(.*)&', accounturl)
 		if session_token_code == None:
 			print(f"Issue with account url: {str(accounturl)}")
-			await message.channel.send("Error in account url. Issue is logged, but you can report this in my support guild")
+			await ctx.send("Error in account url. Issue is logged, but you can report this in my support guild")
 			return
 
 		session_token_code = await self.get_session_token(session_token_code.group(0)[19:-1], auth_code_verifier)
 
 		if session_token_code == None:
-			await message.channel.send("Something went wrong! Make sure you are also using the latest link I gave you to sign in. If so, join my support discord and report that something broke!")
+			await ctx.send("Something went wrong! Make sure you are also using the latest link I gave you to sign in. If so, join my support discord and report that something broke!")
 			return
 		else:
-			success = await self.addToken(message, {}, session_token_code)
+			success = await self.addToken(ctx, {}, session_token_code)
 
 		if success and flag == -1:
-			await message.channel.send("Token added, NSO commands will now work! You shouldn't need to run this command again.")
+			await ctx.send("Token added, NSO commands will now work! You shouldn't need to run this command again.")
 		elif success and flag == 1:
-			await message.channel.send("Token added! Ordering...")
+			await ctx.send("Token added! Ordering...")
 		else:
-			await message.channel.send("Something went wrong! Join my support discord and report that something broke!")
+			await ctx.send("Something went wrong! Join my support discord and report that something broke!")
 
 	def get_hash(self, id_token, timestamp):
 		version = '1.5.13'
