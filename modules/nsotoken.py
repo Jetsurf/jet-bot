@@ -242,7 +242,7 @@ class Nsotoken():
 			print(f"ERROR IN stat.ink CALL {r.status_code} {r.reason}: {r.text}")
 			return None
 		else:
-			return json.loads(response.text)["hash"]
+			return json.loads(r.text)["hash"]
 
 	async def do_iksm_refresh(self, ctx, game='s2'):
 		session_token = await self.get_session_token_mysql(ctx.user.id)
@@ -306,7 +306,7 @@ class Nsotoken():
 			print(f"ERROR IN FLAPGAPI: {r.status_code} {r.reason} : {r.text}")
 			return None
 		else:
-			return json.loads(response.text)["result"]
+			return json.loads(r.text)["result"]
 
 	def setup_nso(self, session_token, game='s2'):
 		timestamp = int(time.time())
