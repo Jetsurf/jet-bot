@@ -243,6 +243,7 @@ class Nsotoken():
 			return json.loads(r.text)["hash"]
 
 	async def do_iksm_refresh(self, ctx, game='s2'):
+		await ctx.defer()
 		session_token = await self.get_session_token_mysql(ctx.user.id)
 		keys = await self.setup_nso(session_token, game)
 

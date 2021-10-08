@@ -64,7 +64,7 @@ class voiceServer():
 	async def joinVoiceChannel(self, ctx, args):
 		id = 0
 		channel = None
-		
+
 		if ctx.user.voice != None:
 			channel = ctx.user.voice.channel
 
@@ -111,7 +111,7 @@ class voiceServer():
 		command = command.replace("../", "")
 		if self.source != None or self.vclient == None:
 			return
-		
+
 		try:
 			source = discord.FFmpegPCMAudio(f"{self.soundsDir}/{command}.mp3")
 			source = discord.PCMVolumeTransformer(source)
@@ -219,7 +219,7 @@ class voiceServer():
 					print(f"TEST2 {query}")
 					url = f"https://youtube.com/results?search_query={query}".replace('%20', '+')
 					print(f"TEST3: {url}")
-					
+
 					source = requests.get(url).text
 					soup = BeautifulSoup(source,'html5lib')
 					theJson = self.get_yt_json(soup)

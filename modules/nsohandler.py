@@ -186,7 +186,7 @@ class nsoHandler():
 
 		#Search Abilities
 		if flag != True: #Pre-emptive for adding in pure gear
-			match1 = self.splatInfo.matchAbilities(term)			
+			match1 = self.splatInfo.matchAbilities(term)
 			if match1.isValid():
 				flag = True
 				term = match1.get().name()
@@ -205,7 +205,7 @@ class nsoHandler():
 			if match3.isValid():
 				flag = True
 				term = match3.get().name()
-	
+
 		if not flag:
 			if len(match1.items) + len(match2.items) + len(match3.items) < 1:
 				await ctx.respond("Didn't find any partial matches for you.")
@@ -295,7 +295,7 @@ class nsoHandler():
 
 		#Search Abilities
 		if flag != True: #Pre-emptive for adding in pure gear
-			match1 = self.splatInfo.matchAbilities(term)			
+			match1 = self.splatInfo.matchAbilities(term)
 			if match1.isValid():
 				flag = True
 				term = match1.get().name()
@@ -314,7 +314,7 @@ class nsoHandler():
 			if match3.isValid():
 				flag = True
 				term = match3.get().name()
-	
+
 		if not flag:
 			if len(match1.items) + len(match2.items) + len(match3.items) < 1:
 				await ctx.respond("Didn't find any partial matches for you.")
@@ -375,7 +375,6 @@ class nsoHandler():
 		else:
 			await ctx.respond(f"Removed you from recieving a DM when {term} appears in the store.")	
 
-			
 	async def listStoreDM(self, ctx):
 		cur = await self.sqlBroker.connect()
 
@@ -438,7 +437,7 @@ class nsoHandler():
 
 		def check1(m):
 			return True if isinstance(m.channel, discord.channel.DMChannel) and m.author.name == theMem.name and not m.author.bot else False
-				
+
 		# Discord.py changed timeouts to throw exceptions...
 		try:
 			resp = await self.client.wait_for('message', timeout=7100, check=check1)
@@ -1008,7 +1007,7 @@ class nsoHandler():
 			elif not is_slash:
 				embed = self.makeGearEmbed(ordered, f"{ctx.user.name}, you already have an item on order!", "Respond with 'yes' to replace your order, 'no' to cancel")
 				await ctx.respond(embed=embed)
-						
+
 			if not is_slash:
 				confirmation = await self.client.wait_for('message', check=messageCheck)
 				if 'yes' in confirmation.content.lower():
@@ -1083,7 +1082,7 @@ class nsoHandler():
 
 	def mapsEmbed(self, offset=0) -> discord.Embed:
 		embed = discord.Embed(colour=0x3FFF33)
-		
+
 		data = self.maps(offset=offset)
 		turf = data['turf']
 		ranked = data['ranked']
@@ -1113,7 +1112,7 @@ class nsoHandler():
 		trfWar = self.mapsJSON['regular']
 		ranked = self.mapsJSON['gachi']
 		league = self.mapsJSON['league']
-		
+
 		turf = {}
 		turf['stage_a'] = trfWar[offset]['stage_a']
 		turf['stage_b'] = trfWar[offset]['stage_b']
@@ -1181,8 +1180,8 @@ class nsoHandler():
 		gotData = 0
 		start = 0
 		end = 0
-		
-		theString = ''	
+
+		theString = ''
 		srdata = {}
 
 		for i in currentSR:
