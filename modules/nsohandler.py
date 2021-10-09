@@ -911,7 +911,7 @@ class nsoHandler():
 		embed.add_field(name="Clam Blitz", value=cbrank, inline=True)
 		await ctx.respond(embed=embed)
 
-	def makeGearEmbed(self, gear, title, dirs):
+	def makeGearEmbed(self, gear, title, dirs) -> discord.Embed:
 		embed = discord.Embed(colour=0xF9FC5F)
 		embed.title = title
 		embed.set_thumbnail(url=f"https://splatoon2.ink/assets/splatnet{gear['gear']['image']}")

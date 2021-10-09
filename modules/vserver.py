@@ -298,6 +298,7 @@ class voiceServer():
 			await ctx.respond("You have nothing added to your playlist, use /admin playlist URL to add songs!")
 			return
 
+		await ctx.defer()
 		print("Playing random")
 		numToQueue = min(numToQueue, len(x))
 		for y in range(numToQueue):
