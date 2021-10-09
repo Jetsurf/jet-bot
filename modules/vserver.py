@@ -216,9 +216,7 @@ class voiceServer():
 			try:
 				if 'youtube' in args[0]:
 					query = urllib.request.pathname2url(' '.join(args[1:]))
-					print(f"TEST2 {query}")
 					url = f"https://youtube.com/results?search_query={query}".replace('%20', '+')
-					print(f"TEST3: {url}")
 
 					source = requests.get(url).text
 					soup = BeautifulSoup(source,'html5lib')
@@ -259,10 +257,10 @@ class voiceServer():
 				print(traceback.format_exc())
 				await ctx.respond(f"Sorry, I can't play that, you can report the following in my support discord: {str(e)}")
 
-	async def listCheck(self, theList, theURL):
+	async def listCheck(self, theURL):
 		cur = await self.sqlBroker.connect()
 
-		stmt = f"SELECT COUNT(*) FROM {theList} WHERE serverid = %s AND url = %s"
+		stmt = f"SELECT COUNT(*) FROM playlist WHERE serverid = %s AND url = %s"
 		await cur.execute(stmt, (self.server, theURL,))
 		count = await cur.fetchone()
 		await self.sqlBroker.commit(cur)
@@ -271,10 +269,10 @@ class voiceServer():
 		else:
 			return False
 
-	async def listAdd(self, ctx, toAdd, theList):
+	async def listAdd(self, ctx, toAdd):
 		cur = await self.sqlBroker.connect()
 
-		stmt = f"INSERT INTO {theList} (serverid, url) VALUES(%s, %s)"
+		stmt = f"INSERT INTO playlist (serverid, url) VALUES(%s, %s)"
 		input = (self.server, toAdd,)
 		await cur.execute(stmt, input)
 		if cur.lastrowid != None:
@@ -329,21 +327,21 @@ class voiceServer():
 		await ctx.respond(response)
 
 	async def addGuildList(self, ctx, args):
-		if len(set(args)) == 1:
-			if self.source.yturl != None and await self.listCheck(args[0], self.source.yturl):
-				if await self.listAdd(ctx, args[0], args[1]):
-					await ctx.respond(f"Added URL: {self.source.yturl} to the {args[0]}")
+		if len(set(args)) == 0:
+			if self.source.yturl != None and await self.listCheck(self.source.yturl):
+				if await self.listAdd(ctx, args[0]):
+					await ctx.respond(f"Added URL: {self.source.yturl} to the playlist")
 				else:
-					await ctx.respond(f"Error adding to the {args[0]}")
+					await ctx.respond(f"Error adding to the playlist")
 			else:
 				await ctx.respond("I'm not playing anything")
 		else:
-			if 'https' in args[1] and not await self.listCheck(args[0], args[1]):
-				if await self.listAdd(ctx, args[1], args[0]):
-					await ctx.respond(f"Added URL: {args[1]} to the {args[0]}")
+			if 'https' in args[0] and not await self.listCheck(args[0]):
+				if await self.listAdd(ctx, args[0]):
+					await ctx.respond(f"Added URL: {args[0]} to the playlist")
 				else:
-					await ctx.respond(f"Error adding to the {args[0]}")
+					await ctx.respond(f"Error adding to the playlist")
 			elif 'https' not in args[1]:
 				await ctx.respond("I need a proper url to add")
 			else:
-				await ctx.respond(f"URL: {args[1]} is already in my {args[0]}")
+				await ctx.respond(f"URL: {args[0]} is already in my playlist")

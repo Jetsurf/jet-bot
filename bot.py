@@ -523,18 +523,7 @@ async def cmdPlaylistAdd(ctx, url: Option(str, "URL to add to my playlist", requ
 		return
 
 	if await checkIfAdmin(ctx):
-		await serverVoices[ctx.guild.id].addGuildList(ctx, [ 'playlist', url ])
-	else:
-		await ctx.respond("You aren't a guild administrator", ephemeral=True)
-
-@admin.command(name='blacklist', description="Adds a URL or the current video to my blacklist to never play")
-async def cmdBlacklistAdd(ctx, url: Option(str, "URL to add to my blacklist", required=True)):
-	if ctx.guild == None:
-		await ctx.respond("Can't DM me with this command.")
-		return
-
-	if await checkIfAdmin(ctx):
-		await serverVoices[ctx.guild.id].addGuildList(ctx, [ 'blacklist', url ])
+		await serverVoices[ctx.guild.id].addGuildList(ctx, [ url ])
 	else:
 		await ctx.respond("You aren't a guild administrator", ephemeral=True)
 
@@ -818,8 +807,6 @@ async def on_message(message):
 				return
 			subcommand = args[0].lower()
 			if subcommand == 'playlist':
-				await serverVoices[theServer].addGuildList(context, args)
-			elif subcommand == 'blacklist':
 				await serverVoices[theServer].addGuildList(context, args)
 			elif subcommand == 'wtfboom':
 				await serverVoices[theServer].playWTF(message)

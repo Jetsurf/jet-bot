@@ -41,7 +41,6 @@ The following sections list the different commands that are available.
 There are a few admin commands to configure the bot. To run these commands, you need the administrator role in your discord server. Can't DM the bot with any of these commands
 
  - `/admin playlist URL`: Add the given URL to the `/voice play random` playlist
- - `/admin blacklist URL`: Prevent the video at the URL from ever being played
  - `/admin dm add`: Subscribe to DMs on users leaving the server
  - `/admin dm remove`: Unsubscribe from DMs on users leaving the server
  - `/admin announcement set CHANNEL` : Sets a chat channel for announcements about restarts/new features from the devs
