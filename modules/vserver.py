@@ -199,10 +199,6 @@ class voiceServer():
 
 	async def setupPlay(self, ctx, args):
 		if 'https://' in args[0]:
-			if await self.listCheck('blacklist', args[0]):
-				print(f"{ctx.user.name} tried to play a blacklisted video")
-				await ctx.respond("Sorry, I can't play that")
-				return
 			try:
 				tempPlayer = await YTDLSource.from_url(args[0])
 				self.ytQueue.put(tempPlayer)
@@ -239,10 +235,6 @@ class voiceServer():
 					theURL = "https://soundcloud.com" + song
 				else:
 					await ctx.respond("Don't know where to search, try !play youtube SEARCH or !play soundcloud SEARCH")
-					return
-				if await self.listCheck('blacklist', theURL):
-					print(f"{ctx.user.name} tried to play a blacklisted video")
-					await ctx.respond("Sorry, I can't play that")
 					return
 
 				tempPlayer = await YTDLSource.from_url(theURL)
