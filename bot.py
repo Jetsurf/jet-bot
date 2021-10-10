@@ -361,7 +361,7 @@ async def cmdVoiceLeave(ctx):
 		await ctx.respond("Not connected to voice", ephemeral=True)
 
 @voice.command(name='volume', description='Changes the volume while in voice chat')
-async def cmdVoiceVolume(ctx, vol: Option(int, "What to change the volume to 1-60% (7\% is default)"), required=True):
+async def cmdVoiceVolume(ctx, vol: Option(int, "What to change the volume to 1-60% (7\% is default)", required=True)):
 	if ctx.guild == None:
 		await ctx.respond("Can't DM me with this command.")
 		return
@@ -495,7 +495,7 @@ async def cmdVoiceDisconnect(ctx):
 	else:
 		await ctx.respond("Not connected to voice.", ephemeral=True)
 
-@voice.command(name='sounds', description="Shows sounds I can play with /voice soundclip")
+@voice.command(name='sounds', description="Shows sounds I can play with /voice play sound")
 async def cmdVoiceSounds(ctx):
 	if ctx.guild == None:
 		await ctx.respond("Can't DM me with this command.")
@@ -516,7 +516,7 @@ async def cmdVoicePlaySound(ctx, sound: Option(str, "Sound clip to play, get wit
 	else:
 		await ctx.respond("Not connected to voice.", ephemeral=True)
 
-@admin.command(name='playlist', description="Adds a URL or the current video to my playlist for /voice playrandom")
+@admin.command(name='playlist', description="Adds a URL or the current video to my playlist for /voice play random")
 async def cmdPlaylistAdd(ctx, url: Option(str, "URL to add to my playlist", required=True)):
 	if ctx.guild == None:
 		await ctx.respond("Can't DM me with this command.")

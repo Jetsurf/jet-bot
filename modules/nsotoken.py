@@ -348,7 +348,7 @@ class Nsotoken():
 			'User-Agent': f'OnlineLounge/{nsoAppVer} NASDKAPI Android',
 			'Accept-Language': 'en-US',
 			'Accept': 'application/json',
-			'Authorization': 'Bearer ' + id_response["access_token"],
+			'Authorization': f'Bearer {id_response["access_token"]}',
 			'Host': 'api.accounts.nintendo.com',
 			'Connection': 'Keep-Alive',
 			'Accept-Encoding': 'gzip'
