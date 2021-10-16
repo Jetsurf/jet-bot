@@ -271,9 +271,8 @@ class nsoHandler():
 		count = await cur.fetchone()
 		if count[0] == 0:
 			try:
-				chan = await ctx.user.create_dm()
-				await chan.send("This is a test to ensure that you can receive DM's. Be aware that if I am unable to DM you (due to changes in permissions), I will no longer notify you of items in the store, even if you restore permission (rerun /store dm add to be readded).")
-			except Exception as e:
+				chan = await ctx.user.send("This is a test to ensure that you can receive DM's. Be aware that if I am unable to DM you (due to changes in permissions), I will no longer notify you of items in the store, even if you restore permission (rerun /store dm add to be readded).")
+			except discord.Forbidden:
 				await ctx.respond("I am unable to DM you, please check to ensure you can receive DM's from me before attempting again.", ephemeral=True)
 				return
 
