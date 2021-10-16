@@ -267,13 +267,16 @@ class nsoHandler():
 					await ctx.respond("Ok, I haven't added you to receive a DM.")
 					return
 
-		#TODO This should attempt a DM on first flag added to check DM's work and notify the user if a DM can't be sent
-		try:
-			chan = await ctx.user.create_dm()
-			await chan.send("This is a test to ensure that you can receive DM's. Be aware that if I am unable to DM you (due to changes in permissions), I will no longer notify you of items in the store, even if you restore permission.")
-		except Exception as e:
-			await ctx.respond("I am unable to DM you, please check to ensure you can receive DM's from me before attempting again.", ephemeral=True)
-			return
+		stmt = "SELECT COUNT(*) FROM storedms WHERE clientid = %s"
+		await cur.execute(stmt, (str(ctx.user.id),))
+		count = await cur.fetchone()
+		if count[0] == 0:
+			try:
+				chan = await ctx.user.create_dm()
+				await chan.send("This is a test to ensure that you can receive DM's. Be aware that if I am unable to DM you (due to changes in permissions), I will no longer notify you of items in the store, even if you restore permission.")
+			except Exception as e:
+				await ctx.respond("I am unable to DM you, please check to ensure you can receive DM's from me before attempting again.", ephemeral=True)
+				return
 
 		if match1.isValid():
 			stmt = 'INSERT INTO storedms (clientid, serverid, ability) VALUES(%s, %s, %s)'
