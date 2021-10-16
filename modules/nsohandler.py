@@ -183,7 +183,6 @@ class nsoHandler():
 		term = " ".join(args).lower()
 
 		flag = False
-
 		#Search Abilities
 		if flag != True: #Pre-emptive for adding in pure gear
 			match1 = self.splatInfo.matchAbilities(term)
@@ -253,7 +252,7 @@ class nsoHandler():
 		else:
 			if not is_slash:
 				def check2(m):
-					return m.author == message.author and m.channel == message.channel
+					return m.author == ctx.user and m.channel == ctx.channel
 
 				if match1.isValid():
 					await ctx.respond(f"{ctx.user.name} do you want me to DM you when gear with ability {term} appears in the shop? (Respond Yes/No)")
@@ -273,7 +272,7 @@ class nsoHandler():
 		if count[0] == 0:
 			try:
 				chan = await ctx.user.create_dm()
-				await chan.send("This is a test to ensure that you can receive DM's. Be aware that if I am unable to DM you (due to changes in permissions), I will no longer notify you of items in the store, even if you restore permission.")
+				await chan.send("This is a test to ensure that you can receive DM's. Be aware that if I am unable to DM you (due to changes in permissions), I will no longer notify you of items in the store, even if you restore permission (rerun /store dm add to be readded).")
 			except Exception as e:
 				await ctx.respond("I am unable to DM you, please check to ensure you can receive DM's from me before attempting again.", ephemeral=True)
 				return
