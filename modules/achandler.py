@@ -99,21 +99,21 @@ class acHandler():
 		profileid = re.search('(?<=user_profile/).*(?=\?)', user['image']).group()
 
 		#This is hard coded for now, if you care enough, this assumes you have a https (yes s, its needed by discord) setup to host from the directory
-		open('/var/www/db-files/acprofiles/' + str(profileid) + ".jpg", 'wb').write(profilepic.content)
+		open(f'/var/www/db-files/acprofiles/{str(profileid)}.jpg', 'wb').write(profilepic.content)
 
 		embed = discord.Embed(colour=0x0004FF)
 		embed.title = str(user['name']) + "'s Passport - Animal Crossing New Horizons"
-		embed.set_thumbnail(url='https://db-files.crmea.de/acprofiles/' + str(profileid) + '.jpg')
+		embed.set_thumbnail(url=f'https://db-files.crmea.de/acprofiles/{str(profileid)}.jpg')
 		print("PROFILE: " + str(profileid))
 		embed.add_field(name='Title', value=str(detaileduser['mHandleName']), inline=True)
 		embed.add_field(name='Comment', value=str(detaileduser['mComment']), inline=True)
-		embed.add_field(name='Registered On', value=str(detaileduser['mTimeStamp']['month']) + '/' + str(detaileduser['mTimeStamp']['day']) + '/' + str(detaileduser['mTimeStamp']['year']), inline=True)
+		embed.add_field(name='Registered On', value=f"{str(detaileduser['mTimeStamp']['month'])}/{str(detaileduser['mTimeStamp']['day'])}/{str(detaileduser['mTimeStamp']['year'])}", inline=True)
 		embed.add_field(name='Island Name', value=user['land']['name'], inline=True)
 
 		npcstring = ''
 
 		for npc in landjson['mNormalNpc']:
-			npcstring+=npc['name'] + ' - ' + str(npc['birthMonth']) + '/' + str(npc['birthDay']) + '\n'
+			npcstring+=f"{npc['name']} - {str(npc['birthMonth'])}/{str(npc['birthDay'])}\n"
 
 		embed.add_field(name="NPC's (Name - Birthday)", value=npcstring, inline=True)
 
