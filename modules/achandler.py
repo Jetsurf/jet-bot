@@ -56,7 +56,7 @@ class acHandler():
 		else:
 			self.user_pcookie['_gtoken'] = gtoken
 			self.user_pcookie['_park_session'] = parktoken
-			self.user_auth_app_head['Authorization'] = "Bearer " + bearer
+			self.user_auth_app_head['Authorization'] = f"Bearer {bearer}"
 			r = requests.get(url, headers=header, cookies=self.user_pcookie)
 			thejson = json.loads(r.text)
 
@@ -76,7 +76,7 @@ class acHandler():
 			else:
 				self.user_pcookie['_gtoken'] = gtoken
 				self.user_pcookie['_park_session'] = parktoken
-				self.user_auth_app_head['Authorization'] = "Bearer " + bearer
+				self.user_auth_app_head['Authorization'] = f"Bearer {bearer}"
 				r = requests.get(url, headers=header, cookies=self.user_pcookie)
 				thejson = json.loads(r.text)
 
@@ -93,8 +93,8 @@ class acHandler():
 		else:
 			user = userjson['users'][0]
 
-		detaileduser = await self.getNSOJSON(ctx, self.user_auth_app_head, 'https://web.sd.lp1.acbaa.srv.nintendo.net/api/sd/v1/users/' + user['id'] + '/profile?language=en-US')
-		landjson = await self.getNSOJSON(ctx, self.user_auth_app_head, 'https://web.sd.lp1.acbaa.srv.nintendo.net/api/sd/v1/lands/' + user['land']['id'] + '/profile?language=en-US')
+		detaileduser = await self.getNSOJSON(ctx, self.user_auth_app_head, 'https://web.sd.lp1.acbaa.srv.nintendo.net/api/sd/v1/users/{user['id']}/profile?language=en-US')
+		landjson = await self.getNSOJSON(ctx, self.user_auth_app_head, f"https://web.sd.lp1.acbaa.srv.nintendo.net/api/sd/v1/lands/{user['land']['id']}/profile?language=en-US")
 		profilepic = requests.get(user['image'])
 		profileid = re.search('(?<=user_profile/).*(?=\?)', user['image']).group()
 
