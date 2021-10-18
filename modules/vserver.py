@@ -205,7 +205,7 @@ class voiceServer():
 				self.play()
 				await ctx.respond(f"Playing video: {args[0]}")
 			except Exception as e:
-				print("Failure to play youtube DL link...")
+				print(f"Failure to play youtube DL link... {args[0]}")
 				traceback.print_exception(*sys.exc_info())
 				await ctx.respond(f"Sorry, I can't play that, you can report the following in my support discord: {str(e)}")
 		else:
@@ -232,7 +232,7 @@ class voiceServer():
 					soup = BeautifulSoup(response.text, "html5lib")
 					song = soup.find("h2")
 					song = song.a.get("href")
-					theURL = "https://soundcloud.com" + song
+					theURL = f"https://soundcloud.com{song}"
 				else:
 					await ctx.respond("Don't know where to search, try !play youtube SEARCH or !play soundcloud SEARCH")
 					return
