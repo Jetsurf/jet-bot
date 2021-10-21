@@ -43,4 +43,9 @@ class MysqlSchema():
 			)
 			await self.sqlBroker.c_commit(cur)
 
+		if await self.sqlBroker.hasTable(cur, 'blacklist'):
+			print("Removing table 'blacklist'...")
+			await cur.execute("DROP TABLE blacklist")
+			await self.sqlBroker.c_commit(cur)
+
 		return
