@@ -44,10 +44,10 @@ class acHandler():
 		}
 
 	async def getNSOJSON(self, ctx, header, url):
-		tokens = await self.nsotoken.get_ac_mysql(ctx.user.id)
-		gtoken = tokens[0]
-		parktoken = tokens[1]
-		bearer = tokens[2]
+		tokens = await self.nsotoken.getGameKeys(ctx.user.id)
+		gtoken = tokens['ac']['gtoken']
+		parktoken = tokens['ac']['park_session']
+		bearer = tokens['ac']['ac_bearer']
 		gtokenFlag = False
 
 		if 'users' in url.lower() and '0x' not in url.lower():
@@ -63,13 +63,16 @@ class acHandler():
 			thejson = json.loads(r.text)
 
 		if r.status_code == 401:
-			tokens = await self.nsotoken.do_iksm_refresh(ctx, 'ac')
+			print("FIRST")
+			await self.nsotoken.do_iksm_refresh(ctx, 'ac')
+			tokens = await self.nsotoken.getGameKeys(ctx.user.id)
+			print("TOKENS: " + str(tokens))
 			if tokens == None:
 				return
 
-			gtoken = tokens['ac_g']
-			parktoken = tokens['ac_p']
-			bearer = tokens['ac_p']
+			gtoken = tokens['ac']['gtoken']
+			parktoken = tokens['ac']['park_session']
+			bearer = tokens['ac']['ac_bearer']
 
 			if gtokenFlag:
 				self.user_gcookie['_gtoken'] = gtoken
