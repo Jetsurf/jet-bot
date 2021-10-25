@@ -15,7 +15,40 @@ class Nsotoken():
 		self.hostedUrl = hostedUrl
 		self.scheduler.add_job(self.updateAppVersion, 'cron', hour="3", minute='0', second='35')
 
-	async def ensureAppVersionTable(self, cur):
+
+	async def __getGameKeys(self, cursor, clientid):
+		await cursor.execute("SELECT keys FROM tokens WHERE (clientid = %s)", (clientid,))
+		row = await cursor.fetchone()
+		if row == None:
+			return {}  # Blank config
+		return json.loads(row[0])
+
+	async def __setKeys(self, cursor, serverid, config):
+		jsonconfig = json.dumps(config)
+		await cursor.execute("REPLACE INTO server_config (serverid, config) VALUES (%s, %s)", (serverid, jsonconfig))
+
+	async def __setKeyValues(self, serverid, paths, new):
+		cursor = await self.sqlBroker.connect()
+		config = await self.getConfig(cursor, serverid)
+		value = config
+		for path in paths:
+			thePath = path.split(".")
+			for p in thePath[0:len(thePath) - 1]:
+				if not p in value:
+					value[p] = {}  # Autovivify
+				elif not isinstance(value[p], dict):
+					value[p] = {}  # Overwrite scalar with dict
+				value = value[p]
+			value[path[-1]] = new
+			await self.setConfig(cursor, serverid, config)
+			await self.sqlBroker.commit(cursor)
+			return
+
+
+#KEYS - iksm acnh_bearer acnh_park_session acnh_gtoken
+
+
+	async def __ensureAppVersionTable(self, cur):
 		await cur.execute("SHOW TABLES LIKE 'nso_app_version'")
 		row = await cur.fetchone()
 		await self.sqlBroker.c_commit(cur)
@@ -23,7 +56,7 @@ class Nsotoken():
 			await cur.execute("CREATE TABLE nso_app_version (version VARCHAR(32) NOT NULL, updatetime DATETIME NOT NULL)")
 			await self.sqlBroker.c_commit(cur)
 
-	async def getAppVersion(self):
+	async def __getAppVersion(self):
 		cur = await self.sqlBroker.connect()
 		await self.ensureAppVersionTable(cur)
 
@@ -37,7 +70,7 @@ class Nsotoken():
 		return None
 
 	async def updateAppVersion(self):
-		oldInfo = await self.getAppVersion()
+		oldInfo = await self.__getAppVersion()
 		if oldInfo != None:
 			age = time.time() - oldInfo['updatetime']
 			if age < 3600:
@@ -64,7 +97,7 @@ class Nsotoken():
 		await self.sqlBroker.commit(cur)
 		return
 
-	async def checkDuplicate(self, id, cur):
+	async def __checkDuplicate(self, id, cur) -> bool:
 		stmt = "SELECT COUNT(*) FROM tokens WHERE clientid = %s"
 		await cur.execute(stmt, (str(id),))
 		count = await cur.fetchone()
@@ -97,7 +130,7 @@ class Nsotoken():
 
 		cur = await self.sqlBroker.connect()
 
-		if await self.checkDuplicate(str(ctx.user.id), cur):
+		if await self.__checkDuplicate(str(ctx.user.id), cur):
 			if ac_g != None:
 				stmt = "UPDATE tokens SET gtoken = %s, park_session = %s, ac_bearer = %s, session_token = %s, iksm_time = %s WHERE clientid = %s"
 				input = (str(ac_g), str(ac_p), str(ac_b), str(session_token), formatted_date, str(ctx.user.id),)
@@ -117,7 +150,7 @@ class Nsotoken():
 			await self.sqlBroker.rollback(cur)
 			return False
 
-	async def get_iksm_token_mysql(self, userid):
+	async def get_game_tokens_mysql(self, userid):
 		cur = await self.sqlBroker.connect()
 		stmt = "SELECT token FROM tokens WHERE clientid = %s"
 		await cur.execute(stmt, (str(userid),))
@@ -150,7 +183,7 @@ class Nsotoken():
 
 	async def login(self, ctx, flag=-1):
 		cur = await self.sqlBroker.connect()
-		dupe = await self.checkDuplicate(ctx.user.id, cur)
+		dupe = await self.__checkDuplicate(ctx.user.id, cur)
 		await self.sqlBroker.close(cur)
 
 		if dupe:
