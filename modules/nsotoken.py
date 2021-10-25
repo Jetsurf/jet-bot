@@ -131,40 +131,9 @@ class Nsotoken():
 
 		return True
 
-	async def get_game_tokens_mysql(self, userid):
-		cur = await self.sqlBroker.connect()
-		stmt = "SELECT token FROM tokens WHERE clientid = %s"
-		await cur.execute(stmt, (str(userid),))
-		session_token = await cur.fetchall()
-		await self.sqlBroker.commit(cur)
-		if len(session_token) == 0:
-			return None
-		return session_token[0][0]
-
-	async def get_ac_mysql(self, userid):
-		cur = await self.sqlBroker.connect()
-		stmt = "SELECT gtoken, park_session, ac_bearer FROM tokens WHERE clientid = %s"
-		await cur.execute(stmt, (str(userid),))
-		session_token = await cur.fetchall()
-		await self.sqlBroker.commit(cur)
-		if len(session_token) == 0:
-			return None
-
-		return session_token[0]
-
-	async def get_session_token_mysql(self, userid):
-		cur = await self.sqlBroker.connect()
-		stmt = "SELECT session_token FROM tokens WHERE clientid = %s"
-		await cur.execute(stmt, (str(userid),))
-		session_token = await cur.fetchall()
-		await self.sqlBroker.commit(cur)
-		if len(session_token) == 0:
-			return None
-		return session_token[0][0]
-
 	async def login(self, ctx, flag=-1):
 		cur = await self.sqlBroker.connect()
-		dupe = await self.__checkDuplicate(ctx.user.id, cur)
+		dupe = await self.checkDuplicate(ctx.user.id, cur)
 		await self.sqlBroker.close(cur)
 
 		if dupe:
@@ -242,27 +211,28 @@ class Nsotoken():
 		else:
 			await ctx.send("Something went wrong! Join my support discord and report that something broke!")
 
-	async def do_iksm_refresh(self, ctx, game='s2'):
+	async def do_game_key_refresh(self, ctx, game='s2'):
 		await ctx.defer()
 		session_token = await self.get_session_token_mysql(ctx.user.id)
 		keys = await self.setup_nso(session_token, game)
 
-		if keys == 404 or keys == 429:
-			await ctx.respond("Temporary issue with NSO logins. Please try again in a few minutes")
-			return None
 		if keys == None:
 			await ctx.respond("Error getting token, I have logged this for my owners")
 			return None
 
 		await self.addToken(ctx, keys, session_token)
 
-		if game == 's2':
-			return keys['s2']
-		else:
-			return keys
+		return await self.getGameKeys(ctx.user.id)
 
-	async def do_ac_refresh(self, ctx):
-		return await self.do_iksm_refresh(ctx, 'ac')
+	async def get_session_token_mysql(self, userid):
+		cur = await self.sqlBroker.connect()
+		stmt = "SELECT session_token FROM tokens WHERE clientid = %s"
+		await cur.execute(stmt, (str(userid),))
+		session_token = await cur.fetchall()
+		await self.sqlBroker.commit(cur)
+		if len(session_token) == 0:
+			return None
+		return session_token[0][0]
 
 	async def get_session_token(self, session_token_code, auth_code_verifier):
 		nsoAppInfo = await self.getAppVersion()

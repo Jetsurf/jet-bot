@@ -644,12 +644,17 @@ class nsoHandler():
 
 	async def getNSOJSON(self, ctx, header, url):
 		s2_token = await self.nsotoken.getGameKey(ctx.user.id, "s2.token")
+		if s2_token == None:
+			tokens = await self.nsotoken.do_game_key_refresh(ctx)
+			s2_token = tokens['s2']['token']
+
 
 		results_list = requests.get(url, headers=header, cookies=dict(iksm_session=s2_token))
 		thejson = json.loads(results_list.text)	
+		print(thejson)
 
 		if 'AUTHENTICATION_ERROR' in str(thejson):
-			iksm = await self.nsotoken.do_iksm_refresh(ctx)
+			iksm = await self.nsotoken.do_game_key_refresh(ctx)
 			results_list = requests.get(url, headers=header, cookies=dict(iksm_session=iksm))
 			thejson = json.loads(results_list.text)
 			if 'AUTHENTICATION_ERROR' in str(thejson):

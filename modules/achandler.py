@@ -45,9 +45,13 @@ class acHandler():
 
 	async def getNSOJSON(self, ctx, header, url):
 		tokens = await self.nsotoken.getGameKeys(ctx.user.id)
-		gtoken = tokens['ac']['gtoken']
-		parktoken = tokens['ac']['park_session']
-		bearer = tokens['ac']['ac_bearer']
+		test = tokens.get('ac')
+		if test == None:
+			tokens = await self.nsotoken.do_game_key_refresh(ctx, 'ac')
+
+		gtoken = tokens.get('ac').get('gtoken')
+		parktoken = tokens.get('ac').get('park_session')
+		bearer = tokens.get('ac').get('ac_bearer')
 		gtokenFlag = False
 
 		if 'users' in url.lower() and '0x' not in url.lower():
@@ -63,10 +67,8 @@ class acHandler():
 			thejson = json.loads(r.text)
 
 		if r.status_code == 401:
-			print("FIRST")
-			await self.nsotoken.do_iksm_refresh(ctx, 'ac')
+			await self.nsotoken.do_game_key_refresh(ctx, 'ac')
 			tokens = await self.nsotoken.getGameKeys(ctx.user.id)
-			print("TOKENS: " + str(tokens))
 			if tokens == None:
 				return
 
