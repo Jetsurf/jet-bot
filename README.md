@@ -15,7 +15,7 @@ For self-hosting:
 Requires a bot token from the Discord Developer Portal
 
 Requires https://github.com/Pycord-Development/pycord discord python library to 
-function (needs branch feature/slash) as well as all dependencies for it.
+function as well as all dependencies for it.
 
 Requires youtube-dl and ffmpeg for online video/music playback.
 
@@ -30,6 +30,9 @@ This file needs to be completed and moved to discordbot.json.
 Soundsdir is a directory to place soundclips to play with the /voice playsound command.
 
 You can also configure some settings at runtime with [admin commands](#admin-commands).
+
+The folder db-files needs to be copied into a web-servers directory to provide various images for embeds.
+ - The web_dir and hosted_url in the config needs to be set to the local directory the web-server hosts from and the URL of the webserver providing the files.
 
 ## Commands
 

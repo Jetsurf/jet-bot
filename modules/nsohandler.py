@@ -1394,7 +1394,7 @@ class nsoHandler():
 				return
 
 			shortname = themap.get().shortname().lower().replace(" ", "-")
-			url = f"{self.hostedUrl}/images/bot/callouts/{shortname}.png"
+			url = f"{self.hostedUrl}/callouts/{shortname}.png"
 			embed = discord.Embed(colour=0x0004FF)
 			embed.title = themap.get().name()
 			embed.set_image(url=url)
