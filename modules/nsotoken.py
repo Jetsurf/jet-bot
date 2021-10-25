@@ -16,52 +16,7 @@ class Nsotoken():
 		self.stringCrypt = stringCrypt
 		self.scheduler.add_job(self.updateAppVersion, 'cron', hour="3", minute='0', second='35')
 
-<<<<<<< HEAD
-
-	async def __getGameKeys(self, cursor, clientid):
-		await cursor.execute("SELECT keys FROM tokens WHERE (clientid = %s)", (clientid,))
-		row = await cursor.fetchone()
-		if row == None:
-			return {}  # Blank config
-		return json.loads(row[0])
-
-	async def __setKeys(self, cursor, serverid, config):
-		jsonconfig = json.dumps(config)
-		await cursor.execute("REPLACE INTO server_config (serverid, config) VALUES (%s, %s)", (serverid, jsonconfig))
-
-	async def __setKeyValues(self, serverid, paths, new):
-		cursor = await self.sqlBroker.connect()
-		config = await self.getConfig(cursor, serverid)
-		value = config
-		for path in paths:
-			thePath = path.split(".")
-			for p in thePath[0:len(thePath) - 1]:
-				if not p in value:
-					value[p] = {}  # Autovivify
-				elif not isinstance(value[p], dict):
-					value[p] = {}  # Overwrite scalar with dict
-				value = value[p]
-			value[path[-1]] = new
-			await self.setConfig(cursor, serverid, config)
-			await self.sqlBroker.commit(cursor)
-			return
-
-
-#KEYS - iksm acnh_bearer acnh_park_session acnh_gtoken
-
-
-	async def __ensureAppVersionTable(self, cur):
-		await cur.execute("SHOW TABLES LIKE 'nso_app_version'")
-		row = await cur.fetchone()
-		await self.sqlBroker.c_commit(cur)
-		if row == None:
-			await cur.execute("CREATE TABLE nso_app_version (version VARCHAR(32) NOT NULL, updatetime DATETIME NOT NULL)")
-			await self.sqlBroker.c_commit(cur)
-
-	async def __getAppVersion(self):
-=======
 	async def getAppVersion(self):
->>>>>>> 6f6def131aa60a2def4883b8ea5fe9b6d4cb916d
 		cur = await self.sqlBroker.connect()
 
 		await cur.execute("SELECT version, UNIX_TIMESTAMP(updatetime) AS updatetime FROM nso_app_version")
@@ -101,9 +56,6 @@ class Nsotoken():
 		await self.sqlBroker.commit(cur)
 		return
 
-<<<<<<< HEAD
-	async def __checkDuplicate(self, id, cur) -> bool:
-=======
 	async def getGameKeys(self, clientid):
 		cur = await self.sqlBroker.connect()
 		await cur.execute("SELECT game_keys FROM tokens WHERE (clientid = %s) LIMIT 1", (str(clientid),))
@@ -139,7 +91,6 @@ class Nsotoken():
 		await self.sqlBroker.commit(cur)
 
 	async def checkDuplicate(self, id, cur):
->>>>>>> 6f6def131aa60a2def4883b8ea5fe9b6d4cb916d
 		stmt = "SELECT COUNT(*) FROM tokens WHERE clientid = %s"
 		await cur.execute(stmt, (str(id),))
 		count = await cur.fetchone()
@@ -170,19 +121,6 @@ class Nsotoken():
 		await cur.execute("REPLACE INTO tokens (clientid, session_token, session_time) VALUES (%s, %s, NOW())", (str(ctx.user.id), str(session_token),))
 		await self.sqlBroker.commit(cur)
 
-<<<<<<< HEAD
-		if await self.__checkDuplicate(str(ctx.user.id), cur):
-			if ac_g != None:
-				stmt = "UPDATE tokens SET gtoken = %s, park_session = %s, ac_bearer = %s, session_token = %s, iksm_time = %s WHERE clientid = %s"
-				input = (str(ac_g), str(ac_p), str(ac_b), str(session_token), formatted_date, str(ctx.user.id),)
-			elif s2 != None:
-				print("Updating S2 token + " + s2)
-				stmt = "UPDATE tokens SET token = %s, session_token = %s, iksm_time = %s WHERE clientid = %s"
-				input = (str(s2), str(session_token), formatted_date, str(ctx.user.id),)
-		else:
-			stmt = "INSERT INTO tokens (clientid, session_time, session_token) VALUES(%s, %s, %s)"
-			input = (str(ctx.user.id), formatted_date, str(session_token),)
-=======
 		# Update encrypted game keys
 		gameKeys = await self.getGameKeys(ctx.user.id)
 		if token.get('s2'):
@@ -190,7 +128,6 @@ class Nsotoken():
 		if token.get('ac_g'):
 			gameKeys['ac'] = {'gtoken': token.get('ac_g'), 'park_session': token.get('ac_p'), 'ac_bearer': token.get('ac_b')}
 		await self.setGameKeys(ctx.user.id, gameKeys)
->>>>>>> 6f6def131aa60a2def4883b8ea5fe9b6d4cb916d
 
 		return True
 
@@ -305,22 +242,6 @@ class Nsotoken():
 		else:
 			await ctx.send("Something went wrong! Join my support discord and report that something broke!")
 
-	def get_hash(self, id_token, timestamp):
-		version = '1.5.13'
-		api_app_head = { 'User-Agent': f"splatnet2statink/{version}" }
-		api_body = { 'naIdToken': id_token, 'timestamp': timestamp }
-		r = requests.post("https://elifessler.com/s2s/api/gen2", headers=api_app_head, data=api_body)
-		print(f"S2API RESPONSE: {r.status_code} {r.reason}")
-
-		if r.status_code == 429:
-			print("stat.ink: RATE LIMITED")
-			return 429
-		elif r.status_code != 200:
-			print(f"ERROR IN stat.ink CALL {r.status_code} {r.reason}: {r.text}")
-			return None
-		else:
-			return json.loads(r.text)["hash"]
-
 	async def do_iksm_refresh(self, ctx, game='s2'):
 		await ctx.defer()
 		session_token = await self.get_session_token_mysql(ctx.user.id)
@@ -372,35 +293,38 @@ class Nsotoken():
 		else:
 			return json.loads(r.text)["session_token"]
 
-	def call_flapg(self, id_token, guid, timestamp, login):
+	def callFlapg(self, id_token, method):
+		timestamp = int(time.time())
+		guid = str(uuid.uuid4())
+		
 		api_app_head = {
-			'x-token': id_token,
-			'x-time':  str(timestamp),
-			'x-guid':  guid,
-			'x-hash':  str(self.get_hash(id_token, timestamp)),
-			'x-ver':   '3',
-			'x-iid':   login
+			'Content-Type': 'application/json; charset=utf-8',
+			'User-Agent' : 'Jet-bot/1.0.0'
 		}
-		r = requests.get("https://flapg.com/ika2/api/login?public", headers=api_app_head)
-		print(f"FLAPG API RESPONSE: {r.status_code} {r.reason}")
+		api_app_body = {
+			'hash_method':  str(method),
+			'request_id':   guid,
+			'token': id_token,
+			'timestamp':  str(timestamp),
+		}
+
+		r = requests.post("https://api.imink.jone.wang/f", headers=api_app_head, data=json.dumps(api_app_body))
+		print(f"FLAPG API RESPONSE: {r.status_code} {r.reason} {r.text}")
 		if r.status_code == 404:
 			print("ISSUE WITH FLAPG - 404")
-			return 404
+			return None
 		elif r.status_code != 200:
 			print(f"ERROR IN FLAPGAPI: {r.status_code} {r.reason} : {r.text}")
 			return None
 		else:
-			return json.loads(r.text)["result"]
+			return json.loads(r.text)
 
 	async def setup_nso(self, session_token, game='s2'):
-		nsoAppInfo = await self.getAppVersion()
+		nsoAppInfo = await self.__getAppVersion()
 		if nsoAppInfo == None:
 			print("setup_nso(): No known NSO app version")
 			return None
 		nsoAppVer = nsoAppInfo['version']
-
-		timestamp = int(time.time())
-		guid = str(uuid.uuid4())
 
 		head = {
 			'Host': 'accounts.nintendo.com',
@@ -453,7 +377,7 @@ class Nsotoken():
 		}
 
 		idToken = id_response["access_token"]
-		flapg_nso = self.call_flapg(idToken, guid, timestamp, "nso")
+		flapg_nso = self.callFlapg(idToken, 1)
 
 		if flapg_nso == 404 or flapg_nso == 429:
 			return flapg_nso
@@ -463,9 +387,9 @@ class Nsotoken():
 
 		parameter = {
 			'f':          flapg_nso["f"],
-			'naIdToken':  flapg_nso["p1"],
-			'timestamp':  flapg_nso["p2"],
-			'requestId':  flapg_nso["p3"],
+			'naIdToken':  idToken,
+			'timestamp':  timestamp,
+			'requestId':  guid,
 			'naCountry': user_info["country"],
 			'naBirthday': user_info["birthday"],
 			'language': user_info["language"]
@@ -473,7 +397,7 @@ class Nsotoken():
 		body = {}
 		body["parameter"] = parameter
 
-		r = requests.post("https://api-lp1.znc.srv.nintendo.net/v1/Account/Login", headers=head, json=body)
+		r = requests.post("https://api-lp1.znc.srv.nintendo.net/v2/Account/Login", headers=head, json=body)
 		splatoon_token = json.loads(r.text)
 		if r.status_code != 200:
 			print(f"NSO ERROR IN LOGIN {r.status_code} {r.reason}: {str(splatoon_token)}")
@@ -489,7 +413,9 @@ class Nsotoken():
 			#Cross fingers this will shed light on this stupid bug
 			return None
 
-		flapg_app = self.call_flapg(idToken, guid, timestamp, "app")
+
+		flapg_app = self.callFlapg(idToken, 2)
+
 		if flapg_app == None:
 			print("ERROR IN FLAPGAPI APP CALL")
 			return None
@@ -507,9 +433,9 @@ class Nsotoken():
 		}
 		parameter = {
 			'f':					flapg_app["f"],
-			'registrationToken':	flapg_app["p1"],
-			'timestamp':			flapg_app["p2"],
-			'requestId':			flapg_app["p3"]
+			'registrationToken':	idToken,
+			'timestamp':			timestamp,
+			'requestId':			guid
 		}
 
 		if game == 'ac':
@@ -575,6 +501,6 @@ class Nsotoken():
 				return None
 			else:
 				print("Got a S2 token!")
-				keys['s2'] = r.cookies["iksm_session"]
+				keys['iksm'] = r.cookies["iksm_session"]
 
 		return keys
