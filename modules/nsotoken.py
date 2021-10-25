@@ -297,7 +297,7 @@ class Nsotoken():
 		
 		api_app_head = {
 			'Content-Type': 'application/json; charset=utf-8',
-			'User-Agent' : 'Jet-bot/1.0.0'
+			'User-Agent' : 'Jet-bot/1.0.0 (discord=jetsurf#8514)'
 		}
 		api_app_body = {
 			'hash_method':  str(method),
