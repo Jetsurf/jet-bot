@@ -1,5 +1,6 @@
 #!/usr/bin/python3.8
 
+import os
 import sys
 sys.path.append('./modules')
 #Base Stuffs
@@ -10,11 +11,13 @@ import urllib, urllib.request, requests, pymysql
 #Our Classes
 import nsotoken, commandparser, serverconfig, splatinfo, messagecontext
 import vserver, mysqlhandler, mysqlschema, serverutils, nsohandler, achandler
+import stringcrypt
 #Eval
 import traceback, textwrap, io, signal
 from contextlib import redirect_stdout
 from subprocess import call
 
+stringCrypt = stringcrypt.StringCrypt()
 splatInfo = splatinfo.SplatInfo()
 intents = discord.Intents.default()
 intents.members = True
@@ -38,6 +41,7 @@ head = {}
 url = ''
 hostedUrl = ''
 webDir = '' 
+keyPath = './config/db-secret-key.hex'
 
 #SubCommand Groups
 cmdGroups = {}
@@ -90,6 +94,15 @@ def loadConfig():
 	except Exception as e:
 		print(f"Failed to load config: {str(e)}")
 		quit(1)
+
+def ensureEncryptionKey():
+	global stringCrypt, keyPath
+
+	if os.path.isfile(keyPath):
+		stringCrypt.readSecretKeyFile(keyPath)
+	else:
+		print("Creating new secret key file...")
+		stringCrypt.writeSecretKeyFile(keyPath)
 
 @acnh.command(name='passport', description="Posts your ACNH Passport")
 async def cmdACNHPassport(ctx):
@@ -540,7 +553,7 @@ async def checkIfAdmin(ctx):
 @client.event
 async def on_ready():
 	global client, soundsDir, mysqlHandler, serverUtils, serverVoices, splatInfo, helpfldr, hs
-	global nsoHandler, nsoTokens, head, url, dev, owners, commandParser, doneStartup, acHandler, hostedUrl, webDir
+	global nsoHandler, nsoTokens, head, url, dev, owners, commandParser, doneStartup, acHandler, hostedUrl, webDir, stringCrypt
 
 	if not doneStartup:
 		print('Logged in as,', client.user.name, client.user.id)
@@ -582,7 +595,7 @@ async def on_ready():
 		serverConfig = serverconfig.ServerConfig(mysqlHandler)
 		commandParser = commandparser.CommandParser(serverConfig, client.user.id)
 		serverUtils = serverutils.serverUtils(client, mysqlHandler, serverConfig, helpfldr)
-		nsoTokens = nsotoken.Nsotoken(client, mysqlHandler, hostedUrl)
+		nsoTokens = nsotoken.Nsotoken(client, mysqlHandler, hostedUrl, stringCrypt)
 		nsoHandler = nsohandler.nsoHandler(client, mysqlHandler, nsoTokens, splatInfo, hostedUrl)
 		acHandler = achandler.acHandler(client, mysqlHandler, nsoTokens, hostedUrl, webDir)
 		await mysqlHandler.startUp()
@@ -954,6 +967,8 @@ loadConfig()
 if dev == 0:
 	sys.stdout = open('./logs/discordbot.log', 'a')
 	sys.stderr = open('./logs/discordbot.err', 'a')
+
+ensureEncryptionKey()
 
 print('**********NEW SESSION**********')
 print('Logging into discord')

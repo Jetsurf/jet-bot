@@ -7,12 +7,13 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import googleplay
 
 class Nsotoken():
-	def __init__(self, client, mysqlhandler, hostedUrl):
+	def __init__(self, client, mysqlhandler, hostedUrl, stringCrypt):
 		self.client = client
 		self.session = requests.Session()
 		self.sqlBroker = mysqlhandler
 		self.scheduler = AsyncIOScheduler()
 		self.hostedUrl = hostedUrl
+		self.stringCrypt = stringCrypt
 		self.scheduler.add_job(self.updateAppVersion, 'cron', hour="3", minute='0', second='35')
 
 	async def ensureAppVersionTable(self, cur):
