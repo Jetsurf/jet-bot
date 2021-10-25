@@ -16,17 +16,8 @@ class Nsotoken():
 		self.stringCrypt = stringCrypt
 		self.scheduler.add_job(self.updateAppVersion, 'cron', hour="3", minute='0', second='35')
 
-	async def ensureAppVersionTable(self, cur):
-		await cur.execute("SHOW TABLES LIKE 'nso_app_version'")
-		row = await cur.fetchone()
-		await self.sqlBroker.c_commit(cur)
-		if row == None:
-			await cur.execute("CREATE TABLE nso_app_version (version VARCHAR(32) NOT NULL, updatetime DATETIME NOT NULL)")
-			await self.sqlBroker.c_commit(cur)
-
 	async def getAppVersion(self):
 		cur = await self.sqlBroker.connect()
-		await self.ensureAppVersionTable(cur)
 
 		await cur.execute("SELECT version, UNIX_TIMESTAMP(updatetime) AS updatetime FROM nso_app_version")
 		row = await cur.fetchone()
