@@ -72,8 +72,8 @@ def loadConfig():
 		soundsDir = configData['soundsdir']
 		helpfldr = configData['help']
 		hs = configData['home_server']
-		hostedUrl = configData['hosted_url']
-		webDir = configData['web_dir']
+		hostedUrl = configData.get('hosted_url')
+		webDir = configData.get('web_dir')
 
 		try:
 			dbid = configData['discordbotid']

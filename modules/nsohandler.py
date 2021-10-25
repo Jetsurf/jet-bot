@@ -1393,6 +1393,10 @@ class nsoHandler():
 				await ctx.respond(themap.errorMessage("Try command 'maps list' for a list."))
 				return
 
+			if self.hostedUrl == None:
+				await ctx.respond("Sorry, map callouts are disabled in this instance of the bot.")
+				return
+
 			shortname = themap.get().shortname().lower().replace(" ", "-")
 			url = f"{self.hostedUrl}/callouts/{shortname}.png"
 			embed = discord.Embed(colour=0x0004FF)

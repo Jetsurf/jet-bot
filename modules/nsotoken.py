@@ -188,7 +188,8 @@ class Nsotoken():
 
 		await ctx.send(f"Navigate to this URL in your browser: {post_login}")
 		await ctx.send("Log in, right click the \"Select this person\" button, copy the link address, and paste it back to me or 'stop' to cancel.")
-		await ctx.send(f"{self.hostedUrl}/images/nsohowto.png")
+		if self.hostedUrl:
+			await ctx.send(f"{self.hostedUrl}/images/nsohowto.png")
 
 		while True:
 			def check(m):
