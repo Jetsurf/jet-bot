@@ -56,6 +56,40 @@ class Nsotoken():
 		await self.sqlBroker.commit(cur)
 		return
 
+	async def getGameKeys(self, clientid):
+		cur = await self.sqlBroker.connect()
+		await cur.execute("SELECT game_keys FROM tokens WHERE (clientid = %s) LIMIT 1", (str(clientid),))
+		row = await cur.fetchone()
+		await self.sqlBroker.commit(cur)
+
+		if (row == None) or (row[0] == None):
+			return {}  # No keys
+
+		ciphertext = row[0]
+		plaintext = self.stringCrypt.decryptString(ciphertext)
+		print(f"getGameKeys: {ciphertext} -> {plaintext}")
+		keys = json.loads(plaintext)
+		return keys
+
+	# Retrieves a single game key with a dotted path (e.g. "s2.token")
+	async def getGameKey(self, clientid, path):
+		hash = await self.getGameKeys(clientid)
+		parts = path.split('.')
+		for k in parts:
+			hash = hash.get(k)
+			if not hash:
+				return None
+		return hash
+
+	async def setGameKeys(self, clientid, keys):
+		plaintext = json.dumps(keys)
+		ciphertext = self.stringCrypt.encryptString(plaintext)
+		print(f"setGameKeys: {plaintext} -> {ciphertext}")
+
+		cur = await self.sqlBroker.connect()
+		await cur.execute("UPDATE tokens SET game_keys = %s, game_keys_time = NOW() WHERE (clientid = %s)", (ciphertext, clientid))
+		await self.sqlBroker.commit(cur)
+
 	async def checkDuplicate(self, id, cur):
 		stmt = "SELECT COUNT(*) FROM tokens WHERE clientid = %s"
 		await cur.execute(stmt, (str(id),))
@@ -82,32 +116,20 @@ class Nsotoken():
 		now = datetime.now()
 		formatted_date = now.strftime('%Y-%m-%d %H:%M:%S')
 
-		ac_g = token.get('ac_g')
-		ac_p = token.get('ac_p')
-		ac_b = token.get('ac_b')
-		s2 = token.get('s2')
-
+		# First ensure we have a record in 'tokens', because setGameKeys requires one to be present
 		cur = await self.sqlBroker.connect()
+		await cur.execute("REPLACE INTO tokens (clientid, session_token, session_time) VALUES (%s, %s, NOW())", (str(ctx.user.id), str(session_token),))
+		await self.sqlBroker.commit(cur)
 
-		if await self.checkDuplicate(str(ctx.user.id), cur):
-			if ac_g != None:
-				stmt = "UPDATE tokens SET gtoken = %s, park_session = %s, ac_bearer = %s, session_token = %s, iksm_time = %s WHERE clientid = %s"
-				input = (str(ac_g), str(ac_p), str(ac_b), str(session_token), formatted_date, str(ctx.user.id),)
-			elif s2 != None:
-				print("Updating S2 token + " + s2)
-				stmt = "UPDATE tokens SET token = %s, session_token = %s, iksm_time = %s WHERE clientid = %s"
-				input = (str(s2), str(session_token), formatted_date, str(ctx.user.id),)
-		else:
-			stmt = "INSERT INTO tokens (clientid, session_time, session_token) VALUES(%s, %s, %s)"
-			input = (str(ctx.user.id), formatted_date, str(session_token),)
+		# Update encrypted game keys
+		gameKeys = await self.getGameKeys(ctx.user.id)
+		if token.get('s2'):
+			gameKeys['s2'] = {'token': token.get('s2')}
+		if token.get('ac_g'):
+			gameKeys['ac'] = {'gtoken': token.get('ac_g'), 'park_session': token.get('ac_p'), 'ac_bearer': token.get('ac_b')}
+		await self.setGameKeys(ctx.user.id, gameKeys)
 
-		await cur.execute(stmt, input)
-		if cur.lastrowid != None:
-			await self.sqlBroker.commit(cur)
-			return True
-		else:
-			await self.sqlBroker.rollback(cur)
-			return False
+		return True
 
 	async def get_iksm_token_mysql(self, userid):
 		cur = await self.sqlBroker.connect()

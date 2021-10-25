@@ -596,7 +596,10 @@ class nsoHandler():
 			await message.channel.send("You don't have a token setup with me! Please DM me !token with how to get one setup!")
 			return
 
-		Session_token = await self.nsotoken.get_iksm_token_mysql(message.author.id)
+		s2_token = await self.nsotoken.getGameKey(message.author.id, "s2.token")
+		if not s2_token:
+			await message.channel.send("Sorry, can't find S2 iksm")
+			return
 
 		if 'base' in message.content:
 			url = "https://app.splatoon2.nintendo.net/api/records"
@@ -616,7 +619,7 @@ class nsoHandler():
 			jsontype = 'battle'
 			header = self.app_head
 
-		results_list = requests.get(url, headers=header, cookies=dict(iksm_session=Session_token))
+		results_list = requests.get(url, headers=header, cookies=dict(iksm_session=s2_token))
 		thejson = json.loads(results_list.text)	
 
 		if 'AUTHENTICATION_ERROR' in str(thejson):
@@ -640,8 +643,9 @@ class nsoHandler():
 			return False
 
 	async def getNSOJSON(self, ctx, header, url):
-		Session_token = await self.nsotoken.get_iksm_token_mysql(ctx.user.id)
-		results_list = requests.get(url, headers=header, cookies=dict(iksm_session=Session_token))
+		s2_token = await self.nsotoken.getGameKey(ctx.user.id, "s2.token")
+
+		results_list = requests.get(url, headers=header, cookies=dict(iksm_session=s2_token))
 		thejson = json.loads(results_list.text)	
 
 		if 'AUTHENTICATION_ERROR' in str(thejson):
@@ -1042,13 +1046,13 @@ class nsoHandler():
 				await ctx.channel.send(f"{ctx.user.name} - something went wrong...")
 
 	async def postNSOStore(self, ctx, gid, app_head, override=False):
-		iksm = await self.nsotoken.get_iksm_token_mysql(ctx.user.id)
+		s2_token = await self.nsotoken.getGameKey(ctx.user.id, "s2.token")
 		url = f"https://app.splatoon2.nintendo.net/api/onlineshop/order/{gid}"
 		if override:
 			payload = { "override" : 1 }
-			response = requests.post(url, headers=app_head, cookies=dict(iksm_session=iksm), data=payload)
+			response = requests.post(url, headers=app_head, cookies=dict(iksm_session=s2_token), data=payload)
 		else:
-			response = requests.post(url, headers=app_head, cookies=dict(iksm_session=iksm))
+			response = requests.post(url, headers=app_head, cookies=dict(iksm_session=s2_token))
 		resp = json.loads(response.text)
 
 		return response.status_code == 200
