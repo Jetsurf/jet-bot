@@ -48,4 +48,10 @@ class MysqlSchema():
 			await cur.execute("DROP TABLE blacklist")
 			await self.sqlBroker.c_commit(cur)
 
+		if not await self.sqlBroker.hasColumn(cur, 'tokens', 'game_keys'):
+			print("Adding 'game_keys' column to 'tokens' table...")
+			await cur.execute("ALTER TABLE tokens ADD COLUMN game_keys TEXT NOT NULL");
+			await self.sqlBroker.c_commit(cur)
+			# TODO: Migrate existing keys
+
 		return
