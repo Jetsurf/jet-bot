@@ -7,14 +7,16 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import googleplay
 
 class Nsotoken():
-	def __init__(self, client, mysqlhandler, hostedUrl):
+	def __init__(self, client, mysqlhandler, hostedUrl, stringCrypt):
 		self.client = client
 		self.session = requests.Session()
 		self.sqlBroker = mysqlhandler
 		self.scheduler = AsyncIOScheduler()
 		self.hostedUrl = hostedUrl
+		self.stringCrypt = stringCrypt
 		self.scheduler.add_job(self.updateAppVersion, 'cron', hour="3", minute='0', second='35')
 
+<<<<<<< HEAD
 
 	async def __getGameKeys(self, cursor, clientid):
 		await cursor.execute("SELECT keys FROM tokens WHERE (clientid = %s)", (clientid,))
@@ -57,8 +59,10 @@ class Nsotoken():
 			await self.sqlBroker.c_commit(cur)
 
 	async def __getAppVersion(self):
+=======
+	async def getAppVersion(self):
+>>>>>>> 6f6def131aa60a2def4883b8ea5fe9b6d4cb916d
 		cur = await self.sqlBroker.connect()
-		await self.ensureAppVersionTable(cur)
 
 		await cur.execute("SELECT version, UNIX_TIMESTAMP(updatetime) AS updatetime FROM nso_app_version")
 		row = await cur.fetchone()
@@ -97,7 +101,45 @@ class Nsotoken():
 		await self.sqlBroker.commit(cur)
 		return
 
+<<<<<<< HEAD
 	async def __checkDuplicate(self, id, cur) -> bool:
+=======
+	async def getGameKeys(self, clientid):
+		cur = await self.sqlBroker.connect()
+		await cur.execute("SELECT game_keys FROM tokens WHERE (clientid = %s) LIMIT 1", (str(clientid),))
+		row = await cur.fetchone()
+		await self.sqlBroker.commit(cur)
+
+		if (row == None) or (row[0] == None):
+			return {}  # No keys
+
+		ciphertext = row[0]
+		plaintext = self.stringCrypt.decryptString(ciphertext)
+		print(f"getGameKeys: {ciphertext} -> {plaintext}")
+		keys = json.loads(plaintext)
+		return keys
+
+	# Retrieves a single game key with a dotted path (e.g. "s2.token")
+	async def getGameKey(self, clientid, path):
+		hash = await self.getGameKeys(clientid)
+		parts = path.split('.')
+		for k in parts:
+			hash = hash.get(k)
+			if not hash:
+				return None
+		return hash
+
+	async def setGameKeys(self, clientid, keys):
+		plaintext = json.dumps(keys)
+		ciphertext = self.stringCrypt.encryptString(plaintext)
+		print(f"setGameKeys: {plaintext} -> {ciphertext}")
+
+		cur = await self.sqlBroker.connect()
+		await cur.execute("UPDATE tokens SET game_keys = %s, game_keys_time = NOW() WHERE (clientid = %s)", (ciphertext, clientid))
+		await self.sqlBroker.commit(cur)
+
+	async def checkDuplicate(self, id, cur):
+>>>>>>> 6f6def131aa60a2def4883b8ea5fe9b6d4cb916d
 		stmt = "SELECT COUNT(*) FROM tokens WHERE clientid = %s"
 		await cur.execute(stmt, (str(id),))
 		count = await cur.fetchone()
@@ -123,13 +165,12 @@ class Nsotoken():
 		now = datetime.now()
 		formatted_date = now.strftime('%Y-%m-%d %H:%M:%S')
 
-		ac_g = token.get('ac_g')
-		ac_p = token.get('ac_p')
-		ac_b = token.get('ac_b')
-		s2 = token.get('s2')
-
+		# First ensure we have a record in 'tokens', because setGameKeys requires one to be present
 		cur = await self.sqlBroker.connect()
+		await cur.execute("REPLACE INTO tokens (clientid, session_token, session_time) VALUES (%s, %s, NOW())", (str(ctx.user.id), str(session_token),))
+		await self.sqlBroker.commit(cur)
 
+<<<<<<< HEAD
 		if await self.__checkDuplicate(str(ctx.user.id), cur):
 			if ac_g != None:
 				stmt = "UPDATE tokens SET gtoken = %s, park_session = %s, ac_bearer = %s, session_token = %s, iksm_time = %s WHERE clientid = %s"
@@ -141,14 +182,17 @@ class Nsotoken():
 		else:
 			stmt = "INSERT INTO tokens (clientid, session_time, session_token) VALUES(%s, %s, %s)"
 			input = (str(ctx.user.id), formatted_date, str(session_token),)
+=======
+		# Update encrypted game keys
+		gameKeys = await self.getGameKeys(ctx.user.id)
+		if token.get('s2'):
+			gameKeys['s2'] = {'token': token.get('s2')}
+		if token.get('ac_g'):
+			gameKeys['ac'] = {'gtoken': token.get('ac_g'), 'park_session': token.get('ac_p'), 'ac_bearer': token.get('ac_b')}
+		await self.setGameKeys(ctx.user.id, gameKeys)
+>>>>>>> 6f6def131aa60a2def4883b8ea5fe9b6d4cb916d
 
-		await cur.execute(stmt, input)
-		if cur.lastrowid != None:
-			await self.sqlBroker.commit(cur)
-			return True
-		else:
-			await self.sqlBroker.rollback(cur)
-			return False
+		return True
 
 	async def get_game_tokens_mysql(self, userid):
 		cur = await self.sqlBroker.connect()
@@ -221,7 +265,8 @@ class Nsotoken():
 
 		await ctx.send(f"Navigate to this URL in your browser: {post_login}")
 		await ctx.send("Log in, right click the \"Select this person\" button, copy the link address, and paste it back to me or 'stop' to cancel.")
-		await ctx.send(f"{self.hostedUrl}/images/nsohowto.png")
+		if self.hostedUrl:
+			await ctx.send(f"{self.hostedUrl}/images/nsohowto.png")
 
 		while True:
 			def check(m):

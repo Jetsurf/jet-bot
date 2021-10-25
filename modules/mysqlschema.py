@@ -43,9 +43,34 @@ class MysqlSchema():
 			)
 			await self.sqlBroker.c_commit(cur)
 
+		if not await self.sqlBroker.hasTable(cur, 'tokens'):
+			print("Creating table 'tokens'...")
+			await cur.execute(
+			"""
+			CREATE TABLE tokens (
+			clientid bigint(20) unsigned NOT NULL,
+			session_time datetime NOT NULL,
+			session_token TEXT NOT NULL,
+			game_keys TEXT NULL,
+			game_keys_time DATETIME NULL,
+			PRIMARY KEY(clientid)
+			) ENGINE=InnoDB
+			"""
+			)
+			await self.sqlBroker.c_commit(cur)
+
 		if await self.sqlBroker.hasTable(cur, 'blacklist'):
 			print("Removing table 'blacklist'...")
 			await cur.execute("DROP TABLE blacklist")
 			await self.sqlBroker.c_commit(cur)
+
+		if not await self.sqlBroker.hasColumn(cur, 'tokens', 'game_keys'):
+			print("Adding 'game_keys' and 'game_keys_time' columns to 'tokens' table...")
+			await cur.execute("ALTER TABLE tokens ADD COLUMN game_keys TEXT NULL, ADD COLUMN game_keys_time DATETIME NULL")
+			await self.sqlBroker.c_commit(cur)
+			print("Adding primary key to 'tokens' table...")
+			await cur.execute("ALTER TABLE tokens ADD PRIMARY KEY(clientid)")
+			await self.sqlBroker.c_commit(cur)
+			# TODO: Migrate existing keys
 
 		return
