@@ -34,6 +34,22 @@ class mysqlHandler():
 		await self.cons[hash(cur)].rollback()
 		await self.close(cur)
 
+	async def hasTable(self, cur, tablename):
+		await cur.execute("SELECT 1 FROM information_schema.TABLES WHERE (TABLE_SCHEMA = %s) AND (TABLE_NAME = %s) LIMIT 1", (self.__db, tablename))
+		row = await cur.fetchone()
+		await self.c_commit(cur)
+		if row == None:
+			return False
+		return True
+
+	async def hasColumn(self, cur, tablename, columnname):
+		await cur.execute("SELECT 1 FROM information_schema.COLUMNS WHERE (TABLE_SCHEMA = %s) AND (TABLE_NAME = %s) AND (COLUMN_NAME = %s) LIMIT 1", (self.__db, tablename, columnname))
+		row = await cur.fetchone()
+		await self.c_commit(cur)
+		if row == None:
+			return False
+		return True
+
 	async def printCons(self, message):
 		await message.channel.send("MySQL Connections: " + str(self.cons))
 

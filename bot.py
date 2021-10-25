@@ -9,7 +9,7 @@ from discord.app import Option, SlashCommandGroup
 import urllib, urllib.request, requests, pymysql
 #Our Classes
 import nsotoken, commandparser, serverconfig, splatinfo, messagecontext
-import vserver, mysqlhandler, serverutils, nsohandler, achandler
+import vserver, mysqlhandler, mysqlschema, serverutils, nsohandler, achandler
 #Eval
 import traceback, textwrap, io, signal
 from contextlib import redirect_stdout
@@ -586,6 +586,9 @@ async def on_ready():
 		nsoHandler = nsohandler.nsoHandler(client, mysqlHandler, nsoTokens, splatInfo, hostedUrl)
 		acHandler = achandler.acHandler(client, mysqlHandler, nsoTokens, hostedUrl, webDir)
 		await mysqlHandler.startUp()
+		mysqlSchema = mysqlschema.MysqlSchema(mysqlHandler)
+		await mysqlSchema.update()
+
 		await nsoHandler.updateS2JSON()
 		await nsoTokens.updateAppVersion()
 		print('Done\n------')

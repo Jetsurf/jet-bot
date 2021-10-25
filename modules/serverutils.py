@@ -326,9 +326,6 @@ class serverUtils():
 		input = (serverid,)
 		await cur.execute(stmt, input)
 
-		stmt = "DELETE FROM blacklist WHERE serverid = %s"
-		await cur.execute(stmt, input)
-
 		stmt = "DELETE FROM playlist WHERE serverid = %s"
 		await cur.execute(stmt, input)
 
