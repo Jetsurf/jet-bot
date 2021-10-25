@@ -36,6 +36,8 @@ soundsDir = ''
 helpfldr = ''
 head = {}
 url = ''
+hostedUrl = ''
+webDir = '' 
 
 #SubCommand Groups
 cmdGroups = {}
@@ -61,7 +63,7 @@ class blank():
 nsoHandler = blank()
 
 def loadConfig():
-	global token, soundsDir, helpfldr, mysqlHandler, dev, head, url, hs
+	global token, soundsDir, helpfldr, mysqlHandler, dev, head, url, hs, hostedUrl, webDir
 	try:
 		with open('./config/discordbot.json', 'r') as json_config:
 			configData = json.load(json_config)
@@ -70,6 +72,8 @@ def loadConfig():
 		soundsDir = configData['soundsdir']
 		helpfldr = configData['help']
 		hs = configData['home_server']
+		hostedUrl = configData['hosted_url']
+		webDir = configData['web_dir']
 
 		try:
 			dbid = configData['discordbotid']
@@ -536,7 +540,7 @@ async def checkIfAdmin(ctx):
 @client.event
 async def on_ready():
 	global client, soundsDir, mysqlHandler, serverUtils, serverVoices, splatInfo, helpfldr, hs
-	global nsoHandler, nsoTokens, head, url, dev, owners, commandParser, doneStartup, acHandler
+	global nsoHandler, nsoTokens, head, url, dev, owners, commandParser, doneStartup, acHandler, hostedUrl, webDir
 
 	if not doneStartup:
 		print('Logged in as,', client.user.name, client.user.id)
@@ -578,9 +582,9 @@ async def on_ready():
 		serverConfig = serverconfig.ServerConfig(mysqlHandler)
 		commandParser = commandparser.CommandParser(serverConfig, client.user.id)
 		serverUtils = serverutils.serverUtils(client, mysqlHandler, serverConfig, helpfldr)
-		nsoTokens = nsotoken.Nsotoken(client, mysqlHandler)
-		nsoHandler = nsohandler.nsoHandler(client, mysqlHandler, nsoTokens, splatInfo, cmdOrder)
-		acHandler = achandler.acHandler(client, mysqlHandler, nsoTokens)
+		nsoTokens = nsotoken.Nsotoken(client, mysqlHandler, hostedUrl)
+		nsoHandler = nsohandler.nsoHandler(client, mysqlHandler, nsoTokens, splatInfo, hostedUrl)
+		acHandler = achandler.acHandler(client, mysqlHandler, nsoTokens, hostedUrl, webDir)
 		await mysqlHandler.startUp()
 		await nsoHandler.updateS2JSON()
 		await nsoTokens.updateAppVersion()

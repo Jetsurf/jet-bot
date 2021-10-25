@@ -6,10 +6,12 @@ import urllib, urllib.request
 import re
 
 class acHandler():
-	def __init__(self, client, mysqlHandler, nsotoken):
+	def __init__(self, client, mysqlHandler, nsotoken, hostedUrl, webDir):
 		self.client = client
 		self.sqlBroker = mysqlHandler
 		self.nsotoken = nsotoken
+		self.hostedUrl = hostedUrl
+		self.webDir = webDir
 		self.user_app_head = {
 			'Host': 'web.sd.lp1.acbaa.srv.nintendo.net',
 			'User-Agent': 'Mozilla/5.0 (Linux; Android 7.1.2; Pixel Build/NJH47D; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/59.0.3071.125 Mobile Safari/537.36',
@@ -98,12 +100,11 @@ class acHandler():
 		profilepic = requests.get(user['image'])
 		profileid = re.search('(?<=user_profile/).*(?=\?)', user['image']).group()
 
-		#This is hard coded for now, if you care enough, this assumes you have a https (yes s, its needed by discord) setup to host from the directory
-		open(f'/var/www/db-files/acprofiles/{str(profileid)}.jpg', 'wb').write(profilepic.content)
+		open(f'{self.webDir}/acprofiles/{str(profileid)}.jpg', 'wb').write(profilepic.content)
 
 		embed = discord.Embed(colour=0x0004FF)
 		embed.title = str(user['name']) + "'s Passport - Animal Crossing New Horizons"
-		embed.set_thumbnail(url=f'https://db-files.crmea.de/acprofiles/{str(profileid)}.jpg')
+		embed.set_thumbnail(url=f'{self.hostedUrl}/acprofiles/{str(profileid)}.jpg')
 		print("PROFILE: " + str(profileid))
 		embed.add_field(name='Title', value=str(detaileduser['mHandleName']), inline=True)
 		embed.add_field(name='Comment', value=str(detaileduser['mComment']), inline=True)

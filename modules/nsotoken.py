@@ -7,11 +7,12 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import googleplay
 
 class Nsotoken():
-	def __init__(self, client, mysqlhandler):
+	def __init__(self, client, mysqlhandler, hostedUrl):
 		self.client = client
 		self.session = requests.Session()
 		self.sqlBroker = mysqlhandler
 		self.scheduler = AsyncIOScheduler()
+		self.hostedUrl = hostedUrl
 		self.scheduler.add_job(self.updateAppVersion, 'cron', hour="3", minute='0', second='35')
 
 	async def ensureAppVersionTable(self, cur):
@@ -187,7 +188,7 @@ class Nsotoken():
 
 		await ctx.send(f"Navigate to this URL in your browser: {post_login}")
 		await ctx.send("Log in, right click the \"Select this person\" button, copy the link address, and paste it back to me or 'stop' to cancel.")
-		await ctx.send("https://db-files.crmea.de/images/bot/nsohowto.png")
+		await ctx.send(f"{self.hostedUrl}/images/bot/nsohowto.png")
 
 		while True:
 			def check(m):

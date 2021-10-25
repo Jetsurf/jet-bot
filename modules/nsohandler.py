@@ -10,11 +10,11 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from discord.app import *
 
 class nsoHandler():
-	def __init__(self, client, mysqlHandler, nsotoken, splatInfo, cmdOrder):
+	def __init__(self, client, mysqlHandler, nsotoken, splatInfo, hostedUrl):
 		self.client = client
 		self.splatInfo = splatInfo
 		self.sqlBroker = mysqlHandler
-		self.cmdOrder = cmdOrder
+		self.hostedUrl = hostedUrl
 		self.app_timezone_offset = str(int((time.mktime(time.gmtime()) - time.mktime(time.localtime()))/60))
 		self.scheduler = AsyncIOScheduler()
 		self.scheduler.add_job(self.doStoreDM, 'cron', hour="*/2", minute='5') 
@@ -1394,7 +1394,7 @@ class nsoHandler():
 				return
 
 			shortname = themap.get().shortname().lower().replace(" ", "-")
-			url = f"http://db-files.crmea.de/images/bot/callouts/{shortname}.png"
+			url = f"{self.hostedUrl}/images/bot/callouts/{shortname}.png"
 			embed = discord.Embed(colour=0x0004FF)
 			embed.title = themap.get().name()
 			embed.set_image(url=url)

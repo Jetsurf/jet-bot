@@ -6,5 +6,7 @@
 	"mysql_user"	: "",
 	"mysql_pw"		: "",
 	"mysql_db"		: "",
-	"home_server	: ""
+	"home_server"	: "",
+	"hosted_url"	: "",
+	"web_dir"		: ""
 }
