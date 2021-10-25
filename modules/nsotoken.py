@@ -29,7 +29,7 @@ class Nsotoken():
 		return None
 
 	async def updateAppVersion(self):
-		oldInfo = await self.__getAppVersion()
+		oldInfo = await self.getAppVersion()
 		if oldInfo != None:
 			age = time.time() - oldInfo['updatetime']
 			if age < 3600:
@@ -293,9 +293,7 @@ class Nsotoken():
 		else:
 			return json.loads(r.text)["session_token"]
 
-	def callFlapg(self, id_token, method):
-		timestamp = int(time.time())
-		guid = str(uuid.uuid4())
+	def callFlapg(self, id_token, guid, timestamp, method):
 		
 		api_app_head = {
 			'Content-Type': 'application/json; charset=utf-8',
@@ -320,7 +318,7 @@ class Nsotoken():
 			return json.loads(r.text)
 
 	async def setup_nso(self, session_token, game='s2'):
-		nsoAppInfo = await self.__getAppVersion()
+		nsoAppInfo = await self.getAppVersion()
 		if nsoAppInfo == None:
 			print("setup_nso(): No known NSO app version")
 			return None
@@ -377,7 +375,9 @@ class Nsotoken():
 		}
 
 		idToken = id_response["access_token"]
-		flapg_nso = self.callFlapg(idToken, 1)
+		timestamp = int(time.time())
+		guid = str(uuid.uuid4())
+		flapg_nso = self.callFlapg(idToken, guid, timestamp, 1)
 
 		if flapg_nso == 404 or flapg_nso == 429:
 			return flapg_nso
@@ -414,7 +414,9 @@ class Nsotoken():
 			return None
 
 
-		flapg_app = self.callFlapg(idToken, 2)
+		timestamp = int(time.time())
+		guid = str(uuid.uuid4())
+		flapg_app = self.callFlapg(idToken,guid, timestamp, 2)
 
 		if flapg_app == None:
 			print("ERROR IN FLAPGAPI APP CALL")
@@ -501,6 +503,6 @@ class Nsotoken():
 				return None
 			else:
 				print("Got a S2 token!")
-				keys['iksm'] = r.cookies["iksm_session"]
+				keys['s2'] = r.cookies["iksm_session"]
 
 		return keys
