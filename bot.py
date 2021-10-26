@@ -18,6 +18,7 @@ from contextlib import redirect_stdout
 from subprocess import call
 from pathlib import Path
 
+configData = None
 stringCrypt = stringcrypt.StringCrypt()
 splatInfo = splatinfo.SplatInfo()
 intents = discord.Intents.default()
@@ -32,17 +33,10 @@ serverVoices = {}
 serverUtils = None
 acHandler = None
 doneStartup = False
-outputToLog = False
-token = ''
-hs = 0
 owners = []
 dev = 1
-soundsDir = ''
-helpfldr = ''
 head = {}
 url = ''
-hostedUrl = ''
-webDir = '' 
 keyPath = './config/db-secret-key.hex'
 
 #SubCommand Groups
@@ -69,18 +63,11 @@ class blank():
 nsoHandler = blank()
 
 def loadConfig():
-	global token, soundsDir, helpfldr, mysqlHandler, dev, head, url, hs, hostedUrl, webDir, outputToLog
+	global configData, helpfldr, mysqlHandler, dev, head, url
 	try:
 		with open('./config/discordbot.json', 'r') as json_config:
 			configData = json.load(json_config)
 
-		token = configData['token']
-		soundsDir = configData['soundsdir']
-		helpfldr = configData['help']
-		hs = configData['home_server']
-		hostedUrl = configData.get('hosted_url')
-		webDir = configData.get('web_dir')
-		outputToLog = configData.get('output_to_log')
 		try:
 			dbid = configData['discordbotid']
 			dbtoken = configData['discordbottok']
@@ -521,7 +508,7 @@ async def cmdVoiceSounds(ctx):
 		return
 
 	await serverUtils.increment_cmd(ctx, 'sounds')
-	theSounds = subprocess.check_output(["ls", soundsDir])
+	theSounds = subprocess.check_output(["ls", configData['soundsdir']])
 	theSounds = theSounds.decode("utf-8")
 	theSounds = theSounds.replace('.mp3', '')
 	theSounds = theSounds.replace('\n', ', ')
@@ -554,15 +541,15 @@ async def checkIfAdmin(ctx):
 
 @client.event
 async def on_ready():
-	global client, soundsDir, mysqlHandler, serverUtils, serverVoices, splatInfo, helpfldr, hs
-	global nsoHandler, nsoTokens, head, url, dev, owners, commandParser, doneStartup, acHandler, hostedUrl, webDir, stringCrypt
+	global client, mysqlHandler, serverUtils, serverVoices, splatInfo, configData
+	global nsoHandler, nsoTokens, head, url, dev, owners, commandParser, doneStartup, acHandler, stringCrypt
 
 	if not doneStartup:
 		print('Logged in as,', client.user.name, client.user.id)
 
 		#This is needed due to no prsence intent, prod bot needs to find the devs in its primary server
-		print(f"Chunking home server ({str(hs)}) to find owners")
-		await client.get_guild(int(hs)).chunk()
+		print(f"Chunking home server ({str(configData['home_server'])}) to find owners")
+		await client.get_guild(int(configData['home_server'])).chunk()
 
 		#Get owners from Discord team api
 		print("Loading owners...")
@@ -592,14 +579,14 @@ async def on_ready():
 		print("Doing Startup...")
 		for server in client.guilds:
 			if server.id not in serverVoices:
-				serverVoices[server.id] = vserver.voiceServer(client, mysqlHandler, server.id, soundsDir)
+				serverVoices[server.id] = vserver.voiceServer(client, mysqlHandler, server.id, configData['soundsdir'])
 
 		serverConfig = serverconfig.ServerConfig(mysqlHandler)
 		commandParser = commandparser.CommandParser(serverConfig, client.user.id)
-		serverUtils = serverutils.serverUtils(client, mysqlHandler, serverConfig, helpfldr)
-		nsoTokens = nsotoken.Nsotoken(client, mysqlHandler, hostedUrl, stringCrypt)
-		nsoHandler = nsohandler.nsoHandler(client, mysqlHandler, nsoTokens, splatInfo, hostedUrl)
-		acHandler = achandler.acHandler(client, mysqlHandler, nsoTokens, hostedUrl, webDir)
+		serverUtils = serverutils.serverUtils(client, mysqlHandler, serverConfig, configData['help'])
+		nsoTokens = nsotoken.Nsotoken(client, mysqlHandler, configData.get('hosted_url'), stringCrypt)
+		nsoHandler = nsohandler.nsoHandler(client, mysqlHandler, nsoTokens, splatInfo, configData.get('hosted_url'))
+		acHandler = achandler.acHandler(client, mysqlHandler, nsoTokens, configData.get('hosted_url'), configData.get('web_dir'))
 		await mysqlHandler.startUp()
 		mysqlSchema = mysqlschema.MysqlSchema(mysqlHandler)
 		await mysqlSchema.update()
@@ -631,9 +618,9 @@ async def on_member_remove(member):
 
 @client.event
 async def on_guild_join(server):
-	global serverVoices, head, url, dev, owners, mysqlHandler
+	global serverVoices, head, url, dev, owners, mysqlHandler, configData
 	print(f"I joined server: {server.name}")
-	serverVoices[server.id] = vserver.voiceServer(client, mysqlHandler, server.id, soundsDir)
+	serverVoices[server.id] = vserver.voiceServer(client, mysqlHandler, server.id, configData['soundsdir'])
 
 	if dev == 0:
 		print(f"I am now in {str(len(client.guilds))} servers, posting to top.gg")
@@ -668,7 +655,7 @@ async def on_guild_remove(server):
 
 @client.event
 async def on_voice_state_update(mem, before, after):
-	global client, serverVoices, mysqlHandler, soundsDir, serverUtils, doneStartup
+	global client, serverVoices, mysqlHandler, serverUtils, doneStartup
 
 	#Don't care if during startup
 	if not doneStartup:
@@ -691,7 +678,7 @@ async def on_voice_state_update(mem, before, after):
 			print(traceback.format_exc())
 			print("Issue in voice disconnect?? Recreating anyway")
 
-		serverVoices[server] = vserver.voiceServer(client, mysqlHandler, server, soundsDir)
+		serverVoices[server] = vserver.voiceServer(client, mysqlHandler, server, configData['soundsdir'])
 		sys.stdout.flush()
 
 def killEval(signum, frame):
@@ -702,7 +689,7 @@ async def doEval(ctx, codeblk, slash=False):
 	newout = io.StringIO()
 	env = { 'ctx' : ctx	}
 	env.update(globals())
-	env.pop('token')
+	env.pop('configData')
 	env.pop('mysqlHandler')
 	env.pop('nsoTokens')
 	embed = discord.Embed(colour=0x00FFFF)
@@ -757,7 +744,7 @@ async def doEval(ctx, codeblk, slash=False):
 
 @client.event
 async def on_message(message):
-	global serverVoices, soundsDir, serverUtils, mysqlHandler
+	global serverVoices, serverUtils, mysqlHandler
 	global nsoHandler, owners, commandParser, doneStartup, acHandler, nsoTokens
 
 	# Filter out bots and system messages or handling of messages until startup is done
@@ -891,7 +878,7 @@ async def on_message(message):
 	elif cmd == 'commands' or cmd == 'help':
 		await serverUtils.print_help(message, prefix)
 	elif cmd == 'sounds':
-		theSounds = subprocess.check_output(["ls", soundsDir])
+		theSounds = subprocess.check_output(["ls", configData['soundsdir']])
 		theSounds = theSounds.decode("utf-8")
 		theSounds = theSounds.replace('.mp3', '')
 		theSounds = theSounds.replace('\n', ', ')
@@ -966,7 +953,7 @@ async def on_message(message):
 
 #Setup
 loadConfig()
-if outputToLog:
+if configData.get('output_to_log'):
 	Path('./logs').mkdir(exist_ok=True)
 	sys.stdout = open('./logs/discordbot.log', 'a')
 	sys.stderr = open('./logs/discordbot.err', 'a')
@@ -986,4 +973,4 @@ client.add_application_command(acnh)
 
 sys.stdout.flush()
 sys.stderr.flush()
-client.run(token)
+client.run(configData['token'])
