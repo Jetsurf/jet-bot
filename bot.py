@@ -84,8 +84,7 @@ def loadConfig():
 			dbtoken = configData['discordbottok']
 			head = { 'Authorization': dbtoken }
 			url = f"https://top.gg/api/bots/{str(dbid)}/stats"
-
-      dev = 0
+			dev = 0
 		except:
 			print('No ID/Token for top.gg, skipping')
 
