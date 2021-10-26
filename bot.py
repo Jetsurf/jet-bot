@@ -1,5 +1,3 @@
-#!/usr/bin/python3.8
-
 import os, sys
 sys.path.append('./modules')
 #Base Stuffs
