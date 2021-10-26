@@ -23,8 +23,8 @@ Soundclips are to be placed in a directory defined by discordbot.json.
 
 Requires a mysql backend, configured in discordbot.json.
 
-**OPTIONAL**: Have a webserver stood up to host images provided in directory db-files, if not desired, leave webdir and hostedURL blank, and the bot will disable the affected images.
- - The web_dir and hosted_url in the config needs to be set to the local directory the web-server hosts from and the URL of the webserver providing the files. The production [URL](https://db-files.crmea.de) can be alternatively used in your config for hosted_url, but doing so will only break ACNH passport functionality.
+**OPTIONAL**: Have a https enabled (required) webserver local to the host running the bot stood up to host images provided in directory db-files. If not desired, leave web_dir and hosted_url blank, and the bot will disable the affected images.
+ - The web_dir and hosted_url in the config needs to be set to the local root directory the web-server hosts from and the URL of the webserver providing the files. The production [URL](https://db-files.crmea.de) can be alternatively used in your config for hosted_url, but doing so will only break ACNH passport functionality.
 
 ## Configuration
 An example configuration file is given at discordbot.json.example.
