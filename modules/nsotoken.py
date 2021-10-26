@@ -282,8 +282,12 @@ class Nsotoken():
 
 		r = requests.post("https://api.imink.jone.wang/f", headers=api_app_head, data=json.dumps(api_app_body))
 		print(f"IMINK API RESPONSE: {r.status_code} {r.reason} {r.text}")
+<<<<<<< HEAD
 		if r.status_code == 500:
 			return 500
+=======
+
+>>>>>>> 9db79040f447e9cd333bf1ec9e49e445a5d80bcf
 		if r.status_code != 200:
 			print(f"ERROR IN IMINK: {r.status_code} {r.reason} : {r.text}")
 			return None
@@ -346,13 +350,17 @@ class Nsotoken():
 			'X-Platform': 'Android',
 			'Accept-Encoding': 'gzip'
 		}
-
 		idToken = id_response["access_token"]
 		timestamp = int(time.time())
 		guid = str(uuid.uuid4())
 		f = self.__callImink(idToken, guid, timestamp, 1)
+<<<<<<< HEAD
 		if f == 500:
 			return 500
+=======
+    if f == 500:
+      return f
+>>>>>>> 9db79040f447e9cd333bf1ec9e49e445a5d80bcf
 		if f == None:
 			print("ERROR IN IMINK NSO CALL")
 			return None

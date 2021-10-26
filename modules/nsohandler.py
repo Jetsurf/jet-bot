@@ -544,6 +544,7 @@ class nsoHandler():
 			stmt = 'SELECT ability, brand, gearname FROM storedms WHERE (clientid = %s) AND ((ability = %s) OR (brand = %s) OR (gearname = %s))'
 			await cur.execute(stmt, (theMem.id, theSkill, theBrand, theType, ))
 			fields = await cur.fetchall()
+			await self.sqlBroker.close(cur)
 			string = "Didn't understand that. The item I notified you about will be on the store for another 10 hours. I'll DM you again when gear with "
 			for i in fields:
 				if i[0] != None:
