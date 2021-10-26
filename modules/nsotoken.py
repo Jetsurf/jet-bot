@@ -5,6 +5,7 @@ import os, base64, hashlib, random, string
 from datetime import datetime
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import googleplay
+from typing import Optional
 
 class Nsotoken():
 	def __init__(self, client, mysqlhandler, hostedUrl, stringCrypt):
@@ -67,7 +68,7 @@ class Nsotoken():
 
 		ciphertext = row[0]
 		plaintext = self.stringCrypt.decryptString(ciphertext)
-		print(f"getGameKeys: {ciphertext} -> {plaintext}")
+		#print(f"getGameKeys: {ciphertext} -> {plaintext}")
 		keys = json.loads(plaintext)
 		return keys
 
@@ -84,13 +85,13 @@ class Nsotoken():
 	async def setGameKeys(self, clientid, keys):
 		plaintext = json.dumps(keys)
 		ciphertext = self.stringCrypt.encryptString(plaintext)
-		print(f"setGameKeys: {plaintext} -> {ciphertext}")
+		#print(f"setGameKeys: {plaintext} -> {ciphertext}")
 
 		cur = await self.sqlBroker.connect()
 		await cur.execute("UPDATE tokens SET game_keys = %s, game_keys_time = NOW() WHERE (clientid = %s)", (ciphertext, clientid))
 		await self.sqlBroker.commit(cur)
 
-	async def checkDuplicate(self, id, cur):
+	async def __checkDuplicate(self, id, cur):
 		stmt = "SELECT COUNT(*) FROM tokens WHERE clientid = %s"
 		await cur.execute(stmt, (str(id),))
 		count = await cur.fetchone()
@@ -112,14 +113,14 @@ class Nsotoken():
 			await self.sqlBroker.rollback(cur)
 			await ctx.send("Something went wrong! If you want to report this, join my support discord and let the devs know what you were doing!")
 
-	async def addToken(self, ctx, token, session_token):
+	async def addToken(self, ctx, token):
 		now = datetime.now()
 		formatted_date = now.strftime('%Y-%m-%d %H:%M:%S')
 
 		# First ensure we have a record in 'tokens', because setGameKeys requires one to be present
-		cur = await self.sqlBroker.connect()
-		await cur.execute("REPLACE INTO tokens (clientid, session_token, session_time) VALUES (%s, %s, NOW())", (str(ctx.user.id), str(session_token),))
-		await self.sqlBroker.commit(cur)
+		#cur = await self.sqlBroker.connect()
+		#await cur.execute("REPLACE INTO tokens (clientid, session_token, session_time) VALUES (%s, %s, NOW())", (str(ctx.user.id), str(session_token),))
+		#await self.sqlBroker.commit(cur)
 
 		# Update encrypted game keys
 		gameKeys = await self.getGameKeys(ctx.user.id)
@@ -133,11 +134,11 @@ class Nsotoken():
 
 	async def login(self, ctx, flag=-1):
 		cur = await self.sqlBroker.connect()
-		dupe = await self.checkDuplicate(ctx.user.id, cur)
-		await self.sqlBroker.close(cur)
-
+		dupe = await self.__checkDuplicate(ctx.user.id, cur)
+		
 		if dupe:
 			await ctx.send("You already have a token setup with me, if you need to refresh your token (due to an issue), DM me !deletetoken to perform this again.")
+			await self.sqlBroker.close(cur)
 			return
 
 		auth_state = base64.urlsafe_b64encode(os.urandom(36))
@@ -182,6 +183,7 @@ class Nsotoken():
 			accounturl = accounturl.content
 
 			if 'stop' in accounturl.lower():
+				await self.sqlBroker.close(cur)
 				await ctx.send("Ok, stopping the token setup")
 				return
 			elif 'npf71b963c1b7b6d119' not in accounturl:
@@ -192,17 +194,24 @@ class Nsotoken():
 		await ctx.defer()
 		session_token_code = re.search('session_token_code=(.*)&', accounturl)
 		if session_token_code == None:
+			await self.sqlBroker.close(cur)
 			print(f"Issue with account url: {str(accounturl)}")
 			await ctx.send("Error in account url. Issue is logged, but you can report this in my support guild")
 			return
 
-		session_token_code = await self.get_session_token(session_token_code.group(0)[19:-1], auth_code_verifier)
-
+		session_token_code = await self.__get_session_token(session_token_code.group(0)[19:-1], auth_code_verifier)
+		ciphertext = self.stringCrypt.encryptString(session_token_code)
 		if session_token_code == None:
 			await ctx.send("Something went wrong! Make sure you are also using the latest link I gave you to sign in. If so, join my support discord and report that something broke!")
 			return
 		else:
-			success = await self.addToken(ctx, {}, session_token_code)
+			await cur.execute("INSERT INTO tokens (clientid, session_time, session_token) VALUES(%s, NOW(), %s)", (ctx.user.id, ciphertext, ))
+			if cur.lastrowid != None:
+				await self.sqlBroker.commit(cur)
+				success = True
+			else:
+				await self.sqlBroker.rollback(cur)
+				success = False
 
 		if success and flag == -1:
 			await ctx.send("Token added, NSO commands will now work! You shouldn't need to run this command again.")
@@ -211,7 +220,7 @@ class Nsotoken():
 		else:
 			await ctx.send("Something went wrong! Join my support discord and report that something broke!")
 
-	async def do_game_key_refresh(self, ctx, game='s2'):
+	async def do_game_key_refresh(self, ctx, game='s2') -> Optional[dict]:
 		await ctx.defer()
 		session_token = await self.get_session_token_mysql(ctx.user.id)
 		keys = await self.setup_nso(session_token, game)
@@ -220,21 +229,23 @@ class Nsotoken():
 			await ctx.respond("Error getting token, I have logged this for my owners")
 			return None
 
-		await self.addToken(ctx, keys, session_token)
+		await self.addToken(ctx, keys)
 
 		return await self.getGameKeys(ctx.user.id)
 
-	async def get_session_token_mysql(self, userid):
+	async def get_session_token_mysql(self, userid) -> Optional[str]:
 		cur = await self.sqlBroker.connect()
 		stmt = "SELECT session_token FROM tokens WHERE clientid = %s"
 		await cur.execute(stmt, (str(userid),))
-		session_token = await cur.fetchall()
-		await self.sqlBroker.commit(cur)
-		if len(session_token) == 0:
+		ciphertext = await cur.fetchone()
+		await self.sqlBroker.close(cur)
+		if ciphertext == None:
 			return None
-		return session_token[0][0]
+		else:
+			return self.stringCrypt.decryptString(ciphertext[0])
+			
 
-	async def get_session_token(self, session_token_code, auth_code_verifier):
+	async def __get_session_token(self, session_token_code, auth_code_verifier):
 		nsoAppInfo = await self.getAppVersion()
 		if nsoAppInfo == None:
 			print("get_session_token(): No known NSO app version")
@@ -263,8 +274,7 @@ class Nsotoken():
 		else:
 			return json.loads(r.text)["session_token"]
 
-	def callFlapg(self, id_token, guid, timestamp, method):
-		
+	def callImink(self, id_token, guid, timestamp, method):
 		api_app_head = {
 			'Content-Type': 'application/json; charset=utf-8',
 			'User-Agent' : 'Jet-bot/1.0.0 (discord=jetsurf#8514)'
@@ -277,17 +287,17 @@ class Nsotoken():
 		}
 
 		r = requests.post("https://api.imink.jone.wang/f", headers=api_app_head, data=json.dumps(api_app_body))
-		print(f"FLAPG API RESPONSE: {r.status_code} {r.reason} {r.text}")
+		print(f"IMINK API RESPONSE: {r.status_code} {r.reason} {r.text}")
 		if r.status_code == 404:
-			print("ISSUE WITH FLAPG - 404")
+			print("ISSUE WITH IMINK - 404")
 			return None
 		elif r.status_code != 200:
-			print(f"ERROR IN FLAPGAPI: {r.status_code} {r.reason} : {r.text}")
+			print(f"ERROR IN IMINK: {r.status_code} {r.reason} : {r.text}")
 			return None
 		else:
 			return json.loads(r.text)
 
-	async def setup_nso(self, session_token, game='s2'):
+	async def setup_nso(self, session_token, game='s2') -> Optional[dict]:
 		nsoAppInfo = await self.getAppVersion()
 		if nsoAppInfo == None:
 			print("setup_nso(): No known NSO app version")
@@ -347,22 +357,22 @@ class Nsotoken():
 		idToken = id_response["access_token"]
 		timestamp = int(time.time())
 		guid = str(uuid.uuid4())
-		flapg_nso = self.callFlapg(idToken, guid, timestamp, 1)
+		f = self.callImink(idToken, guid, timestamp, 1)
 
-		if flapg_nso == 404 or flapg_nso == 429:
-			return flapg_nso
-		elif flapg_nso == None:
+		if f == 404 or f == 429:
+			return f
+		elif f == None:
 			print("ERROR IN FLAPGAPI NSO CALL")
 			return None
 
 		parameter = {
-			'f':          flapg_nso["f"],
-			'naIdToken':  idToken,
-			'timestamp':  timestamp,
-			'requestId':  guid,
-			'naCountry': user_info["country"],
-			'naBirthday': user_info["birthday"],
-			'language': user_info["language"]
+			'f':         	f["f"],
+			'naIdToken':	idToken,
+			'timestamp':	timestamp,
+			'requestId':	guid,
+			'naCountry':	user_info["country"],
+			'naBirthday':	user_info["birthday"],
+			'language':		user_info["language"]
 		}
 		body = {}
 		body["parameter"] = parameter
@@ -383,12 +393,10 @@ class Nsotoken():
 			#Cross fingers this will shed light on this stupid bug
 			return None
 
-
 		timestamp = int(time.time())
 		guid = str(uuid.uuid4())
-		flapg_app = self.callFlapg(idToken,guid, timestamp, 2)
-
-		if flapg_app == None:
+		f = self.callImink(idToken,guid, timestamp, 2)
+		if f == None:
 			print("ERROR IN FLAPGAPI APP CALL")
 			return None
 
@@ -404,7 +412,7 @@ class Nsotoken():
 			'Accept-Encoding': 'gzip'
 		}
 		parameter = {
-			'f':					flapg_app["f"],
+			'f':					f["f"],
 			'registrationToken':	idToken,
 			'timestamp':			timestamp,
 			'requestId':			guid

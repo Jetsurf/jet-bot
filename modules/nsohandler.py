@@ -591,7 +591,7 @@ class nsoHandler():
 		await ctx.respond(f"```{str(theGear)}```")
 
 	#TODO: Convert this owner only command
-	async def getRawJSON(self, message):
+	async def getRawJSON(self, ctx):
 		if not await self.checkDuplicate(message.author.id):
 			await message.channel.send("You don't have a token setup with me! Please DM me !token with how to get one setup!")
 			return
@@ -623,8 +623,8 @@ class nsoHandler():
 		thejson = json.loads(results_list.text)	
 
 		if 'AUTHENTICATION_ERROR' in str(thejson):
-			iksm = await self.nsotoken.do_iksm_refresh(message)
-			results_list = requests.get(url, headers=header, cookies=dict(iksm_session=iksm))
+			iksm = await self.nsotoken.do_iksm_refresh(ctx)
+			results_list = requests.get(url, headers=header, cookies=dict(iksm_session=iksm['s2']['token']))
 			thejson = json.loads(results_list.text)
 
 		f = io.StringIO(results_list.text)
@@ -648,14 +648,13 @@ class nsoHandler():
 			tokens = await self.nsotoken.do_game_key_refresh(ctx)
 			s2_token = tokens['s2']['token']
 
-
 		results_list = requests.get(url, headers=header, cookies=dict(iksm_session=s2_token))
 		thejson = json.loads(results_list.text)	
 		print(thejson)
 
 		if 'AUTHENTICATION_ERROR' in str(thejson):
 			iksm = await self.nsotoken.do_game_key_refresh(ctx)
-			results_list = requests.get(url, headers=header, cookies=dict(iksm_session=iksm))
+			results_list = requests.get(url, headers=header, cookies=dict(iksm_session=iksm['s2']['token']))
 			thejson = json.loads(results_list.text)
 			if 'AUTHENTICATION_ERROR' in str(thejson):
 				return None
