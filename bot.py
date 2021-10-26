@@ -16,6 +16,7 @@ import stringcrypt
 import traceback, textwrap, io, signal
 from contextlib import redirect_stdout
 from subprocess import call
+from pathlib import Path
 
 stringCrypt = stringcrypt.StringCrypt()
 splatInfo = splatinfo.SplatInfo()
@@ -31,6 +32,7 @@ serverVoices = {}
 serverUtils = None
 acHandler = None
 doneStartup = False
+outputToLog = False
 token = ''
 hs = 0
 owners = []
@@ -67,7 +69,7 @@ class blank():
 nsoHandler = blank()
 
 def loadConfig():
-	global token, soundsDir, helpfldr, mysqlHandler, dev, head, url, hs, hostedUrl, webDir
+	global token, soundsDir, helpfldr, mysqlHandler, dev, head, url, hs, hostedUrl, webDir, outputToLog
 	try:
 		with open('./config/discordbot.json', 'r') as json_config:
 			configData = json.load(json_config)
@@ -78,7 +80,7 @@ def loadConfig():
 		hs = configData['home_server']
 		hostedUrl = configData.get('hosted_url')
 		webDir = configData.get('web_dir')
-
+		outputToLog = configData.get('output_to_log')
 		try:
 			dbid = configData['discordbotid']
 			dbtoken = configData['discordbottok']
@@ -964,7 +966,8 @@ async def on_message(message):
 
 #Setup
 loadConfig()
-if dev == 0:
+if outputToLog:
+	Path('./logs').mkdir(exist_ok=True)
 	sys.stdout = open('./logs/discordbot.log', 'a')
 	sys.stderr = open('./logs/discordbot.err', 'a')
 
