@@ -12,7 +12,7 @@ If you don't care about self-hosting the bot, you can use the following link:
 
 For self-hosting:
 
-Requires a bot token from the Discord Developer Portal
+Requires a bot token from the Discord Developer Portal and a Discord Team assigned to it for owner permissions.
 
 Requires https://github.com/Pycord-Development/pycord discord python library to 
 function as well as all dependencies for it.
@@ -23,6 +23,9 @@ Soundclips are to be placed in a directory defined by discordbot.json.
 
 Requires a mysql backend, configured in discordbot.json.
 
+**OPTIONAL**: Have a webserver stood up to host images provided in directory db-files, if not desired, leave webdir and hostedURL blank, and the bot will disable the affected images.
+ - The web_dir and hosted_url in the config needs to be set to the local directory the web-server hosts from and the URL of the webserver providing the files. The production [URL](https://db-files.crmea.de) can be alternatively used in your config for hosted_url, but doing so will only break ACNH passport functionality.
+
 ## Configuration
 An example configuration file is given at discordbot.json.example.
 This file needs to be completed and moved to discordbot.json.
@@ -30,9 +33,6 @@ This file needs to be completed and moved to discordbot.json.
 Soundsdir is a directory to place soundclips to play with the /voice playsound command.
 
 You can also configure some settings at runtime with [admin commands](#admin-commands).
-
-The folder db-files needs to be copied into a web-servers directory to provide various images for embeds.
- - The web_dir and hosted_url in the config needs to be set to the local directory the web-server hosts from and the URL of the webserver providing the files.
 
 ## Commands
 
