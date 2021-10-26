@@ -589,7 +589,7 @@ async def on_ready():
 		serverUtils = serverutils.serverUtils(client, mysqlHandler, serverConfig, configData['help'])
 		nsoTokens = nsotoken.Nsotoken(client, mysqlHandler, configData.get('hosted_url'), stringCrypt)
 		nsoHandler = nsohandler.nsoHandler(client, mysqlHandler, nsoTokens, splatInfo, configData.get('hosted_url'))
-		acHandler = achandler.acHandler(client, mysqlHandler, nsoTokens, configData.get('hosted_url'), configData.get('web_dir'))
+		acHandler = achandler.acHandler(client, mysqlHandler, nsoTokens, configData)
 		await mysqlHandler.startUp()
 		mysqlSchema = mysqlschema.MysqlSchema(mysqlHandler)
 		await mysqlSchema.update()
@@ -645,7 +645,7 @@ async def on_guild_remove(server):
 	if dev == 0:
 		print(f"I am now in {str(len(client.guilds))} servers, posting to top.gg")
 		body = { 'server_count' : len(client.guilds) }
-		r = requests.post(url, headers=head, json=body)
+		r = requests.post(f"https://top.gg/api/bots/{str(client.user.id)}/stats", headers=head, json=body)
 	else:
 		print(f"I am now in {str(len(client.guilds))} servers")
 

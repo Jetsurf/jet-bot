@@ -6,12 +6,12 @@ import urllib, urllib.request
 import re
 
 class acHandler():
-	def __init__(self, client, mysqlHandler, nsotoken, hostedUrl, webDir):
+	def __init__(self, client, mysqlHandler, nsotoken, configData):
 		self.client = client
 		self.sqlBroker = mysqlHandler
 		self.nsotoken = nsotoken
-		self.hostedUrl = hostedUrl
-		self.webDir = webDir
+		self.hostedUrl = configData['hosted_url']
+		self.webDir = configData['web_dir']
 		self.user_app_head = {
 			'Host': 'web.sd.lp1.acbaa.srv.nintendo.net',
 			'User-Agent': 'Mozilla/5.0 (Linux; Android 7.1.2; Pixel Build/NJH47D; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/59.0.3071.125 Mobile Safari/537.36',
