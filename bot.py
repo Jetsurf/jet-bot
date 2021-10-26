@@ -1,4 +1,4 @@
-import os, sys
+import os, sys, re
 sys.path.append('./modules')
 #Base Stuffs
 import discord, asyncio, subprocess, json, time, itertools
@@ -501,11 +501,8 @@ async def cmdVoiceSounds(ctx):
 		return
 
 	await serverUtils.increment_cmd(ctx, 'sounds')
-	theSounds = subprocess.check_output(["ls", configData['soundsdir']])
-	theSounds = theSounds.decode("utf-8")
-	theSounds = theSounds.replace('.mp3', '')
-	theSounds = theSounds.replace('\n', ', ')
-	await ctx.respond(f"Current Sounds:\n```{theSounds}```")
+
+	await ctx.respond(embed=createSoundsEmbed())
 
 @play.command(name='sound', description="Plays one of my sound clips in voice")
 async def cmdVoicePlaySound(ctx, sound: Option(str, "Sound clip to play, get with /voice sounds")):
@@ -525,6 +522,33 @@ async def cmdPlaylistAdd(ctx, url: Option(str, "URL to add to my playlist", requ
 		await serverVoices[ctx.guild.id].addGuildList(ctx, [ url ])
 	else:
 		await ctx.respond("You aren't a guild administrator", ephemeral=True)
+
+def createSoundsEmbed():
+	global configData
+	embed = discord.Embed(colour=0xEB4034)
+	embed.title = "Current Sounds"
+
+	theSounds = subprocess.check_output(["ls", configData['soundsdir']])
+	theSounds = theSounds.decode("utf-8")
+	theSounds = theSounds.replace('.mp3', '')
+	theSounds = theSounds.replace('\n', ', ')
+	if len(theSounds) > 1024:
+		length = 0
+		tmpStr = ""
+		embedNum = 1
+		for snd in theSounds.split(','):
+			if length + len(snd) > 1024:
+				length = 0
+				embed.add_field(name=f"Sounds {str(embedNum)}", value=tmpStr[:len(tmpStr)-2], inline=False)
+				tmpStr = ""
+				embedNum += 1
+			
+			tmpStr += f'{snd}, '
+			length += (len(snd) + 2)
+	else:
+		embed.add_field(name="Sounds", value=theSounds, inline=False)
+
+	return embed
 
 async def checkIfAdmin(ctx):
 	if ctx.guild.get_member(ctx.user.id) == None:
@@ -871,11 +895,7 @@ async def on_message(message):
 	elif cmd == 'commands' or cmd == 'help':
 		await serverUtils.print_help(message, prefix)
 	elif cmd == 'sounds':
-		theSounds = subprocess.check_output(["ls", configData['soundsdir']])
-		theSounds = theSounds.decode("utf-8")
-		theSounds = theSounds.replace('.mp3', '')
-		theSounds = theSounds.replace('\n', ', ')
-		await channel.send(f"Current Sounds:\n```{theSounds}```")
+		await channel.send(embed=createSoundsEmbed())
 	elif cmd == 'join':
 		if len(args) > 0:
 			await serverVoices[theServer].joinVoiceChannel(context, args)
