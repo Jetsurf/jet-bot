@@ -6,3 +6,4 @@ youtube_dl
 bs4
 pynacl
 html5lib
+pycryptodome
