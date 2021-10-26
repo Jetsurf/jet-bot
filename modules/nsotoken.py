@@ -284,7 +284,7 @@ class Nsotoken():
 		print(f"IMINK API RESPONSE: {r.status_code} {r.reason} {r.text}")
 
 		if r.status_code == 500:
-			print(f"Temporary issue with IMINK: {r.status_code} {r.reason} : {r.text}")}
+			print(f"Temporary issue with IMINK: {r.status_code} {r.reason} : {r.text}")
 			return 500
 		if r.status_code != 200:
 			print(f"ERROR IN IMINK: {r.status_code} {r.reason} : {r.text}")
@@ -352,13 +352,8 @@ class Nsotoken():
 		timestamp = int(time.time())
 		guid = str(uuid.uuid4())
 		f = self.__callImink(idToken, guid, timestamp, 1)
-<<<<<<< HEAD
 		if f == 500:
 			return 500
-=======
-    if f == 500:
-      return f
->>>>>>> 9db79040f447e9cd333bf1ec9e49e445a5d80bcf
 		if f == None:
 			print("ERROR IN IMINK NSO CALL")
 			return None

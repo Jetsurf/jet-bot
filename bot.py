@@ -556,7 +556,6 @@ async def on_ready():
 	global nsoHandler, nsoTokens, head, url, dev, owners, commandParser, doneStartup, acHandler, hostedUrl, webDir, stringCrypt
 
 	if not doneStartup:
-		print(f"NSO App Ver: {nsoAppVer}")
 		print('Logged in as,', client.user.name, client.user.id)
 
 		#This is needed due to no prsence intent, prod bot needs to find the devs in its primary server
