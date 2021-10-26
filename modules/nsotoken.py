@@ -195,12 +195,12 @@ class Nsotoken():
 			return
 
 		session_token_code = await self.__get_session_token(session_token_code.group(0)[19:-1], auth_code_verifier)
-		ciphertext = self.stringCrypt.encryptString(session_token_code)
 		if session_token_code == None:
 			await ctx.send("Something went wrong! Make sure you are also using the latest link I gave you to sign in. If so, join my support discord and report that something broke!")
 			await self.sqlBroker.close(cur)
 			return
 		else:
+			ciphertext = self.stringCrypt.encryptString(session_token_code)
 			await cur.execute("INSERT INTO tokens (clientid, session_time, session_token) VALUES(%s, NOW(), %s)", (ctx.user.id, ciphertext, ))
 			if cur.lastrowid != None:
 				await self.sqlBroker.commit(cur)
@@ -217,6 +217,9 @@ class Nsotoken():
 		session_token = await self.__get_session_token_mysql(ctx.user.id)
 		keys = await self.__setup_nso(session_token, game)
 
+		if keys == 500:
+			await ctx.respond("Temporary issue with NSO logins. Please try again in a minute.")
+			return None
 		if keys == None:
 			await ctx.respond("Error getting token, I have logged this for my owners")
 			return None
@@ -265,7 +268,7 @@ class Nsotoken():
 		else:
 			return json.loads(r.text)["session_token"]
 
-	def __callImink(self, id_token, guid, timestamp, method) -> Optional[dict]:
+	def __callImink(self, id_token, guid, timestamp, method):
 		api_app_head = {
 			'Content-Type': 'application/json; charset=utf-8',
 			'User-Agent' : 'Jet-bot/1.0.0 (discord=jetsurf#8514)'
@@ -279,13 +282,15 @@ class Nsotoken():
 
 		r = requests.post("https://api.imink.jone.wang/f", headers=api_app_head, data=json.dumps(api_app_body))
 		print(f"IMINK API RESPONSE: {r.status_code} {r.reason} {r.text}")
+		if r.status_code == 500:
+			return 500
 		if r.status_code != 200:
 			print(f"ERROR IN IMINK: {r.status_code} {r.reason} : {r.text}")
 			return None
 		else:
 			return json.loads(r.text)
 
-	async def __setup_nso(self, session_token, game='s2') -> Optional[dict]:
+	async def __setup_nso(self, session_token, game='s2'):
 		nsoAppInfo = await self.getAppVersion()
 		if nsoAppInfo == None:
 			print("__setup_nso(): No known NSO app version")
@@ -346,7 +351,8 @@ class Nsotoken():
 		timestamp = int(time.time())
 		guid = str(uuid.uuid4())
 		f = self.__callImink(idToken, guid, timestamp, 1)
-
+		if f == 500:
+			return 500
 		if f == None:
 			print("ERROR IN IMINK NSO CALL")
 			return None
