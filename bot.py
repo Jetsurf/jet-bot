@@ -784,7 +784,7 @@ async def on_message(message):
 		if '!token' in command:
 			await nsoTokens.login(context)
 		elif '!deletetoken' in command:
-				await nsoTokens.delete_tokens(context)
+				await nsoTokens.deleteTokens(context)
 		elif '!storedm' in command:
 			await channel.send("Sorry, for performance reasons, you cannot DM me !storedm :frowning:")
 		return

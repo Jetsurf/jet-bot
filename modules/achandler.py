@@ -47,7 +47,7 @@ class acHandler():
 		tokens = await self.nsotoken.getGameKeys(ctx.user.id)
 		test = tokens.get('ac')
 		if test == None:
-			tokens = await self.nsotoken.do_game_key_refresh(ctx, 'ac')
+			tokens = await self.nsotoken.doGameKeyRefresh(ctx, 'ac')
 
 		gtoken = tokens.get('ac').get('gtoken')
 		parktoken = tokens.get('ac').get('park_session')
@@ -67,7 +67,7 @@ class acHandler():
 			thejson = json.loads(r.text)
 
 		if r.status_code == 401:
-			await self.nsotoken.do_game_key_refresh(ctx, 'ac')
+			await self.nsotoken.doGameKeyRefresh(ctx, 'ac')
 			tokens = await self.nsotoken.getGameKeys(ctx.user.id)
 			if tokens == None:
 				return

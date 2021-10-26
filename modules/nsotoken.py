@@ -82,7 +82,7 @@ class Nsotoken():
 				return None
 		return hash
 
-	async def setGameKeys(self, clientid, keys):
+	async def __setGameKeys(self, clientid, keys):
 		plaintext = json.dumps(keys)
 		ciphertext = self.stringCrypt.encryptString(plaintext)
 		#print(f"setGameKeys: {plaintext} -> {ciphertext}")
@@ -100,7 +100,7 @@ class Nsotoken():
 		else:
 			return False
 
-	async def delete_tokens(self, ctx):
+	async def deleteTokens(self, ctx):
 		cur = await self.sqlBroker.connect()
 		print("Deleting token")
 		stmt = "DELETE FROM tokens WHERE clientid = %s"
@@ -113,7 +113,7 @@ class Nsotoken():
 			await self.sqlBroker.rollback(cur)
 			await ctx.send("Something went wrong! If you want to report this, join my support discord and let the devs know what you were doing!")
 
-	async def addToken(self, ctx, token):
+	async def __addToken(self, ctx, token):
 		now = datetime.now()
 		formatted_date = now.strftime('%Y-%m-%d %H:%M:%S')
 
@@ -123,11 +123,11 @@ class Nsotoken():
 			gameKeys['s2'] = {'token': token.get('s2')}
 		if token.get('ac_g'):
 			gameKeys['ac'] = {'gtoken': token.get('ac_g'), 'park_session': token.get('ac_p'), 'ac_bearer': token.get('ac_b')}
-		await self.setGameKeys(ctx.user.id, gameKeys)
+		await self.__setGameKeys(ctx.user.id, gameKeys)
 
 		return True
 
-	async def login(self, ctx, flag=-1):
+	async def login(self, ctx, flag=True):
 		cur = await self.sqlBroker.connect()
 		dupe = await self.__checkDuplicate(ctx.user.id, cur)
 		
@@ -204,28 +204,24 @@ class Nsotoken():
 			await cur.execute("INSERT INTO tokens (clientid, session_time, session_token) VALUES(%s, NOW(), %s)", (ctx.user.id, ciphertext, ))
 			if cur.lastrowid != None:
 				await self.sqlBroker.commit(cur)
-				success = True
+				if flag:
+					await ctx.send("Token added, NSO commands will now work! You shouldn't need to run this command again.")
+				else:
+					await ctx.send("Token added! Ordering...")
 			else:
 				await self.sqlBroker.rollback(cur)
-				success = False
+				await ctx.send("Something went wrong! Join my support discord and report that something broke!")
 
-		if success and flag == -1:
-			await ctx.send("Token added, NSO commands will now work! You shouldn't need to run this command again.")
-		elif success and flag == 1:
-			await ctx.send("Token added! Ordering...")
-		else:
-			await ctx.send("Something went wrong! Join my support discord and report that something broke!")
-
-	async def do_game_key_refresh(self, ctx, game='s2') -> Optional[dict]:
+	async def doGameKeyRefresh(self, ctx, game='s2') -> Optional[dict]:
 		await ctx.defer()
 		session_token = await self.__get_session_token_mysql(ctx.user.id)
-		keys = await self.setup_nso(session_token, game)
+		keys = await self.__setup_nso(session_token, game)
 
 		if keys == None:
 			await ctx.respond("Error getting token, I have logged this for my owners")
 			return None
 
-		await self.addToken(ctx, keys)
+		await self.__addToken(ctx, keys)
 
 		return await self.getGameKeys(ctx.user.id)
 
@@ -289,10 +285,10 @@ class Nsotoken():
 		else:
 			return json.loads(r.text)
 
-	async def setup_nso(self, session_token, game='s2') -> Optional[dict]:
+	async def __setup_nso(self, session_token, game='s2') -> Optional[dict]:
 		nsoAppInfo = await self.getAppVersion()
 		if nsoAppInfo == None:
-			print("setup_nso(): No known NSO app version")
+			print("__setup_nso(): No known NSO app version")
 			return None
 		nsoAppVer = nsoAppInfo['version']
 

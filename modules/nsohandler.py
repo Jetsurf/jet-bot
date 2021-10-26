@@ -623,7 +623,7 @@ class nsoHandler():
 		thejson = json.loads(results_list.text)	
 
 		if 'AUTHENTICATION_ERROR' in str(thejson):
-			iksm = await self.nsotoken.do_iksm_refresh(ctx)
+			iksm = await self.nsotoken.doGameKeyRefresh(ctx)
 			results_list = requests.get(url, headers=header, cookies=dict(iksm_session=iksm['s2']['token']))
 			thejson = json.loads(results_list.text)
 
@@ -645,14 +645,14 @@ class nsoHandler():
 	async def getNSOJSON(self, ctx, header, url):
 		s2_token = await self.nsotoken.getGameKey(ctx.user.id, "s2.token")
 		if s2_token == None:
-			tokens = await self.nsotoken.do_game_key_refresh(ctx)
+			tokens = await self.nsotoken.doGameKeyRefresh(ctx)
 			s2_token = tokens['s2']['token']
 
 		results_list = requests.get(url, headers=header, cookies=dict(iksm_session=s2_token))
 		thejson = json.loads(results_list.text)	
 
 		if 'AUTHENTICATION_ERROR' in str(thejson):
-			iksm = await self.nsotoken.do_game_key_refresh(ctx)
+			iksm = await self.nsotoken.doGameKeyRefresh(ctx)
 			results_list = requests.get(url, headers=header, cookies=dict(iksm_session=iksm['s2']['token']))
 			thejson = json.loads(results_list.text)
 			if 'AUTHENTICATION_ERROR' in str(thejson):
@@ -804,7 +804,7 @@ class nsoHandler():
 
 		maxleagueteam = thejson['records']['player']['max_league_point_team']
 		maxleaguepair = thejson['records']['player']['max_league_point_pair']
-		species = thejson['records']['player']['player_type']['species']
+		species = thejson['records']['player']['player_type']['species'].capitalize()
 		gender = thejson['records']['player']['player_type']['style']
 		leaguepairgold = thejson['records']['league_stats']['pair']['gold_count']
 		leaguepairsilver = thejson['records']['league_stats']['pair']['silver_count']
@@ -822,11 +822,6 @@ class nsoHandler():
 			if topink < int(j['total_paint_point']):
 				topink = int(j['total_paint_point'])
 				topweap = j
-
-		if 'octoling' in species:
-			species = 'Octoling'
-		else:
-			species = 'Inkling'
 
 		embed.title = f"{str(name)} - {species} {gender} - Stats"
 		embed.add_field(name='Turf Inked', value=f"Squid: {str(turfsquid)}\nOcto: {str(turfocto)}\nTotal: {str(turfinked)}", inline=True)
@@ -957,7 +952,7 @@ class nsoHandler():
 			await ctx.respond("You don't have a token setup with me, would you like to set one up now? (Yes/No)")
 			resp = await self.client.wait_for('message', check=check)
 			if resp.content.lower() == "yes":
-				await self.nsotoken.login(ctx, flag=1)
+				await self.nsotoken.login(ctx, flag=False)
 			else:
 				await ctx.channel.send("Ok! If you want to setup a token to order in the future, DM me !token")
 				return
