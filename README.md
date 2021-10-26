@@ -20,6 +20,8 @@ function as well as all dependencies for it.
 Requires youtube-dl and ffmpeg for online video/music playback.
 
 Soundclips are to be placed in a directory defined by discordbot.json.
+ - It is assumed that the files are volume normalized. This is what is ran on the production files as a starting point:
+   - `find . -name "*.mp3" -exec mp3gain -T -r -d -18dB {} \;`
 
 Requires a mysql backend, configured in discordbot.json.
 
