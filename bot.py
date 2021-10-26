@@ -1,7 +1,6 @@
 #!/usr/bin/python3.8
 
-import os
-import sys
+import os, sys
 sys.path.append('./modules')
 #Base Stuffs
 import discord, asyncio, subprocess, json, time, itertools
@@ -27,14 +26,14 @@ client = discord.Bot(intents=intents, chunk_guilds_at_startup=False)
 commandParser = None
 serverConfig = None
 mysqlHandler = None
-#nsoHandler = None
+nsoHandler = None
 nsoTokens = None
 serverVoices = {}
 serverUtils = None
 acHandler = None
 doneStartup = False
 owners = []
-dev = 1
+dev = True
 head = {}
 keyPath = './config/db-secret-key.hex'
 
@@ -54,13 +53,6 @@ announce = admin.command_group(name='announcements', description='Admin commands
 play = voice.command_group(name='play', description='Commands realted to playing audio')
 storedm = store.command_group('dm', description="Commands related to DM'ing on store changes")
 
-class blank():
-	def __init__(self):
-		self.storeJSON = {}
-		self.storeJSON['merchandises'] = []
-
-nsoHandler = blank()
-
 def loadConfig():
 	global configData, helpfldr, mysqlHandler, dev, head
 	try:
@@ -70,7 +62,7 @@ def loadConfig():
 		try:
 			head = { 'Authorization': configData['discordbottok'] }
 			configData['discordbottok'] = ""
-			dev = 0
+			dev = False
 		except:
 			print('No ID/Token for top.gg, skipping')
 
@@ -571,7 +563,7 @@ async def on_ready():
 	else:
 		print('RECONNECT TO DISCORD')
 
-	if dev == 0:
+	if not dev:
 		print(f"I am in {str(len(client.guilds))} servers, posting to top.gg")
 		body = { 'server_count' : len(client.guilds) }
 		requests.post(f"https://top.gg/api/bots/{str(client.user.id)}/stats", headers=head, json=body)
@@ -621,11 +613,11 @@ async def on_member_remove(member):
 
 @client.event
 async def on_guild_join(server):
-	global serverVoices, head, url, dev, owners, mysqlHandler, configData
+	global client, serverVoices, head, url, dev, owners, mysqlHandler, configData
 	print(f"I joined server: {server.name}")
 	serverVoices[server.id] = vserver.voiceServer(client, mysqlHandler, server.id, configData['soundsdir'])
 
-	if dev == 0:
+	if not dev:
 		print(f"I am now in {str(len(client.guilds))} servers, posting to top.gg")
 		body = { 'server_count' : len(client.guilds) }
 		r = requests.post(f"https://top.gg/api/bots/{str(client.user.id)}/stats", headers=head, json=body)
@@ -638,11 +630,11 @@ async def on_guild_join(server):
 
 @client.event
 async def on_guild_remove(server):
-	global serverVoices, head, dev, owners
+	global client, serverVoices, head, dev, owners
 	print("I left server: " + server.name)
 	serverVoices[server.id] = None
 
-	if dev == 0:
+	if not dev:
 		print(f"I am now in {str(len(client.guilds))} servers, posting to top.gg")
 		body = { 'server_count' : len(client.guilds) }
 		r = requests.post(f"https://top.gg/api/bots/{str(client.user.id)}/stats", headers=head, json=body)
