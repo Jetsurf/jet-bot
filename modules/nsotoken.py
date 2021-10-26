@@ -178,28 +178,12 @@ class Nsotoken():
 		else:
 			await message.channel.send("Something went wrong! Join my support discord and report that something broke!")
 
-	def get_hash(self, id_token, timestamp):
-		version = '1.6.0'
-		api_app_head = { 'User-Agent': f"splatnet2statink/{version}" }
-		api_body = { 'naIdToken': id_token, 'timestamp': timestamp }
-		api_response = requests.post("https://elifessler.com/s2s/api/gen2", headers=api_app_head, data=api_body)
-		print("S2API RESPONSE: " + str(api_response))
-
-		if '429' in str(api_response):
-			print("stat.ink: RATE LIMITED")
-			return 429
-		elif '200' not in str(api_response):
-			print(f"ERROR IN stat.ink CALL: {str(api_response)}")
-			return None
-		else:
-			return json.loads(api_response.text)["hash"]
-
 	async def do_iksm_refresh(self, message, game='s2'):
 		session_token = await self.get_session_token_mysql(message.author.id)
 		await message.channel.trigger_typing()
 		keys = self.setup_nso(session_token, game)
 		
-		if keys == 404 or keys == 429:
+		if keys == 500:
 			await message.channel.send("Temporary issue with NSO logins. Please try again in a few minutes")
 			return None
 		if keys == None:
@@ -239,30 +223,29 @@ class Nsotoken():
 		else:
 			return json.loads(r.text)["session_token"]
 
-	def call_flapg(self, id_token, guid, timestamp, login):
+	def callImink(self, id_token, guid, timestamp, method):
 		api_app_head = {
-			'x-token': id_token,
-			'x-time':  str(timestamp),
-			'x-guid':  guid,
-			'x-hash':  str(self.get_hash(id_token, timestamp)),
-			'x-ver':   '3',
-			'x-iid':   login
+			'Content-Type': 'application/json; charset=utf-8',
+			'User-Agent' : 'Jet-bot/1.0.0 (discord=jetsurf#8514)'
 		}
-		api_response = requests.get("https://flapg.com/ika2/api/login?public", headers=api_app_head)
-		print(f"FLAPG API RESPONSE: {str(api_response)}")
-		if '404' in str(api_response):
-			print("ISSUE WITH FLAPG - 404")
-			return 404
-		elif '200' not in str(api_response):
-			print(f"ERROR IN FLAPGAPI: {str(api_response)} and JSON : {str(api_response.text)}")
+		api_app_body = {
+			'hash_method':  str(method),
+			'request_id':   guid,
+			'token': id_token,
+			'timestamp':  str(timestamp),
+		}
+
+		r = requests.post("https://api.imink.jone.wang/f", headers=api_app_head, data=json.dumps(api_app_body))
+		print(f"IMINK API RESPONSE: {r.status_code} {r.reason} {r.text}")
+		if r.status_code == 500:
+			return 500
+		if r.status_code != 200:
+			print(f"ERROR IN IMINK: {r.status_code} {r.reason} : {r.text}")
 			return None
 		else:
-			return json.loads(api_response.text)["result"]
+			return json.loads(r.text)
 
 	def setup_nso(self, session_token, game='s2'):
-		timestamp = int(time.time())
-		guid = str(uuid.uuid4())
-
 		head = {
 			'Host': 'accounts.nintendo.com',
 			'Accept-Encoding': 'gzip',
@@ -314,24 +297,24 @@ class Nsotoken():
 			'X-Platform': 'Android',
 			'Accept-Encoding': 'gzip'
 		}
-		print(f"HEAD {str(head)}")
 		idToken = id_response["access_token"]
-		flapg_nso = self.call_flapg(idToken, guid, timestamp, "nso")
-		
-		if flapg_nso == 404 or flapg_nso == 429:
-			return flapg_nso
-		elif flapg_nso == None:
+		timestamp = int(time.time())
+		guid = str(uuid.uuid4())
+		f = self.callImink(idToken, guid, timestamp, 1)
+		if f == 500:
+			return f
+		elif f == None:
 			print("ERROR IN FLAPGAPI NSO CALL")
 			return None
 		
 		parameter = {
-			'f':          flapg_nso["f"],
-			'naIdToken':  flapg_nso["p1"],
-			'timestamp':  flapg_nso["p2"],
-			'requestId':  flapg_nso["p3"],
-			'naCountry': user_info["country"],
-			'naBirthday': user_info["birthday"],
-			'language': user_info["language"]
+			'f':         	f["f"],
+			'naIdToken':	idToken,
+			'timestamp':	timestamp,
+			'requestId':	guid,
+			'naCountry':	user_info["country"],
+			'naBirthday':	user_info["birthday"],
+			'language':		user_info["language"]
 		}
 		body = {}
 		body["parameter"] = parameter
@@ -352,8 +335,10 @@ class Nsotoken():
 			#Cross fingers this will shed light on this stupid bug
 			return None
 
-		flapg_app = self.call_flapg(idToken, guid, timestamp, "app")
-		if flapg_app == None:
+		timestamp = int(time.time())
+		guid = str(uuid.uuid4())
+		f = self.callImink(idToken,guid, timestamp, 2)
+		if f == None:
 			print("ERROR IN FLAPGAPI APP CALL")
 			return None
 
@@ -370,10 +355,10 @@ class Nsotoken():
 			'Accept-Encoding': 'gzip'
 		}
 		parameter = {
-			'f':					flapg_app["f"],
-			'registrationToken':	flapg_app["p1"],
-			'timestamp':			flapg_app["p2"],
-			'requestId':			flapg_app["p3"]
+			'f':					f["f"],
+			'registrationToken':	idToken,
+			'timestamp':			timestamp,
+			'requestId':			guid
 		}
 
 		if game == 'ac':
