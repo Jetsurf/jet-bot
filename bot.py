@@ -36,7 +36,6 @@ doneStartup = False
 owners = []
 dev = 1
 head = {}
-url = ''
 keyPath = './config/db-secret-key.hex'
 
 #SubCommand Groups
@@ -63,14 +62,13 @@ class blank():
 nsoHandler = blank()
 
 def loadConfig():
-	global configData, helpfldr, mysqlHandler, dev, head, url
+	global configData, helpfldr, mysqlHandler, dev, head
 	try:
 		with open('./config/discordbot.json', 'r') as json_config:
 			configData = json.load(json_config)
 
 		try:
 			head = { 'Authorization': configData['discordbottok'] }
-			url = f"https://top.gg/api/bots/{str(configData['discordbotid'])}/stats"
 			configData['discordbottok'] = ""
 			dev = 0
 		except:
@@ -547,7 +545,7 @@ async def checkIfAdmin(ctx):
 @client.event
 async def on_ready():
 	global client, mysqlHandler, serverUtils, serverVoices, splatInfo, configData
-	global nsoHandler, nsoTokens, head, url, dev, owners, commandParser, doneStartup, acHandler, stringCrypt
+	global nsoHandler, nsoTokens, head, dev, owners, commandParser, doneStartup, acHandler, stringCrypt
 
 	if not doneStartup:
 		print('Logged in as,', client.user.name, client.user.id)
@@ -576,7 +574,7 @@ async def on_ready():
 	if dev == 0:
 		print(f"I am in {str(len(client.guilds))} servers, posting to top.gg")
 		body = { 'server_count' : len(client.guilds) }
-		requests.post(url, headers=head, json=body)
+		requests.post(f"https://top.gg/api/bots/{str(client.user.id)}/stats", headers=head, json=body)
 	else:
 		print(f"I am in {str(len(client.guilds))} servers")
 
@@ -630,7 +628,7 @@ async def on_guild_join(server):
 	if dev == 0:
 		print(f"I am now in {str(len(client.guilds))} servers, posting to top.gg")
 		body = { 'server_count' : len(client.guilds) }
-		r = requests.post(url, headers=head, json=body)
+		r = requests.post(f"https://top.gg/api/bots/{str(client.user.id)}/stats", headers=head, json=body)
 	else:
 		print(f"I am now in {str(len(client.guilds))} servers")
 
@@ -640,7 +638,7 @@ async def on_guild_join(server):
 
 @client.event
 async def on_guild_remove(server):
-	global serverVoices, head, url, dev, owners
+	global serverVoices, head, dev, owners
 	print("I left server: " + server.name)
 	serverVoices[server.id] = None
 
