@@ -117,11 +117,6 @@ class Nsotoken():
 		now = datetime.now()
 		formatted_date = now.strftime('%Y-%m-%d %H:%M:%S')
 
-		# First ensure we have a record in 'tokens', because setGameKeys requires one to be present
-		#cur = await self.sqlBroker.connect()
-		#await cur.execute("REPLACE INTO tokens (clientid, session_token, session_time) VALUES (%s, %s, NOW())", (str(ctx.user.id), str(session_token),))
-		#await self.sqlBroker.commit(cur)
-
 		# Update encrypted game keys
 		gameKeys = await self.getGameKeys(ctx.user.id)
 		if token.get('s2'):
@@ -203,6 +198,7 @@ class Nsotoken():
 		ciphertext = self.stringCrypt.encryptString(session_token_code)
 		if session_token_code == None:
 			await ctx.send("Something went wrong! Make sure you are also using the latest link I gave you to sign in. If so, join my support discord and report that something broke!")
+			await self.sqlBroker.close(cur)
 			return
 		else:
 			await cur.execute("INSERT INTO tokens (clientid, session_time, session_token) VALUES(%s, NOW(), %s)", (ctx.user.id, ciphertext, ))
@@ -222,7 +218,7 @@ class Nsotoken():
 
 	async def do_game_key_refresh(self, ctx, game='s2') -> Optional[dict]:
 		await ctx.defer()
-		session_token = await self.get_session_token_mysql(ctx.user.id)
+		session_token = await self.__get_session_token_mysql(ctx.user.id)
 		keys = await self.setup_nso(session_token, game)
 
 		if keys == None:
@@ -233,7 +229,7 @@ class Nsotoken():
 
 		return await self.getGameKeys(ctx.user.id)
 
-	async def get_session_token_mysql(self, userid) -> Optional[str]:
+	async def __get_session_token_mysql(self, userid) -> Optional[str]:
 		cur = await self.sqlBroker.connect()
 		stmt = "SELECT session_token FROM tokens WHERE clientid = %s"
 		await cur.execute(stmt, (str(userid),))
@@ -244,7 +240,6 @@ class Nsotoken():
 		else:
 			return self.stringCrypt.decryptString(ciphertext[0])
 			
-
 	async def __get_session_token(self, session_token_code, auth_code_verifier):
 		nsoAppInfo = await self.getAppVersion()
 		if nsoAppInfo == None:
@@ -274,7 +269,7 @@ class Nsotoken():
 		else:
 			return json.loads(r.text)["session_token"]
 
-	def callImink(self, id_token, guid, timestamp, method):
+	def __callImink(self, id_token, guid, timestamp, method) -> Optional[dict]:
 		api_app_head = {
 			'Content-Type': 'application/json; charset=utf-8',
 			'User-Agent' : 'Jet-bot/1.0.0 (discord=jetsurf#8514)'
@@ -288,10 +283,7 @@ class Nsotoken():
 
 		r = requests.post("https://api.imink.jone.wang/f", headers=api_app_head, data=json.dumps(api_app_body))
 		print(f"IMINK API RESPONSE: {r.status_code} {r.reason} {r.text}")
-		if r.status_code == 404:
-			print("ISSUE WITH IMINK - 404")
-			return None
-		elif r.status_code != 200:
+		if r.status_code != 200:
 			print(f"ERROR IN IMINK: {r.status_code} {r.reason} : {r.text}")
 			return None
 		else:
@@ -357,12 +349,10 @@ class Nsotoken():
 		idToken = id_response["access_token"]
 		timestamp = int(time.time())
 		guid = str(uuid.uuid4())
-		f = self.callImink(idToken, guid, timestamp, 1)
+		f = self.__callImink(idToken, guid, timestamp, 1)
 
-		if f == 404 or f == 429:
-			return f
-		elif f == None:
-			print("ERROR IN FLAPGAPI NSO CALL")
+		if f == None:
+			print("ERROR IN IMINK NSO CALL")
 			return None
 
 		parameter = {
@@ -395,7 +385,7 @@ class Nsotoken():
 
 		timestamp = int(time.time())
 		guid = str(uuid.uuid4())
-		f = self.callImink(idToken,guid, timestamp, 2)
+		f = self.__callImink(idToken,guid, timestamp, 2)
 		if f == None:
 			print("ERROR IN FLAPGAPI APP CALL")
 			return None

@@ -650,7 +650,6 @@ class nsoHandler():
 
 		results_list = requests.get(url, headers=header, cookies=dict(iksm_session=s2_token))
 		thejson = json.loads(results_list.text)	
-		print(thejson)
 
 		if 'AUTHENTICATION_ERROR' in str(thejson):
 			iksm = await self.nsotoken.do_game_key_refresh(ctx)
