@@ -69,15 +69,20 @@ def loadConfig():
 			configData = json.load(json_config)
 
 		try:
-			dbid = configData['discordbotid']
-			dbtoken = configData['discordbottok']
-			head = { 'Authorization': dbtoken }
-			url = f"https://top.gg/api/bots/{str(dbid)}/stats"
+			head = { 'Authorization': configData['discordbottok'] }
+			url = f"https://top.gg/api/bots/{str(configData['discordbotid'])}/stats"
+			configData['discordbottok'] = ""
 			dev = 0
 		except:
 			print('No ID/Token for top.gg, skipping')
 
 		mysqlHandler = mysqlhandler.mysqlHandler(configData['mysql_host'], configData['mysql_user'], configData['mysql_pw'], configData['mysql_db'])
+
+		#Get the secrets the F out!
+		configData['mysql_host'] = ""
+		configData['mysql_user'] = ""
+		configData['mysql_pw'] = ""
+		configData['mysql_db'] = ""
 
 		print('Config Loaded')
 	except Exception as e:
@@ -973,4 +978,6 @@ client.add_application_command(acnh)
 
 sys.stdout.flush()
 sys.stderr.flush()
-client.run(configData['token'])
+token = configData['token']
+configData['token'] = ""
+client.run(token)
