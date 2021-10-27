@@ -2,7 +2,7 @@ import os, sys, re
 sys.path.append('./modules')
 #Base Stuffs
 import discord, asyncio, subprocess, json, time, itertools
-from discord.app import Option, SlashCommandGroup
+from discord.commands import Option, SlashCommandGroup
 #DBL Posting
 import urllib, urllib.request, requests, pymysql
 #Our Classes

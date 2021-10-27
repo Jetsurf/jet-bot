@@ -7,7 +7,6 @@ import splatinfo
 import messagecontext
 import io
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from discord.app import *
 
 class nsoHandler():
 	def __init__(self, client, mysqlHandler, nsotoken, splatInfo, hostedUrl):
