@@ -528,23 +528,24 @@ def createSoundsEmbed():
 	embed = discord.Embed(colour=0xEB4034)
 	embed.title = "Current Sounds"
 
+	delimiter = ', '
 	theSounds = subprocess.check_output(["ls", configData['soundsdir']])
 	theSounds = theSounds.decode("utf-8")
 	theSounds = theSounds.replace('.mp3', '')
-	theSounds = theSounds.replace('\n', ', ')
+	theSounds = theSounds.replace('\n', delimiter)
 	if len(theSounds) > 1024:
 		length = 0
 		tmpStr = ""
 		embedNum = 1
-		for snd in theSounds.split(','):
-			if length + len(snd) > 1024:
+		for snd in theSounds.split(delimiter):
+			if length + (len(snd) + len(delimiter)) > 1024:
 				length = 0
-				embed.add_field(name=f"Sounds {str(embedNum)}", value=tmpStr[:len(tmpStr)-2], inline=False)
+				embed.add_field(name=f"Sounds {str(embedNum)}", value=tmpStr[:len(tmpStr)-len(delimiter)], inline=False)
 				tmpStr = ""
 				embedNum += 1
 			
-			tmpStr += f'{snd}, '
-			length += (len(snd) + 2)
+			tmpStr += f'{snd}{delimiter}'
+			length += (len(snd) + len(delimiter))
 	else:
 		embed.add_field(name="Sounds", value=theSounds, inline=False)
 
