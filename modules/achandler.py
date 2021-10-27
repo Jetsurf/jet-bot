@@ -44,14 +44,14 @@ class acHandler():
 		}
 
 	async def getNSOJSON(self, ctx, header, url):
-		tokens = await self.nsotoken.getGameKeys(ctx.user.id)
-		test = tokens.get('ac')
+		tokens = await self.nsotoken.getGameKey(ctx.user.id, 'ac')
+		test = tokens.get('gtoken')
 		if test == None:
 			tokens = await self.nsotoken.doGameKeyRefresh(ctx, 'ac')
 
-		gtoken = tokens.get('ac').get('gtoken')
-		parktoken = tokens.get('ac').get('park_session')
-		bearer = tokens.get('ac').get('ac_bearer')
+		gtoken = tokens['gtoken']
+		parktoken = tokens['park_session']
+		bearer = tokens['ac_bearer']
 		gtokenFlag = False
 
 		if 'users' in url.lower() and '0x' not in url.lower():
