@@ -611,12 +611,11 @@ class nsoHandler():
 			return
 
 		iksm = await self.nsotoken.getGameKey(ctx.user.id, "s2")
-		print(f"ONE: {str(iksm)}")
 		if iksm == None:
 			iksm = await self.nsotoken.doGameKeyRefresh(ctx)
 			if iksm == 500:
 				return 
-		print(str(iksm))
+
 		iksm = iksm['iksm']
 		results_list = requests.get(url, headers=header, cookies=dict(iksm_session=iksm))
 		thejson = json.loads(results_list.text)	

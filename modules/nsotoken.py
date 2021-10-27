@@ -154,20 +154,6 @@ class Nsotoken():
 			await self.sqlBroker.rollback(cur)
 			await ctx.send("Something went wrong! If you want to report this, join my support discord and let the devs know what you were doing!")
 
-	async def __addToken(self, ctx, token):
-		now = datetime.now()
-		formatted_date = now.strftime('%Y-%m-%d %H:%M:%S')
-
-		# Update encrypted game keys
-		gameKeys = await self.getGameKeys(ctx.user.id)
-		if token.get('s2'):
-			gameKeys['s2'] = {'iksm': token.get('iksm')}
-		if token.get('gtoken'):
-			gameKeys['ac'] = {'gtoken': token.get('gtoken'), 'park_session': token.get('park_session'), 'ac_bearer': token.get('ac_bearer')}
-		await self.__setGameKeys(ctx.user.id, gameKeys)
-
-		return True
-
 	async def login(self, ctx, flag=True):
 		cur = await self.sqlBroker.connect()
 		dupe = await self.__checkDuplicate(ctx.user.id, cur)
