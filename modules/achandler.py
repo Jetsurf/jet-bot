@@ -10,8 +10,8 @@ class acHandler():
 		self.client = client
 		self.sqlBroker = mysqlHandler
 		self.nsotoken = nsotoken
-		self.hostedUrl = configData['hosted_url']
-		self.webDir = configData['web_dir']
+		self.hostedUrl = configData.get('hosted_url')
+		self.webDir = configData.get('web_dir')
 		self.user_app_head = {
 			'Host': 'web.sd.lp1.acbaa.srv.nintendo.net',
 			'User-Agent': 'Mozilla/5.0 (Linux; Android 7.1.2; Pixel Build/NJH47D; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/59.0.3071.125 Mobile Safari/537.36',

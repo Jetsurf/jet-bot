@@ -34,6 +34,13 @@ class mysqlHandler():
 		await self.cons[hash(cur)].rollback()
 		await self.close(cur)
 
+	def getColumnNames(self, cur):
+		return [col[0] for col in cur.description]
+
+	def rowToDict(self, cur, row):
+		colnames = self.getColumnNames(cur)
+		return dict(zip(colnames, row))
+
 	async def hasTable(self, cur, tablename):
 		await cur.execute("SELECT 1 FROM information_schema.TABLES WHERE (TABLE_SCHEMA = %s) AND (TABLE_NAME = %s) LIMIT 1", (self.__db, tablename))
 		row = await cur.fetchone()

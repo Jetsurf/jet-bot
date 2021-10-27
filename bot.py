@@ -607,6 +607,7 @@ async def on_ready():
 		await mysqlHandler.startUp()
 		mysqlSchema = mysqlschema.MysqlSchema(mysqlHandler)
 		await mysqlSchema.update()
+		await nsoTokens.migrateTokensTable()
 
 		await nsoHandler.updateS2JSON()
 		await nsoTokens.updateAppVersion()

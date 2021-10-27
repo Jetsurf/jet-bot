@@ -17,6 +17,41 @@ class Nsotoken():
 		self.stringCrypt = stringCrypt
 		self.scheduler.add_job(self.updateAppVersion, 'cron', hour="3", minute='0', second='35')
 
+	async def migrateTokensTable(self):
+		cur = await self.sqlBroker.connect()
+		if not await self.sqlBroker.hasTable(cur, 'tokens_migrate'):
+			await self.sqlBroker.commit(cur)
+			return
+
+		print("Migrating 'tokens_migrate' table...")
+		await cur.execute("SELECT * FROM tokens_migrate")
+		oldrows = await cur.fetchall()
+		for oldrow in oldrows:
+			oldrow = self.sqlBroker.rowToDict(cur, oldrow)
+			print(f"  Migrating record for clientid {oldrow['clientid']}...")
+
+			gamekeys = {}
+			gamekeys['s2'] = {}
+			gamekeys['s2']['token'] = oldrow['token']
+			gamekeys['ac'] = {}
+			gamekeys['ac']['gtoken'] = oldrow['gtoken']
+			gamekeys['ac']['park_session'] = oldrow['park_session']
+			gamekeys['ac']['ac_bearer'] = oldrow['ac_bearer']
+
+			newrow = {}
+			newrow['clientid'] = oldrow['clientid']
+			newrow['session_time'] = oldrow['session_time']
+			newrow['session_token'] = self.stringCrypt.encryptString(oldrow['session_token']) if oldrow['session_token'] else None
+			newrow['game_keys_time'] = oldrow['iksm_time']
+			newrow['game_keys'] = self.stringCrypt.encryptString(json.dumps(gamekeys))
+
+			await cur.execute("REPLACE INTO tokens (clientid, session_time, session_token, game_keys_time, game_keys) VALUES (%s, %s, %s, %s, %s)",
+			(newrow['clientid'], newrow['session_time'], newrow['session_token'], newrow['game_keys_time'], newrow['game_keys'],))
+
+		print("Migration complete, removing 'tokens_migrate' table...")
+		await cur.execute("DROP TABLE tokens_migrate")
+		await self.sqlBroker.commit(cur)
+
 	async def getAppVersion(self):
 		cur = await self.sqlBroker.connect()
 
