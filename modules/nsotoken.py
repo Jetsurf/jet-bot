@@ -40,7 +40,7 @@ class Nsotoken():
 
 			newrow = {}
 			newrow['clientid'] = oldrow['clientid']
-			newrow['session_time'] = oldrow['session_time']
+			newrow['session_time'] = oldrow['session_time'] if oldrow['session_time'] else datetime.now()
 			newrow['session_token'] = self.stringCrypt.encryptString(oldrow['session_token']) if oldrow['session_token'] else None
 			newrow['game_keys_time'] = oldrow['iksm_time']
 			newrow['game_keys'] = self.stringCrypt.encryptString(json.dumps(gamekeys))
