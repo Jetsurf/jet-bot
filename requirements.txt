@@ -1,4 +1,4 @@
-pycord>=1.8.0
+py-cord
 pymysql
 aiomysql
 apscheduler
