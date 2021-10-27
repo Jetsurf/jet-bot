@@ -33,7 +33,7 @@ class Nsotoken():
 
 			gamekeys = {}
 			gamekeys['s2'] = {}
-			gamekeys['s2']['token'] = oldrow['token']
+			gamekeys['s2']['iksm'] = oldrow['token']
 			gamekeys['ac'] = {}
 			gamekeys['ac']['gtoken'] = oldrow['gtoken']
 			gamekeys['ac']['park_session'] = oldrow['park_session']
@@ -104,7 +104,7 @@ class Nsotoken():
 
 		ciphertext = row[0]
 		plaintext = self.stringCrypt.decryptString(ciphertext)
-		print(f"getGameKeys: {ciphertext} -> {plaintext}")
+		#print(f"getGameKeys: {ciphertext} -> {plaintext}")
 		keys = json.loads(plaintext)
 		return keys
 
@@ -161,7 +161,7 @@ class Nsotoken():
 		# Update encrypted game keys
 		gameKeys = await self.getGameKeys(ctx.user.id)
 		if token.get('s2'):
-			gameKeys['s2'] = {'token': token.get('s2')}
+			gameKeys['s2'] = {'iksm': token.get('iksm')}
 		if token.get('gtoken'):
 			gameKeys['ac'] = {'gtoken': token.get('gtoken'), 'park_session': token.get('park_session'), 'ac_bearer': token.get('ac_bearer')}
 		await self.__setGameKeys(ctx.user.id, gameKeys)
@@ -512,6 +512,6 @@ class Nsotoken():
 				return None
 			else:
 				print("Got a S2 token!")
-				keys['s2'] = r.cookies["iksm_session"]
+				keys['iksm'] = r.cookies["iksm_session"]
 
 		return keys

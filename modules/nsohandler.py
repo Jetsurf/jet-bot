@@ -606,13 +606,17 @@ class nsoHandler():
 		await message.channel.send(file=jsonToSend)
 
 	async def getNSOJSON(self, ctx, header, url):
+		if not await self.nsotoken.checkSessionPresent(ctx):
+			await ctx.respond("You don't have a token setup with me! Please DM me !token with how to get one setup!")
+			return
+
 		iksm = await self.nsotoken.getGameKey(ctx.user.id, "s2")
 		if iksm == None:
 			iksm = await self.nsotoken.doGameKeyRefresh(ctx)
 			if iksm == 500:
 				return 
 		
-		iksm = iksm['token']
+		iksm = iksm['iksm']
 		results_list = requests.get(url, headers=header, cookies=dict(iksm_session=iksm))
 		thejson = json.loads(results_list.text)	
 
@@ -626,10 +630,6 @@ class nsoHandler():
 		return thejson
 
 	async def weaponParser(self, ctx, weapid):
-		if not await self.nsotoken.checkSessionPresent(ctx):
-			await ctx.channel.send("You don't have a token setup with me! Please DM me !token with how to get one setup!")
-			return
-
 		thejson = await self.getNSOJSON(ctx, self.app_head, "https://app.splatoon2.nintendo.net/api/records")
 		if thejson == None:
 			return
@@ -684,10 +684,6 @@ class nsoHandler():
 		await ctx.respond(embed=embed)
 
 	async def mapParser(self, ctx, mapid):
-		if not await self.nsotoken.checkSessionPresent(ctx):
-			await ctx.respond("You don't have a token setup with me! Please DM me !token with how to get one setup!")
-			return
-
 		thejson = await self.getNSOJSON(ctx, self.app_head, "https://app.splatoon2.nintendo.net/api/records")
 		if thejson == None:
 			return
@@ -743,10 +739,6 @@ class nsoHandler():
 		await ctx.respond(embed=embed)
 
 	async def getStats(self, ctx):
-		if not await self.nsotoken.checkSessionPresent(ctx):
-			await ctx.respond("You don't have a token setup with me! Please DM me !token with how to get one setup!")
-			return
-
 		thejson = await self.getNSOJSON(ctx, self.app_head, "https://app.splatoon2.nintendo.net/api/records")
 		if thejson == None:
 			return
@@ -799,10 +791,6 @@ class nsoHandler():
 		await ctx.respond(embed=embed)
 
 	async def getSRStats(self, ctx):
-		if not await self.nsotoken.checkSessionPresent(ctx):
-			await ctx.respond("You don't have a token setup with me! Please DM me !token with how to get one setup!")
-			return
-
 		thejson = await self.getNSOJSON(ctx, self.app_head_coop, "https://app.splatoon2.nintendo.net/api/coop_results")
 		if thejson == None:
 			return
@@ -854,10 +842,6 @@ class nsoHandler():
 		await ctx.respond(embed=embed)
 
 	async def getRanks(self, ctx):
-		if not await self.nsotoken.checkSessionPresent(ctx):
-			await ctx.respond("You don't have a token setup with me! Please DM me !token with how to get one setup!")
-			return
-
 		thejson = await self.getNSOJSON(ctx, self.app_head, "https://app.splatoon2.nintendo.net/api/records")
 		if thejson == None:
 			return
@@ -1215,10 +1199,6 @@ class nsoHandler():
 		return srdata
 
 	async def battleParser(self, ctx, num=1):
-		if not await self.nsotoken.checkSessionPresent(ctx):
-			await ctx.send("You don't have a token setup with me! Please DM me !token with how to get one setup!")
-			return
-
 		recordjson = await self.getNSOJSON(ctx, self.app_head, "https://app.splatoon2.nintendo.net/api/records")
 		if recordjson == None:
 			return
