@@ -94,6 +94,10 @@ class acHandler():
 		return thejson
 
 	async def passport(self, ctx):
+		if not await self.nsotoken.checkSessionPresent(ctx):
+			await ctx.respond("You don't have a token setup with me! Please DM me !token with how to get one setup!")
+			return
+
 		userjson = await self.getNSOJSON(ctx, self.user_app_head, 'https://web.sd.lp1.acbaa.srv.nintendo.net/api/sd/v1/users')
 		if userjson == None:
 			return

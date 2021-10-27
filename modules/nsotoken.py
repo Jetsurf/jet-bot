@@ -127,13 +127,18 @@ class Nsotoken():
 		await self.sqlBroker.commit(cur)
 
 	async def __checkDuplicate(self, id, cur):
-		stmt = "SELECT COUNT(*) FROM tokens WHERE clientid = %s"
-		await cur.execute(stmt, (str(id),))
+		await cur.execute("SELECT COUNT(*) FROM tokens WHERE clientid = %s", (str(id),))
 		count = await cur.fetchone()
 		if count[0] > 0:
 			return True
 		else:
 			return False
+
+	async def checkSessionPresent(self, ctx):
+		cur = await self.sqlBroker.connect()
+		ret = await self.__checkDuplicate(ctx.user.id, cur)
+		await self.sqlBroker.close(cur)
+		return ret
 
 	async def deleteTokens(self, ctx):
 		cur = await self.sqlBroker.connect()

@@ -566,7 +566,7 @@ class nsoHandler():
 
 	#TODO: Convert this owner only command
 	async def getRawJSON(self, ctx):
-		if not await self.checkDuplicate(message.author.id):
+		if not await self.nsotoken.checkSessionPresent(ctx):
 			await message.channel.send("You don't have a token setup with me! Please DM me !token with how to get one setup!")
 			return
 
@@ -605,17 +605,6 @@ class nsoHandler():
 		jsonToSend = discord.File(fp=f, filename = 'data.json')
 		await message.channel.send(file=jsonToSend)
 
-	async def checkDuplicate(self, id):
-		cur = await self.sqlBroker.connect()
-		stmt = "SELECT COUNT(*) FROM tokens WHERE clientid = %s"
-		await cur.execute(stmt, (str(id),))
-		count = await cur.fetchone()
-		await self.sqlBroker.close(cur)
-		if count[0] > 0:
-			return True
-		else:
-			return False
-
 	async def getNSOJSON(self, ctx, header, url):
 		s2_token = await self.nsotoken.getGameKey(ctx.user.id, "s2.token")
 		if s2_token == None:
@@ -635,7 +624,7 @@ class nsoHandler():
 		return thejson
 
 	async def weaponParser(self, ctx, weapid):
-		if not await self.checkDuplicate(ctx.user.id):
+		if not await self.nsotoken.checkSessionPresent(ctx):
 			await ctx.channel.send("You don't have a token setup with me! Please DM me !token with how to get one setup!")
 			return
 
@@ -693,8 +682,8 @@ class nsoHandler():
 		await ctx.respond(embed=embed)
 
 	async def mapParser(self, ctx, mapid):
-		if not await self.checkDuplicate(ctx.user.id):
-			await ctx.channel.send("You don't have a token setup with me! Please DM me !token with how to get one setup!")
+		if not await self.nsotoken.checkSessionPresent(ctx):
+			await ctx.respond("You don't have a token setup with me! Please DM me !token with how to get one setup!")
 			return
 
 		thejson = await self.getNSOJSON(ctx, self.app_head, "https://app.splatoon2.nintendo.net/api/records")
@@ -704,7 +693,7 @@ class nsoHandler():
 		try:
 			allmapdata = thejson['records']['stage_stats']
 		except:
-			await ctx.channel.send("Error retrieving json for stage_stats. This has been logged for my owners.")
+			await ctx.respond("Error retrieving json for stage_stats. This has been logged for my owners.")
 			print(f"ERROR IN MAP JSON:\n{str(thejson)}")
 			return
 
@@ -752,7 +741,7 @@ class nsoHandler():
 		await ctx.respond(embed=embed)
 
 	async def getStats(self, ctx):
-		if not await self.checkDuplicate(ctx.user.id):
+		if not await self.nsotoken.checkSessionPresent(ctx):
 			await ctx.respond("You don't have a token setup with me! Please DM me !token with how to get one setup!")
 			return
 
@@ -808,7 +797,7 @@ class nsoHandler():
 		await ctx.respond(embed=embed)
 
 	async def getSRStats(self, ctx):
-		if not await self.checkDuplicate(ctx.user.id):
+		if not await self.nsotoken.checkSessionPresent(ctx):
 			await ctx.respond("You don't have a token setup with me! Please DM me !token with how to get one setup!")
 			return
 
@@ -863,7 +852,7 @@ class nsoHandler():
 		await ctx.respond(embed=embed)
 
 	async def getRanks(self, ctx):
-		if not await self.checkDuplicate(ctx.user.id):
+		if not await self.nsotoken.checkSessionPresent(ctx):
 			await ctx.respond("You don't have a token setup with me! Please DM me !token with how to get one setup!")
 			return
 
@@ -919,16 +908,16 @@ class nsoHandler():
 		def check(m):
 			return m.author == ctx.user and m.channel == ctx.channel
 
-		if not await self.checkDuplicate(ctx.user.id) and order == -1:
+		if not await self.nsotoken.checkSessionPresent(ctx) and order == -1:
 			await ctx.respond("You don't have a token setup with me! Please DM me !token with how to get one setup!")
 			return
-		elif not await self.checkDuplicate(ctx.user.id) and order != -1:
+		elif not await self.nsotoken.checkSessionPresent(ctx) and order != -1:
 			await ctx.respond("You don't have a token setup with me, would you like to set one up now? (Yes/No)")
 			resp = await self.client.wait_for('message', check=check)
 			if resp.content.lower() == "yes":
 				await self.nsotoken.login(ctx, flag=False)
 			else:
-				await ctx.channel.send("Ok! If you want to setup a token to order in the future, DM me !token")
+				await ctx.respond("Ok! If you want to setup a token to order in the future, DM me !token")
 				return
 
 		if order != -1:
@@ -972,7 +961,7 @@ class nsoHandler():
 		thejson = await self.getNSOJSON(ctx, self.app_head, "https://app.splatoon2.nintendo.net/api/onlineshop/merchandises")
 		merches = list(filter(lambda g: g['id'] == merchid, thejson['merchandises']))
 		if len(merches) == 0:
-			await ctx.channel.send("Can't find that merch in the store!")
+			await ctx.respond("Can't find that merch in the store!")
 			return
 		gearToBuy = merches[0]
 		orderedFlag = 'ordered_info' in thejson
@@ -1015,7 +1004,7 @@ class nsoHandler():
 					embed = self.makeGearEmbed(gearToBuy, f"{ctx.user.name}, failed to order", "You can try running this command again, but there is likely an issue with NSO")
 					await ctx.respond(embed=embed)
 			else:
-				await ctx.channel.send(f"{ctx.user.name} - something went wrong...")
+				await ctx.respond(f"{ctx.user.name} - something went wrong...")
 
 	async def postNSOStore(self, ctx, gid, app_head, override=False):
 		s2_token = await self.nsotoken.getGameKey(ctx.user.id, "s2.token")
@@ -1224,7 +1213,7 @@ class nsoHandler():
 		return srdata
 
 	async def battleParser(self, ctx, num=1):
-		if not await self.checkDuplicate(ctx.user.id):
+		if not await self.nsotoken.checkSessionPresent(ctx):
 			await ctx.send("You don't have a token setup with me! Please DM me !token with how to get one setup!")
 			return
 
@@ -1383,7 +1372,7 @@ class nsoHandler():
 
 	async def cmdWeaps(self, ctx, args):
 		if len(args) == 0:
-			await ctx.channel.send("Try 'weapons help' for help")
+			await ctx.respond("Try 'weapons help' for help")
 			return
 
 		subcommand = args[0].lower()
