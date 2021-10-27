@@ -108,7 +108,7 @@ class Nsotoken():
 		keys = json.loads(plaintext)
 		return keys
 
-	# Retrieves a single game key with a dotted path (e.g. "s2.token")
+	# Retrieves a single game key with a dotted path (e.g. "s2.iksm")
 	async def getGameKey(self, clientid, path):
 		hash = await self.getGameKeys(clientid)
 		parts = path.split('.')
@@ -126,6 +126,19 @@ class Nsotoken():
 		cur = await self.sqlBroker.connect()
 		await cur.execute("UPDATE tokens SET game_keys = %s, game_keys_time = NOW() WHERE (clientid = %s)", (ciphertext, clientid))
 		await self.sqlBroker.commit(cur)
+
+	# Stores the given data at the dotted path.
+	async def __setGameKey(self, clientid, path, data):
+		hash = await self.getGameKeys(clientid)
+		#print(f"pre hash: {hash}")
+		parts = path.split(".")
+		for k in parts[0:-1]:
+			if hash.get(k) == None:
+				hash[k] = {}
+			hash = hash[k]
+		hash[parts[-1]] = data
+		#print(f"post hash: {hash}")
+		await self.__setGameKeys(clientid, hash)
 
 	async def __checkDuplicate(self, id, cur):
 		await cur.execute("SELECT COUNT(*) FROM tokens WHERE clientid = %s", (str(id),))
@@ -252,8 +265,8 @@ class Nsotoken():
 			await ctx.respond("Error getting token, I have logged this for my owners")
 			return None
 
-		await self.__setGameKeys(ctx.user.id, keys)
-		return keys[game]
+		await self.__setGameKey(ctx.user.id, game, keys)
+		return keys
 
 	async def __get_session_token_mysql(self, userid) -> Optional[str]:
 		cur = await self.sqlBroker.connect()
@@ -483,7 +496,7 @@ class Nsotoken():
 						print("ERROR GETTING AC _PARK_SESSION/BEARER")
 						return None
 					else:
-						keys = { 'ac' : { 'gtoken' : gtoken, 'park_session' : r.cookies['_park_session'], 'ac_bearer' : bearer['token'] } }
+						keys = { 'gtoken' : gtoken, 'park_session' : r.cookies['_park_session'], 'ac_bearer' : bearer['token'] }
 						print("Got AC _park_session and bearer!")
 				else:
 					return None
@@ -495,6 +508,6 @@ class Nsotoken():
 				return None
 			else:
 				print("Got a S2 token!")
-				keys = { 's2' : { 'iksm' : r.cookies['iksm_session'] } }
+				keys = { 'iksm' : r.cookies['iksm_session'] }
 
 		return keys

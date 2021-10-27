@@ -570,7 +570,7 @@ class nsoHandler():
 			await message.channel.send("You don't have a token setup with me! Please DM me !token with how to get one setup!")
 			return
 
-		s2_token = await self.nsotoken.getGameKey(message.author.id, "s2.token")
+		s2_token = await self.nsotoken.getGameKey(message.author.id, "s2.iksm")
 		if not s2_token:
 			await message.channel.send("Sorry, can't find S2 iksm")
 			return
@@ -993,7 +993,7 @@ class nsoHandler():
 				await ctx.respond(f"{ctx.user.name} - something went wrong...")
 
 	async def postNSOStore(self, ctx, gid, app_head, override=False):
-		s2_token = await self.nsotoken.getGameKey(ctx.user.id, "s2.token")
+		s2_token = await self.nsotoken.getGameKey(ctx.user.id, "s2.iksm")
 		url = f"https://app.splatoon2.nintendo.net/api/onlineshop/order/{gid}"
 		if override:
 			payload = { "override" : 1 }
