@@ -104,7 +104,7 @@ class Nsotoken():
 
 		ciphertext = row[0]
 		plaintext = self.stringCrypt.decryptString(ciphertext)
-		#print(f"getGameKeys: {ciphertext} -> {plaintext}")
+		print(f"getGameKeys: {ciphertext} -> {plaintext}")
 		keys = json.loads(plaintext)
 		return keys
 
@@ -162,8 +162,8 @@ class Nsotoken():
 		gameKeys = await self.getGameKeys(ctx.user.id)
 		if token.get('s2'):
 			gameKeys['s2'] = {'token': token.get('s2')}
-		if token.get('ac_g'):
-			gameKeys['ac'] = {'gtoken': token.get('ac_g'), 'park_session': token.get('ac_p'), 'ac_bearer': token.get('ac_b')}
+		if token.get('gtoken'):
+			gameKeys['ac'] = {'gtoken': token.get('gtoken'), 'park_session': token.get('park_session'), 'ac_bearer': token.get('ac_bearer')}
 		await self.__setGameKeys(ctx.user.id, gameKeys)
 
 		return True
@@ -268,7 +268,7 @@ class Nsotoken():
 
 		await self.__addToken(ctx, keys)
 
-		return await self.getGameKey(ctx.user.id, game)
+		return keys
 
 	async def __get_session_token_mysql(self, userid) -> Optional[str]:
 		cur = await self.sqlBroker.connect()
@@ -498,9 +498,9 @@ class Nsotoken():
 						print("ERROR GETTING AC _PARK_SESSION/BEARER")
 						return None
 					else:
-						keys['ac_g'] = gtoken
-						keys['ac_p'] = r.cookies['_park_session']
-						keys['ac_b'] = bearer['token']
+						keys['gtoken'] = gtoken
+						keys['park_session'] = r.cookies['_park_session']
+						keys['ac_bearer'] = bearer['token']
 						print("Got AC _park_session and bearer!")
 				else:
 					return None

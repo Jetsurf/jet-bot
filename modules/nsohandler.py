@@ -609,6 +609,8 @@ class nsoHandler():
 		iksm = await self.nsotoken.getGameKey(ctx.user.id, "s2")
 		if iksm == None:
 			iksm = await self.nsotoken.doGameKeyRefresh(ctx)
+			if iksm == 500:
+				return 
 		
 		iksm = iksm['token']
 		results_list = requests.get(url, headers=header, cookies=dict(iksm_session=iksm))

@@ -44,10 +44,13 @@ class acHandler():
 		}
 
 	async def getNSOJSON(self, ctx, header, url):
+		if not await self.nsotoken.checkSessionPresent(ctx):
+			await ctx.respond("You don't have a token setup with me! Please DM me !token with how to get one setup!")
+			return
+
 		tokens = await self.nsotoken.getGameKey(ctx.user.id, 'ac')
 		if tokens == None:
-			await self.nsotoken.doGameKeyRefresh(ctx, 'ac')
-			tokens = await self.nsotoken.getGameKey(ctx.user.id, 'ac')
+			tokens = await self.nsotoken.doGameKeyRefresh(ctx, 'ac')
 
 		gtoken = tokens['gtoken']
 		parktoken = tokens['park_session']
