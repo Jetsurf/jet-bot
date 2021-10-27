@@ -25,9 +25,10 @@ class Nsotoken():
 
 		print("Migrating 'tokens_migrate' table...")
 		await cur.execute("SELECT * FROM tokens_migrate")
+		colnames = self.sqlBroker.getColumnNames(cur)
 		oldrows = await cur.fetchall()
 		for oldrow in oldrows:
-			oldrow = self.sqlBroker.rowToDict(cur, oldrow)
+			oldrow = self.sqlBroker.rowToDict(colnames, oldrow)
 			print(f"  Migrating record for clientid {oldrow['clientid']}...")
 
 			gamekeys = {}

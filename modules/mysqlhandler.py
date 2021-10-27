@@ -37,8 +37,7 @@ class mysqlHandler():
 	def getColumnNames(self, cur):
 		return [col[0] for col in cur.description]
 
-	def rowToDict(self, cur, row):
-		colnames = self.getColumnNames(cur)
+	def rowToDict(self, colnames, row):
 		return dict(zip(colnames, row))
 
 	async def hasTable(self, cur, tablename):
