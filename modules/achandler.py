@@ -45,9 +45,9 @@ class acHandler():
 
 	async def getNSOJSON(self, ctx, header, url):
 		tokens = await self.nsotoken.getGameKey(ctx.user.id, 'ac')
-		test = tokens.get('gtoken')
-		if test == None:
-			tokens = await self.nsotoken.doGameKeyRefresh(ctx, 'ac')
+		if tokens == None:
+			await self.nsotoken.doGameKeyRefresh(ctx, 'ac')
+			tokens = await self.nsotoken.getGameKey(ctx.user.id, 'ac')
 
 		gtoken = tokens['gtoken']
 		parktoken = tokens['park_session']

@@ -606,17 +606,17 @@ class nsoHandler():
 		await message.channel.send(file=jsonToSend)
 
 	async def getNSOJSON(self, ctx, header, url):
-		s2_token = await self.nsotoken.getGameKey(ctx.user.id, "s2.token")
-		if s2_token == None:
-			tokens = await self.nsotoken.doGameKeyRefresh(ctx)
-			s2_token = tokens['s2']['token']
-
-		results_list = requests.get(url, headers=header, cookies=dict(iksm_session=s2_token))
+		iksm = await self.nsotoken.getGameKey(ctx.user.id, "s2")
+		if iksm == None:
+			iksm = await self.nsotoken.doGameKeyRefresh(ctx)
+		
+		iksm = iksm['token']
+		results_list = requests.get(url, headers=header, cookies=dict(iksm_session=iksm))
 		thejson = json.loads(results_list.text)	
 
 		if 'AUTHENTICATION_ERROR' in str(thejson):
 			iksm = await self.nsotoken.doGameKeyRefresh(ctx)
-			results_list = requests.get(url, headers=header, cookies=dict(iksm_session=iksm['s2']['token']))
+			results_list = requests.get(url, headers=header, cookies=dict(iksm_session=iksm))
 			thejson = json.loads(results_list.text)
 			if 'AUTHENTICATION_ERROR' in str(thejson):
 				return None

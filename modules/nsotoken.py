@@ -253,6 +253,7 @@ class Nsotoken():
 				await self.sqlBroker.rollback(cur)
 				await ctx.send("Something went wrong! Join my support discord and report that something broke!")
 
+	#This method will always return the root key path for a game
 	async def doGameKeyRefresh(self, ctx, game='s2') -> Optional[dict]:
 		await ctx.defer()
 		session_token = await self.__get_session_token_mysql(ctx.user.id)
@@ -267,7 +268,7 @@ class Nsotoken():
 
 		await self.__addToken(ctx, keys)
 
-		return await self.getGameKeys(ctx.user.id)
+		return await self.getGameKey(ctx.user.id, game)
 
 	async def __get_session_token_mysql(self, userid) -> Optional[str]:
 		cur = await self.sqlBroker.connect()
@@ -393,10 +394,7 @@ class Nsotoken():
 		timestamp = int(time.time())
 		guid = str(uuid.uuid4())
 		f = self.__callImink(idToken, guid, timestamp, 1)
-		if f == 500:
-			return 500
-		if f == None:
-			print("ERROR IN IMINK NSO CALL")
+		if f == None or f == 500:
 			return None
 
 		parameter = {
@@ -430,8 +428,7 @@ class Nsotoken():
 		timestamp = int(time.time())
 		guid = str(uuid.uuid4())
 		f = self.__callImink(idToken,guid, timestamp, 2)
-		if f == None:
-			print("ERROR IN FLAPGAPI APP CALL")
+		if f == None or f == 500:
 			return None
 
 		head = {
