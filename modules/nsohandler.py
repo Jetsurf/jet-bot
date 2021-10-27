@@ -555,10 +555,8 @@ class nsoHandler():
 			server = self.client.get_guild(int(servid))
 
 			await server.chunk()
-			#THIS NEEDS IMPROVEMENT
 			theMem = server.get_member(int(memid))
 			if theMem is None:
-				print(f"Suggested cleanup on user: {str(memid)}")
 				continue
 
 			asyncio.ensure_future(self.handleDM(theMem, theGear))
@@ -1239,7 +1237,6 @@ class nsoHandler():
 		battlejson = await self.getNSOJSON(ctx, self.app_head, "https://app.splatoon2.nintendo.net/api/results")
 
 		accountname = recordjson['records']['player']['nickname']
-		print("TYPE: " + str(type(num)))
 		thebattle = battlejson['results'][num - 1]
 		battletype = thebattle['game_mode']['name']
 		battleid = thebattle['battle_number']

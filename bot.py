@@ -601,11 +601,10 @@ async def on_member_remove(member):
 	if not doneStartup:
 		return
 
-	gid = member.guild.id
-	await client.get_guild(gid).chunk()
-	for mem in await serverUtils.getAllDM(gid):
+	await client.get_guild(member.guild.id).chunk()
+	for mem in await serverUtils.getAllDM(member.guild.id):
 		memid = mem[0]
-		memobj = client.get_guild(gid).get_member(memid)
+		memobj = client.get_guild(member.guild.id).get_member(memid)
 		if memobj.guild_permissions.administrator:
 			await memobj.send(f"{member.name} left {member.guild.name}")
 
