@@ -266,9 +266,8 @@ class Nsotoken():
 			await ctx.respond("Error getting token, I have logged this for my owners")
 			return None
 
-		await self.__addToken(ctx, keys)
-
-		return keys
+		await self.__setGameKeys(ctx.user.id, keys)
+		return keys[game]
 
 	async def __get_session_token_mysql(self, userid) -> Optional[str]:
 		cur = await self.sqlBroker.connect()
@@ -498,9 +497,7 @@ class Nsotoken():
 						print("ERROR GETTING AC _PARK_SESSION/BEARER")
 						return None
 					else:
-						keys['gtoken'] = gtoken
-						keys['park_session'] = r.cookies['_park_session']
-						keys['ac_bearer'] = bearer['token']
+						keys = { 'ac' : { 'gtoken' : gtoken, 'park_session' : r.cookies['_park_session'], 'ac_bearer' : bearer['token'] } }
 						print("Got AC _park_session and bearer!")
 				else:
 					return None
@@ -512,6 +509,6 @@ class Nsotoken():
 				return None
 			else:
 				print("Got a S2 token!")
-				keys['iksm'] = r.cookies["iksm_session"]
+				keys = { 's2' : { 'iksm' : r.cookies['iksm_session'] } }
 
 		return keys
