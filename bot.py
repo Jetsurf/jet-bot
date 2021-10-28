@@ -613,7 +613,7 @@ async def on_ready():
 		await nsoHandler.updateS2JSON()
 		await nsoTokens.updateAppVersion()
 		print('Done\n------')
-		await client.change_presence(status=discord.Status.online, activity=discord.Game("Use !help for directions!"))
+		await client.change_presence(status=discord.Status.online, activity=discord.Game("Check Slash Commands!"))
 	else:
 		print('Finished reconnect')
 	doneStartup = True
