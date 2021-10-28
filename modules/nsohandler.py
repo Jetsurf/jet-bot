@@ -622,7 +622,7 @@ class nsoHandler():
 
 		if 'AUTHENTICATION_ERROR' in str(thejson):
 			iksm = await self.nsotoken.doGameKeyRefresh(ctx)
-			results_list = requests.get(url, headers=header, cookies=dict(iksm_session=iksm))
+			results_list = requests.get(url, headers=header, cookies=dict(iksm_session=iksm['iksm']))
 			thejson = json.loads(results_list.text)
 			if 'AUTHENTICATION_ERROR' in str(thejson):
 				return None
