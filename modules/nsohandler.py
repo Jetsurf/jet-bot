@@ -1062,7 +1062,7 @@ class nsoHandler():
 		elif offset == 1:
 			embed.title = "Upcoming Splatoon 2 Maps"
 
-		embed.add_field(name="<:turfwar:550103899084816395> Turf War", value=f"{turf['stage_a']['name']}\n{turf['stage_a']['name']}", inline=True)
+		embed.add_field(name="<:turfwar:550103899084816395> Turf War", value=f"{turf['stage_a']['name']}\n{turf['stage_b']['name']}", inline=True)
 		embed.add_field(name=f"<:ranked:550104072456372245> Ranked: {ranked['rule']['name']}", value=f"{ranked['stage_a']['name']}\n{ranked['stage_b']['name']}", inline=True)
 		embed.add_field(name=f"<:league:550104147463110656> League: {league['rule']['name']}", value=f"{league['stage_a']['name']}\n{league['stage_b']['name']}", inline=True)
 
