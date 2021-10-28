@@ -941,7 +941,7 @@ async def on_message(message):
 		elif cmd == 'play':
 			await serverVoices[theServer].setupPlay(context, args)
 		elif cmd == 'skip':
-			await serverVoices[theServer].stop(ctx)
+			await serverVoices[theServer].stop(context)
 		elif (cmd == 'end') or (cmd == 'stop'):
 			serverVoices[theServer].end()
 		elif cmd == 'volume' or cmd == 'vol':

@@ -33,7 +33,7 @@ class serverUtils():
 
 		if chan != None:
 			if bypass == False:
-				await message.channel.send("Delete feed for this channel (yes/no)? ")
+				await ctx.respond("Delete feed for this channel (yes/no)? ")
 
 				createfeed = await self.client.wait_for('message', check=check)
 				if 'yes' in createfeed.content.lower():
@@ -67,7 +67,7 @@ class serverUtils():
 		mapflag, srflag, gearflag = False, False, False
 
 		def check(m):
-			return m.author == ctx.iser and m.channel == ctx.channel
+			return m.author == ctx.user and m.channel == ctx.channel
 		if args == None:
 			if chan != None:
 				await ctx.respond("Feed already setup for this channel, create a new one? ")
@@ -163,7 +163,7 @@ class serverUtils():
 
 	async def setAnnounceChannel(self, ctx, args):
 		if not isinstance( args, (discord.TextChannel, tuple)) and len(args) < 2:
-			await message.channel.send("No channel given, please specify a channel")
+			await ctx.respond("No channel given, please specify a channel")
 			return
 
 		if not isinstance( args, (discord.TextChannel, tuple)):
