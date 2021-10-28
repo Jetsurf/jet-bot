@@ -11,11 +11,12 @@ If you don't care about self-hosting the bot, you can use the following link:
 [![Discord Bots](https://discordbots.org/api/widget/542488723128844312.svg)](https://discordbots.org/bot/542488723128844312)
 
 For self-hosting:
+**WIKI TO COME**
 
 Requires a bot token from the Discord Developer Portal and a Discord Team assigned to it for owner permissions.
 
 Requires https://github.com/Pycord-Development/pycord discord python library to 
-function as well as all dependencies for it.
+function as well as all dependencies for it. Needs to be installed from the master git branch (not automatically via pip) at this time.
 
 Requires youtube-dl and ffmpeg for online video/music playback.
 
