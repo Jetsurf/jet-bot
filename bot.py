@@ -920,7 +920,7 @@ async def on_message(message):
 		if len(args) != 1:
 			await message.channel.send("Usage: battle <number>")
 		else:
-			await nsoHandler.cmdBattles(context, int(args[0]))
+			await nsoHandler.cmdBattles(context, int(args[0] if isinstance(args[0], int) else 1))
 	elif serverVoices[theServer].vclient is not None:
 		if cmd == 'currentsong':
 			if serverVoices[theServer].source is not None:

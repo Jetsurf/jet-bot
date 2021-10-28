@@ -1062,9 +1062,9 @@ class nsoHandler():
 		elif offset == 1:
 			embed.title = "Upcoming Splatoon 2 Maps"
 
-		embed.add_field(name="<:turfwar:550103899084816395> Turf War", value=f"{turf['stage_a']['name']}\n{turf['stage_b']['name']}", inline=True)
-		embed.add_field(name=f"<:ranked:550104072456372245> Ranked: {ranked['rule']['name']}", value=f"{ranked['stage_a']['name']}\n{ranked['stage_b']['name']}", inline=True)
-		embed.add_field(name=f"<:league:550104147463110656> League: {league['rule']['name']}", value=f"{league['stage_a']['name']}\n{league['stage_b']['name']}", inline=True)
+		embed.add_field(name="<:turfwar:550107083911987201> Turf War", value=f"{turf['stage_a']['name']}\n{turf['stage_b']['name']}", inline=True)
+		embed.add_field(name=f"<:ranked:550107084684001350> Ranked: {ranked['rule']['name']}", value=f"{ranked['stage_a']['name']}\n{ranked['stage_b']['name']}", inline=True)
+		embed.add_field(name=f"<:league:550107083660328971> League: {league['rule']['name']}", value=f"{league['stage_a']['name']}\n{league['stage_b']['name']}", inline=True)
 
 		if offset == 0:
 			embed.add_field(name="Time Remaining", value=f"{str(hours)} Hours, and {str(mins)} minutes", inline=False)
@@ -1211,7 +1211,7 @@ class nsoHandler():
 		battletype = thebattle['game_mode']['name']
 		battleid = thebattle['battle_number']
 
-		fullbattle = await self.getNSOJSON(ctx, self.app_head, f"https://app.splatoon2.nintendo.net/api/results/{battlelid}")
+		fullbattle = await self.getNSOJSON(ctx, self.app_head, f"https://app.splatoon2.nintendo.net/api/results/{battleid}")
 		enemyteam = fullbattle['other_team_members']
 		myteam = fullbattle['my_team_members']
 		mystats = fullbattle['player_result']
