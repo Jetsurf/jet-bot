@@ -193,14 +193,17 @@ class serverUtils():
 
 	async def doAnnouncement(self, message):
 		announcemsg = message.content.split(None, 1)[1]
-		print("Sending announcement: {announcemsg}")
+		print(f"Sending announcement: {announcemsg}")
 
 		for guild in self.client.guilds:
 			channel = await self.getAnnounceChannel(guild.id)
 			if channel == None:
 				continue
 			else:
-				await channel.send(f"ANNOUNCEMENT: {announcemsg}")
+				try:
+					await channel.send(f"ANNOUNCEMENT: {announcemsg}")
+				except discord.Forbidden:
+					pass
 
 	async def stopAnnouncements(self, ctx):
 		await self.serverConfig.removeConfigValue(ctx.guild.id, "announcement.channelid")
