@@ -917,10 +917,15 @@ async def on_message(message):
 	elif (cmd == 'weapon') or (cmd == 'weapons'):
 		await nsoHandler.cmdWeaps(context, args)
 	elif (cmd == 'battle') or (cmd == 'battles'):
-		if len(args) != 1:
-			await message.channel.send("Usage: battle <number>")
+		if len(args) < 1:
+			await message.channel.send("Usage: battle num <number> or battle last")
 		else:
-			await nsoHandler.cmdBattles(context, int(args[0] if isinstance(args[0], int) else 1))
+			if args[0] == 'last':
+				await nsoHandler.cmdBattles(context, 1)
+			elif args[0] == 'num' and len(args) > 1:
+				await nsoHandler.cmdBattles(context, int(args[1]))
+			else:
+				await message.channel.send("Usage: battle num <number> or battle last")
 	elif serverVoices[theServer].vclient is not None:
 		if cmd == 'currentsong':
 			if serverVoices[theServer].source is not None:
