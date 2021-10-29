@@ -70,4 +70,5 @@ class MysqlSchema():
 			await cur.execute("DROP TABLE blacklist")
 			await self.sqlBroker.c_commit(cur)
 
+		await self.sqlBroker.close(cur)
 		return
