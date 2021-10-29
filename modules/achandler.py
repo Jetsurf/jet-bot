@@ -6,10 +6,12 @@ import urllib, urllib.request
 import re
 
 class acHandler():
-	def __init__(self, client, mysqlHandler, nsotoken):
+	def __init__(self, client, mysqlHandler, nsotoken, configData):
 		self.client = client
 		self.sqlBroker = mysqlHandler
 		self.nsotoken = nsotoken
+		self.hostedUrl = configData.get('hosted_url')
+		self.webDir = configData.get('web_dir')
 		self.user_app_head = {
 			'Host': 'web.sd.lp1.acbaa.srv.nintendo.net',
 			'User-Agent': 'Mozilla/5.0 (Linux; Android 7.1.2; Pixel Build/NJH47D; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/59.0.3071.125 Mobile Safari/537.36',
@@ -41,11 +43,18 @@ class acHandler():
 			'_park_session' : 'tmp'
 		}
 
-	async def getNSOJSON(self, message, header, url):
-		tokens = await self.nsotoken.get_ac_mysql(message.author.id)
-		gtoken = tokens[0]
-		parktoken = tokens[1]
-		bearer = tokens[2]
+	async def getNSOJSON(self, ctx, header, url):
+		if not await self.nsotoken.checkSessionPresent(ctx):
+			await ctx.respond("You don't have a token setup with me! Please DM me !token with how to get one setup!")
+			return
+
+		tokens = await self.nsotoken.getGameKey(ctx.user.id, 'ac')
+		if tokens == None:
+			tokens = await self.nsotoken.doGameKeyRefresh(ctx, 'ac')
+
+		gtoken = tokens['gtoken']
+		parktoken = tokens['park_session']
+		bearer = tokens['ac_bearer']
 		gtokenFlag = False
 
 		if 'users' in url.lower() and '0x' not in url.lower():
@@ -56,18 +65,19 @@ class acHandler():
 		else:
 			self.user_pcookie['_gtoken'] = gtoken
 			self.user_pcookie['_park_session'] = parktoken
-			self.user_auth_app_head['Authorization'] = "Bearer " + bearer
+			self.user_auth_app_head['Authorization'] = f"Bearer {bearer}"
 			r = requests.get(url, headers=header, cookies=self.user_pcookie)
 			thejson = json.loads(r.text)
 
-		if '401' in str(r):
-			tokens = await self.nsotoken.do_iksm_refresh(message, 'ac')
-			if tokens == None:			
+		if r.status_code == 401:
+			await self.nsotoken.doGameKeyRefresh(ctx, 'ac')
+			tokens = await self.nsotoken.getGameKeys(ctx.user.id)
+			if tokens == None:
 				return
 
-			gtoken = tokens['ac_g']
-			parktoken = tokens['ac_p']
-			bearer = tokens['ac_p']
+			gtoken = tokens['ac']['gtoken']
+			parktoken = tokens['ac']['park_session']
+			bearer = tokens['ac']['ac_bearer']
 
 			if gtokenFlag:
 				self.user_gcookie['_gtoken'] = gtoken
@@ -76,46 +86,51 @@ class acHandler():
 			else:
 				self.user_pcookie['_gtoken'] = gtoken
 				self.user_pcookie['_park_session'] = parktoken
-				self.user_auth_app_head['Authorization'] = "Bearer " + bearer
+				self.user_auth_app_head['Authorization'] = f"Bearer {bearer}"
 				r = requests.get(url, headers=header, cookies=self.user_pcookie)
 				thejson = json.loads(r.text)
 
-			if '401' in str(r):
+			if r.status_code == 401:
 				print("FAILURE TO RENEW AC TOKENS")
 				return None
 
 		return thejson
 
-	async def passport(self, message):
-		userjson = await self.getNSOJSON(message, self.user_app_head, 'https://web.sd.lp1.acbaa.srv.nintendo.net/api/sd/v1/users')
+	async def passport(self, ctx):
+		if not await self.nsotoken.checkSessionPresent(ctx):
+			await ctx.respond("You don't have a token setup with me! Please DM me !token with how to get one setup!")
+			return
+
+		userjson = await self.getNSOJSON(ctx, self.user_app_head, 'https://web.sd.lp1.acbaa.srv.nintendo.net/api/sd/v1/users')
 		if userjson == None:
 			return
 		else:
 			user = userjson['users'][0]
 
-		detaileduser = await self.getNSOJSON(message, self.user_auth_app_head, 'https://web.sd.lp1.acbaa.srv.nintendo.net/api/sd/v1/users/' + user['id'] + '/profile?language=en-US')
-		landjson = await self.getNSOJSON(message, self.user_auth_app_head, 'https://web.sd.lp1.acbaa.srv.nintendo.net/api/sd/v1/lands/' + user['land']['id'] + '/profile?language=en-US')
+		detaileduser = await self.getNSOJSON(ctx, self.user_auth_app_head, f"https://web.sd.lp1.acbaa.srv.nintendo.net/api/sd/v1/users/{user['id']}/profile?language=en-US")
+		landjson = await self.getNSOJSON(ctx, self.user_auth_app_head, f"https://web.sd.lp1.acbaa.srv.nintendo.net/api/sd/v1/lands/{user['land']['id']}/profile?language=en-US")
 		profilepic = requests.get(user['image'])
 		profileid = re.search('(?<=user_profile/).*(?=\?)', user['image']).group()
 
-		#This is hard coded for now, if you care enough, this assumes you have a https (yes s, its needed by discord) setup to host from the directory
-		open('/var/www/db-files/acprofiles/' + str(profileid) + ".jpg", 'wb').write(profilepic.content)
-
 		embed = discord.Embed(colour=0x0004FF)
 		embed.title = str(user['name']) + "'s Passport - Animal Crossing New Horizons"
-		embed.set_thumbnail(url='https://db-files.crmea.de/acprofiles/' + str(profileid) + '.jpg')
+
+		if self.webDir and self.hostedUrl:
+			open(f'{self.webDir}/acprofiles/{str(profileid)}.jpg', 'wb').write(profilepic.content)
+			embed.set_thumbnail(url=f'{self.hostedUrl}/acprofiles/{str(profileid)}.jpg')
+
 		print("PROFILE: " + str(profileid))
 		embed.add_field(name='Title', value=str(detaileduser['mHandleName']), inline=True)
 		embed.add_field(name='Comment', value=str(detaileduser['mComment']), inline=True)
-		embed.add_field(name='Registered On', value=str(detaileduser['mTimeStamp']['month']) + '/' + str(detaileduser['mTimeStamp']['day']) + '/' + str(detaileduser['mTimeStamp']['year']), inline=True)
+		embed.add_field(name='Registered On', value=f"{str(detaileduser['mTimeStamp']['month'])}/{str(detaileduser['mTimeStamp']['day'])}/{str(detaileduser['mTimeStamp']['year'])}", inline=True)
 		embed.add_field(name='Island Name', value=user['land']['name'], inline=True)
 
 		npcstring = ''
 
 		for npc in landjson['mNormalNpc']:
-			npcstring+=npc['name'] + ' - ' + str(npc['birthMonth']) + '/' + str(npc['birthDay']) + '\n'
+			npcstring+=f"{npc['name']} - {str(npc['birthMonth'])}/{str(npc['birthDay'])}\n"
 
 		embed.add_field(name="NPC's (Name - Birthday)", value=npcstring, inline=True)
 
-		await message.channel.send(embed=embed)
+		await ctx.respond(embed=embed)
 		print("Got a passport!")

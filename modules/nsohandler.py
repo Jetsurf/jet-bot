@@ -4,13 +4,16 @@ import time, requests
 import json, os
 import urllib, urllib.request
 import splatinfo
+import messagecontext
+import io
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 class nsoHandler():
-	def __init__(self, client, mysqlHandler, nsotoken, splatInfo):
+	def __init__(self, client, mysqlHandler, nsotoken, splatInfo, hostedUrl):
 		self.client = client
 		self.splatInfo = splatInfo
 		self.sqlBroker = mysqlHandler
+		self.hostedUrl = hostedUrl
 		self.app_timezone_offset = str(int((time.mktime(time.gmtime()) - time.mktime(time.localtime()))/60))
 		self.scheduler = AsyncIOScheduler()
 		self.scheduler.add_job(self.doStoreDM, 'cron', hour="*/2", minute='5') 
@@ -86,36 +89,39 @@ class nsoHandler():
 		embed.title = "Rotation Feed"
 
 		if mapflag:
-			turf, ranked, league = await self.maps(offset=0, flag=1)
+			data = self.maps(offset=0)
+			turf = data['turf']
+			ranked = data['ranked']
+			league = data['league']
+
 			embed.add_field(name="Maps", value="Maps currently on rotation", inline=False)
-			embed.add_field(name="<:turfwar:550107083911987201> Turf War", value=f"{turf['mapA']['name']}\n{turf['mapB']['name']}", inline=True)
-			embed.add_field(name=f"<:ranked:550107084684001350> Ranked: {ranked['rule']['name']}", value=f"{ranked['mapA']['name']}\n{ranked['mapB']['name']}", inline=True)
-			embed.add_field(name=f"<:league:550107083660328971> League: {league['rule']['name']}", value=f"{league['mapA']['name']}\n{league['mapB']['name']}", inline=True)
+			embed.add_field(name="<:turfwar:550107083911987201> Turf War", value=f"{turf['stage_a']['name']}\n{turf['stage_b']['name']}", inline=True)
+			embed.add_field(name=f"<:ranked:550107084684001350> Ranked: {ranked['rule']['name']}", value=f"{ranked['stage_a']['name']}\n{ranked['stage_b']['name']}", inline=True)
+			embed.add_field(name=f"<:league:550107083660328971> League: {league['rule']['name']}", value=f"{league['stage_a']['name']}\n{league['stage_b']['name']}", inline=True)
 
 		if srflag:
 			flag = 0
-			srdata = await self.srParser(getNext=0, flag=1)
+			srdata = self.srParser()
 			if srdata == None:
-				srdata = await self.srParser(getNext=1, flag=1)
+				srdata = self.srParser(getNext=True)
 				flag = 1
 
-			timeRemaining = srdata['time']
-			days = int(timeRemaining / 86400)
-			timeRemaining = timeRemaining % 86400
-			hours = int(timeRemaining / 3600)
-			timeRemaining = timeRemaining % 3600
-			minutes = int(timeRemaining / 60)
+			days = srdata['days']
+			hours = srdata['hours']
+			mins = srdata['mins']
 
 			if flag == 1:
-				embed.add_field(name="Salmon Run", value="Next SR Rotation", inline=False)
-				embed.add_field(name='Map', value=srdata['map']['name'], inline=True)
-				embed.add_field(name='Weapons', value=srdata['weapons'], inline=True)
-				embed.add_field(name='Time Until SR Rotation', value=f"{str(days)} Days, {str(hours)} Hours, and {str(minutes)} Minutes", inline=False)
+				titleval = 'Next SR Rotation'
+				timename = 'Time Remaining for SR Rotation'
 			else:
-				embed.add_field(name="Salmon Run", value="Current SR Rotation", inline=False)
-				embed.add_field(name='Map', value=srdata['map']['name'], inline=True)
-				embed.add_field(name='Weapons', value=srdata['weapons'].replace('\n', ', ', 3), inline=True)
-				embed.add_field(name="Time Remaining for SR Rotation", value=f"{str(days)} Days, {str(hours)} Hours, and {str(minutes)} Minutes", inline=False)
+				titleval = 'Current SR Rotation'
+				timename = 'Time Until SR Rotation'
+			#TODO Check this
+			embed.add_field(name="Salmon Run", value=titleval, inline=False)
+			embed.add_field(name='Map', value=srdata['map']['name'], inline=True)
+			embed.add_field(name='Weapons', value=srdata['weapons'].replace('\n', ', ', 3), inline=True)
+			embed.add_field(name=timename, value=f"{str(days)} Days, {str(hours)} Hours, and {str(mins)} Minutes", inline=False)
+
 		if gearflag:
 			gear = await self.gearParser(flag=1)
 			embed.add_field(name="Gear", value="Gear on rotation", inline=False)
@@ -124,7 +130,7 @@ class nsoHandler():
 			if 'frequent_skill' in gear['gear']['brand']:
 				embed.add_field(name="Ability/Common Sub", value=f"{gear['skill']['name']}/{gear['gear']['brand']['frequent_skill']['name']}", inline=True)
 			else:
-				embed.add_field(name="Ability/Common Sub", value=f"{gear['skill']['name']}/None", inline=True)				
+				embed.add_field(name="Ability/Common Sub", value=f"{gear['skill']['name']}/None", inline=True)
 
 		return embed
 
@@ -144,18 +150,17 @@ class nsoHandler():
 		response = urllib.request.urlopen(req)
 		self.srJSON = json.loads(response.read().decode())
 
-	async def addStoreDM(self, message, args):
+	async def addStoreDM(self, ctx, args, is_slash=False):
 		if len(args) == 0:
-			await message.channel.send("I need an item/brand/ability to search for!")
+			await ctx.respond("I need an item/brand/ability to search for!")
 			return
 
 		term = " ".join(args).lower()
 
 		flag = False
-
 		#Search Abilities
 		if flag != True: #Pre-emptive for adding in pure gear
-			match1 = self.splatInfo.matchAbilities(term)			
+			match1 = self.splatInfo.matchAbilities(term)
 			if match1.isValid():
 				flag = True
 				term = match1.get().name()
@@ -174,10 +179,10 @@ class nsoHandler():
 			if match3.isValid():
 				flag = True
 				term = match3.get().name()
-	
+
 		if not flag:
 			if len(match1.items) + len(match2.items) + len(match3.items) < 1:
-				await message.channel.send("Didn't find any partial matches for you. Search for Abilities/Gear Brand/Gear Name!")
+				await ctx.respond("Didn't find any partial matches for you.")
 				return
 
 			embed = discord.Embed(colour=0xF9FC5F)
@@ -190,12 +195,12 @@ class nsoHandler():
 			if len(match3.items) > 0:
 				embed.add_field(name="Gear", value=", ".join(map(lambda item: item.name(), match3.items)), inline=False)
 
-			await message.channel.send(embed=embed)
+			await ctx.respond(embed=embed)
 			return
 
 		if match3 != None:
 			if match3.isValid() and match3.get().price() == 0:
-				await message.channel.send(f"{match3.get().name()} won't appear on the store. Here is where to get it: {match3.get().source()}")
+				await ctx.respond(f"{match3.get().name()} won't appear on the store. Here is where to get it: {match3.get().source()}")
 				return
 
 		cur = await self.sqlBroker.connect()
@@ -207,32 +212,43 @@ class nsoHandler():
 		else:
 			stmt = "SELECT COUNT(*) FROM storedms WHERE clientid = %s AND gearname = %s"
 
-		await cur.execute(stmt, (str(message.author.id), term,))
+		await cur.execute(stmt, (str(ctx.user.id), term,))
 		count = await cur.fetchone()
 		if count[0] > 0:
 			if match1.isValid():
-				await message.channel.send(f"You will already be DM'ed when gear with ability {term} appears in the shop? (Respond Yes/No)")
+				await ctx.respond(f"You will already be DM'ed when gear with ability {term} appears in the shop.")
 			elif match2.isValid():
-				await message.channel.send(f"You will already be DM'ed when gear by brand {term} appears in the shop? (Respond Yes/No)")
+				await ctx.respond(f"You will already be DM'ed when gear by brand {term} appears in the shop.")
 			else:
-				await message.channel.send(f"You will already be DM'ed when {term} appears in the shop? (Respond Yes/No)")
+				await ctx.respond(f"You will already be DM'ed when {term} appears in the shop.")
 
 			await self.sqlBroker.close(cur)
 			return
 		else:
-			def check2(m):
-				return m.author == message.author and m.channel == message.channel
+			if not is_slash:
+				def check2(m):
+					return m.author == ctx.user and m.channel == ctx.channel
 
-			if match1.isValid():
-				await message.channel.send(f"{message.author.name} do you want me to DM you when gear with ability {term} appears in the shop? (Respond Yes/No)")
-			elif match2.isValid():
-				await message.channel.send(f"{message.author.name} do you want me to DM you when gear by brand {term} appears in the shop? (Respond Yes/No)")
-			else:
-				await message.channel.send(f"{message.author.name} do you want me to DM you when {term} appears in the shop? (Respond Yes/No)")
+				if match1.isValid():
+					await ctx.respond(f"{ctx.user.name} do you want me to DM you when gear with ability {term} appears in the shop? (Respond Yes/No)")
+				elif match2.isValid():
+					await ctx.respond(f"{ctx.user.name} do you want me to DM you when gear by brand {term} appears in the shop? (Respond Yes/No)")
+				else:
+					await ctx.respond(f"{ctx.user.name} do you want me to DM you when {term} appears in the shop? (Respond Yes/No)")
 
-			resp = await self.client.wait_for('message', check=check2)
-			if 'yes' not in resp.content.lower():
-				await message.channel.send("Ok, I haven't added you to receive a DM.")
+				resp = await self.client.wait_for('message', check=check2)
+				if 'yes' not in resp.content.lower():
+					await ctx.respond("Ok, I haven't added you to receive a DM.")
+					return
+
+		stmt = "SELECT COUNT(*) FROM storedms WHERE clientid = %s"
+		await cur.execute(stmt, (str(ctx.user.id),))
+		count = await cur.fetchone()
+		if count[0] == 0:
+			try:
+				chan = await ctx.user.send("This is a test to ensure that you can receive DM's. Be aware that if I am unable to DM you (due to changes in permissions), I will no longer notify you of items in the store, even if you restore permission (rerun /store dm add to be readded).")
+			except discord.Forbidden:
+				await ctx.respond("I am unable to DM you, please check to ensure you can receive DM's from me before attempting again.", ephemeral=True)
 				return
 
 		if match1.isValid():
@@ -242,15 +258,144 @@ class nsoHandler():
 		else:
 			stmt = 'INSERT INTO storedms (clientid, serverid, gearname) VALUES(%s, %s, %s)'
 
-		await cur.execute(stmt, (str(message.author.id), str(message.guild.id), term,))
+		await cur.execute(stmt, (str(ctx.user.id), str(ctx.guild.id), term,))
 		await self.sqlBroker.commit(cur)
 
 		if match1.isValid():
-			await message.channel.send(f"Added you to recieve a DM when gear with {term} appears in the shop!")
+			await ctx.respond(f"Added you to recieve a DM when gear with {term} appears in the shop!")
 		elif match2.isValid():
-			await message.channel.send(f"Added you to recieve a DM when gear by brand {term} appears in the shop!")
+			await ctx.respond(f"Added you to recieve a DM when gear by brand {term} appears in the shop!")
+		elif match3.isValid():
+			await ctx.respond(f"Added you to recieve a DM when {term} appears in the shop!")
+
+	async def removeStoreDM(self, ctx, args):
+		if len(args) == 0:
+			await ctx.respond("I need an item/brand/ability to search for!")
+			return
+
+		term = " ".join(args).lower()
+
+		flag = False
+
+		#Search Abilities
+		if flag != True: #Pre-emptive for adding in pure gear
+			match1 = self.splatInfo.matchAbilities(term)
+			if match1.isValid():
+				flag = True
+				term = match1.get().name()
+
+		#Search brands
+		if flag != True:
+			match2 = self.splatInfo.matchBrands(term)
+			if match2.isValid():
+				flag = True
+				term = match2.get().name()
+
+		#Search Items
+		match3 = None
+		if flag != True:
+			match3 = self.splatInfo.matchGear(term)
+			if match3.isValid():
+				flag = True
+				term = match3.get().name()
+
+		if not flag:
+			if len(match1.items) + len(match2.items) + len(match3.items) < 1:
+				await ctx.respond("Didn't find any partial matches for you.")
+				return
+
+			embed = discord.Embed(colour=0xF9FC5F)
+			embed.title = "Did you mean?"
+
+			if len(match1.items) > 0:
+				embed.add_field(name="Abilities", value=", ".join(map(lambda item: item.name(), match1.items)), inline=False)
+			if len(match2.items) > 0:
+				embed.add_field(name="Brands", value=", ".join(map(lambda item: item.name(), match2.items)), inline=False)
+			if len(match3.items) > 0:
+				embed.add_field(name="Gear", value=", ".join(map(lambda item: item.name(), match3.items)), inline=False)
+
+			await ctx.respond(embed=embed)
+			return
+
+		if match3 != None:
+			if match3.isValid() and match3.get().price() == 0:
+				await ctx.respond(f"{match3.get().name()} won't appear on the store. Here is where to get it: {match3.get().source()}")
+				return
+
+		cur = await self.sqlBroker.connect()
+
+		if match1.isValid():
+			stmt = "SELECT COUNT(*) FROM storedms WHERE clientid = %s AND ability = %s"
+		elif match2.isValid():
+			stmt = "SELECT COUNT(*) FROM storedms WHERE clientid = %s AND brand = %s"
 		else:
-			await message.channel.send(f"Added you to recieve a DM when {term} appears in the shop!")
+			stmt = "SELECT COUNT(*) FROM storedms WHERE clientid = %s AND gearname = %s"
+
+		await cur.execute(stmt, (str(ctx.user.id), term,))
+		count = await cur.fetchone()
+		if count[0] > 0:
+			if match1.isValid():
+				stmt = 'DELETE FROM storedms WHERE clientid=%s AND ability=%s'
+			elif match2.isValid():
+				stmt = 'DELETE FROM storedms WHERE clientid=%s AND brand=%s'
+			else:
+				stmt = 'DELETE FROM storedms WHERE clientid=%s AND gearname=%s'	
+		else:
+			if match1.isValid():
+				await ctx.respond(f"Doesn't look like you are set to receive a DM when gear with {term} appears in the store.")
+			elif match2.isValid():
+				await ctx.respond(f"Doesn't look like you are set to receive a DM when gear by {term} appears in the store.")
+			else:
+				await ctx.respond(f"Doesn't look like you are set to receive a DM when {term} appears in the store.")
+			return
+
+		await cur.execute(stmt, (str(ctx.user.id), term,))
+		await self.sqlBroker.commit(cur)
+
+		if match1.isValid():
+			await ctx.respond(f"Removed you from recieving a DM when gear with {term} appears in the store.")
+		elif match2.isValid():
+			await ctx.respond(f"Removed you from recieving a DM when gear by brand {term} appears in the store.")
+		else:
+			await ctx.respond(f"Removed you from recieving a DM when {term} appears in the store.")	
+
+	async def listStoreDM(self, ctx):
+		cur = await self.sqlBroker.connect()
+
+		stmt1 = "SELECT ability FROM storedms WHERE clientid = %s"
+		stmt2 = "SELECT brand FROM storedms WHERE clientid = %s"
+		stmt3 = "SELECT gearname FROM storedms WHERE clientid = %s"
+
+		await cur.execute(stmt1, (str(ctx.user.id),))
+		abilities = await cur.fetchall()
+		await cur.execute(stmt2, (str(ctx.user.id),))
+		brands = await cur.fetchall()
+		await cur.execute(stmt3, (str(ctx.user.id),))
+		gear = await cur.fetchall()
+
+		embed = discord.Embed(colour=0x0004FF)
+		embed.title = f"Storedm triggers for {ctx.user.name}"
+
+		ablString = ""
+		for abl in abilities:
+			if abl[0] != None:
+				ablString += f"{abl[0]}\n"
+
+		brandString = ""
+		for brnd in brands:
+			if brnd[0] != None:
+				brandString += f"{brnd[0]}"
+
+		gearString = ""
+		for gr in gear:
+			if gr[0] != None:
+				gearString += f"{gr[0]}"
+
+		embed.add_field(name="Ability Triggers", value= ablString if ablString != '' else "None", inline=False)
+		embed.add_field(name="Brand Triggers", value=brandString if brandString != '' else "None", inline=False)
+		embed.add_field(name="Gear Triggers", value=gearString if gearString != '' else "None", inline=False)
+
+		await ctx.respond(embed=embed)
 
 	async def handleDM(self, theMem, theGear):
 		def checkDM(m):
@@ -275,10 +420,7 @@ class nsoHandler():
 		print(f"Messaged {theMem.name}")
 
 		def check1(m):
-			if isinstance(m.channel, discord.DMChannel) and m.channel.recipient.name == theMem.name and not m.author.bot:
-				return True
-			else:
-				return False
+			return True if isinstance(m.channel, discord.channel.DMChannel) and m.author.name == theMem.name and not m.author.bot else False
 
 		# Discord.py changed timeouts to throw exceptions...
 		try:
@@ -368,8 +510,9 @@ class nsoHandler():
 
 		elif 'order' in resp.content.lower():
 			await self.sqlBroker.close(cur)
-			print(f"Ordering gear for: {str(resp.author.name)}")
-			await self.orderGearCommand(resp, order=5)
+			context = messagecontext.MessageContext(resp)
+			print(f"Ordering gear for: {str(context.user.name)}")
+			await self.orderGearCommand(context, order=5, is_slash=False, override=True)
 		else:
 			#Response but nothing understood
 			print(f"Keeping {theMem.name} in DM's")
@@ -411,24 +554,26 @@ class nsoHandler():
 			server = self.client.get_guild(int(servid))
 
 			await server.chunk()
-			#THIS NEEDS IMPROVEMENT
 			theMem = server.get_member(int(memid))
 			if theMem is None:
-				print(f"Suggested cleanup on user: {str(memid)}")
 				continue
 
 			asyncio.ensure_future(self.handleDM(theMem, theGear))
 
-	async def getStoreJSON(self, message):
+	async def getStoreJSON(self, ctx):
 		theGear = self.storeJSON['merchandises'][5]
-		await message.channel.send(f"```{str(theGear)}```")
+		await ctx.respond(f"```{str(theGear)}```")
 
-	async def getRawJSON(self, message):
-		if not await self.checkDuplicate(message.author.id):
+	#TODO: Convert this owner only command
+	async def getRawJSON(self, ctx):
+		if not await self.nsotoken.checkSessionPresent(ctx):
 			await message.channel.send("You don't have a token setup with me! Please DM me !token with how to get one setup!")
 			return
 
-		Session_token = await self.nsotoken.get_iksm_token_mysql(message.author.id)
+		s2_token = await self.nsotoken.getGameKey(message.author.id, "s2.iksm")
+		if not s2_token:
+			await message.channel.send("Sorry, can't find S2 iksm")
+			return
 
 		if 'base' in message.content:
 			url = "https://app.splatoon2.nintendo.net/api/records"
@@ -448,54 +593,44 @@ class nsoHandler():
 			jsontype = 'battle'
 			header = self.app_head
 
-		results_list = requests.get(url, headers=header, cookies=dict(iksm_session=Session_token))
+		results_list = requests.get(url, headers=header, cookies=dict(iksm_session=s2_token))
 		thejson = json.loads(results_list.text)	
 
 		if 'AUTHENTICATION_ERROR' in str(thejson):
-			iksm = await self.nsotoken.do_iksm_refresh(message)
-			results_list = requests.get(url, headers=header, cookies=dict(iksm_session=iksm))
+			iksm = await self.nsotoken.doGameKeyRefresh(ctx)
+			results_list = requests.get(url, headers=header, cookies=dict(iksm_session=iksm['s2']['token']))
 			thejson = json.loads(results_list.text)
 
-		with open(f"../{jsontype}.json", "w") as f:
-			json.dump(thejson, f)
+		f = io.StringIO(results_list.text)
+		jsonToSend = discord.File(fp=f, filename = 'data.json')
+		await message.channel.send(file=jsonToSend)
 
-		with open(f"../{jsontype}.json", "r") as f:
-			jsonToSend = discord.File(fp=f)
-			await message.channel.send(file=jsonToSend)
+	async def getNSOJSON(self, ctx, header, url):
+		if not await self.nsotoken.checkSessionPresent(ctx):
+			await ctx.respond("You don't have a token setup with me! Please DM me !token with how to get one setup!")
+			return
 
-		os.remove(f"../{jsontype}.json")
+		iksm = await self.nsotoken.getGameKey(ctx.user.id, "s2")
+		if iksm == None:
+			iksm = await self.nsotoken.doGameKeyRefresh(ctx)
+			if iksm == 500:
+				return 
 
-	async def checkDuplicate(self, id):
-		cur = await self.sqlBroker.connect()
-		stmt = "SELECT COUNT(*) FROM tokens WHERE clientid = %s"
-		await cur.execute(stmt, (str(id),))
-		count = await cur.fetchone()
-		await self.sqlBroker.close(cur)
-		if count[0] > 0:
-			return True
-		else:
-			return False
-
-	async def getNSOJSON(self, message, header, url):
-		Session_token = await self.nsotoken.get_iksm_token_mysql(message.author.id)
-		results_list = requests.get(url, headers=header, cookies=dict(iksm_session=Session_token))
+		iksm = iksm['iksm']
+		results_list = requests.get(url, headers=header, cookies=dict(iksm_session=iksm))
 		thejson = json.loads(results_list.text)	
 
 		if 'AUTHENTICATION_ERROR' in str(thejson):
-			iksm = await self.nsotoken.do_iksm_refresh(message)
-			results_list = requests.get(url, headers=header, cookies=dict(iksm_session=iksm))
+			iksm = await self.nsotoken.doGameKeyRefresh(ctx)
+			results_list = requests.get(url, headers=header, cookies=dict(iksm_session=iksm['iksm']))
 			thejson = json.loads(results_list.text)
 			if 'AUTHENTICATION_ERROR' in str(thejson):
 				return None
 
 		return thejson
 
-	async def weaponParser(self, message, weapid):
-		if not await self.checkDuplicate(message.author.id):
-			await message.channel.send("You don't have a token setup with me! Please DM me !token with how to get one setup!")
-			return
-
-		thejson = await self.getNSOJSON(message, self.app_head, "https://app.splatoon2.nintendo.net/api/records")
+	async def weaponParser(self, ctx, weapid):
+		thejson = await self.getNSOJSON(ctx, self.app_head, "https://app.splatoon2.nintendo.net/api/records")
 		if thejson == None:
 			return
 
@@ -515,7 +650,7 @@ class nsoHandler():
 				break
 
 		if not gotweap:
-			await message.channel.send("I have no stats for that weapon for you")
+			await ctx.respond("I have no stats for that weapon for you")
 			return
 
 		name = thejson['records']['player']['nickname']
@@ -546,21 +681,17 @@ class nsoHandler():
 		embed.add_field(name="Turf Inked", value=turfstring, inline=True)
 		embed.add_field(name="Freshness (Current/Max)", value=f"{str(freshcur)}/{str(freshmax)}", inline=True)
 
-		await message.channel.send(embed=embed)
+		await ctx.respond(embed=embed)
 
-	async def mapParser(self, message, mapid):
-		if not await self.checkDuplicate(message.author.id):
-			await message.channel.send("You don't have a token setup with me! Please DM me !token with how to get one setup!")
-			return
-
-		thejson = await self.getNSOJSON(message, self.app_head, "https://app.splatoon2.nintendo.net/api/records")
+	async def mapParser(self, ctx, mapid):
+		thejson = await self.getNSOJSON(ctx, self.app_head, "https://app.splatoon2.nintendo.net/api/records")
 		if thejson == None:
 			return
 
 		try:
 			allmapdata = thejson['records']['stage_stats']
 		except:
-			await message.channel.send("Error retrieving json for stage_stats. This has been logged for my owners.")
+			await ctx.respond("Error retrieving json for stage_stats. This has been logged for my owners.")
 			print(f"ERROR IN MAP JSON:\n{str(thejson)}")
 			return
 
@@ -605,14 +736,10 @@ class nsoHandler():
 		embed.add_field(name="Rainmaker", value=f"{str(rmwin)}/{str(rmloss)}/{str(rmpercent)}%", inline=True)
 		embed.add_field(name="Tower Control", value=f"{str(tcwin)}/{str(tcloss)}/{str(tcpercent)}%", inline=True)
 		embed.add_field(name="Clam Blitz", value=f"{str(cbwin)}/{str(cbloss)}/{str(cbpercent)}%", inline=True)
-		await message.channel.send(embed=embed)
+		await ctx.respond(embed=embed)
 
-	async def getStats(self, message):
-		if not await self.checkDuplicate(message.author.id):
-			await message.channel.send("You don't have a token setup with me! Please DM me !token with how to get one setup!")
-			return
-
-		thejson = await self.getNSOJSON(message, self.app_head, "https://app.splatoon2.nintendo.net/api/records")
+	async def getStats(self, ctx):
+		thejson = await self.getNSOJSON(ctx, self.app_head, "https://app.splatoon2.nintendo.net/api/records")
 		if thejson == None:
 			return
 
@@ -625,9 +752,16 @@ class nsoHandler():
 		totalloss = thejson['records']['lose_count']
 		recentwins = thejson['records']['recent_win_count']
 		recentloss = thejson['records']['recent_lose_count']
+		if recentloss + recentwins > 0:
+			recentperc = "{:.0%}".format(recentwins/(recentwins + recentloss))
+			totalperc = "{:.0%}".format(totalwins/(totalwins + totalloss))
+		else:
+			recentperc = "0%"
+			totalperc = "0%"
+
 		maxleagueteam = thejson['records']['player']['max_league_point_team']
 		maxleaguepair = thejson['records']['player']['max_league_point_pair']
-		species = thejson['records']['player']['player_type']['species']
+		species = thejson['records']['player']['player_type']['species'].capitalize()
 		gender = thejson['records']['player']['player_type']['style']
 		leaguepairgold = thejson['records']['league_stats']['pair']['gold_count']
 		leaguepairsilver = thejson['records']['league_stats']['pair']['silver_count']
@@ -646,27 +780,18 @@ class nsoHandler():
 				topink = int(j['total_paint_point'])
 				topweap = j
 
-		if 'octoling' in species:
-			species = 'Octoling'
-		else:
-			species = 'Inkling'
-
 		embed.title = f"{str(name)} - {species} {gender} - Stats"
 		embed.add_field(name='Turf Inked', value=f"Squid: {str(turfsquid)}\nOcto: {str(turfocto)}\nTotal: {str(turfinked)}", inline=True)
-		embed.add_field(name='Wins/Losses', value=f"Last 50: {str(recentwins)}/{str(recentloss)}\nTotal: {str(totalwins)}/{str(totalloss)}", inline=True)
+		embed.add_field(name='Wins/Losses/%', value=f"Last 50: {str(recentwins)}/{str(recentloss)}/{recentperc}\nTotal: {str(totalwins)}/{str(totalloss)}/{totalperc}", inline=True)
 		embed.add_field(name='Top League Points', value=f"Team League: {str(maxleagueteam)}\nPair League: {str(maxleaguepair)}", inline=True)
 		embed.add_field(name='Team League Medals', value=f"Gold: {str(leagueteamgold)}\nSilver: {str(leagueteamsilver)}\nBronze: {str(leagueteambronze)}\nUnranked: {str(leagueteamnone)}", inline=True)
 		embed.add_field(name='Pair League Medals', value=f"Gold: {str(leaguepairgold)}\nSilver: {str(leaguepairsilver)}\nBronze: {str(leaguepairbronze)}\nUnranked: {str(leaguepairnone)}", inline=True)
 		embed.add_field(name='Favorite Weapon', value=f"{topweap['weapon']['name']} with {str(topink)} turf inked total", inline=True)
 
-		await message.channel.send(embed=embed)
+		await ctx.respond(embed=embed)
 
-	async def getSRStats(self, message):
-		if not await self.checkDuplicate(message.author.id):
-			await message.channel.send("You don't have a token setup with me! Please DM me !token with how to get one setup!")
-			return
-
-		thejson = await self.getNSOJSON(message, self.app_head_coop, "https://app.splatoon2.nintendo.net/api/coop_results")
+	async def getSRStats(self, ctx):
+		thejson = await self.getNSOJSON(ctx, self.app_head_coop, "https://app.splatoon2.nintendo.net/api/coop_results")
 		if thejson == None:
 			return
 
@@ -714,14 +839,10 @@ class nsoHandler():
 		embed.add_field(name=f"Total Stats (Last {str(matches)} Games)", value=f"Teammates Rescued: {str(rescnt)}\nTimes Died: {str(deathcnt)}\nGolden Eggs: {str(geggs)}\nPower Eggs: {str(peggs)}", inline=True)
 		embed.add_field(name=f"Boss Kill Counts (Last {str(matches)} games)", value=f"Steelhead: {str(sheadcnt)}\nStinger: {str(stingcnt)}\nFlyfish: {str(flyfshcnt)}\nSteel Eel: {str(seelcnt)}\nScrapper: {str(scrapcnt)}\nMaws: {str(mawscnt)}\nDrizzler: {str(drizcnt)}", inline=True)
 
-		await message.channel.send(embed=embed)
+		await ctx.respond(embed=embed)
 
-	async def getRanks(self, message):
-		if not await self.checkDuplicate(message.author.id):
-			await message.channel.send("You don't have a token setup with me! Please DM me !token with how to get one setup!")
-			return
-
-		thejson = await self.getNSOJSON(message, self.app_head, "https://app.splatoon2.nintendo.net/api/records")
+	async def getRanks(self, ctx):
+		thejson = await self.getNSOJSON(ctx, self.app_head, "https://app.splatoon2.nintendo.net/api/records")
 		if thejson == None:
 			return
 
@@ -748,9 +869,9 @@ class nsoHandler():
 		embed.add_field(name="Tower Control", value=tcrank, inline=True)
 		embed.add_field(name="Rainmaker", value=rmrank, inline=True)
 		embed.add_field(name="Clam Blitz", value=cbrank, inline=True)
-		await message.channel.send(embed=embed)
+		await ctx.respond(embed=embed)
 
-	def makeGearEmbed(self, gear, title, dirs):
+	def makeGearEmbed(self, gear, title, dirs) -> discord.Embed:
 		embed = discord.Embed(colour=0xF9FC5F)
 		embed.title = title
 		embed.set_thumbnail(url=f"https://splatoon2.ink/assets/splatnet{gear['gear']['image']}")
@@ -768,29 +889,28 @@ class nsoHandler():
 		embed.add_field(name="Directions", value=dirs, inline=False)
 		return embed
 
-	async def orderGearCommand(self, message, args=None, order=-1):
-		await message.channel.trigger_typing()
+	async def orderGearCommand(self, ctx, args=None, order=-1, override=False, is_slash=True):
 
 		def check(m):
-			return m.author == message.author and m.channel == message.channel
+			return m.author == ctx.user and m.channel == ctx.channel
 
-		if not await self.checkDuplicate(message.author.id) and order == -1:
-			await message.channel.send("You don't have a token setup with me! Please DM me !token with how to get one setup!")
+		if not await self.nsotoken.checkSessionPresent(ctx) and order == -1:
+			await ctx.respond("You don't have a token setup with me! Please DM me !token with how to get one setup!")
 			return
-		elif not await self.checkDuplicate(message.author.id) and order != -1:
-			await message.channel.send("You don't have a token setup with me, would you like to set one up now? (Yes/No)")
+		elif not await self.nsotoken.checkSessionPresent(ctx) and order != -1:
+			await ctx.respond("You don't have a token setup with me, would you like to set one up now? (Yes/No)")
 			resp = await self.client.wait_for('message', check=check)
 			if resp.content.lower() == "yes":
-				await self.nsotoken.login(message, flag=1)
+				await self.nsotoken.login(ctx, flag=False)
 			else:
-				await message.channel.send("Ok! If you want to setup a token to order in the future, DM me !token")
+				await ctx.respond("Ok! If you want to setup a token to order in the future, DM me !token")
 				return
 
 		if order != -1:
 			merchid = self.storeJSON['merchandises'][order]['id']
 		elif args != None:
 			if len(args) == 0:
-				await message.channel.send("I need an item to order, please use 'ID to order' from splatnetgear!")
+				await ctx.respond("I need an item to order, please use 'ID to order' from `/store currentgear!`")
 				return
 
 			# Build a list of SplatStoreMerch items to match against
@@ -802,77 +922,89 @@ class nsoHandler():
 			# Try the match
 			match = self.splatInfo.matchItems("store merchandise", merchitems, " ".join(args))
 			if not match.isValid():
-				await message.channel.send(match.errorMessage("Try command 'splatnetgear' for a list."))
+				await ctx.respond(match.errorMessage("Try command `/store currentgear` for a list."))
 				return
 
 			merchid = match.get().merchid()
 		else:
-			await message.channel.send("Order called improperly! Please report this to my support discord!")
+			await ctx.respond("Order called improperly! Please report this to my support discord!")
 			return
 
-		await self.orderGear(message, merchid, confirm = (order == -1))
+		await self.orderGear(ctx, merchid, override=override, is_slash=is_slash)
 
-	async def orderGear(self, message, merchid, confirm = True):
-		await message.channel.trigger_typing()
+	async def orderGear(self, ctx, merchid, override=False, is_slash=True):
+		# Filter for incoming messages, this is still using regular message objects
+		def messageCheck(m):
+			return (m.author.id == ctx.user.id) and (m.channel.id == ctx.channel.id)
 
-		# Filter for incoming messages
-		messageCheck = lambda m: (m.author == message.author) and (m.channel == message.channel)
-
-		thejson = await self.getNSOJSON(message, self.app_head, "https://app.splatoon2.nintendo.net/api/timeline")
+		thejson = await self.getNSOJSON(ctx, self.app_head, "https://app.splatoon2.nintendo.net/api/timeline")
 		if thejson == None:
 			return
 
 		tmp_app_head_shop = self.app_head_shop
 		tmp_app_head_shop['x-unique-id'] = thejson['unique_id']
 
-		thejson = await self.getNSOJSON(message, self.app_head, "https://app.splatoon2.nintendo.net/api/onlineshop/merchandises")
+		thejson = await self.getNSOJSON(ctx, self.app_head, "https://app.splatoon2.nintendo.net/api/onlineshop/merchandises")
 		merches = list(filter(lambda g: g['id'] == merchid, thejson['merchandises']))
 		if len(merches) == 0:
-			await message.channel.send("Can't find that merch in the store!")
+			await ctx.respond("Can't find that merch in the store!")
 			return
 		gearToBuy = merches[0]
 		orderedFlag = 'ordered_info' in thejson
 
-		if confirm:
-			embed = self.makeGearEmbed(gearToBuy, f"{message.author.name} - Order gear?", "Respond with 'yes' to place your order, 'no' to cancel")
-			await message.channel.send(embed=embed)
+		if not is_slash and not override:
+			embed = self.makeGearEmbed(gearToBuy, f"{ctx.user.name} - Order gear?", "Respond with 'yes' to place your order, 'no' to cancel")
+			await ctx.respond(embed=embed)
 			confirmation = await self.client.wait_for('message', check=messageCheck)
 			if not 'yes' in confirmation.content.lower():
-				await message.channel.send(f"{message.author.name} - order canceled")
+				await ctx.respond(f"{ctx.user.name} - order canceled")
 				return
 
-		await message.channel.trigger_typing()
 		if not orderedFlag:
-			if await self.postNSOStore(message, gearToBuy['id'], tmp_app_head_shop):
-				await message.channel.send(f"{message.author.name} - ordered!")
+			if await self.postNSOStore(ctx, gearToBuy['id'], tmp_app_head_shop):
+				await ctx.respond(f"{ctx.user.name} - ordered!")
 			else:
-				await message.channel.send(f"{message.author.name} - failed to order")
+				await ctx.respond(f"{ctx.user.name} - failed to order")
 		else:
 			ordered = thejson['ordered_info']
-			embed = self.makeGearEmbed(ordered, f"{message.author.name}, you already have an item on order!", "Respond with 'yes' to replace your order, 'no' to cancel")
-			await message.channel.send(embed=embed)
-			confirmation = await self.client.wait_for('message', check=messageCheck)
-			if 'yes' in confirmation.content.lower():
-				if await self.postNSOStore(message, gearToBuy['id'], tmp_app_head_shop, override=True):
-					await message.channel.send(f"{message.author.name} - ordered!")
-				else:
-					await message.channel.send(f"{message.author.name} - failed to order")
-			else:
-				await message.channel.send(f"{message.author.name} - order canceled")
+			if not override and is_slash:
+				embed = self.makeGearEmbed(ordered, f"{ctx.user.name}, you already have an item on order!", "Run this command with override set to True to order")
+				await ctx.respond(embed=embed)
+				return
+			elif not is_slash:
+				embed = self.makeGearEmbed(ordered, f"{ctx.user.name}, you already have an item on order!", "Respond with 'yes' to replace your order, 'no' to cancel")
+				await ctx.respond(embed=embed)
 
-	async def postNSOStore(self, message, gid, app_head, override=False):
-		iksm = await self.nsotoken.get_iksm_token_mysql(message.author.id)
+			if not is_slash:
+				confirmation = await self.client.wait_for('message', check=messageCheck)
+				if 'yes' in confirmation.content.lower():
+					if await self.postNSOStore(ctx, gearToBuy['id'], tmp_app_head_shop, override=True):
+						await ctx.respond(f"{ctx.user.name} - ordered!")
+					else:
+						await ctx.respond(f"{ctx.user.name} - failed to order")
+			elif is_slash and override: 
+				if await self.postNSOStore(ctx, gearToBuy['id'], tmp_app_head_shop, override=True):
+					embed = self.makeGearEmbed(gearToBuy, f"{ctx.user.name} ordered!", "Go talk to Murch in game to get it!")
+					await ctx.respond(embed=embed)
+				else:
+					embed = self.makeGearEmbed(gearToBuy, f"{ctx.user.name}, failed to order", "You can try running this command again, but there is likely an issue with NSO")
+					await ctx.respond(embed=embed)
+			else:
+				await ctx.respond(f"{ctx.user.name} - something went wrong...")
+
+	async def postNSOStore(self, ctx, gid, app_head, override=False):
+		s2_token = await self.nsotoken.getGameKey(ctx.user.id, "s2.iksm")
 		url = f"https://app.splatoon2.nintendo.net/api/onlineshop/order/{gid}"
 		if override:
 			payload = { "override" : 1 }
-			response = requests.post(url, headers=app_head, cookies=dict(iksm_session=iksm), data=payload)
+			response = requests.post(url, headers=app_head, cookies=dict(iksm_session=s2_token), data=payload)
 		else:
-			response = requests.post(url, headers=app_head, cookies=dict(iksm_session=iksm))
+			response = requests.post(url, headers=app_head, cookies=dict(iksm_session=s2_token))
 		resp = json.loads(response.text)
 
-		return '200' in str(response)
+		return response.status_code == 200
 
-	async def gearParser(self, message=None, flag=0):
+	async def gearParser(self, ctx=None, flag=0):
 		theTime = int(time.time())
 		gear = self.storeJSON['merchandises']
 		embed = discord.Embed(colour=0xF9FC5F)
@@ -913,85 +1045,111 @@ class nsoHandler():
 					return i
 
 		embed.set_footer(text=f"Next Item In {str(hours)} Hours {str(minutes)} minutes")
-		await message.channel.send(embed=embed)
+		await ctx.respond(embed=embed)
 
-	async def maps(self, message=None, offset=0, flag=0):
-		theTime = int(time.time())
-		trfWar = self.mapsJSON['regular']
-		ranked = self.mapsJSON['gachi']
-		league = self.mapsJSON['league']
+	def mapsEmbed(self, offset=0) -> discord.Embed:
 		embed = discord.Embed(colour=0x3FFF33)
+
+		data = self.maps(offset=offset)
+		turf = data['turf']
+		ranked = data['ranked']
+		league = data['league']
+		hours = data['hours']
+		mins = data['mins']
 
 		if offset == 0:
 			embed.title = "Current Splatoon 2 Maps"
 		elif offset == 1:
 			embed.title = "Upcoming Splatoon 2 Maps"
 
-		mapA = trfWar[offset]['stage_a']
-		mapB = trfWar[offset]['stage_b']
-		end = trfWar[offset]['end_time']
-		if flag == 0:
-			embed.add_field(name="<:turfwar:550103899084816395> Turf War", value=f"{mapA['name']}\n{mapB['name']}", inline=True)
-		if flag == 1:
-			turf = {}
-			turf['mapA'] = mapA
-			turf['mapB'] = mapB
-
-		mapA = ranked[offset]['stage_a']
-		mapB = ranked[offset]['stage_b']
-		game = ranked[offset]['rule']
-
-		if flag == 0:
-			embed.add_field(name=f"<:ranked:550104072456372245> Ranked: {game['name']}", value=mapA['name'] + "\n" + mapB['name'], inline=True)
-		if flag == 1:
-			ranked = {}
-			ranked['mapA'] = mapA
-			ranked['mapB'] = mapB
-			ranked['rule'] = game
-
-		mapA = league[offset]['stage_a']
-		mapB = league[offset]['stage_b']
-		game = league[offset]['rule']
-
-		if flag == 0:
-			embed.add_field(name=f"<:league:550104147463110656> League: {game['name']}", value=mapA['name'] + "\n" + mapB['name'], inline=True)
-		if flag == 1:
-			league = {}
-			league['mapA'] = mapA
-			league['mapB'] = mapB
-			league['rule'] = game
-
-		timeRemaining = end - theTime
-		timeRemaining = timeRemaining % 86400
-		hours = int(timeRemaining / 3600)
-		timeRemaining = timeRemaining % 3600
-		minutes = int(timeRemaining / 60)
+		embed.add_field(name="<:turfwar:550107083911987201> Turf War", value=f"{turf['stage_a']['name']}\n{turf['stage_b']['name']}", inline=True)
+		embed.add_field(name=f"<:ranked:550107084684001350> Ranked: {ranked['rule']['name']}", value=f"{ranked['stage_a']['name']}\n{ranked['stage_b']['name']}", inline=True)
+		embed.add_field(name=f"<:league:550107083660328971> League: {league['rule']['name']}", value=f"{league['stage_a']['name']}\n{league['stage_b']['name']}", inline=True)
 
 		if offset == 0:
-			embed.add_field(name="Time Remaining", value=f"{str(hours)} Hours, and {str(minutes)} minutes", inline=False)
+			embed.add_field(name="Time Remaining", value=f"{str(hours)} Hours, and {str(mins)} minutes", inline=False)
 		elif offset >= 1:
 			hours = hours - 2
-			embed.add_field(name="Time Until Map Rotation", value=f"{str(hours)} Hours, and {str(minutes)} minutes", inline=False)
+			embed.add_field(name="Time Until Map Rotation", value=f"{str(hours)} Hours, and {str(mins)} minutes", inline=False)
 
-		if flag == 0:
-			await message.channel.send(embed=embed)
-		if flag == 1:
-			return turf, ranked, league
+		return embed
 
-	async def srParser(self, message=None, getNext=0, flag=0):
+	def maps(self, offset=0):
 		theTime = int(time.time())
-		currentSR = self.srJSON['details']
-		gotData = 0
-		start = 0
-		end = 0
+		trfWar = self.mapsJSON['regular']
+		ranked = self.mapsJSON['gachi']
+		league = self.mapsJSON['league']
+
+		turf = {}
+		turf['stage_a'] = trfWar[offset]['stage_a']
+		turf['stage_b'] = trfWar[offset]['stage_b']
+		turf['end']  = trfWar[offset]['end_time']
+
+		end   = trfWar[offset]['end_time']
+		theTime  = end - theTime
+		theTime  = theTime % 86400
+		hours = int(theTime / 3600)
+		theTime  = theTime % 3600
+		mins  = int(theTime / 60)
+
+		rnk = {}
+		rnk['stage_a'] = ranked[offset]['stage_a']
+		rnk['stage_b'] = ranked[offset]['stage_b']
+		rnk['rule'] = ranked[offset]['rule']
+
+		lge = {}
+		lge['stage_a'] = league[offset]['stage_a']
+		lge['stage_b'] = league[offset]['stage_b']
+		lge['rule'] = league[offset]['rule']
+
+		data = {}
+		data['hours']  = hours
+		data['mins']   = mins
+		data['turf']   = turf
+		data['ranked'] = rnk
+		data['league'] = lge
+
+		return data
+
+	def srEmbed(self, getNext=False) -> discord.Embed:
 		embed = discord.Embed(colour=0xFF8633)
-		theString = ''	
-		srdata = {}
+
+		data = self.srParser(getNext=getNext)
+		if data == None:
+			data = self.srParser(getNext=True)
+			getNext=True
+
+		weaps = data['weapons']
+		map = data['map']
+		days = data['days']
+		hours = data['hours']
+		mins = data['mins']
 
 		if getNext == 0:
 			embed.title = "Current Salmon Run"
 		else:
 			embed.title = "Upcoming Salmon Run"
+
+		embed.set_thumbnail(url=f"https://splatoon2.ink/assets/splatnet{map['image']}")
+		embed.add_field(name='Map', value=map['name'], inline=False)
+		embed.add_field(name='Weapons', value=weaps, inline=False)
+
+		if getNext:
+			embed.add_field(name='Time Until Rotation', value=f"{str(days)} Days, {str(hours)} Hours, and {str(mins)} Minutes")
+		else:
+			embed.add_field(name="Time Remaining ", value=f"{str(days)} Days, {str(hours)} Hours, and {str(mins)} Minutes")
+
+		return embed
+
+	def srParser(self, getNext=False):
+		theTime = int(time.time())
+		currentSR = self.srJSON['details']
+		gotData = 0
+		start = 0
+		end = 0
+
+		theString = ''
+		srdata = {}
 
 		for i in currentSR:
 			gotData = 0
@@ -1004,16 +1162,13 @@ class nsoHandler():
 				gotData = 1
 
 			if (gotData == 1 and getNext == 0) or (gotData == 0 and getNext == 1):
-				if flag == 0:
-					embed.set_thumbnail(url=f"https://splatoon2.ink/assets/splatnet{map['image']}")
-					embed.add_field(name='Map', value=map['name'], inline=False)
-				else:
-					srdata['thumb'] = f"https://splatoon2.ink/assets/splatnet{map['image']}"
-					srdata['map'] = map
+				srdata['thumb'] = f"https://splatoon2.ink/assets/splatnet{map['image']}"
+				srdata['map'] = map
+
 				for j in i['weapons']:
-					try:
+					if 'weapon' in j:
 						weap = j['weapon']
-					except:
+					else:
 						weap = j['coop_special_weapon']
 					theString = f"{theString}{weap['name']}\n"
 				break
@@ -1021,59 +1176,42 @@ class nsoHandler():
 			elif gotData == 1 and getNext == 1:
 				gotData = 0
 				continue
-		if flag == 0:
-			embed.add_field(name='Weapons', value=theString, inline=False)
-		else:
-			srdata['weapons'] = theString
+
+		srdata['weapons'] = theString
 
 		if gotData == 0 and getNext == 0:
-			if flag == 0:
-				await message.channel.send('No SR Currently Running')
-				return
-			else:
-				return None
+			return None
 		elif getNext == 1:
-			timeRemaining = start - theTime
+			timeleft = start - theTime
 		else:
-			timeRemaining = end - theTime
+			timeleft = end - theTime
 
-		srdata['time'] = timeRemaining
+		days = int(timeleft / 86400)
+		timeleft = timeleft % 86400
+		hours = int(timeleft / 3600)
+		timeleft = timeleft % 3600
+		mins = int(timeleft / 60)
 
-		days = int(timeRemaining / 86400)
-		timeRemaining = timeRemaining % 86400
-		hours = int(timeRemaining / 3600)
-		timeRemaining = timeRemaining % 3600
-		minutes = int(timeRemaining / 60)
+		srdata['days'] = days
+		srdata['hours'] = hours
+		srdata['mins'] = mins
 
-		if getNext == 1:
-			embed.add_field(name='Time Until Rotation', value=f"{str(days)} Days, {str(hours)} Hours, and {str(minutes)} Minutes")
-		else:
-			embed.add_field(name="Time Remaining ", value=f"{str(days)} Days, {str(hours)} Hours, and {str(minutes)} Minutes")
+		return srdata
 
-		if flag == 0:
-			await message.channel.send(embed=embed)
-		if flag == 1:
-			return srdata
-
-	async def battleParser(self, message, num=1):
-		if not await self.checkDuplicate(message.author.id):
-			await message.channel.send("You don't have a token setup with me! Please DM me !token with how to get one setup!")
-			return
-
-		await message.channel.trigger_typing()
-		recordjson = await self.getNSOJSON(message, self.app_head, "https://app.splatoon2.nintendo.net/api/records")
+	async def battleParser(self, ctx, num=1):
+		recordjson = await self.getNSOJSON(ctx, self.app_head, "https://app.splatoon2.nintendo.net/api/records")
 		if recordjson == None:
 			return
 
 		embed = discord.Embed(colour=0x0004FF)
-		battlejson = await self.getNSOJSON(message, self.app_head, "https://app.splatoon2.nintendo.net/api/results")
+		battlejson = await self.getNSOJSON(ctx, self.app_head, "https://app.splatoon2.nintendo.net/api/results")
 
 		accountname = recordjson['records']['player']['nickname']
 		thebattle = battlejson['results'][num - 1]
 		battletype = thebattle['game_mode']['name']
 		battleid = thebattle['battle_number']
 
-		fullbattle = await self.getNSOJSON(message, self.app_head, "https://app.splatoon2.nintendo.net/api/results/" + battleid)
+		fullbattle = await self.getNSOJSON(ctx, self.app_head, f"https://app.splatoon2.nintendo.net/api/results/{battleid}")
 		enemyteam = fullbattle['other_team_members']
 		myteam = fullbattle['my_team_members']
 		mystats = fullbattle['player_result']
@@ -1149,16 +1287,16 @@ class nsoHandler():
 			embed.add_field(name=f"Enemy Team - {str(enemyresult)}", value=enemystring, inline=True)
 			embed.add_field(name=f"{str(matchname)}'s team - {str(myresult)}", value=teamstring, inline=True)
 
-		await message.channel.send(embed=embed)
+		await ctx.respond(embed=embed)
 
-	async def cmdMaps(self, message, args):
+	async def cmdMaps(self, ctx, args):
 		if len(args) == 0:
-			await message.channel.send("Try 'maps help' for help")
+			await ctx.respond("Try 'maps help' for help")
 			return
 
 		subcommand = args[0].lower()
 		if subcommand == "help":
-			await message.channel.send("**maps random [n]**: Generate a list of random maps\n"
+			await ctx.respond("**maps random [n]**: Generate a list of random maps\n"
 				"**maps stats MAP**: Show player stats for MAP\n"
 				"**maps callout MAP**: Show callouts for MAP\n"
 				"**maps list**: Lists all maps with abbreviations")
@@ -1166,57 +1304,62 @@ class nsoHandler():
 			embed = discord.Embed(colour=0xF9FC5F)
 			embed.title = "Maps List"
 			embed.add_field(name="Maps (abbreviation)", value=", ".join(map(lambda item: item.format(), self.splatInfo.getAllMaps())), inline=False)
-			await message.channel.send(embed=embed)
+			await ctx.respond(embed=embed)
 		elif subcommand == "stats":
 			if len(args) > 1:
 				themap = " ".join(args[1:])
 				match = self.splatInfo.matchMaps(themap)
 				if not match.isValid():
-					await message.channel.send(match.errorMessage("Try command 'maps list' for a list."))
+					await ctx.respond(match.errorMessage("Try command 'maps list' for a list."))
 					return
 				id = match.get().id()
-				await self.mapParser(message, id)
+				await self.mapParser(ctx, id)
 		elif subcommand == "random":
 			count = 1
 			if len(args) > 1:
 				if not args[1].isdigit():
-					await message.channel.send("Argument to 'maps random' must be numeric")
+					await ctx.respond("Argument to 'maps random' must be numeric")
 					return
 				elif (int(args[1]) < 1) or (int(args[1]) > 10):
-					await message.channel.send("Number of random maps must be within 1..10")
+					await ctx.respond("Number of random maps must be within 1..10")
 					return
 				else:
 					count = int(args[1])
 
 			if count == 1:
-				await message.channel.send(f"Random map: {self.splatInfo.getRandomMap().name()}")
+				await ctx.respond(f"Random map: {self.splatInfo.getRandomMap().name()}")
 			else:
 				out = "Random maps:\n"
 				for i in range(count):
 					out += "%d: %s\n" % (i + 1, self.splatInfo.getRandomMap().name())
-				await message.channel.send(out)
+				await ctx.respond(out)
 		elif "callout" in subcommand:
 			themap = self.splatInfo.matchMaps(" ".join(args[1:]))
 			if not themap.isValid():
-				await message.channel.send(themap.errorMessage("Try command 'maps list' for a list."))
+				await ctx.respond(themap.errorMessage("Try command 'maps list' for a list."))
+				return
+
+			if self.hostedUrl == None:
+				await ctx.respond("Sorry, map callouts are disabled in this instance of the bot.")
 				return
 
 			shortname = themap.get().shortname().lower().replace(" ", "-")
-			url = f"http://db-files.crmea.de/images/bot/callouts/{shortname}.png"
+			url = f"{self.hostedUrl}/callouts/{shortname}.png"
 			embed = discord.Embed(colour=0x0004FF)
+			embed.title = themap.get().name()
 			embed.set_image(url=url)
-			await message.channel.send(embed=embed)
+			await ctx.respond(embed=embed)
 		else:
-			await message.channel.send("Unknown subcommand. Try 'maps help'")
+			await ctx.respond("Unknown subcommand. Try 'maps help'")
 
-	async def cmdWeaps(self, message, args):
+	async def cmdWeaps(self, ctx, args):
 		if len(args) == 0:
-			await message.channel.send("Try 'weapons help' for help")
+			await ctx.respond("Try 'weapons help' for help")
 			return
 
 		subcommand = args[0].lower()
 		if subcommand == "help":
-			await message.channel.send("**weapons random [n]**: Generate a list of random weapons\n"
+			await ctx.respond("**weapons random [n]**: Generate a list of random weapons\n"
 				"**weapons stats WEAPON**: Show player stats for WEAPON\n"
 				"**weapons sub SUB**: Show all weapons with SUB\n"
 				"**weapons list TYPE**: Shows all weapons of TYPE\n"
@@ -1228,7 +1371,7 @@ class nsoHandler():
 				theWeapon = " ".join(args[1:])
 				match = self.splatInfo.matchWeapons(theWeapon)
 				if not match.isValid():
-					await message.channel.send(match.errorMessage("Try command 'weapons list' for a list."))
+					await ctx.respond(match.errorMessage("Try command 'weapons list' for a list."))
 					return
 				weap = match.get()
 				embed = discord.Embed(colour=0x0004FF)
@@ -1237,38 +1380,38 @@ class nsoHandler():
 				embed.add_field(name="Sepcial", value=weap.special().name(), inline=True)
 				embed.add_field(name="Pts for Special", value=str(weap.specpts), inline=True)
 				embed.add_field(name="Level to Purchase", value=str(weap.level), inline=True)
-				await message.channel.send(embed=embed)
+				await ctx.respond(embed=embed)
 		elif subcommand == "sub":
 			if len(args) > 1:
 				theSub = " ".join(args[1:])
 				actualSub = self.splatInfo.matchSubweapons(theSub)
 				if not actualSub.isValid():
-					await message.channel.send(actualSub.errorMessage())
+					await ctx.respond(actualSub.errorMessage())
 					return
 				weaponsList = self.splatInfo.getWeaponsBySub(actualSub.get())
 				embed = discord.Embed(colour=0x0004FF)
 				embed.title = f"Weapons with Subweapon: {actualSub.get().name()}"
 				for i in weaponsList:
 					embed.add_field(name=i.name(), value=f"Special: {i.special().name()}\nPts for Special: {str(i.specpts)}\nLevel To Purchase: {str(i.level)}", inline=True)
-				await message.channel.send(embed=embed)
+				await ctx.respond(embed=embed)
 		elif subcommand == "special":
 			if len(args) > 1:
 				theSpecial = " ".join(args[1:])
 				actualSpecial = self.splatInfo.matchSpecials(theSpecial)
 				if not actualSpecial.isValid():
-					await message.channel.send(actualSpecial.errorMessage())
+					await ctx.respond(actualSpecial.errorMessage())
 					return
 				weaponsList = self.splatInfo.getWeaponsBySpecial(actualSpecial.get())
 				embed = discord.Embed(colour=0x0004FF)
 				embed.title = f"Weapons with Special: {actualSpecial.get().name()}"
 				for i in weaponsList:
 					embed.add_field(name=i.name(), value=f"Subweapon: {i.sub().name()}\nPts for Special: {str(i.specpts)}\nLevel To Purchase: {str(i.level)}", inline=True)
-				await message.channel.send(embed=embed)
+				await ctx.respond(embed=embed)
 		elif subcommand == "list":
 			if len(args) > 1:
 				match = self.splatInfo.matchWeaponType(args[1])
 				if not match.isValid():
-					await message.channel.send(match.errorMessage("Try command 'weapons list' for a list."))
+					await ctx.respond(match.errorMessage("Try command 'weapons list' for a list."))
 					return
 
 				type = match.get()
@@ -1279,61 +1422,45 @@ class nsoHandler():
 					weapString += f"{w.name()}\n"
 				embed.title = "Weapons List"
 				embed.add_field(name=type.pluralname(), value=weapString, inline=False)
-				await message.channel.send(embed=embed)
+				await ctx.respond(embed=embed)
 			else:
 				types = self.splatInfo.getAllWeaponTypes()
 				typelist = f"{', '.join(map(lambda t: t.format(), types[0:-1]))}, or {types[-1].format()}?"
-				await message.channel.send(f"Need a type to list. Types are: {typelist}")
+				await ctx.respond(f"Need a type to list. Types are: {typelist}")
 			return
 		elif subcommand == "stats":
 			if len(args) > 1:
 				theWeapon = " ".join(args[1:])
 				match = self.splatInfo.matchWeapons(theWeapon)
 				if not match.isValid():
-					await message.channel.send(match.errorMessage("Try command 'weapons list' for a list."))
+					await ctx.respond(match.errorMessage("Try command 'weapons list' for a list."))
 					return
 				id = match.get().id()
-				await self.weaponParser(message, id)
+				await self.weaponParser(ctx, id)
 		elif subcommand == "random":
 			count = 1
 			if len(args) > 1:
 				if not args[1].isdigit():
-					await message.channel.send("Argument to 'weapons random' must be numeric")
+					await ctx.respond("Argument to 'weapons random' must be numeric")
 					return
 				elif (int(args[1]) < 1) or (int(args[1]) > 10):
-					await message.channel.send("Number of random weapons must be within 1..10")
+					await ctx.respond("Number of random weapons must be within 1..10")
 					return
 				else:
 					count = int(args[1])
 
 			if count == 1:
-				await message.channel.send(f"Random weapon: {self.splatInfo.getRandomWeapon().name()}")
+				await ctx.respond(f"Random weapon: {self.splatInfo.getRandomWeapon().name()}")
 			else:
 				out = "Random weapons:\n"
 				for i in range(count):
 					out += "%d: %s\n" % (i + 1, self.splatInfo.getRandomWeapon().name())
-				await message.channel.send(out)
+				await ctx.respond(out)
 		else:
-			await message.channel.send("Unknown subcommand. Try 'weapons help'")
+			await ctx.respond("Unknown subcommand. Try 'weapons help'")
 
-	async def cmdBattles(self, message, args):
-		if len(args) == 0:
-			await message.channel.send("Try 'battles help' for help")
-			return
-
-		subcommand = args[0].lower()
-		if subcommand == "help":
-			await message.channel.send("**battles last**: Get the stats from the last battle\n"
-				"**num NUM**: Get a battle from the last 50 you have played (1 is most recent)")
-		elif subcommand == "last":
-			await self.battleParser(message)
-		elif subcommand == "num":
-			if len(args) > 1:
-				if args[1].isdigit() and int(args[1]) <= 50 and int(args[1]) > 0:
-					await self.battleParser(message, num=int(args[1]))
-				else:
-					await message.channel.send("Battle num must be number 1-50")
-			else:
-				await message.channel.send("Must provide a number of the battle to get")
+	async def cmdBattles(self, ctx, num):
+		if num <= 50 and num > 0:
+			await self.battleParser(ctx, num)
 		else:
-			await message.channel.send("Unknown subcommand. Try 'battles help'")
+			await ctx.respond("Battlenum needs to be between 1-50!")

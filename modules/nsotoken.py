@@ -3,109 +3,177 @@ import mysqlhandler, nsohandler
 import requests, json, re, sys, uuid, time
 import os, base64, hashlib, random, string
 from datetime import datetime
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+import googleplay
+from typing import Optional
 
 class Nsotoken():
-	def __init__(self, client, mysqlhandler, nsoAppVer):
+	def __init__(self, client, mysqlhandler, hostedUrl, stringCrypt):
 		self.client = client
 		self.session = requests.Session()
 		self.sqlBroker = mysqlhandler
-		self.nsoAppVer = nsoAppVer
+		self.scheduler = AsyncIOScheduler()
+		self.hostedUrl = hostedUrl
+		self.stringCrypt = stringCrypt
+		self.scheduler.add_job(self.updateAppVersion, 'cron', hour="3", minute='0', second='35')
 
-	async def reloadNSOAppVer(self, nsoAppVer):
-		self.nsoAppVer = nsoAppVer
-		return self.nsoAppVer
+	async def migrateTokensTable(self):
+		cur = await self.sqlBroker.connect()
+		if not await self.sqlBroker.hasTable(cur, 'tokens_migrate'):
+			await self.sqlBroker.commit(cur)
+			return
 
-	async def checkDuplicate(self, id, cur):
-		stmt = "SELECT COUNT(*) FROM tokens WHERE clientid = %s"
-		await cur.execute(stmt, (str(id),))
+		print("Migrating 'tokens_migrate' table...")
+		await cur.execute("SELECT * FROM tokens_migrate")
+		colnames = self.sqlBroker.getColumnNames(cur)
+		oldrows = await cur.fetchall()
+		for oldrow in oldrows:
+			oldrow = self.sqlBroker.rowToDict(colnames, oldrow)
+			print(f"  Migrating record for clientid {oldrow['clientid']}...")
+
+			gamekeys = {}
+			gamekeys['s2'] = {}
+			gamekeys['s2']['iksm'] = oldrow['token']
+			gamekeys['ac'] = {}
+			gamekeys['ac']['gtoken'] = oldrow['gtoken']
+			gamekeys['ac']['park_session'] = oldrow['park_session']
+			gamekeys['ac']['ac_bearer'] = oldrow['ac_bearer']
+
+			newrow = {}
+			newrow['clientid'] = oldrow['clientid']
+			newrow['session_time'] = oldrow['session_time'] if oldrow['session_time'] else datetime.now()
+			newrow['session_token'] = self.stringCrypt.encryptString(oldrow['session_token']) if oldrow['session_token'] else None
+			newrow['game_keys_time'] = oldrow['iksm_time']
+			newrow['game_keys'] = self.stringCrypt.encryptString(json.dumps(gamekeys))
+
+			await cur.execute("REPLACE INTO tokens (clientid, session_time, session_token, game_keys_time, game_keys) VALUES (%s, %s, %s, %s, %s)",
+			(newrow['clientid'], newrow['session_time'], newrow['session_token'], newrow['game_keys_time'], newrow['game_keys'],))
+
+		print("Migration complete, removing 'tokens_migrate' table...")
+		await cur.execute("DROP TABLE tokens_migrate")
+		await self.sqlBroker.commit(cur)
+
+	async def getAppVersion(self):
+		cur = await self.sqlBroker.connect()
+
+		await cur.execute("SELECT version, UNIX_TIMESTAMP(updatetime) AS updatetime FROM nso_app_version")
+		row = await cur.fetchone()
+		await self.sqlBroker.commit(cur)
+
+		if row:
+			return {'version': row[0], 'updatetime': row[1]}
+
+		return None
+
+	async def updateAppVersion(self):
+		oldInfo = await self.getAppVersion()
+		if oldInfo != None:
+			age = time.time() - oldInfo['updatetime']
+			if age < 3600:
+				print("Skipping NSO version check -- cached data is recent")
+				return
+
+		gp = googleplay.GooglePlay()
+		newVersion = gp.getAppVersion("com.nintendo.znca")
+		if newVersion == None:
+			print(f"Couldn't retrieve NSO app version?")
+			return
+
+		cur = await self.sqlBroker.connect()
+
+		if (oldInfo == None) or (oldInfo['version'] != newVersion):
+			# Version was updated
+			await cur.execute("DELETE FROM nso_app_version")
+			await cur.execute("INSERT INTO nso_app_version (version, updatetime) VALUES (%s, NOW())", (newVersion,))
+			print(f"Updated NSO version: {oldInfo['version'] if oldInfo else '(none)'} -> {newVersion}")
+		else:
+			# No version change, so just bump the timestamp
+			await cur.execute("UPDATE nso_app_version SET updatetime = NOW()")
+
+		await self.sqlBroker.commit(cur)
+		return
+
+	async def getGameKeys(self, clientid):
+		cur = await self.sqlBroker.connect()
+		await cur.execute("SELECT game_keys FROM tokens WHERE (clientid = %s) LIMIT 1", (str(clientid),))
+		row = await cur.fetchone()
+		await self.sqlBroker.commit(cur)
+
+		if (row == None) or (row[0] == None):
+			return {}  # No keys
+
+		ciphertext = row[0]
+		plaintext = self.stringCrypt.decryptString(ciphertext)
+		#print(f"getGameKeys: {ciphertext} -> {plaintext}")
+		keys = json.loads(plaintext)
+		return keys
+
+	# Retrieves a single game key with a dotted path (e.g. "s2.iksm")
+	async def getGameKey(self, clientid, path):
+		hash = await self.getGameKeys(clientid)
+		parts = path.split('.')
+		for k in parts:
+			hash = hash.get(k)
+			if not hash:
+				return None
+		return hash
+
+	async def __setGameKeys(self, clientid, keys):
+		plaintext = json.dumps(keys)
+		ciphertext = self.stringCrypt.encryptString(plaintext)
+		#print(f"setGameKeys: {plaintext} -> {ciphertext}")
+
+		cur = await self.sqlBroker.connect()
+		await cur.execute("UPDATE tokens SET game_keys = %s, game_keys_time = NOW() WHERE (clientid = %s)", (ciphertext, clientid))
+		await self.sqlBroker.commit(cur)
+
+	# Stores the given data at the dotted path.
+	async def __setGameKey(self, clientid, path, data):
+		hash = await self.getGameKeys(clientid)
+		#print(f"pre hash: {hash}")
+		parts = path.split(".")
+		for k in parts[0:-1]:
+			if hash.get(k) == None:
+				hash[k] = {}
+			hash = hash[k]
+		hash[parts[-1]] = data
+		#print(f"post hash: {hash}")
+		await self.__setGameKeys(clientid, hash)
+
+	async def __checkDuplicate(self, id, cur):
+		await cur.execute("SELECT COUNT(*) FROM tokens WHERE clientid = %s", (str(id),))
 		count = await cur.fetchone()
 		if count[0] > 0:
 			return True
 		else:
 			return False
 
-	async def delete_tokens(self, message):
+	async def checkSessionPresent(self, ctx):
+		cur = await self.sqlBroker.connect()
+		ret = await self.__checkDuplicate(ctx.user.id, cur)
+		await self.sqlBroker.close(cur)
+		return ret
+
+	async def deleteTokens(self, ctx):
 		cur = await self.sqlBroker.connect()
 		print("Deleting token")
 		stmt = "DELETE FROM tokens WHERE clientid = %s"
-		input = (message.author.id,)
+		input = (ctx.user.id,)
 		await cur.execute(stmt, input)
 		if cur.lastrowid != None:
 			await self.sqlBroker.commit(cur)
-			await message.channel.send("Tokens deleted!")
+			await ctx.send("Tokens deleted!")
 		else:
 			await self.sqlBroker.rollback(cur)
-			await message.channel.send("Something went wrong! If you want to report this, join my support discord and let the devs know what you were doing!")
+			await ctx.send("Something went wrong! If you want to report this, join my support discord and let the devs know what you were doing!")
 
-	async def addToken(self, message, token, session_token):
-		now = datetime.now()
-		formatted_date = now.strftime('%Y-%m-%d %H:%M:%S')
-
-		ac_g = token.get('ac_g')
-		ac_p = token.get('ac_p')
-		ac_b = token.get('ac_b')
-		s2 = token.get('s2')
-
+	async def login(self, ctx, flag=True):
 		cur = await self.sqlBroker.connect()
-
-		if await self.checkDuplicate(str(message.author.id), cur):
-			if ac_g != None:
-				stmt = "UPDATE tokens SET gtoken = %s, park_session = %s, ac_bearer = %s, session_token = %s, iksm_time = %s WHERE clientid = %s"
-				input = (str(ac_g), str(ac_p), str(ac_b), str(session_token), formatted_date, str(message.author.id),)
-			elif s2 != None:
-				print("Updating S2 token + " + s2)
-				stmt = "UPDATE tokens SET token = %s, session_token = %s, iksm_time = %s WHERE clientid = %s"
-				input = (str(s2), str(session_token), formatted_date, str(message.author.id),)
-		else:
-			stmt = "INSERT INTO tokens (clientid, session_time, session_token) VALUES(%s, %s, %s)"
-			input = (str(message.author.id), formatted_date, str(session_token),)
-
-		await cur.execute(stmt, input)
-		if cur.lastrowid != None:
-			await self.sqlBroker.commit(cur)
-			return True
-		else:
-			await self.sqlBroker.rollback(cur)
-			return False
-
-	async def get_iksm_token_mysql(self, userid):
-		cur = await self.sqlBroker.connect()
-		stmt = "SELECT token FROM tokens WHERE clientid = %s"
-		await cur.execute(stmt, (str(userid),))
-		session_token = await cur.fetchall()
-		await self.sqlBroker.commit(cur)
-		if len(session_token) == 0:
-			return None
-		return session_token[0][0]
-
-	async def get_ac_mysql(self, userid):
-		cur = await self.sqlBroker.connect()
-		stmt = "SELECT gtoken, park_session, ac_bearer FROM tokens WHERE clientid = %s"
-		await cur.execute(stmt, (str(userid),))
-		session_token = await cur.fetchall()
-		await self.sqlBroker.commit(cur)
-		if len(session_token) == 0:
-			return None
-
-		return session_token[0]
-
-	async def get_session_token_mysql(self, userid):
-		cur = await self.sqlBroker.connect()
-		stmt = "SELECT session_token FROM tokens WHERE clientid = %s"
-		await cur.execute(stmt, (str(userid),))
-		session_token = await cur.fetchall()
-		await self.sqlBroker.commit(cur)
-		if len(session_token) == 0:
-			return None
-		return session_token[0][0]
-
-	async def login(self, message, flag=-1):
-		cur = await self.sqlBroker.connect()
-		dupe = await self.checkDuplicate(message.author.id, cur)
-		await self.sqlBroker.close(cur)
-
+		dupe = await self.__checkDuplicate(ctx.user.id, cur)
+		
 		if dupe:
-			await message.channel.send("You already have a token setup with me, if you need to refresh your token (due to an issue), DM me !deletetoken to perform this again.")
+			await ctx.send("You already have a token setup with me, if you need to refresh your token (due to an issue), DM me !deletetoken to perform this again.")
+			await self.sqlBroker.close(cur)
 			return
 
 		auth_state = base64.urlsafe_b64encode(os.urandom(36))
@@ -137,72 +205,89 @@ class Nsotoken():
 
 		post_login = r.history[0].url
 
-		await message.channel.send(f"Navigate to this URL in your browser: {post_login}")
-		await message.channel.send("Log in, right click the \"Select this person\" button, copy the link address, and paste it back to me or 'stop' to cancel.")
-		await message.channel.send("https://db-files.crmea.de/images/bot/nsohowto.png")
+		await ctx.send(f"Navigate to this URL in your browser: {post_login}")
+		await ctx.send("Log in, right click the \"Select this person\" button, copy the link address, and paste it back to me or 'stop' to cancel.")
+		if self.hostedUrl:
+			await ctx.send(f"{self.hostedUrl}/images/nsohowto.png")
 
 		while True:
 			def check(m):
-				return m.author == message.author and m.channel == message.channel
+				return m.author == ctx.user and m.channel == ctx.channel
 
 			accounturl = await self.client.wait_for('message', check=check)
 			accounturl = accounturl.content
 
 			if 'stop' in accounturl.lower():
-				await message.channel.send("Ok, stopping the token setup")
+				await self.sqlBroker.close(cur)
+				await ctx.send("Ok, stopping the token setup")
 				return
 			elif 'npf71b963c1b7b6d119' not in accounturl:
-				await message.channel.send("Invalid URL, please copy the link in \"Select this person\" (or stop to cancel).")				
+				await ctx.send("Invalid URL, please copy the link in \"Select this person\" (or stop to cancel).")
 			else:
 				break
 
-		await message.channel.trigger_typing()
+		await ctx.defer()
 		session_token_code = re.search('session_token_code=(.*)&', accounturl)
 		if session_token_code == None:
+			await self.sqlBroker.close(cur)
 			print(f"Issue with account url: {str(accounturl)}")
-			await message.channel.send("Error in account url. Issue is logged, but you can report this in my support guild")
+			await ctx.send("Error in account url. Issue is logged, but you can report this in my support guild")
 			return
 
-		session_token_code = self.get_session_token(session_token_code.group(0)[19:-1], auth_code_verifier)
-
+		session_token_code = await self.__get_session_token(session_token_code.group(0)[19:-1], auth_code_verifier)
 		if session_token_code == None:
-			await message.channel.send("Something went wrong! Make sure you are also using the latest link I gave you to sign in. If so, join my support discord and report that something broke!")
+			await ctx.send("Something went wrong! Make sure you are also using the latest link I gave you to sign in. If so, join my support discord and report that something broke!")
+			await self.sqlBroker.close(cur)
 			return
 		else:
-			success = await self.addToken(message, {}, session_token_code)
+			ciphertext = self.stringCrypt.encryptString(session_token_code)
+			await cur.execute("INSERT INTO tokens (clientid, session_time, session_token) VALUES(%s, NOW(), %s)", (ctx.user.id, ciphertext, ))
+			if cur.lastrowid != None:
+				await self.sqlBroker.commit(cur)
+				if flag:
+					await ctx.send("Token added, NSO commands will now work! You shouldn't need to run this command again.")
+				else:
+					await ctx.send("Token added! Ordering...")
+			else:
+				await self.sqlBroker.rollback(cur)
+				await ctx.send("Something went wrong! Join my support discord and report that something broke!")
 
-		if success and flag == -1:
-			await message.channel.send("Token added, NSO commands will now work! You shouldn't need to run this command again.")
-		elif success and flag == 1:
-			await message.channel.send("Token added! Ordering...")
-		else:
-			await message.channel.send("Something went wrong! Join my support discord and report that something broke!")
+	#This method will always return the root key path for a game
+	async def doGameKeyRefresh(self, ctx, game='s2') -> Optional[dict]:
+		await ctx.defer()
+		session_token = await self.__get_session_token_mysql(ctx.user.id)
+		keys = await self.__setup_nso(session_token, game)
 
-	async def do_iksm_refresh(self, message, game='s2'):
-		session_token = await self.get_session_token_mysql(message.author.id)
-		await message.channel.trigger_typing()
-		keys = self.setup_nso(session_token, game)
-		
 		if keys == 500:
-			await message.channel.send("Temporary issue with NSO logins. Please try again in a few minutes")
+			await ctx.respond("Temporary issue with NSO logins. Please try again in a minute.")
 			return None
 		if keys == None:
-			await message.channel.send("Error getting token, I have logged this for my owners")
+			await ctx.respond("Error getting token, I have logged this for my owners")
 			return None
 
-		await self.addToken(message, keys, session_token)
+		await self.__setGameKey(ctx.user.id, game, keys)
+		return keys
 
-		if game is 's2':
-			return keys['s2']
+	async def __get_session_token_mysql(self, userid) -> Optional[str]:
+		cur = await self.sqlBroker.connect()
+		stmt = "SELECT session_token FROM tokens WHERE clientid = %s"
+		await cur.execute(stmt, (str(userid),))
+		ciphertext = await cur.fetchone()
+		await self.sqlBroker.close(cur)
+		if ciphertext == None:
+			return None
 		else:
-			return keys
+			return self.stringCrypt.decryptString(ciphertext[0])
+			
+	async def __get_session_token(self, session_token_code, auth_code_verifier):
+		nsoAppInfo = await self.getAppVersion()
+		if nsoAppInfo == None:
+			print("get_session_token(): No known NSO app version")
+			return None
+		nsoAppVer = nsoAppInfo['version']
 
-	async def do_ac_refresh(self, message):
-		return await self.do_iksm_refresh(message, 'ac')
-
-	def get_session_token(self, session_token_code, auth_code_verifier):
 		head = {
-			'User-Agent':      f'OnlineLounge/{self.nsoAppVer} NASDKAPI Android',
+			'User-Agent':      f'OnlineLounge/{nsoAppVer} NASDKAPI Android',
 			'Accept-Language': 'en-US',
 			'Accept':          'application/json',
 			'Content-Type':    'application/x-www-form-urlencoded',
@@ -215,15 +300,15 @@ class Nsotoken():
 			'session_token_code':          session_token_code,
 			'session_token_code_verifier': auth_code_verifier.replace(b"=", b"")
 		}
-		
+
 		r = self.session.post('https://accounts.nintendo.com/connect/1.0.0/api/session_token', headers=head, data=body)
-		if '200' not in str(r):
-			print(f"ERROR IN SESSION TOKEN: {str(r.text)}")
+		if r.status_code != 200:
+			print(f"ERROR IN SESSION TOKEN {r.status_code} {r.reason}: {str(r.text)}")
 			return None
 		else:
 			return json.loads(r.text)["session_token"]
 
-	def callImink(self, id_token, guid, timestamp, method):
+	def __callImink(self, id_token, guid, timestamp, method):
 		api_app_head = {
 			'Content-Type': 'application/json; charset=utf-8',
 			'User-Agent' : 'Jet-bot/1.0.0 (discord=jetsurf#8514)'
@@ -237,7 +322,9 @@ class Nsotoken():
 
 		r = requests.post("https://api.imink.jone.wang/f", headers=api_app_head, data=json.dumps(api_app_body))
 		print(f"IMINK API RESPONSE: {r.status_code} {r.reason} {r.text}")
+
 		if r.status_code == 500:
+			print(f"Temporary issue with IMINK: {r.status_code} {r.reason} : {r.text}")
 			return 500
 		if r.status_code != 200:
 			print(f"ERROR IN IMINK: {r.status_code} {r.reason} : {r.text}")
@@ -245,16 +332,21 @@ class Nsotoken():
 		else:
 			return json.loads(r.text)
 
-	def setup_nso(self, session_token, game='s2'):
+	async def __setup_nso(self, session_token, game='s2'):
+		nsoAppInfo = await self.getAppVersion()
+		if nsoAppInfo == None:
+			print("__setup_nso(): No known NSO app version")
+			return None
+		nsoAppVer = nsoAppInfo['version']
+
 		head = {
 			'Host': 'accounts.nintendo.com',
 			'Accept-Encoding': 'gzip',
 			'Content-Type': 'application/json; charset=utf-8',
 			'Accept-Language': 'en-US',
-			'Content-Length': '439',
 			'Accept': 'application/json',
 			'Connection': 'Keep-Alive',
-			'User-Agent': f'OnlineLounge/{self.nsoAppVer} NASDKAPI Android'
+			'User-Agent': f'OnlineLounge/{nsoAppVer} NASDKAPI Android'
 		}
 		body = {
 			'client_id': '71b963c1b7b6d119',
@@ -264,12 +356,12 @@ class Nsotoken():
 
 		r = requests.post("https://accounts.nintendo.com/connect/1.0.0/api/token", headers=head, json=body)
 		id_response = json.loads(r.text)
-		if '200' not in str(r):
-			print(f"NSO ERROR IN API TOKEN: {str(id_response)}")
+		if r.status_code != 200:
+			print(f"NSO ERROR IN API TOKEN {r.status_code} {r.reason}: {str(id_response)}")
 			return
 
 		head = {
-			'User-Agent': f'OnlineLounge/{self.nsoAppVer} NASDKAPI Android',
+			'User-Agent': f'OnlineLounge/{nsoAppVer} NASDKAPI Android',
 			'Accept-Language': 'en-US',
 			'Accept': 'application/json',
 			'Authorization': f'Bearer {id_response["access_token"]}',
@@ -280,33 +372,29 @@ class Nsotoken():
 
 		r = requests.get("https://api.accounts.nintendo.com/2.0.0/users/me", headers=head)
 		user_info = json.loads(r.text)
-		if '200' not in str(r):
-			print(f"NSO ERROR IN USER LOGIN: {str(user_info)}")
+		if r.status_code != 200:
+			print(f"NSO ERROR IN USER LOGIN {r.response} {r.reason}: {str(user_info)}")
 			return
 
 		head = {
 			'Host': 'api-lp1.znc.srv.nintendo.net',
 			'Accept-Language': 'en-US',
-			'User-Agent': f'com.nintendo.znca/{self.nsoAppVer} (Android/7.1.2)',
+			'User-Agent': f'com.nintendo.znca/{nsoAppVer} (Android/7.1.2)',
 			'Accept': 'application/json',
-			'X-ProductVersion': f'{self.nsoAppVer}',
+			'X-ProductVersion': nsoAppVer,
 			'Content-Type': 'application/json; charset=utf-8',
 			'Connection': 'Keep-Alive',
 			'Authorization': 'Bearer',
-			'Content-Length': '1036',
 			'X-Platform': 'Android',
 			'Accept-Encoding': 'gzip'
 		}
 		idToken = id_response["access_token"]
 		timestamp = int(time.time())
 		guid = str(uuid.uuid4())
-		f = self.callImink(idToken, guid, timestamp, 1)
-		if f == 500:
-			return f
-		elif f == None:
-			print("ERROR IN FLAPGAPI NSO CALL")
+		f = self.__callImink(idToken, guid, timestamp, 1)
+		if f == None or f == 500:
 			return None
-		
+
 		parameter = {
 			'f':         	f["f"],
 			'naIdToken':	idToken,
@@ -319,10 +407,10 @@ class Nsotoken():
 		body = {}
 		body["parameter"] = parameter
 
-		r = requests.post("https://api-lp1.znc.srv.nintendo.net/v1/Account/Login", headers=head, json=body)
+		r = requests.post("https://api-lp1.znc.srv.nintendo.net/v2/Account/Login", headers=head, json=body)
 		splatoon_token = json.loads(r.text)
-		if '200' not in str(r):
-			print(f"NSO ERROR IN LOGIN: {str(splatoon_token)}")
+		if r.status_code != 200:
+			print(f"NSO ERROR IN LOGIN {r.status_code} {r.reason}: {str(splatoon_token)}")
 			return None
 
 		try:
@@ -337,20 +425,18 @@ class Nsotoken():
 
 		timestamp = int(time.time())
 		guid = str(uuid.uuid4())
-		f = self.callImink(idToken,guid, timestamp, 2)
-		if f == None:
-			print("ERROR IN FLAPGAPI APP CALL")
+		f = self.__callImink(idToken,guid, timestamp, 2)
+		if f == None or f == 500:
 			return None
 
 		head = {
 			'Host': 'api-lp1.znc.srv.nintendo.net',
-			'User-Agent': f'com.nintendo.znca/{self.nsoAppVer} (Android/7.1.2)',
+			'User-Agent': f'com.nintendo.znca/{nsoAppVer} (Android/7.1.2)',
 			'Accept': 'application/json',
-			'X-ProductVersion': self.nsoAppVer,
+			'X-ProductVersion': nsoAppVer,
 			'Content-Type': 'application/json; charset=utf-8',
 			'Connection': 'Keep-Alive',
 			'Authorization': f'Bearer {splatoon_token["result"]["webApiServerCredential"]["accessToken"]}',
-			'Content-Length': '37',
 			'X-Platform': 'Android',
 			'Accept-Encoding': 'gzip'
 		}
@@ -371,8 +457,8 @@ class Nsotoken():
 
 		r = requests.post("https://api-lp1.znc.srv.nintendo.net/v2/Game/GetWebServiceToken", headers=head, json=body)
 		token = json.loads(r.text)
-		if '200' not in str(r):
-			print(f"NSO ERROR IN GETWEBSERVICETOKEN: {str(token)}")
+		if r.status_code != 200:
+			print(f"NSO ERROR IN GETWEBSERVICETOKEN {r.status_code} {r.reason}: {str(token)}")
 			return None
 
 		head = {
@@ -410,20 +496,18 @@ class Nsotoken():
 						print("ERROR GETTING AC _PARK_SESSION/BEARER")
 						return None
 					else:
-						keys['ac_g'] = gtoken
-						keys['ac_p'] = r.cookies['_park_session']
-						keys['ac_b'] = bearer['token']
+						keys = { 'gtoken' : gtoken, 'park_session' : r.cookies['_park_session'], 'ac_bearer' : bearer['token'] }
 						print("Got AC _park_session and bearer!")
 				else:
 					return None
 		else:
 			head['Host'] = 'app.splatoon2.nintendo.net'
 			r = requests.get("https://app.splatoon2.nintendo.net/?lang=en-US", headers=head)
-			if '200' not in str(r):
-				print(f"ERROR IN GETTING IKSM: {str(r.text)}")
+			if r.status_code != 200:
+				print(f"ERROR IN GETTING IKSM {r.status_code} {r.reason}: {str(r.text)}")
 				return None
 			else:
 				print("Got a S2 token!")
-				keys['s2'] = r.cookies["iksm_session"]
+				keys = { 'iksm' : r.cookies['iksm_session'] }
 
 		return keys

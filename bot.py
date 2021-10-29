@@ -1,97 +1,574 @@
-#!/usr/bin/python3
-
-import sys
+import os, sys, re
 sys.path.append('./modules')
 #Base Stuffs
-import discord, asyncio, subprocess, json, time
+import discord, asyncio, subprocess, json, time, itertools
+from discord.commands import Option, SlashCommandGroup
 #DBL Posting
 import urllib, urllib.request, requests, pymysql
 #Our Classes
-import nsotoken, commandparser, serverconfig, splatinfo
-import vserver, mysqlhandler, serverutils, nsohandler, achandler
+import nsotoken, commandparser, serverconfig, splatinfo, messagecontext
+import vserver, mysqlhandler, mysqlschema, serverutils, nsohandler, achandler
+import stringcrypt
 #Eval
 import traceback, textwrap, io, signal
 from contextlib import redirect_stdout
 from subprocess import call
+from pathlib import Path
 
+configData = None
+stringCrypt = stringcrypt.StringCrypt()
 splatInfo = splatinfo.SplatInfo()
 intents = discord.Intents.default()
 intents.members = True
-client = discord.Client(intents=intents, chunk_guilds_at_startup=False)
+client = discord.Bot(intents=intents, chunk_guilds_at_startup=False)
 commandParser = None
 serverConfig = None
 mysqlHandler = None
-nsoAppVer = ''
 nsoHandler = None
 nsoTokens = None
 serverVoices = {}
 serverUtils = None
 acHandler = None
 doneStartup = False
-token = ''
-hs = 0
 owners = []
-dev = 1
-soundsDir = ''
-helpfldr = ''
+dev = True
 head = {}
-url = ''
+keyPath = './config/db-secret-key.hex'
+
+#SubCommand Groups
+cmdGroups = {}
+maps = SlashCommandGroup('maps', 'Commands related to maps for Splatoon 2')
+weapon = SlashCommandGroup('weapons', 'Commands realted to weapons for Splatoon 2')
+admin = SlashCommandGroup('admin', 'Commands that require guild admin privledges to run')
+voice = SlashCommandGroup('voice', 'Commands related to voice functions')
+store = SlashCommandGroup('store', 'Commands related to the Splatoon 2 store')
+stats = SlashCommandGroup('stats', 'Commands related to Splatoon 2 gameplay stats')
+acnh = SlashCommandGroup('acnh', "Commands related to Animal Crossing New Horizons")
+
+dm = admin.command_group(name='dm', description="Admin commands related to DM's on users leaving")
+feed = admin.command_group(name='feed', description='Admin commands related to SplatNet rotation feeds')
+announce = admin.command_group(name='announcements', description='Admin commands related to developer annoucenments')
+play = voice.command_group(name='play', description='Commands realted to playing audio')
+storedm = store.command_group('dm', description="Commands related to DM'ing on store changes")
 
 def loadConfig():
-	global token, nsoAppVer, soundsDir, helpfldr, mysqlHandler, dev, head, url, hs
+	global configData, helpfldr, mysqlHandler, dev, head
 	try:
 		with open('./config/discordbot.json', 'r') as json_config:
 			configData = json.load(json_config)
 
-		token = configData['token']
-		soundsDir = configData['soundsdir']
-		helpfldr = configData['help']
-		hs = configData['home_server']
-		nsoAppVer = configData['nso_app_ver']
 		try:
-			dbid = configData['discordbotid']
-			dbtoken = configData['discordbottok']
-			head = { 'Authorization': dbtoken }
-			url = f"https://top.gg/api/bots/{str(dbid)}/stats"
-			
-			dev = 0
+			head = { 'Authorization': configData['discordbottok'] }
+			configData['discordbottok'] = ""
+			dev = False
 		except:
 			print('No ID/Token for top.gg, skipping')
 
 		mysqlHandler = mysqlhandler.mysqlHandler(configData['mysql_host'], configData['mysql_user'], configData['mysql_pw'], configData['mysql_db'])
+
+		#Get the secrets the F out!
+		configData['mysql_host'] = ""
+		configData['mysql_user'] = ""
+		configData['mysql_pw'] = ""
+		configData['mysql_db'] = ""
 
 		print('Config Loaded')
 	except Exception as e:
 		print(f"Failed to load config: {str(e)}")
 		quit(1)
 
-async def resetNSOVer(message):
-	global nsoAppVer, nsoTokens
+def ensureEncryptionKey():
+	global stringCrypt, keyPath
 
-	try:
-		with open('./config/discordbot.json', 'r') as json_config:
-			configData = json.load(json_config)
-			nsoAppVer = configData['nso_app_ver']
-			await nsoTokens.reloadNSOAppVer(nsoAppVer)
-	except:
-		await message.channel.send("Issue loading config file... whats up with that?")
+	if os.path.isfile(keyPath):
+		stringCrypt.readSecretKeyFile(keyPath)
+	else:
+		print("Creating new secret key file...")
+		stringCrypt.writeSecretKeyFile(keyPath)
+
+@acnh.command(name='passport', description="Posts your ACNH Passport")
+async def cmdACNHPassport(ctx):
+	await serverUtils.increment_cmd(ctx, 'passport')
+	await acHandler.passport(ctx)
+
+@store.command(name='currentgear', description="See the current gear on the SplatNet store")
+async def cmdStoreCurrent(ctx):
+	await serverUtils.increment_cmd(ctx, 'splatnetgear')
+	await nsoHandler.gearParser(ctx)
+
+@store.command(name='order', description='Orders gear from the SplatNet store')
+async def cmdOrder(ctx, order: Option(str, "ID or NAME of the gear to order from the store (get both from /store currentgear)", required=True), override: Option(bool, "Override if you have an item already on order", required=False)):
+	print(f"Ordering gear for user: {ctx.user.name} and id {str(ctx.user.id)}")
+	await serverUtils.increment_cmd(ctx, 'order')
+	await nsoHandler.orderGearCommand(ctx, args=[str(order)], override=override if override != None else False)
+
+@storedm.command(name='add', description='Sends a DM when gear with ABILITY/BRAND/GEAR appears in the store')
+async def cmdStoreDMAbilty(ctx, flag: Option(str, "ABILITY/BRAND/GEAR to DM you with when it appears in the store", required=True)):
+	if ctx.guild == None:
+		await ctx.respond("Can't DM me with this command.")
+		return
+	await serverUtils.increment_cmd(ctx, 'storedm')
+	await nsoHandler.addStoreDM(ctx, [ str(flag) ], True)
+
+@storedm.command(name='list', description='Shows you everything you are set to recieve a DM for')
+async def cmdStoreDMAbilty(ctx):
+	if ctx.guild == None:
+		await ctx.respond("Can't DM me with this command.")
 		return
 
-	await message.channel.send(f"Reloaded NSO Version from config with version: {nsoAppVer}")
+	await serverUtils.increment_cmd(ctx, 'storedm')
+	await nsoHandler.listStoreDM(ctx)
+
+@storedm.command(name='remove', description='Removes you from being DMed when gear with FLAG appears in the storer')
+async def cmdStoreDMAbilty(ctx, flag: Option(str, "ABILITY/BRAND/GEAR to stop DMing you with when it appears in the store", required=True)):
+	if ctx.guild == None:
+		await ctx.respond("Can't DM me with this command.")
+		return
+
+	await serverUtils.increment_cmd(ctx, 'storedm')
+	await nsoHandler.removeStoreDM(ctx, [ str(flag) ])
+
+@client.slash_command(name='support', description='Sends a discord invite to my support guild.')
+async def cmdSupport(ctx):
+	await ctx.respond('Here is a link to my support server: https://discord.gg/TcZgtP5', ephemeral=True)
+
+@client.slash_command(name='github', description='Sends a link to my github page')
+async def cmdGithub(ctx):
+	await ctx.respond('Here is my github page! : https://github.com/Jetsurf/jet-bot', ephemeral=True)
+
+@announce.command(name='set', description="Sets a chat channel to receive announcements from my developers")
+async def cmdDMAdd(ctx, channel: Option(discord.TextChannel, "Channel to set to receive announcements", required=True)):
+	if ctx.guild == None:
+		await ctx.respond("Can't DM me with this command.")
+		return
+
+	if await checkIfAdmin(ctx):
+		await serverUtils.setAnnounceChannel(ctx, channel)
+	else:
+		await ctx.respond("You aren't a guild administrator", ephemeral=True)
+
+@announce.command(name='get', description="Gets the channel that is set to receive annoucements")
+async def cmdDMRemove(ctx):
+	if ctx.guild == None:
+		await ctx.respond("Can't DM me with this command.")
+		return
+
+	if await checkIfAdmin(ctx):
+		channel = await serverUtils.getAnnounceChannel(ctx.guild.id)
+		if channel == None:
+			await ctx.respnd("No channel is set to receive announcements")
+		else:
+			await ctx.respond(f"Current announcement channel is: {channel.name}")
+	else:
+		await ctx.respond("You aren't a guild administrator", ephemeral=True)
+
+@announce.command(name='remove', description="Removes you from being DM'ed on users leaving")
+async def cmdDMRemove(ctx):
+	if ctx.guild == None:
+		await ctx.respond("Can't DM me with this command.")
+		return
+
+	if await checkIfAdmin(ctx):
+		await serverUtils.stopAnnouncements(ctx)
+	else:
+		await ctx.respond("You aren't a guild administrator")
+
+@feed.command(name='create', description="Sets up a Splatoon 2 rotation feed for a channel")
+async def cmdAdminFeed(ctx, map: Option(bool, "Enable maps in the feed?", required=True), sr: Option(bool, "Enable Salmon Run in the feed?", required=True), gear: Option(bool, "Enable gear in the feed?", required=True), recreate: Option(bool, "Recreate feed if one is already present.", required=False)):
+	args = [ map, sr, gear, recreate ]
+
+	if ctx.guild == None:
+		await ctx.respond("Can't DM me with this command.")
+		return
+
+	if await checkIfAdmin(ctx):
+		if map == False and sr == False and gear == False:
+			await ctx.respond("Not going to create a feed with nothing in it.")
+		else:
+			await serverUtils.createFeed(ctx, args=args)
+	else:
+		await ctx.respond("You aren't a guild administrator", ephemeral=True)
+
+@feed.command(name='delete', description="Deletes a feed from a channel")
+async def cmdAdminDeleteFeed(ctx):
+	if ctx.guild == None:
+		await ctx.respond("Can't DM me with this command.")
+		return
+
+	if await checkIfAdmin(ctx):
+		await serverUtils.deleteFeed(ctx, is_slash=True, bypass=True)
+	else:
+		await ctx.respond("You aren't a guild administrator", ephemeral=True)
+
+@dm.command(name='remove', description="Removes you from being DM'ed on users leaving")
+async def cmdDMRemove(ctx):
+	if ctx.guild == None:
+		await ctx.respond("Can't DM me with this command.")
+		return
+
+	if await checkIfAdmin(ctx):
+		await serverUtils.removeDM(ctx)
+	else:
+		await ctx.respond("You aren't a guild administrator", ephemeral=True)
+
+@dm.command(name='add', description="Adds you to DM's on users leaving")
+async def cmdDMAdd(ctx):
+	if ctx.guild == None:
+		await ctx.respond("Can't DM me with this command.")
+		return
+
+	if await checkIfAdmin(ctx):
+		await serverUtils.addDM(ctx)
+	else:
+		await ctx.respond("You aren't a guild administrator", ephemeral=True)
+
+@maps.command(name='current', description='Shows current map rotation for Turf War/Ranked/League')
+async def cmdCurrentMaps(ctx):
+	await serverUtils.increment_cmd(ctx, 'currentmaps')
+	await ctx.respond(embed=nsoHandler.mapsEmbed())
+
+@maps.command(name='next', description='Shows the next maps in rotation for Turf War/Ranked/League')
+async def cmdNextMaps(ctx, rotation: Option(int, "Map Rotations ahead to show, max of 11 ahead", required=False, default=1)):
+	await serverUtils.increment_cmd(ctx, 'nextmaps')
+	if rotation < 0 or rotation > 11:
+		await ctx.respond("Rotation must be between 1-11")
+		return
+	if rotation == None:
+		rotation = 1
+
+	await ctx.respond(embed=nsoHandler.mapsEmbed(rotation))
+
+@maps.command(name='nextsr', description='Shows map/weapons for the next Salmon Run rotation')
+async def cmdNextSR(ctx):
+	await serverUtils.increment_cmd(ctx, 'nextsr')
+	await ctx.respond(embed=nsoHandler.srEmbed(getNext=True))
+
+@maps.command(name='currentsr', description='Shows map/weapons for the current Salmon Run rotation')
+async def cmdCurrentSR(ctx):
+	await serverUtils.increment_cmd(ctx, 'currentsr')
+	await ctx.respond(embed=nsoHandler.srEmbed(getNext=False))
+
+@maps.command(name='callout', description="Shows callout locations for a Splatoon 2 map")
+async def cmdMapsCallout(ctx, map: Option(str, "Map to show callout locations for", choices=[ themap.name() for themap in splatInfo.getAllMaps() ] ,required=True)):
+	await nsoHandler.cmdMaps(ctx, args=[ 'callout', str(map) ])
+
+@maps.command(name='list', description="Shows all Splatoon 2 maps")
+async def cmdMapsStats(ctx):
+	await serverUtils.increment_cmd(ctx, 'maps')
+	await nsoHandler.cmdMaps(ctx, args=[ 'list' ])
+
+@stats.command(name='maps', description="Shows Splatoon 2 gameplay stats for a map")
+async def cmdMapsStats(ctx, map: Option(str, "Map to show stats for", choices=[ themap.name() for themap in splatInfo.getAllMaps() ] ,required=True)):
+	await serverUtils.increment_cmd(ctx, 'maps')
+	await nsoHandler.cmdMaps(ctx, args=[ 'stats', str(map)])
+
+@maps.command(name='random', description="Generates a random list of Splatoon 2 maps")
+async def cmdMapsRandom(ctx, num: Option(int, "Number of maps to include in the list (1-10)", required=True)):
+	await serverUtils.increment_cmd(ctx, 'maps')
+	if num < 1 or num > 10:
+		await ctx.respond("Num needs to be between 1-10")
+	else:
+		await nsoHandler.cmdMaps(ctx, args=[ 'random', str(num)])
+
+@weapon.command(name='info', description='Gets info on a weapon in Splatoon 2')
+async def cmdWeapInfo(ctx, name: Option(str, "Name of the weapon to get info for", required=True)):
+	await serverUtils.increment_cmd(ctx, 'weapons')
+
+	await nsoHandler.cmdWeaps(ctx, args=[ 'info', str(name) ])
+
+@weapon.command(name='list', description='Gets a list pf weapons by type in Splatoon 2')
+async def cmdWeapList(ctx, weaptype: Option(str, "Type of weapon to generate a list for", required=True, choices=[ weaptype.name() for weaptype in splatInfo.getAllWeaponTypes() ])):
+	await serverUtils.increment_cmd(ctx, 'weapons')
+
+	await nsoHandler.cmdWeaps(ctx, args=[ 'list', str(weaptype) ])
+
+@weapon.command(name='random', description='Generates a random list of weapons')
+async def cmdWeapRandom(ctx, num: Option(int, "Number of weapons to include in the list (1-10)", required=True)):
+	await serverUtils.increment_cmd(ctx, 'weapons')
+	if num < 0 or num > 10:
+		await ctx.respond("Num must be between 1-10!")
+		return
+
+	await nsoHandler.cmdWeaps(ctx, args=[ 'random', str(num) ])
+
+@weapon.command(name='special', description='Gets all Splatoon 2 weapons with special type')
+async def cmdWeapSpecial(ctx, special: Option(str, "Name of the special to get matching weapons for", choices=[ weap.name() for weap in splatInfo.getAllSpecials() ], required=True)):
+	await serverUtils.increment_cmd(ctx, 'weapons')
+
+	await nsoHandler.cmdWeaps(ctx, args=[ 'special', str(special) ])
+
+@weapon.command(name='stats', description='Gets stats from a weapon in Splatoon 2')
+async def cmdWeapStats(ctx, name: Option(str, "Name of the weapon to get stats for", required=True)):
+	await serverUtils.increment_cmd(ctx, 'weapons')
+
+	await nsoHandler.cmdWeaps(ctx, args=[ 'stats', str(name) ])
+
+@weapon.command(name='sub', description='Gets Splatoon 2all weapons with sub type')
+async def cmdWeapSub(ctx, sub: Option(str, "Name of the sub to get matching weapons for", choices=[ weap.name() for weap in splatInfo.getAllSubweapons() ], required=True)):
+	await serverUtils.increment_cmd(ctx, 'weapons')
+
+	await nsoHandler.cmdWeaps(ctx, args=[ 'sub', str(sub) ])
+
+@stats.command(name='ranks', description='Get your ranks in ranked mode from S2 SplatNet')
+async def cmdRanks(ctx):
+	await serverUtils.increment_cmd(ctx, 'rank')
+	await nsoHandler.getRanks(ctx)
+
+@stats.command(name='sr', description='Get your Salmon Run stats from S2 SplatNet')
+async def cmdSRStats(ctx):
+	await serverUtils.increment_cmd(ctx, 'srstats')
+	await nsoHandler.getSRStats(ctx)
+
+@stats.command(name='multi', description='Get your multiplayer stats from S2 SplatNet ')
+async def cmdStats(ctx):
+	await serverUtils.increment_cmd(ctx, 'stats')
+	await nsoHandler.getStats(ctx)
+
+@stats.command(name='battle', description='Get stats from a battle (1-50)')
+async def cmdBattle(ctx, battlenum: Option(int, "Battle Number, 1 being latest, 50 max", required=True, default=1)):
+	await serverUtils.increment_cmd(ctx, 'battle')
+	await nsoHandler.cmdBattles(ctx, battlenum)
+
+#TODO: NEEDS GUILD RESTRICTION - need to dynamically load the home server
+#@client.slash_command(name='eval', description="Eval a code block (Owners only)")
+#async def cmdEval(ctx, code: Option(str, "The code block to eval", required=True)):
+	#await doEval(ctx, code, slash=True)
+
+@voice.command(name='join', description='Join a voice chat channel')
+async def cmdVoiceJoin(ctx, channel: Option(discord.VoiceChannel, "Voice Channel to join", required=False)):
+	if ctx.guild == None:
+		await ctx.respond("Can't DM me with this command.")
+		return
+
+	await serverUtils.increment_cmd(ctx, 'join')
+	if channel == None:
+		await serverVoices[ctx.guild.id].joinVoiceChannel(ctx, [])
+	else:
+		await serverVoices[ctx.guild.id].joinVoiceChannel(ctx, channel)
+
+@voice.command(name='leave', description="Disconnects the bot from voice")
+async def cmdVoiceLeave(ctx):
+	if ctx.guild == None:
+		await ctx.respond("Can't DM me with this command.")
+		return
+
+	await serverUtils.increment_cmd(ctx, 'leavevoice')
+	if serverVoices[ctx.guild.id] != None:
+		await serverVoices[ctx.guild.id].vclient.disconnect()
+		await ctx.respond("Disconnected from voice")
+	else:
+		await ctx.respond("Not connected to voice", ephemeral=True)
+
+@voice.command(name='volume', description='Changes the volume while in voice chat')
+async def cmdVoiceVolume(ctx, vol: Option(int, "What to change the volume to 1-60% (7\% is default)", required=True)):
+	if ctx.guild == None:
+		await ctx.respond("Can't DM me with this command.")
+		return
+
+	await serverUtils.increment_cmd(ctx, 'volume')
+	if serverVoices[ctx.guild.id].vclient != None:
+		if vol > 60:
+			vol = 60
+		if serverVoices[ctx.guild.id].source != None:
+			await ctx.respond(f"Setting Volume to {str(vol)}%")
+			serverVoices[ctx.guild.id].source.volume = float(int(vol) / 100)
+		else:
+			await ctx.respond("Not playing anything", ephemeral=True)
+	else:
+		await ctx.respond("Not connected to voice", ephemeral=True)
+
+@play.command(name='url', description='Plays a video from a URL')
+async def cmdVoicePlayUrl(ctx, url: Option(str, "URL of the video to play")):
+	if ctx.guild == None:
+		await ctx.respond("Can't DM me with this command.")
+		return
+
+	await serverUtils.increment_cmd(ctx, 'play')
+	if serverVoices[ctx.guild.id].vclient is not None:
+		await serverVoices[ctx.guild.id].setupPlay(ctx, [ str(url) ])
+	else:
+		await ctx.respond("Not connected to voice", ephemeral=True)
+
+@play.command(name='search', description="Searches SOURCE for a playable video/song")
+async def cmdVoicePlaySearch(ctx, source: Option(str, "Source to search", choices=[ 'youtube', 'soundcloud' ], default='youtube', required=True), search: Option(str, "Video to search for", required = True)):
+	if ctx.guild == None:
+		await ctx.respond("Can't DM me with this command.")
+		return
+
+	await serverUtils.increment_cmd(ctx, 'play')
+	if serverVoices[ctx.guild.id].vclient is not None:
+		theList = []
+		for i in itertools.chain([ source ], search.split()):
+			theList.append(i)
+
+		print(f"{theList}")
+		await serverVoices[ctx.guild.id].setupPlay(ctx, theList)
+
+	else:
+		await ctx.respond("Not connected to voice", ephemeral=True)
+
+@voice.command(name='skip', description="Skips the currently playing song")
+async def cmdVoiceSkip(ctx):
+	if ctx.guild == None:
+		await ctx.respond("Can't DM me with this command.")
+		return
+
+	await serverUtils.increment_cmd(ctx, 'skip')
+	if serverVoices[ctx.guild.id].vclient is not None:
+		if serverVoices[ctx.guild.id].source is not None:
+			await serverVoices[ctx.guild.id].stop(ctx)
+		else:
+			await ctx.respond("Not playing anything", ephemeral=True)
+	else:
+		ctx.respond("Not connected to voice", ephemeral=True)
+
+@voice.command(name='end', description="Stops playing all videos")
+async def cmdVoiceEnd(ctx):
+	if ctx.guild == None:
+		await ctx.respond("Can't DM me with this command.")
+		return
+
+	await serverUtils.increment_cmd(ctx, 'stop')
+	if serverVoices[ctx.guild.id].vclient is not None:
+		if serverVoices[ctx.guild.id].source is not None:
+			serverVoices[ctx.guild.id].end()
+			await ctx.respond("Stopped playing all videos")
+		else:
+			await ctx.respond("Not playing anything.", ephemeral=True)
+	else:
+		await ctx.respond("Not connected to voice", ephemeral=True)
+
+@play.command(name='random', description="Plays a number of videos from this servers playlist")
+async def cmdVoicePlayRandom(ctx, num: Option(int, "Number of videos to queue up", required=True)):
+	if ctx.guild == None:
+		await ctx.respond("Can't DM me with this command.")
+		return
+
+	await serverUtils.increment_cmd(ctx, 'playrandom')
+	if num < 0:
+		await ctx.respond("Num needs to be greater than 0.", ephemeral=True)
+	else:
+		if serverVoices[ctx.guild.id].vclient is not None:
+			await serverVoices[ctx.guild.id].playRandom(ctx, num)
+		else:
+			await ctx.respond("Not connected to voice", ephemeral=True)
+
+@voice.command(name='currentsong', description="Shows the currently playing video")
+async def cmdVoiceCurrent(ctx):
+	if ctx.guild == None:
+		await ctx.respond("Can't DM me with this command.")
+		return
+
+	await serverUtils.increment_cmd(ctx, 'currentsong')
+	if serverVoices[ctx.guild.id].vclient is not None:
+		if serverVoices[ctx.guild.id].source is not None:
+			await ctx.respond(f"Currently Playing Video: {serverVoices[ctx.guild.id].source.yturl}")
+		else:
+			await ctx.respond("I'm not playing anything.", ephemeral=True)
+	else:
+		await ctx.respond("Not connected to voice", ephemeral=True)
+
+@voice.command(name='queue', description="Shows the current queue of videos to play")
+async def cmdVoiceQueue(ctx):
+	if ctx.guild == None:
+		await ctx.respond("Can't DM me with this command.")
+		return
+
+	await serverUtils.increment_cmd(ctx, 'queue')
+	if serverVoices[ctx.guild.id].vclient is not None:
+		await serverVoices[ctx.guild.id].printQueue(ctx)
+	else:
+		await ctx.respond("Not connected to voice.", ephemeral=True)
+
+@voice.command(name='disconnect', description="Disconnects me from voice")
+async def cmdVoiceDisconnect(ctx):
+	if ctx.guild == None:
+		await ctx.respond("Can't DM me with this command.")
+		return
+
+	await serverUtils.increment_cmd(ctx, 'leavevoice')
+	if serverVoices[ctx.guild.id] != None:
+		await serverVoices[ctx.guild.id].vclient.disconnect()
+		serverVoices[ctx.guild.id].vclient = None
+		await ctx.respond("Disconnected from voice.")
+	else:
+		await ctx.respond("Not connected to voice.", ephemeral=True)
+
+@voice.command(name='sounds', description="Shows sounds I can play with /voice play sound")
+async def cmdVoiceSounds(ctx):
+	if ctx.guild == None:
+		await ctx.respond("Can't DM me with this command.")
+		return
+
+	await serverUtils.increment_cmd(ctx, 'sounds')
+
+	await ctx.respond(embed=createSoundsEmbed())
+
+@play.command(name='sound', description="Plays one of my sound clips in voice")
+async def cmdVoicePlaySound(ctx, sound: Option(str, "Sound clip to play, get with /voice sounds")):
+	if serverVoices[ctx.guild.id].vclient is not None:
+		await ctx.respond(f"Attempting to play: {sound}", ephemeral=True)
+		await serverVoices[ctx.guild.id].playSound(sound)
+	else:
+		await ctx.respond("Not connected to voice.", ephemeral=True)
+
+@admin.command(name='playlist', description="Adds a URL or the current video to my playlist for /voice play random")
+async def cmdPlaylistAdd(ctx, url: Option(str, "URL to add to my playlist", required=True)):
+	if ctx.guild == None:
+		await ctx.respond("Can't DM me with this command.")
+		return
+
+	if await checkIfAdmin(ctx):
+		await serverVoices[ctx.guild.id].addGuildList(ctx, [ url ])
+	else:
+		await ctx.respond("You aren't a guild administrator", ephemeral=True)
+
+def createSoundsEmbed():
+	global configData
+	embed = discord.Embed(colour=0xEB4034)
+	embed.title = "Current Sounds"
+
+	delimiter = ', '
+	theSounds = subprocess.check_output(["ls", configData['soundsdir']])
+	theSounds = theSounds.decode("utf-8")
+	theSounds = theSounds.replace('.mp3', '')
+	theSounds = theSounds.replace('\n', delimiter)
+	if len(theSounds) > 1024:
+		length = 0
+		tmpStr = ""
+		embedNum = 1
+		for snd in theSounds.split(delimiter):
+			if length + (len(snd) + len(delimiter)) > 1024:
+				length = 0
+				embed.add_field(name=f"Sounds {str(embedNum)}", value=tmpStr[:len(tmpStr)-len(delimiter)], inline=False)
+				tmpStr = ""
+				embedNum += 1
+			
+			tmpStr += f'{snd}{delimiter}'
+			length += (len(snd) + len(delimiter))
+	else:
+		embed.add_field(name="Sounds", value=theSounds, inline=False)
+
+	return embed
+
+async def checkIfAdmin(ctx):
+	if ctx.guild.get_member(ctx.user.id) == None:
+		await client.get_guild(ctx.guild.id).chunk()
+
+	return ctx.user.guild_permissions.administrator
 
 @client.event
 async def on_ready():
-	global client, soundsDir, mysqlHandler, serverUtils, serverVoices, splatInfo, helpfldr, hs
-	global nsoHandler, nsoTokens, head, url, dev, owners, commandParser, doneStartup, acHandler, nsoAppVer
+	global client, mysqlHandler, serverUtils, serverVoices, splatInfo, configData
+	global nsoHandler, nsoTokens, head, dev, owners, commandParser, doneStartup, acHandler, stringCrypt
 
 	if not doneStartup:
-		print(f"NSO App Ver: {nsoAppVer}")
 		print('Logged in as,', client.user.name, client.user.id)
-		
+
 		#This is needed due to no prsence intent, prod bot needs to find the devs in its primary server
-		print(f"Chunking home server ({str(hs)}) to find owners")
-		await client.get_guild(int(hs)).chunk()
-		
+		print(f"Chunking home server ({str(configData['home_server'])}) to find owners")
+		await client.get_guild(int(configData['home_server'])).chunk()
+
 		#Get owners from Discord team api
 		print("Loading owners...")
 		theapp = await client.application_info()
@@ -109,30 +586,34 @@ async def on_ready():
 	else:
 		print('RECONNECT TO DISCORD')
 
-	if dev == 0:
+	if not dev:
 		print(f"I am in {str(len(client.guilds))} servers, posting to top.gg")
 		body = { 'server_count' : len(client.guilds) }
-		requests.post(url, headers=head, json=body)
+		requests.post(f"https://top.gg/api/bots/{str(client.user.id)}/stats", headers=head, json=body)
 	else:
 		print(f"I am in {str(len(client.guilds))} servers")
 
 	if not doneStartup:
 		print("Doing Startup...")
 		for server in client.guilds:
-			#Don't recreate serverVoices on reconnect
 			if server.id not in serverVoices:
-				serverVoices[server.id] = vserver.voiceServer(client, mysqlHandler, server.id, soundsDir)
+				serverVoices[server.id] = vserver.voiceServer(client, mysqlHandler, server.id, configData['soundsdir'])
 
 		serverConfig = serverconfig.ServerConfig(mysqlHandler)
 		commandParser = commandparser.CommandParser(serverConfig, client.user.id)
-		serverUtils = serverutils.serverUtils(client, mysqlHandler, serverConfig, helpfldr)
-		nsoTokens = nsotoken.Nsotoken(client, mysqlHandler, nsoAppVer)
-		nsoHandler = nsohandler.nsoHandler(client, mysqlHandler, nsoTokens, splatInfo)
-		acHandler = achandler.acHandler(client, mysqlHandler, nsoTokens)
-		await nsoHandler.updateS2JSON()
+		serverUtils = serverutils.serverUtils(client, mysqlHandler, serverConfig, configData['help'])
+		nsoTokens = nsotoken.Nsotoken(client, mysqlHandler, configData.get('hosted_url'), stringCrypt)
+		nsoHandler = nsohandler.nsoHandler(client, mysqlHandler, nsoTokens, splatInfo, configData.get('hosted_url'))
+		acHandler = achandler.acHandler(client, mysqlHandler, nsoTokens, configData)
 		await mysqlHandler.startUp()
+		mysqlSchema = mysqlschema.MysqlSchema(mysqlHandler)
+		await mysqlSchema.update()
+		await nsoTokens.migrateTokensTable()
+
+		await nsoHandler.updateS2JSON()
+		await nsoTokens.updateAppVersion()
 		print('Done\n------')
-		await client.change_presence(status=discord.Status.online, activity=discord.Game("Use !help for directions!"))
+		await client.change_presence(status=discord.Status.online, activity=discord.Game("Check Slash Commands!"))
 	else:
 		print('Finished reconnect')
 	doneStartup = True
@@ -146,24 +627,23 @@ async def on_member_remove(member):
 	if not doneStartup:
 		return
 
-	gid = member.guild.id
-	await client.get_guild(gid).chunk()
-	for mem in await serverUtils.getAllDM(gid):
+	await client.get_guild(member.guild.id).chunk()
+	for mem in await serverUtils.getAllDM(member.guild.id):
 		memid = mem[0]
-		memobj = client.get_guild(gid).get_member(memid)
+		memobj = client.get_guild(member.guild.id).get_member(memid)
 		if memobj.guild_permissions.administrator:
 			await memobj.send(f"{member.name} left {member.guild.name}")
 
 @client.event
 async def on_guild_join(server):
-	global serverVoices, head, url, dev, owners, mysqlHandler
+	global client, serverVoices, head, url, dev, owners, mysqlHandler, configData
 	print(f"I joined server: {server.name}")
-	serverVoices[server.id] = vserver.voiceServer(client, mysqlHandler, server.id, soundsDir)
+	serverVoices[server.id] = vserver.voiceServer(client, mysqlHandler, server.id, configData['soundsdir'])
 
-	if dev == 0:
+	if not dev:
 		print(f"I am now in {str(len(client.guilds))} servers, posting to top.gg")
 		body = { 'server_count' : len(client.guilds) }
-		r = requests.post(url, headers=head, json=body)
+		r = requests.post(f"https://top.gg/api/bots/{str(client.user.id)}/stats", headers=head, json=body)
 	else:
 		print(f"I am now in {str(len(client.guilds))} servers")
 
@@ -173,14 +653,14 @@ async def on_guild_join(server):
 
 @client.event
 async def on_guild_remove(server):
-	global serverVoices, head, url, dev, owners
+	global client, serverVoices, head, dev, owners
 	print("I left server: " + server.name)
 	serverVoices[server.id] = None
 
-	if dev == 0:
+	if not dev:
 		print(f"I am now in {str(len(client.guilds))} servers, posting to top.gg")
 		body = { 'server_count' : len(client.guilds) }
-		r = requests.post(url, headers=head, json=body)
+		r = requests.post(f"https://top.gg/api/bots/{str(client.user.id)}/stats", headers=head, json=body)
 	else:
 		print(f"I am now in {str(len(client.guilds))} servers")
 
@@ -193,7 +673,7 @@ async def on_guild_remove(server):
 
 @client.event
 async def on_voice_state_update(mem, before, after):
-	global client, serverVoices, mysqlHandler, soundsDir, serverUtils
+	global client, serverVoices, mysqlHandler, serverUtils, doneStartup
 
 	#Don't care if during startup
 	if not doneStartup:
@@ -210,50 +690,44 @@ async def on_voice_state_update(mem, before, after):
 	if mem.id == client.user.id and after.channel == None:
 		print(f"Disconnect, recreating vserver for {str(before.channel.guild.id)}")
 		try:
-			if serverVoices[server].vclient == None:
+			if serverVoices[server].vclient != None:
 				await serverVoices[server].vclient.disconnect()
 		except Exception as e:
 			print(traceback.format_exc())
 			print("Issue in voice disconnect?? Recreating anyway")
 
-		serverVoices[server] = vserver.voiceServer(client, mysqlHandler, server, soundsDir)
+		serverVoices[server] = vserver.voiceServer(client, mysqlHandler, server, configData['soundsdir'])
 		sys.stdout.flush()
-
-@client.event
-async def on_error(event, *args, **kwargs):
-	global mysqlHandler, serverVoices
-	exc = sys.exc_info()
-	if exc[0] is discord.errors.Forbidden:
-		return
-	else:
-		raise exc[1]
 
 def killEval(signum, frame):
 	raise asyncio.TimeoutError
 
-async def doEval(message):
+async def doEval(ctx, codeblk, slash=False):
 	global owners, commandParser
 	newout = io.StringIO()
-	env = { 'message' : message	}
+	env = { 'ctx' : ctx	}
 	env.update(globals())
-	env.pop('token')
+	env.pop('configData')
 	env.pop('mysqlHandler')
 	env.pop('nsoTokens')
 	embed = discord.Embed(colour=0x00FFFF)
-	prefix = await commandParser.getPrefix(message.guild.id)
-	if message.author not in owners:
-		await message.channel.send("You are not an owner, this command is limited to my owners only :cop:")
+	prefix = await commandParser.getPrefix(ctx.guild.id)
+	if ctx.user not in owners:
+		await ctx.respond("You are not an owner, this command is limited to my owners only :cop:")
 	else:
-		await message.channel.trigger_typing()
-		if '```' in message.content:
-			code = message.content.replace('`', '').replace(f"{prefix}eval ", '')
+		if slash or '```' in ctx.content :
+			if not slash:
+				code = ctx.content.replace('`', '').replace(f"{prefix}eval ", '')
+			else:
+				code = codeblk.replace('`', '')
+
 			theeval = f"async def func(): \n{textwrap.indent(code, ' ')}"
 			try:
 				exec(theeval, env)
 			except Exception as err:
 				embed.title = "**ERROR IN EXEC SETUP**"
 				embed.add_field(name="Result", value=str(err), inline=False)
-				await message.channel.send(embed=embed)
+				await ctx.respond(embed=embed)
 				return
 			func = env['func']
 			try:
@@ -265,12 +739,12 @@ async def doEval(message):
 			except asyncio.TimeoutError:
 				embed.title = "**TIMEOUT**"
 				embed.add_field(name="TIMEOUT", value="Timeout occured during execution", inline=False)
-				await message.channel.send(embed=embed)
+				await ctx.respond(embed=embed)
 				return
 			except Exception as err:
 				embed.title = "**ERROR IN EXECUTION**"
 				embed.add_field(name="Result", value=str(err), inline=False)
-				await message.channel.send(embed=embed)
+				await ctx.respond(embed=embed)
 				return
 			finally:
 				signal.alarm(0)
@@ -282,13 +756,13 @@ async def doEval(message):
 			else:
 				embed.add_field(name="Result", value=out, inline=False)
 
-			await message.channel.send(embed=embed)
+			await ctx.respond(embed=embed)
 		else:
-			await message.channel.send("Please provide code in a block")
+			await ctx.respond("Please provide code in a block")
 
 @client.event
 async def on_message(message):
-	global serverVoices, soundsDir, serverUtils, mysqlHandler
+	global serverVoices, serverUtils, mysqlHandler
 	global nsoHandler, owners, commandParser, doneStartup, acHandler, nsoTokens
 
 	# Filter out bots and system messages or handling of messages until startup is done
@@ -297,6 +771,7 @@ async def on_message(message):
 
 	command = message.content.lower()
 	channel = message.channel
+	context = messagecontext.MessageContext(message)
 
 	if message.guild == None:
 		if message.author in owners:
@@ -313,12 +788,10 @@ async def on_message(message):
 				await nsoHandler.getRawJSON(message)
 			elif '!announce' in command:
 				await serverUtils.doAnnouncement(message)
-			elif '!reloadnsoapp' in command:
-				await resetNSOVer(message)
 		if '!token' in command:
-			await nsoTokens.login(message)
+			await nsoTokens.login(context)
 		elif '!deletetoken' in command:
-				await nsoTokens.delete_tokens(message)
+				await nsoTokens.deleteTokens(context)
 		elif '!storedm' in command:
 			await channel.send("Sorry, for performance reasons, you cannot DM me !storedm :frowning:")
 		return
@@ -343,34 +816,25 @@ async def on_message(message):
 
 	#Don't just fail if command count can't be incremented
 	try:
-		await serverUtils.increment_cmd(message, cmd)
+		await serverUtils.increment_cmd(context, cmd)
 	except:
 		print("Failed to increment command... issue with MySQL?")
 
 	if cmd == 'eval':
-		await doEval(message)
+		await doEval(context, None)
 	elif cmd == 'getcons' and message.author in owners:
 		await mysqlHandler.printCons(message)
-	elif cmd == 'reloadnsoapp' and message.author in owners:
-		await resetNSOVer(message)
 	elif cmd == 'storejson' and message.author in owners:
-		await nsoHandler.getStoreJSON(message)
+		await nsoHandler.getStoreJSON(context)
 	elif cmd == 'admin':
-		if message.guild.get_member(message.author.id) == None:
-			print(f"Lazy loading member list for {str(message.guild.name)}")
-			await client.get_guild(message.guild.id).chunk()
-			print("Done")
-
-		if message.author.guild_permissions.administrator:
+		if await checkIfAdmin(context):
 			if len(args) == 0:
 				await message.channel.send("Options for admin commands are playlist, blacklist, dm, prefix, announcement, and feed")
 				await serverUtils.print_help(message, prefix)
 				return
 			subcommand = args[0].lower()
 			if subcommand == 'playlist':
-				await serverVoices[theServer].addPlaylist(message)
-			elif subcommand == 'blacklist':
-				await serverVoices[theServer].addBlacklist(message)
+				await serverVoices[theServer].addGuildList(context, args)
 			elif subcommand == 'wtfboom':
 				await serverVoices[theServer].playWTF(message)
 			elif subcommand == 'tts':
@@ -378,13 +842,13 @@ async def on_message(message):
 			elif subcommand == 'dm':
 				subcommand2 = args[1].lower()
 				if subcommand2 == 'add':
-					await serverUtils.addDM(message)
+					await serverUtils.addDM(context)
 				elif subcommand2 == 'remove':
-					await serverUtils.removeDM(message)
+					await serverUtils.removeDM(context)
 			elif subcommand == "announcement":
 				subcommand2 = args[1].lower()
 				if subcommand2 == 'set':
-					await serverUtils.setAnnounceChannel(message, args)
+					await serverUtils.setAnnounceChannel(context, args)
 				elif subcommand2 == 'get':
 					channel = await serverUtils.getAnnounceChannel(message.guild.id)
 					if channel == None:
@@ -392,7 +856,7 @@ async def on_message(message):
 					else:
 						await message.channel.send(f"Current announcement channel is: {channel.name}")
 				elif subcommand2 == 'stop':
-					await serverUtils.stopAnnouncements(message)
+					await serverUtils.stopAnnouncements(context)
 				else:
 					await message.channel.send("Usage: set CHANNEL, get, or stop")
 			elif subcommand == 'prefix':
@@ -405,26 +869,26 @@ async def on_message(message):
 					await channel.send(f"New command prefix is: {await commandParser.getPrefix(theServer)}")
 			elif subcommand == 'feed':
 				if len(args) == 1:
-					await serverUtils.createFeed(message)
+					await serverUtils.createFeed(context)
 				elif 'delete' in args[1].lower():
-					await serverUtils.deleteFeed(message)
+					await serverUtils.deleteFeed(context)
 		else:
 			await channel.send(f"{message.author.name} you are not an admin... :cop:")
 	elif cmd == 'alive':
 		await channel.send(f"Hey {message.author.name}, I'm alive so shut up! :japanese_goblin:")
 	elif cmd == 'rank':
-		await nsoHandler.getRanks(message)
+		await nsoHandler.getRanks(context)
 	elif cmd == 'order':
 		print(f"Ordering gear for user: {message.author.name} and id {str(message.author.id)}")
-		await nsoHandler.orderGearCommand(message, args=args)
+		await nsoHandler.orderGearCommand(context, args=args, is_slash=False)
 	elif cmd == 'stats':
-		await nsoHandler.getStats(message)
+		await nsoHandler.getStats(context)
 	elif cmd == 'srstats':
-		await nsoHandler.getSRStats(message)
+		await nsoHandler.getSRStats(context)
 	elif cmd == 'storedm':
-		await nsoHandler.addStoreDM(message, args)
+		await nsoHandler.addStoreDM(context, args)
 	elif cmd == 'passport':
-		await acHandler.passport(message)
+		await acHandler.passport(context)
 	elif cmd == 'github':
 		await channel.send('Here is my github page! : https://github.com/Jetsurf/jet-bot')
 	elif cmd == 'support':
@@ -432,32 +896,36 @@ async def on_message(message):
 	elif cmd == 'commands' or cmd == 'help':
 		await serverUtils.print_help(message, prefix)
 	elif cmd == 'sounds':
-		theSounds = subprocess.check_output(["ls", soundsDir])
-		theSounds = theSounds.decode("utf-8")
-		theSounds = theSounds.replace('.mp3', '')
-		theSounds = theSounds.replace('\n', ', ')
-		await channel.send(f"Current Sounds:\n```{theSounds}```")
+		await channel.send(embed=createSoundsEmbed())
 	elif cmd == 'join':
 		if len(args) > 0:
-			await serverVoices[theServer].joinVoiceChannel(message, args)
+			await serverVoices[theServer].joinVoiceChannel(context, args)
 		else:
-			await serverVoices[theServer].joinVoiceChannel(message, args)
+			await serverVoices[theServer].joinVoiceChannel(context, args)
 	elif cmd == 'currentmaps':
-		await nsoHandler.maps(message)
+		await message.channel.send(embed=nsoHandler.mapsEmbed())
 	elif cmd == 'nextmaps':
-		await nsoHandler.maps(message, offset=min(11, message.content.count('next')))
+		await message.channel.send(embed=nsoHandler.mapsEmbed(offset=min(11, message.content.count('next'))))
 	elif cmd == 'currentsr':
-		await nsoHandler.srParser(message)
+		await messasge.channel.send(embed=nsoHandler.srEmbed())
 	elif cmd == 'splatnetgear':
-		await nsoHandler.gearParser(message)
+		await nsoHandler.gearParser(context)
 	elif cmd == 'nextsr':
-		await nsoHandler.srParser(message, 1)
+		await message.channel.send(embed=nsoHandler.srEmbed(getNext=True))
 	elif (cmd == 'map') or (cmd == 'maps'):
-		await nsoHandler.cmdMaps(message, args)
+		await nsoHandler.cmdMaps(context, args)
 	elif (cmd == 'weapon') or (cmd == 'weapons'):
-		await nsoHandler.cmdWeaps(message, args)
+		await nsoHandler.cmdWeaps(context, args)
 	elif (cmd == 'battle') or (cmd == 'battles'):
-		await nsoHandler.cmdBattles(message, args)
+		if len(args) < 1:
+			await message.channel.send("Usage: battle num <number> or battle last")
+		else:
+			if args[0] == 'last':
+				await nsoHandler.cmdBattles(context, 1)
+			elif args[0] == 'num' and len(args) > 1:
+				await nsoHandler.cmdBattles(context, int(args[1]))
+			else:
+				await message.channel.send("Usage: battle num <number> or battle last")
 	elif serverVoices[theServer].vclient is not None:
 		if cmd == 'currentsong':
 			if serverVoices[theServer].source is not None:
@@ -470,15 +938,15 @@ async def on_message(message):
 		elif cmd == 'playrandom':
 			if len(args) > 0:
 				if args[0].isdigit():
-					await serverVoices[theServer].playRandom(message, int(args[0]))
+					await serverVoices[theServer].playRandom(context, int(args[0]))
 				else:
 					await message.channel.send("Num to play must be a number")
 			else:
-				await serverVoices[theServer].playRandom(message, 1)
+				await serverVoices[theServer].playRandom(context, 1)
 		elif cmd == 'play':
-			await serverVoices[theServer].setupPlay(message)
+			await serverVoices[theServer].setupPlay(context, args)
 		elif cmd == 'skip':
-			await serverVoices[theServer].stop(message)
+			await serverVoices[theServer].stop(context)
 		elif (cmd == 'end') or (cmd == 'stop'):
 			serverVoices[theServer].end()
 		elif cmd == 'volume' or cmd == 'vol':
@@ -495,7 +963,7 @@ async def on_message(message):
 				await channel.send(f"Setting Volume to {str(vol)}%")
 				serverVoices[theServer].source.volume = float(int(vol) / 100)
 		elif cmd == 'queue':
-			await serverVoices[theServer].printQueue(message)
+			await serverVoices[theServer].printQueue(context)
 		else:
 			await serverVoices[theServer].playSound(cmd)
 
@@ -504,13 +972,26 @@ async def on_message(message):
 
 #Setup
 loadConfig()
-if dev == 0:
+if configData.get('output_to_log'):
+	Path('./logs').mkdir(exist_ok=True)
 	sys.stdout = open('./logs/discordbot.log', 'a')
 	sys.stderr = open('./logs/discordbot.err', 'a')
+
+ensureEncryptionKey()
 
 print('**********NEW SESSION**********')
 print('Logging into discord')
 
+client.add_application_command(store)
+client.add_application_command(maps)
+client.add_application_command(weapon)
+client.add_application_command(stats)
+client.add_application_command(voice)
+client.add_application_command(admin)
+client.add_application_command(acnh)
+
 sys.stdout.flush()
 sys.stderr.flush()
+token = configData['token']
+configData['token'] = ""
 client.run(token)

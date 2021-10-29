@@ -1,11 +1,13 @@
 {
 	"token"			: "",
+	"output_to_log" : true,
 	"soundsdir"		: "",
 	"help"			: "",
 	"mysql_host"	: "",
 	"mysql_user"	: "",
 	"mysql_pw"		: "",
 	"mysql_db"		: "",
-	"home_server	: "",
-	"nso_app_ver"	: ""
+	"home_server"	: "",
+	"hosted_url"	: "",
+	"web_dir"		: ""
 }

@@ -61,37 +61,44 @@ class voiceServer():
 		self.soundsDir = soundsDir
 		self.sqlBroker = mysqlhandler
 
-	async def joinVoiceChannel(self, message, args):
+	async def joinVoiceChannel(self, ctx, args):
 		id = 0
 		channel = None
-		
-		if message.author.voice != None:
-			channel = message.author.voice.channel
 
-		if len(args) > 0:
-			channelName = str(' '.join(args[0:]))
-			server = message.guild
-			for channel in server.voice_channels:
-				if channel.name == channelName:
-					id = channel.id
-					break
-			if id is not 0:
+		if ctx.user.voice != None:
+			channel = ctx.user.voice.channel
+
+		if isinstance(args, (discord.VoiceChannel, tuple)) or len(args) > 0:
+			if not isinstance(args, (discord.VoiceChannel, tuple)):
+				channelName = str(' '.join(args[0:]))
+				server = ctx.guild
+				for channel in server.voice_channels:
+					if channel.name == channelName:
+						id = channel.id
+						break
+			else:
+				id = args.id
+				channel = args
+
+			if id != 0:
 				if self.vclient != None:
 					#Make sure on_voice_state_update doesn't interfere
 					tmpvclient = self.vclient
 					self.vclient = None
 					await tmpvclient.disconnect()
 				self.vclient = await channel.connect()
+				await ctx.respond(f"Joined voice channel: {channel.name}")
 			else:
-				await message.channel.send(f"I could not join channel {str(channelName)}")
+				await ctx.respond(f"I could not join channel {str(channelName)}")
 		elif channel != None:
 			if self.vclient != None:
 				tmpvclient = self.vclient
 				self.vclient = None
 				await tmpvclient.disconnect()
 			self.vclient = await channel.connect()
+			await ctx.respond(f"Joined voice channel {channel.name}")
 		else:
-			await message.channel.send("Cannot join a channel, either be in a channel or specify which channel to join")
+			await ctx.respond("Cannot join a channel, either be in a channel or specify which channel to join")
 
 	async def playWTF(self, message):
 		if self.vclient != None and self.source == None:
@@ -104,32 +111,26 @@ class voiceServer():
 		command = command.replace("../", "")
 		if self.source != None or self.vclient == None:
 			return
-		
+
 		try:
 			source = discord.FFmpegPCMAudio(f"{self.soundsDir}/{command}.mp3")
 			source = discord.PCMVolumeTransformer(source)
 		except:
 			return
 
-		if 'wtfboom' in command or 'johncena' in command or 'ohmygod' in command or 'leeroy' in command:
-			source.volume = .1
-		elif 'whosaidthat' in command or 'chrishansen' in command or 'sotasty' in command:
-			source.volume = .4
-		else:
-			source.volume = .25
-
 		try:
 			self.vclient.play(source)
 		except:
 			return
 
-	async def stop(self, message):
+	async def stop(self, ctx):
 		if self.source != None:
 			self.vclient.stop()
+			await ctx.respond("Stopped the currently playing video.")
 		else:
-			await message.channel.send("I'm not playing anything right now")
+			await ctx.respond("Can't stop when I'm not playing anything.")
 
-	async def printQueue(self, message):
+	async def printQueue(self, ctx):
 		theQueue = self.ytQueue.queue
 		embed = discord.Embed(colour=0xFF0F00)
 		embed.title = "Current Queue"
@@ -146,7 +147,7 @@ class voiceServer():
 			seconds = duration % 60
 			embed.add_field(name=name, value=f"Duration - {str(minutes)} Minutes {str(seconds)} Seconds\nURL - {str(url)}", inline=False)
 
-		await message.channel.send(embed=embed)
+		await ctx.respond(embed=embed)
 
 	def end(self):
 		self.ytQueue = queue.Queue()
@@ -173,7 +174,9 @@ class voiceServer():
 	def get_yt_json(self, soup):
 		scripts = soup.find_all("script")
 		for s in scripts:
-			text = s.get_text()
+			text = s.string
+			if text == None:
+				continue
 			if (re.search(r'var ytInitialData =', text)):
 				text = re.sub(r'^\s*var ytInitialData\s*=\s*', '', text)  # Slice off leading JS
 				text = re.sub(r';\s*$', '', text)  # Slice off trailing semicolon
@@ -187,28 +190,23 @@ class voiceServer():
 			self.source = self.ytQueue.get()
 			self.vclient.play(self.source, after=self.playNext)
 
-	async def setupPlay(self, message):
-		if 'https://' in message.content:
-			if await self.listCheck(1, message.content.split(' ')[1]):
-				print(f"{message.author.name} tried to play a blacklisted video")
-				await message.channel.send("Sorry, I can't play that")
-				return
+	async def setupPlay(self, ctx, args):
+		if 'https://' in args[0]:
 			try:
-				tempPlayer = await YTDLSource.from_url(message.content.split(' ')[1])
+				tempPlayer = await YTDLSource.from_url(args[0])
 				self.ytQueue.put(tempPlayer)
 				self.play()
-				await message.add_reaction('👍')
+				await ctx.respond(f"Playing video: {args[0]}")
 			except Exception as e:
-				print("Failure to play youtube DL link...")
+				print(f"Failure to play youtube DL link... {args[0]}")
 				traceback.print_exception(*sys.exc_info())
-				await message.channel.send(f"Sorry, I can't play that, you can report the following in my support discord: {str(e)}")
+				await ctx.respond(f"Sorry, I can't play that, you can report the following in my support discord: {str(e)}")
 		else:
 			try:
-				if 'youtube' in message.content.lower():
-					await message.channel.trigger_typing()
-					query = urllib.request.pathname2url(' '.join(message.content.split()[2:]))
-					url = f"https://youtube.com/results?search_query={query}"
-					
+				if 'youtube' in args[0]:
+					query = urllib.request.pathname2url(' '.join(args[1:]))
+					url = f"https://youtube.com/results?search_query={query}".replace('%20', '+')
+
 					source = requests.get(url).text
 					soup = BeautifulSoup(source,'html5lib')
 					theJson = self.get_yt_json(soup)
@@ -217,48 +215,37 @@ class voiceServer():
 					vids = self.decode_vidlist(vidlist)
 
 					if len(vids) == 0:
-						await message.channel.send("No videos found")
+						await ctx.respond("No videos found")
 						return
 					theURL = f"https://youtube.com/watch?v={vids[0]['videoId']}"
-				elif 'soundcloud' in message.content.lower():
-					await message.channel.trigger_typing()
-					query = ' '.join(message.content.split()[2:])
+				elif 'soundcloud' in args[0]:
+					query = ' '.join(args[1:])
 					url = f"https://soundcloud.com/search/sounds?q={query}"
 					response = requests.get(url)
 					soup = BeautifulSoup(response.text, "html5lib")
 					song = soup.find("h2")
 					song = song.a.get("href")
-					theURL = "https://soundcloud.com" + song
+					theURL = f"https://soundcloud.com{song}"
 				else:
-					await message.channel.send("Don't know where to search, try !play youtube SEARCH or !play soundcloud SEARCH")
-					return
-				if await self.listCheck(1, theURL):
-					print(f"{message.author.name} tried to play a blacklisted video")
-					await message.channel.send("Sorry, I can't play that")
+					await ctx.respond("Don't know where to search, try !play youtube SEARCH or !play soundcloud SEARCH")
 					return
 
 				tempPlayer = await YTDLSource.from_url(theURL)
 				if self.ytQueue.empty() and self.source == None:
-					await message.channel.send(f"Playing : {theURL}")
+					await ctx.respond(f"Playing : {theURL}")
 				else:
-					await message.channel.send(f"Queued : {theURL}")
+					await ctx.respond(f"Queued : {theURL}")
 				print("Playing: " + theURL)
 				self.ytQueue.put(tempPlayer)
 				self.play()
 			except Exception as e:
 				print(traceback.format_exc())
-				await message.channel.send(f"Sorry, I can't play that, you can report the following in my support discord: {str(e)}")
+				await ctx.respond(f"Sorry, I can't play that, you can report the following in my support discord: {str(e)}")
 
-	async def listCheck(self, theList, theURL):
+	async def listCheck(self, theURL):
 		cur = await self.sqlBroker.connect()
-		stmt = "SELECT COUNT(*) FROM "
 
-		if theList == 0:
-			stmt = stmt + "playlist "
-		else:
-			stmt = stmt + "blacklist "
-
-		stmt = stmt + "WHERE serverid = %s AND url = %s"
+		stmt = f"SELECT COUNT(*) FROM playlist WHERE serverid = %s AND url = %s"
 		await cur.execute(stmt, (self.server, theURL,))
 		count = await cur.fetchone()
 		await self.sqlBroker.commit(cur)
@@ -267,25 +254,20 @@ class voiceServer():
 		else:
 			return False
 
-	async def listAdd(self, theList, toAdd, message):
+	async def listAdd(self, ctx, toAdd):
 		cur = await self.sqlBroker.connect()
-		stmt = "INSERT INTO "
 
-		if theList == 0:
-			stmt = stmt + "playlist "
-		else:
-			stmt = stmt + "blacklist "
-
-		stmt = stmt + "(serverid, url) VALUES(%s, %s)"
+		stmt = f"INSERT INTO playlist (serverid, url) VALUES(%s, %s)"
 		input = (self.server, toAdd,)
 		await cur.execute(stmt, input)
 		if cur.lastrowid != None:
 			await self.sqlBroker.commit(cur)
+			return True
 		else:
 			await self.sqlBroker.rollback(cur)
-			await message.channel.send("Something went wrong!")
+			return False
 
-	async def playRandom(self, message, numToQueue):
+	async def playRandom(self, ctx, numToQueue):
 		cur = await self.sqlBroker.connect()
 		toPlay = []
 		tempPlayer = None
@@ -293,11 +275,13 @@ class voiceServer():
 		await cur.execute(stmt, (self.server,))
 		x = await cur.fetchall()
 		await self.sqlBroker.close(cur)
+		response = ""
 
 		if len(x) == 0:
-			await message.channel.send("You have nothing added to your playlist, use !admin playlist URL to add songs!")
+			await ctx.respond("You have nothing added to your playlist, use /admin playlist URL to add songs!")
 			return
 
+		await ctx.defer()
 		print("Playing random")
 		numToQueue = min(numToQueue, len(x))
 		for y in range(numToQueue):
@@ -317,41 +301,32 @@ class voiceServer():
 
 			self.ytQueue.put(tempPlayer)
 			if self.source == None and self.vclient != None:
-				await message.channel.send("Playing : " + x[toPlay[0] - 1][0])
-			self.play()
+				response = f"Playing : {x[toPlay[0] - 1][0]}\n"
+				self.play()
+
 		if numToQueue > 1 and self.source == None:
-			await message.channel.send(f"Also queued {str(numToQueue - 1)} more song(s) from my playlist")
+			response = response + f"Also queued {str(numToQueue)} more song(s) from my playlist"
 		elif numToQueue > 1:
-			await message.channel.send(f"Added {str(numToQueue)} more song(s) to the queue from my playlist")
+			response = response + f"Added {str(numToQueue - 1)} more song(s) to the queue from my playlist"
 
-	async def addPlaylist(self, message):
-		toAdd = ''
-		if 'https' in message.content:
-			toAdd = message.content.split(' ', 2)[2]
-		elif self.source != None:
-			toAdd = self.source.yturl
-		else:
-			await message.channel.send('Im not playing anything, pass me a url to add to the playlist')
-			return
-		
-		if not await self.listCheck(0, toAdd):
-			await self.listAdd(0, toAdd, message)
-			await message.add_reaction('👍')
-		else:
-			await message.channel.send('That is already in my playlist!')
+		await ctx.respond(response)
 
-	async def addBlacklist(self, message):
-		toAdd = ''
-		if 'https' in message.content:
-			toAdd = message.content.split(' ', 2)[2]
-		elif self.source != None:
-			toAdd = self.source.yturl
+	async def addGuildList(self, ctx, args):
+		if len(set(args)) == 0:
+			if self.source.yturl != None and await self.listCheck(self.source.yturl):
+				if await self.listAdd(ctx, args[0]):
+					await ctx.respond(f"Added URL: {self.source.yturl} to the playlist")
+				else:
+					await ctx.respond(f"Error adding to the playlist")
+			else:
+				await ctx.respond("I'm not playing anything")
 		else:
-			await message.channel.send('Im not playing anything, pass me a url to add to the playlist')
-			return
-		
-		if not await self.listCheck(1, toAdd):
-			await self.listAdd(1, toAdd, message)
-			await message.add_reaction('👍')
-		else:
-			await message.channel.send('That is already in my blacklist!')
+			if 'https' in args[0] and not await self.listCheck(args[0]):
+				if await self.listAdd(ctx, args[0]):
+					await ctx.respond(f"Added URL: {args[0]} to the playlist")
+				else:
+					await ctx.respond(f"Error adding to the playlist")
+			elif 'https' not in args[1]:
+				await ctx.respond("I need a proper url to add")
+			else:
+				await ctx.respond(f"URL: {args[0]} is already in my playlist")

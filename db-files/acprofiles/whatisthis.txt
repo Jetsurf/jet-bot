@@ -1,0 +1,1 @@
+This is a "temp" folder for the bot to pull images behind NSO's API to make it "public" for embeds

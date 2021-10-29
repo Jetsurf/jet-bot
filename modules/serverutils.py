@@ -21,110 +21,132 @@ class serverUtils():
 		self.scheduler.add_job(self.changeStatus, 'cron', minute='*/5') 
 		self.scheduler.start()
 
-	async def deleteFeed(self, message):
+	async def deleteFeed(self, ctx, is_slash=False, bypass=False):
 		cur = await self.sqlBroker.connect()
 		stmt = "SELECT * FROM feeds WHERE serverid = %s AND channelid = %s"
-		await cur.execute(stmt, (message.guild.id, message.channel.id,))
+		await cur.execute(stmt, (ctx.guild.id, ctx.channel.id,))
 		chan = await cur.fetchone()
 		mapflag, srflag, gearflag = False, False, False
-		print("CHAN: " + str(chan))
 
 		def check(m):
-			return m.author == message.author and m.channel == message.channel
+			return m.author == ctx.user and m.channel == ctx.channel
 
 		if chan != None:
-			await message.channel.send("Delete feed for this channel (yes/no)? ")
+			if bypass == False:
+				await ctx.respond("Delete feed for this channel (yes/no)? ")
 
-			createfeed = await self.client.wait_for('message', check=check)
+				createfeed = await self.client.wait_for('message', check=check)
+				if 'yes' in createfeed.content.lower():
+					saidYes = True
+				else:
+					saidYes = False
+			else:
+				saidYes = False
 
-			if 'yes' in createfeed.content.lower():
+			if saidYes or bypass:
 				stmt = "DELETE FROM feeds WHERE serverid = %s AND channelid = %s"
-				await cur.execute(stmt, (message.guild.id, message.channel.id,))
+				await cur.execute(stmt, (ctx.guild.id, ctx.channel.id,))
 				if cur.lastrowid != None:
 					await self.sqlBroker.commit(cur)
-					await message.channel.send("Ok, deleted feed.")
+					if is_slash:
+						await ctx.respond("Ok, deleted feed.")
+					return True
 				else:
 					await self.sqlBroker.rollback(cur)
-					await message.channel.send("Error in deleting feed.")
+					await ctx.respond("Error in deleting feed.")
+					return False
 		else:
-			await message.channel.send("No feed setup for this channel.")
+			await ctx.respond("No feed setup for this channel.")
+			return False
 
-	async def createFeed(self, message):
+	async def createFeed(self, ctx, args=None):
 		cur = await self.sqlBroker.connect()
 		stmt = "SELECT * FROM feeds WHERE serverid = %s AND channelid = %s"
-		await cur.execute(stmt, (message.guild.id, message.channel.id,))
+		await cur.execute(stmt, (ctx.guild.id, ctx.channel.id,))
 		chan = await cur.fetchone()
 		mapflag, srflag, gearflag = False, False, False
 
 		def check(m):
-			return m.author == message.author and m.channel == message.channel
+			return m.author == ctx.user and m.channel == ctx.channel
+		if args == None:
+			if chan != None:
+				await ctx.respond("Feed already setup for this channel, create a new one? ")
 
-		if chan != None:
-			await message.channel.send("Feed already setup for this channel, create a new one? ")
+				createfeed = await self.client.wait_for('message', check=check)
 
-			createfeed = await self.client.wait_for('message', check=check)
-
-			if 'yes' in createfeed.content.lower():
-				stmt = "DELETE FROM feeds WHERE serverid = %s AND channelid = %s"
-				await cur.execute(stmt, (message.guild.id, message.channel.id,))
-				if cur.lastrowid != None:
-					await message.channel.send("Ok, creating feed. Would you like the feed notification to include Map rotations (yes/no)?")
+				if 'yes' in createfeed.content.lower():
+					stmt = "DELETE FROM feeds WHERE serverid = %s AND channelid = %s"
+					await cur.execute(stmt, (message.guild.id, message.channel.id,))
+					if cur.lastrowid != None:
+						await ctx.respond("Ok, creating feed. Would you like the feed notification to include Map rotations (yes/no)?")
+					else:
+						await ctx.respond("Error in setting up create feed.")
+						return False
 				else:
-					await message.channel.send("Error in setting up create feed.")
+					await ctx.respond("Ok, canceling.")
 					return False
 			else:
-				await message.channel.send("Ok, canceling.")
-				return False
-		else:
-			await message.channel.send("No feed is setup for this channel. Would you like to create one (yes/no)?")
+				await ctx.respond("No feed is setup for this channel. Would you like to create one (yes/no)?")
 
-			feedresp = await self.client.wait_for('message', check=check)
+				feedresp = await self.client.wait_for('message', check=check)
 
-			if 'yes' in feedresp.content.lower():
-				await message.channel.send("Ok, creating feed. Would you like the feed notification to include Map rotations (yes/no)?")
+				if 'yes' in feedresp.content.lower():
+					await ctx.respond("Ok, creating feed. Would you like the feed notification to include Map rotations (yes/no)?")
+				else:
+					await ctx.respond("Ok, canceling.")
+					return False
+
+			mapresp = await self.client.wait_for('message', check=check)
+
+			if 'yes' in mapresp.content.lower():
+				await ctx.respond("Ok, adding Map rotations to the feed. Would you like the feed notification to include Salmon Run rotations (yes/no)?")
+				mapflag = True
 			else:
-				await message.channel.send("Ok, canceling.")
-				return False
+				await ctx.respond("Ok, not adding Map rotations to the feed. Would you like the feed notification to include Salmon Run rotations (yes/no)?")
 
-		mapresp = await self.client.wait_for('message', check=check)
+			srresp = await self.client.wait_for('message', check=check)
 
-		if 'yes' in mapresp.content.lower():
-			await message.channel.send("Ok, adding Map rotations to the feed. Would you like the feed notification to include Salmon Run rotations (yes/no)?")
-			mapflag = True
+			if 'yes' in srresp.content.lower():
+				await ctx.respond("Ok, adding Salmon Run rotations to the feed. Would you like the feed notification to include Gear rotations (yes/no)?")
+				srflag = True
+			else:
+				await ctx.respond("Ok, not adding Salmon Run rotations to the feed. Would you like the feed notifications to include Gear rotations (yes/no)?")
+
+			gearresp = await self.client.wait_for('message', check=check)
+
+			if 'yes' in gearresp.content.lower():
+				await ctx.respond("Ok, adding Gear rotations to the feed. ")
+				gearflag = True
+			else:
+				await ctx.respond("Ok, not adding Gear rotations to the feed.")
+		elif chan != None and args[3] == True:
+			mapflag = args[0]
+			srflag = args[1]
+			gearflag = args[2]
+			await self.deleteFeed(ctx, bypass=True)
+		elif chan == None:
+			mapflag = args[0]
+			srflag = args[1]
+			gearflag = args[2]
 		else:
-			await message.channel.send("Ok, not adding Map rotations to the feed. Would you like the feed notification to include Salmon Run rotations (yes/no)?")
-
-		srresp = await self.client.wait_for('message', check=check)
-
-		if 'yes' in srresp.content.lower():
-			await message.channel.send("Ok, adding Salmon Run rotations to the feed. Would you like the feed notification to include Gear rotations (yes/no)?")
-			srflag = True
-		else:
-			await message.channel.send("Ok, not adding Salmon Run rotations to the feed. Would you like the feed notifications to include Gear rotations (yes/no)?")
-
-		gearresp = await self.client.wait_for('message', check=check)
-
-		if 'yes' in gearresp.content.lower():
-			await message.channel.send("Ok, adding Gear rotations to the feed. ")
-			gearflag = True
-		else:
-			await message.channel.send("Ok, not adding Salmon Run rotations to the feed.")
+			await ctx.respond("Feed already created for this channel, please delete it or set recreate to True")
+			return
 
 		stmt = "INSERT INTO feeds (serverid, channelid, maps, sr, gear) VALUES(%s, %s, %s, %s, %s)"
-		feed = (str(message.guild.id), str(message.channel.id), int(mapflag == True), int(srflag == True), int(gearflag == True),)
+		feed = (str(ctx.guild.id), str(ctx.channel.id), int(mapflag == True), int(srflag == True), int(gearflag == True),)
 
 		await cur.execute(stmt, feed)
 		if cur.lastrowid != None:
 			await self.sqlBroker.commit(cur)
-			await message.channel.send("Feed created! Feed will start when the next rotation happens.")
+			await ctx.respond("Feed created! Feed will start when the next rotation happens.")
 			return True
 		else:
 			await self.sqlBroker.rollback(cur)
-			await message.channel.send("Feed failed to create.")
+			await ctx.respond("Feed failed to create.")
 			return False
 
 	async def changeStatus(self):
-		status = [ "Use !help for directions!",
+		status = [ "Check Slash Commands!",
 					"{} guilds",
 					"\U0001F355 \U00002795 \U0001F34D \U000027A1 \U0001F4A9" ]
 
@@ -139,22 +161,27 @@ class serverUtils():
 
 		self.statusnum += 1
 
-	async def setAnnounceChannel(self, message, args):
-		if len(args) < 2:
-			await message.channel.send("No channel given, please specify a channel")
+	async def setAnnounceChannel(self, ctx, args):
+		if not isinstance( args, (discord.TextChannel, tuple)) and len(args) < 2:
+			await ctx.respond("No channel given, please specify a channel")
 			return
 
-		channelname = args[2].lower()
-		channelid = None
-		for channel in message.guild.channels:
-			if channel.name.lower() == channelname and channel.type == discord.ChannelType.text:
-				channelid = channel.id
+		if not isinstance( args, (discord.TextChannel, tuple)):
+			channelname = args[2].lower()
+			channelid = None
+
+			for channel in ctx.guild.channels:
+				if channel.name.lower() == channelname and channel.type == discord.ChannelType.text:
+					channelid = channel.id
+		else:
+			channelid = args.id
+			channelname = args.name
 
 		if channelid == None:
-			await message.channel.send("Could not find a channel with name: " + channelname)
+			await ctx.respond(f"Could not find a channel with name: {channelname}")
 		else:
-			await self.serverConfig.setConfigValue(message.guild.id, 'announcement.channelid', channelid)
-			await message.channel.send("Set announcement channel to: " + channelname)
+			await self.serverConfig.setConfigValue(ctx.guild.id, 'announcement.channelid', channelid)
+			await ctx.respond(f"Set announcement channel to: {channelname}")
 
 	async def getAnnounceChannel(self, serverid):
 		channelid = await self.serverConfig.getConfigValue(serverid, 'announcement.channelid')
@@ -166,18 +193,18 @@ class serverUtils():
 
 	async def doAnnouncement(self, message):
 		announcemsg = message.content.split(None, 1)[1]
-		print("Sending announcement: " + announcemsg)
+		print("Sending announcement: {announcemsg}")
 
 		for guild in self.client.guilds:
 			channel = await self.getAnnounceChannel(guild.id)
 			if channel == None:
 				continue
 			else:
-				await channel.send("ANNOUNCEMENT: " + announcemsg)
+				await channel.send(f"ANNOUNCEMENT: {announcemsg}")
 
-	async def stopAnnouncements(self, message):
-		await self.serverConfig.removeConfigValue(message.guild.id, "announcement.channelid")
-		await message.channel.send("Your guild is now unsubscribed from receiving announcements")
+	async def stopAnnouncements(self, ctx):
+		await self.serverConfig.removeConfigValue(ctx.guild.id, "announcement.channelid")
+		await ctx.respond("Your guild is now unsubscribed from receiving announcements")
 
 	async def getAllDM(self, serverid):
 		cur = await self.sqlBroker.connect()
@@ -227,7 +254,7 @@ class serverUtils():
 					else:
 						theString = theString + line
 			embed.add_field(name='Commands', value=theString, inline=False)	
-			embed.set_footer(text="If you want something added or want to report a bug/error, run " + prefix + "support")
+			embed.set_footer(text="If you want something added or want to report a bug/error, run /support")
 		await message.channel.send(embed=embed)
 
 	async def report_cmd_totals(self, message):
@@ -241,57 +268,62 @@ class serverUtils():
 				stmt = "SELECT IFNULL(SUM(count), 0) FROM commandcounts WHERE (command = %s)"
 				await cur.execute(stmt, (cmd,))
 				count = await cur.fetchone()
-				theString = theString + "**" + cmd + "** : " + str(count[0]) + "\n"
-			embed.add_field(name="**" + cmd_set + "**", value=theString, inline=True)
+				theString = f"{theString} **{cmd}** : {str(count[0])}\n"
+			embed.add_field(name=f"**{cmd_set}**", value=theString, inline=True)
 		await self.sqlBroker.close(cur)
 		await message.channel.send(embed=embed)
 
-	async def increment_cmd(self, message, cmd):
-		if cmd not in self.valid_commands['base'] and cmd not in self.valid_commands['base_sn'] and cmd not in self.valid_commands['user_sn'] and cmd not in self.valid_commands['hybrid_sn'] and cmd not in self.valid_commands['voice']:
-			return
+	async def increment_cmd(self, ctx, cmd):
+		#Needs a try catch to prevent failures if mysql is acting up to allow slash commands to not have repetitive code for handling the exception there
+		#This will also catch DM'ed slash commands trying to be incremented
+		try:
+			if cmd not in self.valid_commands['base'] and cmd not in self.valid_commands['base_sn'] and cmd not in self.valid_commands['user_sn'] and cmd not in self.valid_commands['hybrid_sn'] and cmd not in self.valid_commands['voice']:
+				return
 
-		cur = await self.sqlBroker.connect()
-		stmt = "INSERT INTO commandcounts (serverid, command, count) VALUES (%s, %s, 1) ON DUPLICATE KEY UPDATE count = count + 1;"
-		await cur.execute(stmt, (message.guild.id, cmd,))
-		await self.sqlBroker.commit(cur)
+			cur = await self.sqlBroker.connect()
+			stmt = "INSERT INTO commandcounts (serverid, command, count) VALUES (%s, %s, 1) ON DUPLICATE KEY UPDATE count = count + 1;"
+			if ctx.guild == None:
+				await cur.execute(stmt, ('0', cmd,))
+			else:
+				await cur.execute(stmt, (ctx.guild.id, cmd,))
+			await self.sqlBroker.commit(cur)
+		except:
+			pass
 
-	async def addDM(self, message):
-		if await self.checkDM(message.author.id, message.guild.id):
-			await message.channel.send("You are already in my list of people to DM")
+	async def addDM(self, ctx):
+		if await self.checkDM(ctx.user.id, ctx.guild.id):
+			await ctx.respond("You are already in my list of people to DM")
 			return
 
 		cur = await self.sqlBroker.connect()
 		stmt = "INSERT INTO dms(serverid, clientid) values(%s, %s)"
-		await cur.execute(stmt, (message.guild.id, message.author.id,))
+		await cur.execute(stmt, (ctx.guild.id, ctx.user.id,))
 		if cur.lastrowid != None:
 			await self.sqlBroker.commit(cur)
-			await message.channel.send("Added " + message.author.name + " to my DM list!")
+			await ctx.respond(f"Added {ctx.user.name} to my DM list!")
 		else:
 			await self.sqlBroker.rollback(cur)
-			await message.channel.send("Something went wrong!")
+			await ctx.respond("Something went wrong!")
 
-	async def removeDM(self, message):
-		if not await self.checkDM(message.author.id, message.guild.id):
-			await message.channel.send("You aren't in my list of people to DM")
+	async def removeDM(self, ctx):
+		if not await self.checkDM(ctx.user.id, ctx.guild.id):
+			await ctx.respond("You aren't in my list of people to DM")
 			return
 
 		cur = await self.sqlBroker.connect()
 		stmt = "DELETE FROM dms WHERE serverid = %s AND clientid = %s"
-		await cur.execute(stmt, (message.guild.id, str(message.author.id),))
-		if self.cursor.lastrowid != None:
+		await cur.execute(stmt, (ctx.guild.id, str(ctx.user.id),))
+		if cur.lastrowid != None:
 			await self.sqlBroker.commit(cur)
-			await message.channel.send("Removed " + message.author.name + " from my DM list!")
+			await ctx.respond(f"Removed {ctx.user.name} from my DM list!")
 		else:
 			await self.sqlBroker.rollback(cur)
-			await message.channel.send("Something went wrong!")
+			await ctx.respond("Something went wrong!")
 
 	async def trim_db_from_leave(self, serverid):
 		cur = await self.sqlBroker.connect()
 		stmt = "DELETE FROM storedms WHERE serverid = %s"
 		input = (serverid,)
-		await cur.execute(stmt, input)
-
-		stmt = "DELETE FROM blacklist WHERE serverid = %s"
 		await cur.execute(stmt, input)
 
 		stmt = "DELETE FROM playlist WHERE serverid = %s"
@@ -307,8 +339,8 @@ class serverUtils():
 		await cur.execute(stmt, input)
 		if cur.lastrowid != None:
 			await self.sqlBroker.commit(cur)
-			print("Cleaned up DB on server " + str(serverid))
+			print(f"Cleaned up DB on server {str(serverid)}")
 		else:
 			await self.sqlBroker.rollback(cur)
-			print("Error on DB cleanup for server " + str(serverid))
+			print(f"Error on DB cleanup for server {str(serverid)}")
 
