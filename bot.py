@@ -907,7 +907,7 @@ async def on_message(message):
 	elif cmd == 'nextmaps':
 		await message.channel.send(embed=nsoHandler.mapsEmbed(offset=min(11, message.content.count('next'))))
 	elif cmd == 'currentsr':
-		await messasge.channel.send(embed=nsoHandler.srEmbed())
+		await message.channel.send(embed=nsoHandler.srEmbed())
 	elif cmd == 'splatnetgear':
 		await nsoHandler.gearParser(context)
 	elif cmd == 'nextsr':
