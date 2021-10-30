@@ -1,8 +1,10 @@
 # Splatnet/Music Bot
 Splatnet/Music bot was originally created in 2017 to be a music/soundclip playing bot. It 
-has evolved into its primary purpose of fetching data about Splatoon 2 
-maps/Splatnet to help discord servers to access this information 
-quickly.
+has evolved into its primary purpose of fetching info from Nintendo Switch Online 
+
+- Splatoon 2: Rotation info, Splatnet gameplay stats, ordering gear and notifications of specific gear arriving in the store
+- Animal Crossing New Horizons: Passports
+- Splatoon 3 Support is planned
 
 ## Installation
 
@@ -11,40 +13,22 @@ If you don't care about self-hosting the bot, you can use the following link:
 [![Discord Bots](https://discordbots.org/api/widget/542488723128844312.svg)](https://discordbots.org/bot/542488723128844312)
 
 For self-hosting:
-**WIKI TO COME**
+[See Here](https://github.com/Jetsurf/jet-bot/wiki)
 
-Requires a bot token from the Discord Developer Portal and a Discord Team assigned to it for owner permissions.
+## NOTE
 
-Requires https://github.com/Pycord-Development/pycord discord python library to 
-function as well as all dependencies for it. Needs to be installed from the master git branch (not automatically via pip) at this time.
-
-Requires youtube-dl and ffmpeg for online video/music playback.
-
-Soundclips are to be placed in a directory defined by discordbot.json.
- - It is assumed that the files are volume normalized. This is what is ran on the production files as a starting point:
-   - `find . -name "*.mp3" -exec mp3gain -T -r -d -18dB {} \;`
-
-Requires a mysql backend, configured in discordbot.json.
-
-**OPTIONAL**: Have a https enabled (required) webserver local to the host running the bot stood up to host images provided in directory db-files. If not desired, leave web_dir and hosted_url blank, and the bot will disable the affected images.
- - The web_dir and hosted_url in the config needs to be set to the local root directory the web-server hosts from and the URL of the webserver providing the files. The production [URL](https://db-files.crmea.de) can be alternatively used in your config for hosted_url, but doing so will only break ACNH passport functionality.
-
-## Configuration
-An example configuration file is given at discordbot.json.example.
-This file needs to be completed and moved to discordbot.json.
-
-Soundsdir is a directory to place soundclips to play with the /voice playsound command.
-
-You can also configure some settings at runtime with [admin commands](#admin-commands).
+DM'ing the bot with !token and giving it the link it requests pulls your account sesion token from Nintendo to grant it access to game specific data. It is identical to logging into the NSO App on your phone.
+The game specific tokens are ONLY used to access your Splatoon 2 stats and ACNH passports to post within Discord and order gear for you. The account session token is used to refresh game tokens if they expire. They are used for nothing else.
+Feel free to look over [modules/nsotoken.py](https://github.com/Jetsurf/jet-bot/blob/master/modules/nsotoken.py) to audit the handling of keys yourself.
 
 ## Commands
 
-NOTE: This bot is now using slash commands, message commands still work (run !help), but are deprecated and will go away once discord disables messaging for bots
+NOTE: This bot is now using slash commands, message commands still work (run !help), but are deprecated and will go away once discord disables message content access for bots
 The following sections list the different commands that are available.
 
 ### Admin commands
 
-There are a few admin commands to configure the bot. To run these commands, you need the administrator role in your discord server. Can't DM the bot with any of these commands
+There are a few admin commands to configure the bot. To run these commands, you need the administrator permission in your discord server. Can't DM the bot with any of these commands
 
  - `/admin playlist URL`: Add the given URL to the `/voice play random` playlist
  - `/admin dm add`: Subscribe to DMs on users leaving the server
