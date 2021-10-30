@@ -58,7 +58,7 @@ class MysqlSchema():
 
 		if not await self.sqlBroker.hasKey(cur, 'feeds', 'serverid') or not await self.sqlBroker.hasKey(cur, 'feeds', 'channelid'):
 			print("Updating keys on table 'feeds'...")
-			await cur.execute("ALTER TABLE feeds MODIFY serverid BIGINT unsigned NOT NULL, MODIFY channelid unsigned BIGINT NOT NULL")
+			await cur.execute("ALTER TABLE feeds MODIFY serverid BIGINT unsigned NOT NULL, MODIFY channelid BIGINT unsigned NOT NULL")
 			await cur.execute("ALTER TABLE feeds ADD PRIMARY KEY (`serverid`, `channelid`)")
 			await self.sqlBroker.c_commit(cur)
 
