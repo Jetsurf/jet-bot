@@ -10,7 +10,7 @@ class DropDown(discord.ui.Select):
 
 		for emote in await ctx.guild.fetch_emojis():
 			if emote.is_usable():
-				options.append(discord.SelectOption(label=emote.name, description=f"{emote.name}", emoji=emote)) #f"<:{emote.name}:{str(emote.id)}>"))
+				options.append(discord.SelectOption(label=emote.name, description=emote.name, emoji=emote)) #f"<:{emote.name}:{str(emote.id)}>"))
 
 		super().__init__(placeholder=msg, min_values=1, max_values=1, options=options, custom_id=self.val)
 
@@ -21,9 +21,18 @@ class confirm(discord.ui.Button):
 	def __init__(self):
 		super().__init__(style=discord.ButtonStyle.green, label='Confirm')
 
+
 	async def callback(self, interaction: discord.Interaction):
+		choices = 0
+		for opt in self.view.opts:
+			if opt.choice != "":
+				choices+=1
+		if choices != len(self.view.picks):
+			await interaction.response.send_message("Please provide a choice for each option", ephemeral=True)
+			return
+
 		string = ""
-		for opt in self.view.opt:
+		for opt in self.view.opts:
 			for emote in await interaction.guild.fetch_emojis():
 				if opt.choice == emote.name:
 					break
@@ -36,21 +45,15 @@ class confirm(discord.ui.Button):
 class EmotePicker(discord.ui.View):
 	def __init__(self):
 		self.opts = []
+		self.picks = [ 'turfwar', 'ranked', 'league' ]
 		super().__init__()
 	
 	async def init_options(self, ctx):
-		opt = DropDown('turfwar')
-		await opt.initOpts(ctx, f'Select emote for turfwar')
-		self.opts.append(opt)
-		self.add_item(opt)
-		opt = DropDown('ranked')
-		await opt.initOpts(ctx, f'Select emote for ranked')
-		self.opts.append(opt)
-		self.add_item(opt)
-		opt = DropDown('league')
-		await opt.initOpts(ctx, f'Select emote for league')
-		self.opts.append(opt)
-		self.add_item(opt)
+		for pick in self.picks:
+			opt = DropDown(pick)
+			await opt.initOpts(ctx, f'Select emote for {pick}')
+			self.opts.append(opt)
+			self.add_item(opt)
 
 		but = confirm()
 		self.add_item(but)
