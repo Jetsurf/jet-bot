@@ -130,6 +130,21 @@ class MysqlSchema():
 			)
 			await self.sqlBroker.c_commit(cur)
 
+		if not await self.sqlBroker.hasTable(cur, 'emotes'):
+			print("Creating table 'emotes'...")
+			await cur.execute(
+			"""
+			CREATE TABLE emotes (
+			myid bigint unsigned NOT NULL,
+			turfwar TEXT NOT NULL,
+			ranked TEXT NOT NULL,
+			league TEXT NOT NULL,
+			PRIMARY KEY (`myid`)
+			) ENGINE=InnoDB
+			"""
+			)
+			await self.sqlBroker.c_commit(cur)
+
 		if await self.sqlBroker.hasTable(cur, 'blacklist'):
 			print("Removing table 'blacklist'...")
 			await cur.execute("DROP TABLE blacklist")

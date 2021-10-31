@@ -95,9 +95,14 @@ class nsoHandler():
 			league = data['league']
 
 			embed.add_field(name="Maps", value="Maps currently on rotation", inline=False)
-			embed.add_field(name="<:turfwar:550107083911987201> Turf War", value=f"{turf['stage_a']['name']}\n{turf['stage_b']['name']}", inline=True)
-			embed.add_field(name=f"<:ranked:550107084684001350> Ranked: {ranked['rule']['name']}", value=f"{ranked['stage_a']['name']}\n{ranked['stage_b']['name']}", inline=True)
-			embed.add_field(name=f"<:league:550107083660328971> League: {league['rule']['name']}", value=f"{league['stage_a']['name']}\n{league['stage_b']['name']}", inline=True)
+			cur = await self.sqlBroker.connect()
+			await cur.execute("SELECT turfwar, ranked, league FROM emotes WHERE myid = %s", (self.client.user.id,))
+			emotes = await cur.fetchone()
+			await self.sqlBroker.commit(cur)
+
+			embed.add_field(name=f"{emotes[0] if emotes != None else ''} Turf War", value=f"{turf['stage_a']['name']}\n{turf['stage_b']['name']}", inline=True)
+			embed.add_field(name=f"{emotes[1] if emotes != None else ''} Ranked: {ranked['rule']['name']}", value=f"{ranked['stage_a']['name']}\n{ranked['stage_b']['name']}", inline=True)
+			embed.add_field(name=f"{emotes[2] if emotes != None else ''} League: {league['rule']['name']}", value=f"{league['stage_a']['name']}\n{league['stage_b']['name']}", inline=True)
 
 		if srflag:
 			flag = 0
@@ -1046,7 +1051,7 @@ class nsoHandler():
 		embed.set_footer(text=f"Next Item In {str(hours)} Hours {str(minutes)} minutes")
 		await ctx.respond(embed=embed)
 
-	def mapsEmbed(self, offset=0) -> discord.Embed:
+	async def mapsEmbed(self, offset=0) -> discord.Embed:
 		embed = discord.Embed(colour=0x3FFF33)
 
 		data = self.maps(offset=offset)
@@ -1061,9 +1066,14 @@ class nsoHandler():
 		elif offset == 1:
 			embed.title = "Upcoming Splatoon 2 Maps"
 
-		embed.add_field(name="<:turfwar:550107083911987201> Turf War", value=f"{turf['stage_a']['name']}\n{turf['stage_b']['name']}", inline=True)
-		embed.add_field(name=f"<:ranked:550107084684001350> Ranked: {ranked['rule']['name']}", value=f"{ranked['stage_a']['name']}\n{ranked['stage_b']['name']}", inline=True)
-		embed.add_field(name=f"<:league:550107083660328971> League: {league['rule']['name']}", value=f"{league['stage_a']['name']}\n{league['stage_b']['name']}", inline=True)
+		cur = await self.sqlBroker.connect()
+		await cur.execute("SELECT turfwar, ranked, league FROM emotes WHERE myid = %s", (self.client.user.id,))
+		emotes = await cur.fetchone()
+		await self.sqlBroker.commit(cur)
+
+		embed.add_field(name=f"{emotes[0] if emotes != None else ''} Turf War", value=f"{turf['stage_a']['name']}\n{turf['stage_b']['name']}", inline=True)
+		embed.add_field(name=f"{emotes[1] if emotes != None else ''} Ranked: {ranked['rule']['name']}", value=f"{ranked['stage_a']['name']}\n{ranked['stage_b']['name']}", inline=True)
+		embed.add_field(name=f"{emotes[2] if emotes != None else ''} League: {league['rule']['name']}", value=f"{league['stage_a']['name']}\n{league['stage_b']['name']}", inline=True)
 
 		if offset == 0:
 			embed.add_field(name="Time Remaining", value=f"{str(hours)} Hours, and {str(mins)} minutes", inline=False)

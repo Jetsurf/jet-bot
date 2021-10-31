@@ -30,19 +30,25 @@ class confirm(discord.ui.Button):
 				return
 
 		string = ""
+		choices = {}
 		for opt in self.view.opts:
 			for emote in await interaction.guild.fetch_emojis():
 				if opt.choice == emote.name:
 					break
 
 			string+=f'{opt.val} : <:{emote.name}:{emote.id}>\n'
-			#Do MYSQL Stuff here
+			choices[opt.val] = f"<:{emote.name}:{emote.id}>"
+		
+		cur = await self.view.sqlBroker.connect()
+		await cur.execute("REPLACE INTO emotes (myid, turfwar, ranked, league) VALUES(%s, %s, %s, %s)", (self.view.client.user.id, choices['turfwar'], choices['ranked'], choices['league'],))
+		await self.view.sqlBroker.commit(cur)
 		await interaction.response.edit_message(content=f"Choices:\n{string}", view=None)
 		self.view.stop()
 
 class EmotePicker(discord.ui.View):
-	def __init__(self, mysqlHandler):
+	def __init__(self, client, mysqlHandler):
 		self.opts = []
+		self.client = client
 		self.sqlBroker = mysqlHandler
 		self.picks = [ 'turfwar', 'ranked', 'league' ]
 		super().__init__()

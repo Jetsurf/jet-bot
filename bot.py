@@ -90,7 +90,7 @@ def ensureEncryptionKey():
 @owner.command(name="emote", description="Testing", default_permission=False)
 @permissions.is_owner()
 async def emotePicker(ctx):
-	view = emotepicker.EmotePicker(mysqlHandler)
+	view = emotepicker.EmotePicker(client, mysqlHandler)
 	await view.init_options(ctx)
 	await ctx.respond("Select emotes to use in embeds", view=view, ephemeral=True)
 
@@ -236,7 +236,7 @@ async def cmdDMAdd(ctx):
 @maps.command(name='current', description='Shows current map rotation for Turf War/Ranked/League')
 async def cmdCurrentMaps(ctx):
 	await serverUtils.increment_cmd(ctx, 'currentmaps')
-	await ctx.respond(embed=nsoHandler.mapsEmbed())
+	await ctx.respond(embed=await nsoHandler.mapsEmbed())
 
 @maps.command(name='next', description='Shows the next maps in rotation for Turf War/Ranked/League')
 async def cmdNextMaps(ctx, rotation: Option(int, "Map Rotations ahead to show, max of 11 ahead", required=False, default=1)):
@@ -247,7 +247,7 @@ async def cmdNextMaps(ctx, rotation: Option(int, "Map Rotations ahead to show, m
 	if rotation == None:
 		rotation = 1
 
-	await ctx.respond(embed=nsoHandler.mapsEmbed(rotation))
+	await ctx.respond(embed=await nsoHandler.mapsEmbed(rotation))
 
 @maps.command(name='nextsr', description='Shows map/weapons for the next Salmon Run rotation')
 async def cmdNextSR(ctx):
