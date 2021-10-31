@@ -564,46 +564,45 @@ class nsoHandler():
 		theGear = self.storeJSON['merchandises'][5]
 		await ctx.respond(f"```{str(theGear)}```")
 
-	#TODO: Convert this owner only command
-	async def getRawJSON(self, ctx):
-		if not await self.nsotoken.checkSessionPresent(ctx):
-			await message.channel.send("You don't have a token setup with me! Please DM me !token with how to get one setup!")
+	async def getNSOJSONRaw(self, ctx, args):
+		if args.get('user') != None:
+			print(f"ID: {args.get('user')}")
+			iksm = await self.nsotoken.getGameKey(int(args.get('user')), "s2")
+		else:
+			iksm = await self.nsotoken.getGameKey(ctx.user.id, "s2")
+
+		if iksm.get('iksm') == None:
+			await ctx.repsond("Sorry, can't find iksm", ephemeral=True)
 			return
 
-		s2_token = await self.nsotoken.getGameKey(message.author.id, "s2.iksm")
-		if not s2_token:
-			await message.channel.send("Sorry, can't find S2 iksm")
-			return
-
-		if 'base' in message.content:
+		if args['endpoint'] == 'base':
 			url = "https://app.splatoon2.nintendo.net/api/records"
-			jsontype = 'base'
 			header = self.app_head
-		elif 'sr' in message.content:
+		elif args['endpoint'] == 'sr':
 			url = "https://app.splatoon2.nintendo.net/api/coop_results"
-			jsontype = 'sr'
 			header = self.app_head_coop
-		elif 'fullbattle' in message.content:
-			num = message.content[20:]
-			url = f"https://app.splatoon2.nintendo.net/api/results/{num}"
+		elif args['ednpoint'] == 'fullbattle':
+			if args['battleid'] == None:
+				await ctx.respond("Battleid required when endpoint is fullbattle", ephemeral=True)
+				return
+
+			url = f"https://app.splatoon2.nintendo.net/api/results/{args['battleid']}"
 			header = self.app_head
-			jsontype = f"fullbattle{num}"
-		elif 'battle' in message.content:
+		elif args['endpoint'] == 'battle':
 			url = "https://app.splatoon2.nintendo.net/api/results"
-			jsontype = 'battle'
 			header = self.app_head
 
-		results_list = requests.get(url, headers=header, cookies=dict(iksm_session=s2_token))
+		results_list = requests.get(url, headers=header, cookies=dict(iksm_session=iksm['iksm']))
 		thejson = json.loads(results_list.text)	
 
 		if 'AUTHENTICATION_ERROR' in str(thejson):
 			iksm = await self.nsotoken.doGameKeyRefresh(ctx)
-			results_list = requests.get(url, headers=header, cookies=dict(iksm_session=iksm['s2']['token']))
+			results_list = requests.get(url, headers=header, cookies=dict(iksm_session=iksm['iksm']))
 			thejson = json.loads(results_list.text)
 
 		f = io.StringIO(results_list.text)
 		jsonToSend = discord.File(fp=f, filename = 'data.json')
-		await message.channel.send(file=jsonToSend)
+		await ctx.respond(file=jsonToSend, ephemeral=True)
 
 	async def getNSOJSON(self, ctx, header, url):
 		if not await self.nsotoken.checkSessionPresent(ctx):

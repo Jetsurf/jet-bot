@@ -1,12 +1,13 @@
 import os, sys, re
 sys.path.append('./modules')
+sys.path.append('./views')
 #Base Stuffs
 import discord, asyncio, subprocess, json, time, itertools
-from discord.commands import Option, SlashCommandGroup
+from discord.commands import *
 #DBL Posting
 import urllib, urllib.request, requests, pymysql
 #Our Classes
-import nsotoken, commandparser, serverconfig, splatinfo, messagecontext
+import nsotoken, commandparser, serverconfig, splatinfo, messagecontext, emotepicker
 import vserver, mysqlhandler, mysqlschema, serverutils, nsohandler, achandler
 import stringcrypt
 #Eval
@@ -44,7 +45,7 @@ voice = SlashCommandGroup('voice', 'Commands related to voice functions')
 store = SlashCommandGroup('store', 'Commands related to the Splatoon 2 store')
 stats = SlashCommandGroup('stats', 'Commands related to Splatoon 2 gameplay stats')
 acnh = SlashCommandGroup('acnh', "Commands related to Animal Crossing New Horizons")
-
+owner = SlashCommandGroup('owner', "Commands that are owner only")
 dm = admin.command_group(name='dm', description="Admin commands related to DM's on users leaving")
 feed = admin.command_group(name='feed', description='Admin commands related to SplatNet rotation feeds')
 announce = admin.command_group(name='announcements', description='Admin commands related to developer annoucenments')
@@ -85,6 +86,13 @@ def ensureEncryptionKey():
 	else:
 		print("Creating new secret key file...")
 		stringCrypt.writeSecretKeyFile(keyPath)
+
+@owner.command(name="emote", description="Testing", default_permission=False)
+@permissions.is_owner()
+async def emotePicker(ctx):
+	view = emotepicker.EmotePicker()
+	await view.init_options(ctx)
+	await ctx.respond("Testing", view=view, ephemeral=True)	
 
 @acnh.command(name='passport', description="Posts your ACNH Passport")
 async def cmdACNHPassport(ctx):
@@ -330,9 +338,19 @@ async def cmdBattle(ctx, battlenum: Option(int, "Battle Number, 1 being latest, 
 	await nsoHandler.cmdBattles(ctx, battlenum)
 
 #TODO: NEEDS GUILD RESTRICTION - need to dynamically load the home server
-#@client.slash_command(name='eval', description="Eval a code block (Owners only)")
-#async def cmdEval(ctx, code: Option(str, "The code block to eval", required=True)):
-	#await doEval(ctx, code, slash=True)
+@owner.command(name='eval', description="Eval a code block (Owners only)", default_permission=False)
+@permissions.is_owner()
+async def cmdEval(ctx, code: Option(str, "The code block to eval", required=True)):
+	await doEval(ctx, code, slash=True)
+
+@owner.command(name='nsojson', description="Get raw nso json")
+@permissions.is_owner()
+async def cmdNSOJson(ctx, endpoint: Option(str, "Endpoint to get json from", choices=['base', 'battle', 'fullbattle', 'sr'], required=True), user: Option(str, "ID of a user to mimic", required=False), battleid: Option(str, "If endpoint is fullbattle, provide battleid to get", required=False)):
+	if ctx.user not in owners:
+		await ctx.respond("Not an owner", ephemeral=True)
+
+	await nsoHandler.getNSOJSONRaw(ctx, { 'endpoint': endpoint, 'user': user, 'battleid': battleid })
+
 
 @voice.command(name='join', description='Join a voice chat channel')
 async def cmdVoiceJoin(ctx, channel: Option(discord.VoiceChannel, "Voice Channel to join", required=False)):
@@ -784,8 +802,6 @@ async def on_message(message):
 				sys.exit(0)
 			elif '!cmdreport' in command:
 				await serverUtils.report_cmd_totals(message)
-			elif '!nsojson' in command:
-				await nsoHandler.getRawJSON(message)
 			elif '!announce' in command:
 				await serverUtils.doAnnouncement(message)
 		if '!token' in command:
@@ -989,6 +1005,9 @@ client.add_application_command(stats)
 client.add_application_command(voice)
 client.add_application_command(admin)
 client.add_application_command(acnh)
+
+if dev:
+	client.add_application_command(owner)
 
 sys.stdout.flush()
 sys.stderr.flush()
