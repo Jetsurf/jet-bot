@@ -57,7 +57,7 @@ class mysqlHandler():
 		return True
 
 	async def hasKey(self, cur, tablename, keyname):
-		await cur.execute("SELECT * FROM information_schema.STATISTICS WHERE (TABLE_SCHEMA = %S) AND (TABLE_NAME = %s) AND (COLUMN_NAME = %s)", (self.__db, tablename, keyname,))
+		await cur.execute("SELECT * FROM information_schema.STATISTICS WHERE (TABLE_SCHEMA = %s) AND (TABLE_NAME = %s) AND (COLUMN_NAME = %s)", (self.__db, tablename, keyname,))
 		row = await cur.fetchone()
 		await self.c_commit(cur)
 		if row == None:
