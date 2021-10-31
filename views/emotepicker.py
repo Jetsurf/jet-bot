@@ -1,4 +1,5 @@
-import discord
+sys.path.append('../modules')
+import discord, mysqlhandler
 
 class DropDown(discord.ui.Select):
 	def __init__(self, emoteSelect):
@@ -43,8 +44,9 @@ class confirm(discord.ui.Button):
 		self.view.stop()
 
 class EmotePicker(discord.ui.View):
-	def __init__(self):
+	def __init__(self, mysqlHandler):
 		self.opts = []
+		self.sqlBroker = mysqlHandler
 		self.picks = [ 'turfwar', 'ranked', 'league' ]
 		super().__init__()
 	

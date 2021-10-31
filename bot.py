@@ -90,9 +90,12 @@ def ensureEncryptionKey():
 @owner.command(name="emote", description="Testing", default_permission=False)
 @permissions.is_owner()
 async def emotePicker(ctx):
-	view = emotepicker.EmotePicker()
+	view = emotepicker.EmotePicker(mysqlHandler)
 	await view.init_options(ctx)
-	await ctx.respond("Testing", view=view, ephemeral=True)	
+	await ctx.respond("Select emotes to use in embeds", view=view, ephemeral=True)
+
+	await view.wait()
+
 
 @acnh.command(name='passport', description="Posts your ACNH Passport")
 async def cmdACNHPassport(ctx):
