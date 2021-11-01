@@ -8,6 +8,6 @@
 	"mysql_pw"		: "",
 	"mysql_db"		: "",
 	"home_server"	: "",
-	"hosted_url"	: "",
+	"hosted_url"	: "https://db-files.crmea.de",
 	"web_dir"		: ""
 }
