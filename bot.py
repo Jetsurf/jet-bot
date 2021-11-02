@@ -98,13 +98,14 @@ async def emotePicker(ctx, turfwar: Option(str, "Emote to use for turfwar"), ran
 		if num > 1 or num == 0:
 			await ctx.respond("One custom emote for each option please.", ephemeral=True)
 			return
-		m = re.search('<:\w*:[0-9]{18}>', emote).group(0)
 
+		m = re.search('<:\w*:[0-9]{18}>', emote).group(0)
 		theEmote = client.get_emoji(int(re.search('[0-9]{18}', m).group(0)))
 		if theEmote == None:
 			await ctx.respond("Only use custom emoji available to me", ephemeral=True)
 			return
 
+		#Delete any accidental cruft in the arg
 		emote = m
 
 	cur = await mysqlHandler.connect()
@@ -439,9 +440,7 @@ async def cmdVoicePlaySearch(ctx, source: Option(str, "Source to search", choice
 		for i in itertools.chain([ source ], search.split()):
 			theList.append(i)
 
-		print(f"{theList}")
 		await serverVoices[ctx.guild.id].setupPlay(ctx, theList)
-
 	else:
 		await ctx.respond("Not connected to voice", ephemeral=True)
 

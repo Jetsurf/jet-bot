@@ -191,6 +191,9 @@ class voiceServer():
 			self.vclient.play(self.source, after=self.playNext)
 
 	async def setupPlay(self, ctx, args):
+		if len(args) == 0:
+			return
+
 		if 'https://' in args[0]:
 			try:
 				tempPlayer = await YTDLSource.from_url(args[0])
