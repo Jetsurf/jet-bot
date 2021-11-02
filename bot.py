@@ -87,15 +87,32 @@ def ensureEncryptionKey():
 		print("Creating new secret key file...")
 		stringCrypt.writeSecretKeyFile(keyPath)
 
-@owner.command(name="emote", description="Testing", default_permission=False)
+@owner.command(name="emotes", description="Sets Emotes for use in Embeds (Custom emotes only)", default_permission=False)
 @permissions.is_owner()
-async def emotePicker(ctx):
-	view = emotepicker.EmotePicker(client, mysqlHandler)
-	await view.init_options(ctx)
-	await ctx.respond("Select emotes to use in embeds", view=view, ephemeral=True)
+async def emotePicker(ctx, turfwar: Option(str, "Emote to use for turfwar"), ranked: Option(str, "Emote to use for ranked"), league: Option(str, "Emote to use for league"), badge100k: Option(str, "Emote to use for the 100k inked badge"),
+	badge500k: Option(str, "Emote to use for the 500k inked badge"), badge1m: Option(str, "Emote to use for the 1m inked badge"), badge10m: Option(str, "Emote to use for the 10m inked badge")):
+	
+	opts = [ turfwar, ranked, league, badge100k, badge500k, badge1m, badge10m ]
+	for emote in opts:
+		num = len(re.findall('<:\w*:[0-9]{18}>', emote))
+		if num > 1 or num == 0:
+			await ctx.respond("One custom emote for each option please.", ephemeral=True)
+			return
+		m = re.search('<:\w*:[0-9]{18}>', emote).group(0)
 
-	await view.wait()
+		theEmote = client.get_emoji(int(re.search('[0-9]{18}', m).group(0)))
+		if theEmote == None:
+			await ctx.respond("Only use custom emoji available to me", ephemeral=True)
+			return
 
+		emote = m
+
+	cur = await mysqlHandler.connect()
+	stmt = "REPLACE INTO emotes (myid, turfwar, ranked, league, badge100k, badge500k, badge1m, badge10m) VALUES(%s, %s, %s, %s, %s, %s, %s, %s)"
+	await cur.execute(stmt, (client.user.id, opts[0], opts[1], opts[2], opts[3], opts[4], opts[5], opts[6],))
+	await mysqlHandler.commit(cur)
+
+	await ctx.respond(f"Choices:\nturfwar:{opts[0]}\nranked:{opts[1]}\nleague:{opts[2]}\nbadge100k:{opts[3]}\nbadge500k:{opts[4]}\nbadge1m:{opts[5]}\nbadge10m:{opts[6]}", ephemeral=True)
 
 @acnh.command(name='passport', description="Posts your ACNH Passport")
 async def cmdACNHPassport(ctx):

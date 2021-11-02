@@ -660,14 +660,20 @@ class nsoHandler():
 		name = thejson['records']['player']['nickname']
 		turfinked = theweapdata['total_paint_point']
 		turfstring = str(turfinked)
+		
+		cur = await self.sqlBroker.connect()
+		await cur.execute("SELECT badge100k, badge500k, badge1m, badge10m FROM emotes WHERE myid = %s", (self.client.user.id,))
+		emotes = await cur.fetchone()
+		await self.sqlBroker.commit(cur)
+
 		if turfinked >= 100000:
-			turfstring = f"{str(turfinked)}<:badge_100k:863924861809197096>"
+			turfstring = f"{str(turfinked)}{emotes[0] if emotes != None else ''}"
 		if turfinked >= 500000:
-			turfstring = f"{str(turfinked)}<:badge_500k:863925109278507038>"
+			turfstring = f"{str(turfinked)}{emotes[1] if emotes != None else ''}"
 		if turfinked >= 1000000:
-			turfstring = f"{str(turfinked)}<:badge_1M:863925025388101632>"
+			turfstring = f"{str(turfinked)}{emotes[2] if emotes != None else ''}"
 		if turfinked >= 9999999:
-			turfstring = f"{str(turfinked)}<:badge_10M:863924949748416542>"
+			turfstring = f"{str(turfinked)}{emotes[3] if emotes != None else ''}"
 		wins = theweapdata['win_count']
 		loss = theweapdata['lose_count']
 		if (wins + loss) != 0:

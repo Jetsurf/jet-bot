@@ -139,6 +139,10 @@ class MysqlSchema():
 			turfwar TEXT NOT NULL,
 			ranked TEXT NOT NULL,
 			league TEXT NOT NULL,
+			badge100k TEXT NOT NULL,
+			badge500k TEXT NOT NULL,
+			badge1m TEXT NOT NULL,
+			badge10m TEXT NOT NULL,
 			PRIMARY KEY (`myid`)
 			) ENGINE=InnoDB
 			"""
