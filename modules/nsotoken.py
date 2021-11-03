@@ -392,8 +392,10 @@ class Nsotoken():
 		timestamp = int(time.time())
 		guid = str(uuid.uuid4())
 		f = self.__callImink(idToken, guid, timestamp, 1)
-		if f == None or f == 500:
+		if f == None
 			return None
+		if f == 500:
+			return 500
 
 		parameter = {
 			'f':         	f["f"],
