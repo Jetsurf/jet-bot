@@ -323,7 +323,7 @@ class Nsotoken():
 		r = requests.post("https://api.imink.jone.wang/f", headers=api_app_head, data=json.dumps(api_app_body))
 		print(f"IMINK API RESPONSE: {r.status_code} {r.reason} {r.text}")
 
-		if r.status_code != 500:
+		if r.status_code == 500:
 			print(f"Temporary issue with IMINK: {r.status_code} {r.reason} : {r.text}")
 			return 500
 		if r.status_code != 200:
