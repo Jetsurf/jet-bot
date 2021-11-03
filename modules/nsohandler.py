@@ -586,7 +586,7 @@ class nsoHandler():
 		elif args['endpoint'] == 'sr':
 			url = "https://app.splatoon2.nintendo.net/api/coop_results"
 			header = self.app_head_coop
-		elif args['ednpoint'] == 'fullbattle':
+		elif args['endpoint'] == 'fullbattle':
 			if args['battleid'] == None:
 				await ctx.respond("Battleid required when endpoint is fullbattle", ephemeral=True)
 				return
