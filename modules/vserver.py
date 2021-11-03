@@ -329,7 +329,7 @@ class voiceServer():
 					await ctx.respond(f"Added URL: {args[0]} to the playlist")
 				else:
 					await ctx.respond(f"Error adding to the playlist")
-			elif 'https' not in args[1]:
+			elif 'https' not in args[0]:
 				await ctx.respond("I need a proper url to add")
 			else:
 				await ctx.respond(f"URL: {args[0]} is already in my playlist")
