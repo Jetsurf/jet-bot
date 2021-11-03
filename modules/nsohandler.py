@@ -616,25 +616,19 @@ class nsoHandler():
 
 		iksm = await self.nsotoken.getGameKey(ctx.user.id, "s2")
 		if iksm == None:
+			print("1")
 			iksm = await self.nsotoken.doGameKeyRefresh(ctx)
-			##These are messy, debating merging this function into nsoToken
-			if iksm == 500:
-				await ctx.respond("Temporary issue with NSO Logins. Please try again in just a minute.")
-				return  None
 			if iksm == None:
-				await ctx.respond("Something went wrong! This has been logged for my owners.")
 				return None
 
 		results_list = requests.get(url, headers=header, cookies=dict(iksm_session=iksm['iksm']))
 		thejson = json.loads(results_list.text)	
 
+
 		if 'AUTHENTICATION_ERROR' in str(thejson):
+			print('inb4')
 			iksm = await self.nsotoken.doGameKeyRefresh(ctx)
-			if iksm == 500:
-				await ctx.respond("Temporary issue with NSO Logins. Please try again in just a minute.")
-				return  None
 			if iksm == None:
-				await ctx.respond("Something went wrong! This has been logged for my owners.")
 				return None
 
 			results_list = requests.get(url, headers=header, cookies=dict(iksm_session=iksm['iksm']))
