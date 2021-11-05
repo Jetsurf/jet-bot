@@ -1,4 +1,4 @@
-import discord, asyncio
+import discord, asyncio, subprocess
 import queue, sys
 import requests, urllib, urllib.request, copy
 import youtube_dl, traceback
@@ -335,13 +335,13 @@ class voiceServer():
 			else:
 				await ctx.respond(f"URL: {args[0]} is already in my playlist")
 
-	def createSoundsEmbed():
+	def createSoundsEmbed(self):
 		global configData
 		embed = discord.Embed(colour=0xEB4034)
 		embed.title = "Current Sounds"
 
 		delimiter = ', '
-		theSounds = subprocess.check_output(["ls", configData['soundsdir']])
+		theSounds = subprocess.check_output(["ls", self.soundsDir])
 		theSounds = theSounds.decode("utf-8")
 		theSounds = theSounds.replace('.mp3', '')
 		theSounds = theSounds.replace('\n', delimiter)
