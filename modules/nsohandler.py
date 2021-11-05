@@ -569,6 +569,7 @@ class nsoHandler():
 		theGear = self.storeJSON['merchandises'][5]
 		await ctx.respond(f"```{str(theGear)}```")
 
+	#While this certainly can mimic any user in the DB, this is only used for debugging JSON output from Nintendo
 	async def getNSOJSONRaw(self, ctx, args):
 		if args.get('user') != None:
 			print(f"ID: {args.get('user')}")
