@@ -6,6 +6,7 @@ import mysqlhandler
 import json, re
 from bs4 import BeautifulSoup
 from random import randint
+from subprocess import call
 
 youtube_dl.utils.bug_reports_message = lambda: ''
 
@@ -333,3 +334,31 @@ class voiceServer():
 				await ctx.respond("I need a proper url to add")
 			else:
 				await ctx.respond(f"URL: {args[0]} is already in my playlist")
+
+	def createSoundsEmbed():
+		global configData
+		embed = discord.Embed(colour=0xEB4034)
+		embed.title = "Current Sounds"
+
+		delimiter = ', '
+		theSounds = subprocess.check_output(["ls", configData['soundsdir']])
+		theSounds = theSounds.decode("utf-8")
+		theSounds = theSounds.replace('.mp3', '')
+		theSounds = theSounds.replace('\n', delimiter)
+		if len(theSounds) > 1024:
+			length = 0
+			tmpStr = ""
+			embedNum = 1
+			for snd in theSounds.split(delimiter):
+				if length + (len(snd) + len(delimiter)) > 1024:
+					length = 0
+					embed.add_field(name=f"Sounds {str(embedNum)}", value=tmpStr[:len(tmpStr)-len(delimiter)], inline=False)
+					tmpStr = ""
+					embedNum += 1
+				
+				tmpStr += f'{snd}{delimiter}'
+				length += (len(snd) + len(delimiter))
+		else:
+			embed.add_field(name="Sounds", value=theSounds, inline=False)
+
+		return embed

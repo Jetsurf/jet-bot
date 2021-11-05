@@ -1,20 +1,14 @@
 import os, sys, re
 sys.path.append('./modules')
-sys.path.append('./views')
 #Base Stuffs
 import discord, asyncio, subprocess, json, time, itertools
 from discord.commands import *
 #DBL Posting
 import urllib, urllib.request, requests, pymysql
 #Our Classes
-import nsotoken, commandparser, serverconfig, splatinfo, messagecontext, emotepicker
+import nsotoken, commandparser, serverconfig, splatinfo, messagecontext, ownercmds
 import vserver, mysqlhandler, mysqlschema, serverutils, nsohandler, achandler
 import stringcrypt
-#Eval
-import traceback, textwrap, io, signal
-from contextlib import redirect_stdout
-from subprocess import call
-from pathlib import Path
 
 configData = None
 stringCrypt = stringcrypt.StringCrypt()
@@ -27,6 +21,7 @@ serverConfig = None
 mysqlHandler = None
 nsoHandler = None
 nsoTokens = None
+ownerCmds = None
 serverVoices = {}
 serverUtils = None
 acHandler = None
@@ -93,27 +88,7 @@ async def emotePicker(ctx, turfwar: Option(str, "Emote to use for turfwar"), ran
 	badge500k: Option(str, "Emote to use for the 500k inked badge"), badge1m: Option(str, "Emote to use for the 1m inked badge"), badge10m: Option(str, "Emote to use for the 10m inked badge")):
 	
 	opts = [ turfwar, ranked, league, badge100k, badge500k, badge1m, badge10m ]
-	for emote in opts:
-		num = len(re.findall('<:\w*:[0-9]{18}>', emote))
-		if num > 1 or num == 0:
-			await ctx.respond("One custom emote for each option please.", ephemeral=True)
-			return
-
-		m = re.search('<:\w*:[0-9]{18}>', emote).group(0)
-		theEmote = client.get_emoji(int(re.search('[0-9]{18}', m).group(0)))
-		if theEmote == None:
-			await ctx.respond("Only use custom emoji available to me", ephemeral=True)
-			return
-
-		#Delete any accidental cruft in the arg
-		emote = m
-
-	cur = await mysqlHandler.connect()
-	stmt = "REPLACE INTO emotes (myid, turfwar, ranked, league, badge100k, badge500k, badge1m, badge10m) VALUES(%s, %s, %s, %s, %s, %s, %s, %s)"
-	await cur.execute(stmt, (client.user.id, opts[0], opts[1], opts[2], opts[3], opts[4], opts[5], opts[6],))
-	await mysqlHandler.commit(cur)
-
-	await ctx.respond(f"Choices:\nturfwar:{opts[0]}\nranked:{opts[1]}\nleague:{opts[2]}\nbadge100k:{opts[3]}\nbadge500k:{opts[4]}\nbadge1m:{opts[5]}\nbadge10m:{opts[6]}", ephemeral=True)
+	await ownerCmds.emotePicker(ctx, opts)
 
 @acnh.command(name='passport', description="Posts your ACNH Passport")
 async def cmdACNHPassport(ctx):
@@ -362,7 +337,7 @@ async def cmdBattle(ctx, battlenum: Option(int, "Battle Number, 1 being latest, 
 @owner.command(name='eval', description="Eval a code block (Owners only)", default_permission=False)
 @permissions.is_owner()
 async def cmdEval(ctx, code: Option(str, "The code block to eval", required=True)):
-	await doEval(ctx, code, slash=True)
+	await ownercmds.eval(ctx, code, slash=True)
 
 @owner.command(name='nsojson', description="Get raw nso json")
 @permissions.is_owner()
@@ -539,7 +514,7 @@ async def cmdVoiceSounds(ctx):
 
 	await serverUtils.increment_cmd(ctx, 'sounds')
 
-	await ctx.respond(embed=createSoundsEmbed())
+	await ctx.respond(embed=serverVoices[ctx.guild.id].createSoundsEmbed())
 
 @play.command(name='sound', description="Plays one of my sound clips in voice")
 async def cmdVoicePlaySound(ctx, sound: Option(str, "Sound clip to play, get with /voice sounds")):
@@ -560,34 +535,6 @@ async def cmdPlaylistAdd(ctx, url: Option(str, "URL to add to my playlist", requ
 	else:
 		await ctx.respond("You aren't a guild administrator", ephemeral=True)
 
-def createSoundsEmbed():
-	global configData
-	embed = discord.Embed(colour=0xEB4034)
-	embed.title = "Current Sounds"
-
-	delimiter = ', '
-	theSounds = subprocess.check_output(["ls", configData['soundsdir']])
-	theSounds = theSounds.decode("utf-8")
-	theSounds = theSounds.replace('.mp3', '')
-	theSounds = theSounds.replace('\n', delimiter)
-	if len(theSounds) > 1024:
-		length = 0
-		tmpStr = ""
-		embedNum = 1
-		for snd in theSounds.split(delimiter):
-			if length + (len(snd) + len(delimiter)) > 1024:
-				length = 0
-				embed.add_field(name=f"Sounds {str(embedNum)}", value=tmpStr[:len(tmpStr)-len(delimiter)], inline=False)
-				tmpStr = ""
-				embedNum += 1
-			
-			tmpStr += f'{snd}{delimiter}'
-			length += (len(snd) + len(delimiter))
-	else:
-		embed.add_field(name="Sounds", value=theSounds, inline=False)
-
-	return embed
-
 async def checkIfAdmin(ctx):
 	if ctx.guild.get_member(ctx.user.id) == None:
 		await client.get_guild(ctx.guild.id).chunk()
@@ -596,7 +543,7 @@ async def checkIfAdmin(ctx):
 
 @client.event
 async def on_ready():
-	global client, mysqlHandler, serverUtils, serverVoices, splatInfo, configData
+	global client, mysqlHandler, serverUtils, serverVoices, splatInfo, configData, ownerCmds
 	global nsoHandler, nsoTokens, head, dev, owners, commandParser, doneStartup, acHandler, stringCrypt
 
 	if not doneStartup:
@@ -638,6 +585,7 @@ async def on_ready():
 
 		serverConfig = serverconfig.ServerConfig(mysqlHandler)
 		commandParser = commandparser.CommandParser(serverConfig, client.user.id)
+		ownerCmds = ownercmds.ownerCmds(client, mysqlHandler, commandParser, owners)
 		serverUtils = serverutils.serverUtils(client, mysqlHandler, serverConfig, configData['help'])
 		nsoTokens = nsotoken.Nsotoken(client, mysqlHandler, configData.get('hosted_url'), stringCrypt)
 		nsoHandler = nsohandler.nsoHandler(client, mysqlHandler, nsoTokens, splatInfo, configData.get('hosted_url'))
@@ -736,71 +684,10 @@ async def on_voice_state_update(mem, before, after):
 		serverVoices[server] = vserver.voiceServer(client, mysqlHandler, server, configData['soundsdir'])
 		sys.stdout.flush()
 
-def killEval(signum, frame):
-	raise asyncio.TimeoutError
-
-async def doEval(ctx, codeblk, slash=False):
-	global owners, commandParser
-	newout = io.StringIO()
-	env = { 'ctx' : ctx	}
-	env.update(globals())
-	env.pop('configData')
-	env.pop('mysqlHandler')
-	env.pop('nsoTokens')
-	embed = discord.Embed(colour=0x00FFFF)
-	prefix = await commandParser.getPrefix(ctx.guild.id)
-	if ctx.user not in owners:
-		await ctx.respond("You are not an owner, this command is limited to my owners only :cop:")
-	else:
-		if slash or '```' in ctx.content :
-			if not slash:
-				code = ctx.content.replace('`', '').replace(f"{prefix}eval ", '')
-			else:
-				code = codeblk.replace('`', '')
-
-			theeval = f"async def func(): \n{textwrap.indent(code, ' ')}"
-			try:
-				exec(theeval, env)
-			except Exception as err:
-				embed.title = "**ERROR IN EXEC SETUP**"
-				embed.add_field(name="Result", value=str(err), inline=False)
-				await ctx.respond(embed=embed)
-				return
-			func = env['func']
-			try:
-				signal.signal(signal.SIGALRM, killEval)
-				signal.alarm(10)
-				with redirect_stdout(newout):
-					ret = await func()
-				signal.alarm(0)
-			except asyncio.TimeoutError:
-				embed.title = "**TIMEOUT**"
-				embed.add_field(name="TIMEOUT", value="Timeout occured during execution", inline=False)
-				await ctx.respond(embed=embed)
-				return
-			except Exception as err:
-				embed.title = "**ERROR IN EXECUTION**"
-				embed.add_field(name="Result", value=str(err), inline=False)
-				await ctx.respond(embed=embed)
-				return
-			finally:
-				signal.alarm(0)
-
-			embed.title = "**OUTPUT**"
-			out = newout.getvalue()
-			if (out == ''):
-				embed.add_field(name="Result", value="No Output, but succeeded", inline=False)
-			else:
-				embed.add_field(name="Result", value=out, inline=False)
-
-			await ctx.respond(embed=embed)
-		else:
-			await ctx.respond("Please provide code in a block")
-
 @client.event
 async def on_message(message):
 	global serverVoices, serverUtils, mysqlHandler
-	global nsoHandler, owners, commandParser, doneStartup, acHandler, nsoTokens
+	global nsoHandler, owners, commandParser, doneStartup, acHandler, nsoTokens, ownerCmds
 
 	# Filter out bots and system messages or handling of messages until startup is done
 	if message.author.bot or message.type != discord.MessageType.default or not doneStartup:
@@ -856,7 +743,7 @@ async def on_message(message):
 		print("Failed to increment command... issue with MySQL?")
 
 	if cmd == 'eval':
-		await doEval(context, None)
+		await ownerCmds.eval(context, None)
 	elif cmd == 'getcons' and message.author in owners:
 		await mysqlHandler.printCons(message)
 	elif cmd == 'storejson' and message.author in owners:
@@ -931,7 +818,7 @@ async def on_message(message):
 	elif cmd == 'commands' or cmd == 'help':
 		await serverUtils.print_help(message, prefix)
 	elif cmd == 'sounds':
-		await channel.send(embed=createSoundsEmbed())
+		await channel.send(embed=serverVoices[theServer].createSoundsEmbed())
 	elif cmd == 'join':
 		if len(args) > 0:
 			await serverVoices[theServer].joinVoiceChannel(context, args)
