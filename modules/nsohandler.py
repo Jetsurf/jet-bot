@@ -95,9 +95,14 @@ class nsoHandler():
 			league = data['league']
 
 			embed.add_field(name="Maps", value="Maps currently on rotation", inline=False)
-			embed.add_field(name="<:turfwar:550107083911987201> Turf War", value=f"{turf['stage_a']['name']}\n{turf['stage_b']['name']}", inline=True)
-			embed.add_field(name=f"<:ranked:550107084684001350> Ranked: {ranked['rule']['name']}", value=f"{ranked['stage_a']['name']}\n{ranked['stage_b']['name']}", inline=True)
-			embed.add_field(name=f"<:league:550107083660328971> League: {league['rule']['name']}", value=f"{league['stage_a']['name']}\n{league['stage_b']['name']}", inline=True)
+			cur = await self.sqlBroker.connect()
+			await cur.execute("SELECT turfwar, ranked, league FROM emotes WHERE myid = %s", (self.client.user.id,))
+			emotes = await cur.fetchone()
+			await self.sqlBroker.commit(cur)
+
+			embed.add_field(name=f"{emotes[0] if emotes != None else ''} Turf War", value=f"{turf['stage_a']['name']}\n{turf['stage_b']['name']}", inline=True)
+			embed.add_field(name=f"{emotes[1] if emotes != None else ''} Ranked: {ranked['rule']['name']}", value=f"{ranked['stage_a']['name']}\n{ranked['stage_b']['name']}", inline=True)
+			embed.add_field(name=f"{emotes[2] if emotes != None else ''} League: {league['rule']['name']}", value=f"{league['stage_a']['name']}\n{league['stage_b']['name']}", inline=True)
 
 		if srflag:
 			flag = 0
@@ -564,46 +569,46 @@ class nsoHandler():
 		theGear = self.storeJSON['merchandises'][5]
 		await ctx.respond(f"```{str(theGear)}```")
 
-	#TODO: Convert this owner only command
-	async def getRawJSON(self, ctx):
-		if not await self.nsotoken.checkSessionPresent(ctx):
-			await message.channel.send("You don't have a token setup with me! Please DM me !token with how to get one setup!")
+	#While this certainly can mimic any user in the DB, this is only used for debugging JSON output from Nintendo
+	async def getNSOJSONRaw(self, ctx, args):
+		if args.get('user') != None:
+			print(f"ID: {args.get('user')}")
+			iksm = await self.nsotoken.getGameKey(int(args.get('user')), "s2")
+		else:
+			iksm = await self.nsotoken.getGameKey(ctx.user.id, "s2")
+
+		if iksm.get('iksm') == None:
+			await ctx.repsond("Sorry, can't find iksm", ephemeral=True)
 			return
 
-		s2_token = await self.nsotoken.getGameKey(message.author.id, "s2.iksm")
-		if not s2_token:
-			await message.channel.send("Sorry, can't find S2 iksm")
-			return
-
-		if 'base' in message.content:
+		if args['endpoint'] == 'base':
 			url = "https://app.splatoon2.nintendo.net/api/records"
-			jsontype = 'base'
 			header = self.app_head
-		elif 'sr' in message.content:
+		elif args['endpoint'] == 'sr':
 			url = "https://app.splatoon2.nintendo.net/api/coop_results"
-			jsontype = 'sr'
 			header = self.app_head_coop
-		elif 'fullbattle' in message.content:
-			num = message.content[20:]
-			url = f"https://app.splatoon2.nintendo.net/api/results/{num}"
+		elif args['endpoint'] == 'fullbattle':
+			if args['battleid'] == None:
+				await ctx.respond("Battleid required when endpoint is fullbattle", ephemeral=True)
+				return
+
+			url = f"https://app.splatoon2.nintendo.net/api/results/{args['battleid']}"
 			header = self.app_head
-			jsontype = f"fullbattle{num}"
-		elif 'battle' in message.content:
+		elif args['endpoint'] == 'battle':
 			url = "https://app.splatoon2.nintendo.net/api/results"
-			jsontype = 'battle'
 			header = self.app_head
 
-		results_list = requests.get(url, headers=header, cookies=dict(iksm_session=s2_token))
+		results_list = requests.get(url, headers=header, cookies=dict(iksm_session=iksm['iksm']))
 		thejson = json.loads(results_list.text)	
 
 		if 'AUTHENTICATION_ERROR' in str(thejson):
 			iksm = await self.nsotoken.doGameKeyRefresh(ctx)
-			results_list = requests.get(url, headers=header, cookies=dict(iksm_session=iksm['s2']['token']))
+			results_list = requests.get(url, headers=header, cookies=dict(iksm_session=iksm['iksm']))
 			thejson = json.loads(results_list.text)
 
 		f = io.StringIO(results_list.text)
 		jsonToSend = discord.File(fp=f, filename = 'data.json')
-		await message.channel.send(file=jsonToSend)
+		await ctx.respond(file=jsonToSend, ephemeral=True)
 
 	async def getNSOJSON(self, ctx, header, url):
 		if not await self.nsotoken.checkSessionPresent(ctx):
@@ -612,16 +617,21 @@ class nsoHandler():
 
 		iksm = await self.nsotoken.getGameKey(ctx.user.id, "s2")
 		if iksm == None:
+			print("1")
 			iksm = await self.nsotoken.doGameKeyRefresh(ctx)
-			if iksm == 500:
-				return 
+			if iksm == None:
+				return None
 
-		iksm = iksm['iksm']
-		results_list = requests.get(url, headers=header, cookies=dict(iksm_session=iksm))
+		results_list = requests.get(url, headers=header, cookies=dict(iksm_session=iksm['iksm']))
 		thejson = json.loads(results_list.text)	
 
+
 		if 'AUTHENTICATION_ERROR' in str(thejson):
+			print('inb4')
 			iksm = await self.nsotoken.doGameKeyRefresh(ctx)
+			if iksm == None:
+				return None
+
 			results_list = requests.get(url, headers=header, cookies=dict(iksm_session=iksm['iksm']))
 			thejson = json.loads(results_list.text)
 			if 'AUTHENTICATION_ERROR' in str(thejson):
@@ -656,14 +666,20 @@ class nsoHandler():
 		name = thejson['records']['player']['nickname']
 		turfinked = theweapdata['total_paint_point']
 		turfstring = str(turfinked)
+		
+		cur = await self.sqlBroker.connect()
+		await cur.execute("SELECT badge100k, badge500k, badge1m, badge10m FROM emotes WHERE myid = %s", (self.client.user.id,))
+		emotes = await cur.fetchone()
+		await self.sqlBroker.commit(cur)
+
 		if turfinked >= 100000:
-			turfstring = f"{str(turfinked)}<:badge_100k:863924861809197096>"
+			turfstring = f"{str(turfinked)}{emotes[0] if emotes != None else ''}"
 		if turfinked >= 500000:
-			turfstring = f"{str(turfinked)}<:badge_500k:863925109278507038>"
+			turfstring = f"{str(turfinked)}{emotes[1] if emotes != None else ''}"
 		if turfinked >= 1000000:
-			turfstring = f"{str(turfinked)}<:badge_1M:863925025388101632>"
+			turfstring = f"{str(turfinked)}{emotes[2] if emotes != None else ''}"
 		if turfinked >= 9999999:
-			turfstring = f"{str(turfinked)}<:badge_10M:863924949748416542>"
+			turfstring = f"{str(turfinked)}{emotes[3] if emotes != None else ''}"
 		wins = theweapdata['win_count']
 		loss = theweapdata['lose_count']
 		if (wins + loss) != 0:
@@ -1047,7 +1063,7 @@ class nsoHandler():
 		embed.set_footer(text=f"Next Item In {str(hours)} Hours {str(minutes)} minutes")
 		await ctx.respond(embed=embed)
 
-	def mapsEmbed(self, offset=0) -> discord.Embed:
+	async def mapsEmbed(self, offset=0) -> discord.Embed:
 		embed = discord.Embed(colour=0x3FFF33)
 
 		data = self.maps(offset=offset)
@@ -1062,9 +1078,14 @@ class nsoHandler():
 		elif offset == 1:
 			embed.title = "Upcoming Splatoon 2 Maps"
 
-		embed.add_field(name="<:turfwar:550107083911987201> Turf War", value=f"{turf['stage_a']['name']}\n{turf['stage_b']['name']}", inline=True)
-		embed.add_field(name=f"<:ranked:550107084684001350> Ranked: {ranked['rule']['name']}", value=f"{ranked['stage_a']['name']}\n{ranked['stage_b']['name']}", inline=True)
-		embed.add_field(name=f"<:league:550107083660328971> League: {league['rule']['name']}", value=f"{league['stage_a']['name']}\n{league['stage_b']['name']}", inline=True)
+		cur = await self.sqlBroker.connect()
+		await cur.execute("SELECT turfwar, ranked, league FROM emotes WHERE myid = %s", (self.client.user.id,))
+		emotes = await cur.fetchone()
+		await self.sqlBroker.commit(cur)
+
+		embed.add_field(name=f"{emotes[0] if emotes != None else ''} Turf War", value=f"{turf['stage_a']['name']}\n{turf['stage_b']['name']}", inline=True)
+		embed.add_field(name=f"{emotes[1] if emotes != None else ''} Ranked: {ranked['rule']['name']}", value=f"{ranked['stage_a']['name']}\n{ranked['stage_b']['name']}", inline=True)
+		embed.add_field(name=f"{emotes[2] if emotes != None else ''} League: {league['rule']['name']}", value=f"{league['stage_a']['name']}\n{league['stage_b']['name']}", inline=True)
 
 		if offset == 0:
 			embed.add_field(name="Time Remaining", value=f"{str(hours)} Hours, and {str(mins)} minutes", inline=False)

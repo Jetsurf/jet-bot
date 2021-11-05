@@ -203,7 +203,8 @@ class serverUtils():
 				try:
 					await channel.send(f"ANNOUNCEMENT: {announcemsg}")
 				except discord.Forbidden:
-					pass
+					print(f"Forbidden on announcement: {guild.id} : removing announcement channel from config")
+					await self.serverConfig.removeConfigValue(guild.id, 'announcement.channelid')
 
 	async def stopAnnouncements(self, ctx):
 		await self.serverConfig.removeConfigValue(ctx.guild.id, "announcement.channelid")

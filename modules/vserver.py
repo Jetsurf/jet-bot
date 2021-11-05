@@ -1,4 +1,4 @@
-import discord, asyncio
+import discord, asyncio, subprocess
 import queue, sys
 import requests, urllib, urllib.request, copy
 import youtube_dl, traceback
@@ -6,6 +6,7 @@ import mysqlhandler
 import json, re
 from bs4 import BeautifulSoup
 from random import randint
+from subprocess import call
 
 youtube_dl.utils.bug_reports_message = lambda: ''
 
@@ -191,6 +192,9 @@ class voiceServer():
 			self.vclient.play(self.source, after=self.playNext)
 
 	async def setupPlay(self, ctx, args):
+		if len(args) == 0:
+			return
+
 		if 'https://' in args[0]:
 			try:
 				tempPlayer = await YTDLSource.from_url(args[0])
@@ -326,7 +330,35 @@ class voiceServer():
 					await ctx.respond(f"Added URL: {args[0]} to the playlist")
 				else:
 					await ctx.respond(f"Error adding to the playlist")
-			elif 'https' not in args[1]:
+			elif 'https' not in args[0]:
 				await ctx.respond("I need a proper url to add")
 			else:
 				await ctx.respond(f"URL: {args[0]} is already in my playlist")
+
+	def createSoundsEmbed(self):
+		global configData
+		embed = discord.Embed(colour=0xEB4034)
+		embed.title = "Current Sounds"
+
+		delimiter = ', '
+		theSounds = subprocess.check_output(["ls", self.soundsDir])
+		theSounds = theSounds.decode("utf-8")
+		theSounds = theSounds.replace('.mp3', '')
+		theSounds = theSounds.replace('\n', delimiter)
+		if len(theSounds) > 1024:
+			length = 0
+			tmpStr = ""
+			embedNum = 1
+			for snd in theSounds.split(delimiter):
+				if length + (len(snd) + len(delimiter)) > 1024:
+					length = 0
+					embed.add_field(name=f"Sounds {str(embedNum)}", value=tmpStr[:len(tmpStr)-len(delimiter)], inline=False)
+					tmpStr = ""
+					embedNum += 1
+				
+				tmpStr += f'{snd}{delimiter}'
+				length += (len(snd) + len(delimiter))
+		else:
+			embed.add_field(name="Sounds", value=theSounds, inline=False)
+
+		return embed
