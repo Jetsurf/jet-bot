@@ -895,7 +895,7 @@ async def on_message(message):
 #Setup
 loadConfig()
 if configData.get('output_to_log'):
-	Path('./logs').mkdir(exist_ok=True)
+	os.makedirs('./logs', exist_ok=True)
 	sys.stdout = open('./logs/discordbot.log', 'a')
 	sys.stderr = open('./logs/discordbot.err', 'a')
 
