@@ -51,6 +51,8 @@ class acHandler():
 		tokens = await self.nsotoken.getGameKey(ctx.user.id, 'ac')
 		if tokens == None:
 			tokens = await self.nsotoken.doGameKeyRefresh(ctx, 'ac')
+			if tokens == None:
+				return
 
 		gtoken = tokens['gtoken']
 		parktoken = tokens['park_session']
