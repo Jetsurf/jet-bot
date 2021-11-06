@@ -15,7 +15,7 @@ class Nsotoken():
 		self.scheduler = AsyncIOScheduler()
 		self.hostedUrl = hostedUrl
 		self.stringCrypt = stringCrypt
-		self.scheduler.add_job(self.updateAppVersion, 'cron', hour="3", minute='0', second='35')
+		self.scheduler.add_job(self.updateAppVersion, 'cron', hour="3", minute='0', second='35', timezone='UTC')
 
 	async def migrateTokensTable(self):
 		cur = await self.sqlBroker.connect()
@@ -492,10 +492,12 @@ class Nsotoken():
 
 				r = requests.get('https://web.sd.lp1.acbaa.srv.nintendo.net/api/sd/v1/users', headers=head, cookies=dict(_gtoken=gtoken))
 				thejson = json.loads(r.text)
+				print(f"FUCKING WHAT: {str(thejson)}")
 				if thejson['users']:
 					head['Referer'] = "https://web.sd.lp1.acbaa.srv.nintendo.net/?lang=en-US&na_country=US&na_lang=en-US"
 					r = requests.post("https://web.sd.lp1.acbaa.srv.nintendo.net/api/sd/v1/auth_token", headers=head, data=dict(userId=thejson['users'][0]['id']), cookies=dict(_gtoken=gtoken))
 					bearer = json.loads(r.text)
+					print(f"FUCKING WHAT: {str(bearer)} {str(r.status_code)} {r.text}")
 					if r.cookies['_park_session'] == None or 'token' not in bearer:
 						print("ERROR GETTING AC _PARK_SESSION/BEARER")
 						return None

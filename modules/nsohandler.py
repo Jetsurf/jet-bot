@@ -16,9 +16,9 @@ class nsoHandler():
 		self.hostedUrl = hostedUrl
 		self.app_timezone_offset = str(int((time.mktime(time.gmtime()) - time.mktime(time.localtime()))/60))
 		self.scheduler = AsyncIOScheduler()
-		self.scheduler.add_job(self.doStoreDM, 'cron', hour="*/2", minute='5') 
-		self.scheduler.add_job(self.updateS2JSON, 'cron', hour="*/2", minute='0', second='15')
-		self.scheduler.add_job(self.doFeed, 'cron', hour="*/2", minute='0', second='25')
+		self.scheduler.add_job(self.doStoreDM, 'cron', hour="*/2", minute='5', timezone='UTC') 
+		self.scheduler.add_job(self.updateS2JSON, 'cron', hour="*/2", minute='0', second='15', timezone='UTC')
+		self.scheduler.add_job(self.doFeed, 'cron', hour="*/2", minute='0', second='25', timezone='UTC')
 		self.scheduler.start()
 		self.mapJSON = None
 		self.storeJSON = None

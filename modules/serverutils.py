@@ -18,7 +18,7 @@ class serverUtils():
 			'voice' 	:	 	[ "join", "play", "playrandom", "currentsong", "queue", "stop", "skip", "volume", "sounds", "leavevoice" ]
 		}
 		self.scheduler = AsyncIOScheduler()
-		self.scheduler.add_job(self.changeStatus, 'cron', minute='*/5') 
+		self.scheduler.add_job(self.changeStatus, 'cron', minute='*/5', timezone='UTC') 
 		self.scheduler.start()
 
 	async def deleteFeed(self, ctx, is_slash=False, bypass=False):
