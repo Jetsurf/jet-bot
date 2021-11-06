@@ -825,9 +825,9 @@ async def on_message(message):
 		else:
 			await serverVoices[theServer].joinVoiceChannel(context, args)
 	elif cmd == 'currentmaps':
-		await message.channel.send(embed=nsoHandler.mapsEmbed())
+		await message.channel.send(embed=await nsoHandler.mapsEmbed())
 	elif cmd == 'nextmaps':
-		await message.channel.send(embed=nsoHandler.mapsEmbed(offset=min(11, message.content.count('next'))))
+		await message.channel.send(embed=await nsoHandler.mapsEmbed(offset=min(11, message.content.count('next'))))
 	elif cmd == 'currentsr':
 		await message.channel.send(embed=nsoHandler.srEmbed())
 	elif cmd == 'splatnetgear':
