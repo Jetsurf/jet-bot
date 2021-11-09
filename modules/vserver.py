@@ -3,7 +3,7 @@ import queue, sys
 import requests, urllib, urllib.request, copy
 import youtube_dl, traceback
 import mysqlhandler
-import json, re
+import json, re, os
 from bs4 import BeautifulSoup
 from random import randint
 from subprocess import call
@@ -340,25 +340,31 @@ class voiceServer():
 		embed = discord.Embed(colour=0xEB4034)
 		embed.title = "Current Sounds"
 
-		delimiter = ', '
-		theSounds = subprocess.check_output(["ls", self.soundsDir])
-		theSounds = theSounds.decode("utf-8")
-		theSounds = theSounds.replace('.mp3', '')
-		theSounds = theSounds.replace('\n', delimiter)
-		if len(theSounds) > 1024:
-			length = 0
-			tmpStr = ""
-			embedNum = 1
-			for snd in theSounds.split(delimiter):
-				if length + (len(snd) + len(delimiter)) > 1024:
-					length = 0
-					embed.add_field(name=f"Sounds {str(embedNum)}", value=tmpStr[:len(tmpStr)-len(delimiter)], inline=False)
-					tmpStr = ""
-					embedNum += 1
-				
-				tmpStr += f'{snd}{delimiter}'
-				length += (len(snd) + len(delimiter))
-		else:
-			embed.add_field(name="Sounds", value=theSounds, inline=False)
+		if not self.soundsDir:
+			embed.add_field(name="Sorry", value="Sounds not configured on this instance of bot", inline=False)
+			return embed
+
+		# Gather files with mp3 extension in sounds dir
+		sounds = []
+		with os.scandir(self.soundsDir) as iter:
+			for dirent in iter:
+				if dirent.is_file() and dirent.name.endswith('.mp3'):
+					filename = dirent.name.rsplit(".", 1)[0]  # Remove extension
+					sounds.append(filename)
+		sounds.sort()
+
+		# Create string chunks, each of <= 1024 characters
+		chunks = [""]
+		for s in sounds:
+			l = len(chunks[-1])
+			next = f"{', ' if l else ''}{s}"
+			if l + len(next) > 1024:
+				chunks.append(s)
+			else:
+				chunks[-1] = chunks[-1] + next
+
+		# Add embed field for each chunk
+		for i in range(len(chunks)):
+			embed.add_field(name=f"Sounds {i}", value=chunks[i], inline=False)
 
 		return embed
