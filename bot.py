@@ -743,7 +743,7 @@ async def on_message(message):
 		print("Failed to increment command... issue with MySQL?")
 
 	if cmd == 'eval':
-		await ownerCmds.eval(context, None)
+		await ownerCmds.eval(context, args[0])
 	elif cmd == 'getcons' and message.author in owners:
 		await mysqlHandler.printCons(message)
 	elif cmd == 'storejson' and message.author in owners:
