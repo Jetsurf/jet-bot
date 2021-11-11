@@ -964,7 +964,7 @@ class nsoHandler():
 			await ctx.respond("Can't find that merch in the store!")
 			return
 		gearToBuy = merches[0]
-		orderedFlag = thejson['ordered_info'] != None
+		orderedFlag = thejson.get('ordered_info') != None
 
 		if not is_slash and not override:
 			embed = self.makeGearEmbed(gearToBuy, f"{ctx.user.name} - Order gear?", "Respond with 'yes' to place your order, 'no' to cancel")
