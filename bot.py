@@ -743,7 +743,7 @@ async def on_message(message):
 		print("Failed to increment command... issue with MySQL?")
 
 	if cmd == 'eval':
-		await ownerCmds.eval(context, None)
+		await ownerCmds.eval(context, args[0])
 	elif cmd == 'getcons' and message.author in owners:
 		await mysqlHandler.printCons(message)
 	elif cmd == 'storejson' and message.author in owners:
@@ -825,9 +825,9 @@ async def on_message(message):
 		else:
 			await serverVoices[theServer].joinVoiceChannel(context, args)
 	elif cmd == 'currentmaps':
-		await message.channel.send(embed=nsoHandler.mapsEmbed())
+		await message.channel.send(embed=await nsoHandler.mapsEmbed())
 	elif cmd == 'nextmaps':
-		await message.channel.send(embed=nsoHandler.mapsEmbed(offset=min(11, message.content.count('next'))))
+		await message.channel.send(embed=await nsoHandler.mapsEmbed(offset=min(11, message.content.count('next'))))
 	elif cmd == 'currentsr':
 		await message.channel.send(embed=nsoHandler.srEmbed())
 	elif cmd == 'splatnetgear':
@@ -895,7 +895,7 @@ async def on_message(message):
 #Setup
 loadConfig()
 if configData.get('output_to_log'):
-	Path('./logs').mkdir(exist_ok=True)
+	os.makedirs('./logs', exist_ok=True)
 	sys.stdout = open('./logs/discordbot.log', 'a')
 	sys.stderr = open('./logs/discordbot.err', 'a')
 
