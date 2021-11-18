@@ -141,7 +141,7 @@ async def cmdGithub(ctx):
 	await ctx.respond('Here is my github page! : https://github.com/Jetsurf/jet-bot', ephemeral=True)
 
 @announce.command(name='set', description="Sets a chat channel to receive announcements from my developers")
-async def cmdDMAdd(ctx, channel: Option(discord.TextChannel, "Channel to set to receive announcements", required=True)):
+async def cmdAnnounceAdd(ctx, channel: Option(discord.TextChannel, "Channel to set to receive announcements", required=True)):
 	if ctx.guild == None:
 		await ctx.respond("Can't DM me with this command.")
 		return
@@ -152,7 +152,7 @@ async def cmdDMAdd(ctx, channel: Option(discord.TextChannel, "Channel to set to 
 		await ctx.respond("You aren't a guild administrator", ephemeral=True)
 
 @announce.command(name='get', description="Gets the channel that is set to receive annoucements")
-async def cmdDMRemove(ctx):
+async def cmdAnnounceGet(ctx):
 	if ctx.guild == None:
 		await ctx.respond("Can't DM me with this command.")
 		return
@@ -160,7 +160,7 @@ async def cmdDMRemove(ctx):
 	if await checkIfAdmin(ctx):
 		channel = await serverUtils.getAnnounceChannel(ctx.guild.id)
 		if channel == None:
-			await ctx.respnd("No channel is set to receive announcements")
+			await ctx.respond("No channel is set to receive announcements")
 		else:
 			await ctx.respond(f"Current announcement channel is: {channel.name}")
 	else:
@@ -622,6 +622,7 @@ async def on_member_remove(member):
 @client.event
 async def on_guild_join(server):
 	global client, serverVoices, head, url, dev, owners, mysqlHandler, configData
+	
 	print(f"I joined server: {server.name}")
 	serverVoices[server.id] = vserver.voiceServer(client, mysqlHandler, server.id, configData['soundsdir'])
 
@@ -639,6 +640,10 @@ async def on_guild_join(server):
 @client.event
 async def on_guild_remove(server):
 	global client, serverVoices, head, dev, owners
+
+	if server == None:
+		return
+
 	print("I left server: " + server.name)
 	serverVoices[server.id] = None
 
