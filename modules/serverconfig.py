@@ -56,7 +56,8 @@ class ServerConfig():
 				await self.sqlBroker.rollback(cursor)
 				return  # Parent element in path is not dict
 			value = value[p]
-		del value[path[-1]]
+		if path[-1] in value:
+			del value[path[-1]]
 		await self.setConfig(cursor, serverid, config)
 		await self.sqlBroker.commit(cursor)
 		return
