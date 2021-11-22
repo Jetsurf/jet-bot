@@ -216,7 +216,14 @@ class voiceServer():
 					theJson = self.get_yt_json(soup)
 					data = json.loads(theJson)
 					vidlist = data['contents']['twoColumnSearchResultsRenderer']['primaryContents']['sectionListRenderer']['contents'][0]['itemSectionRenderer']['contents']
-					vids = self.decode_vidlist(vidlist)
+					try:
+						vids = self.decode_vidlist(vidlist)
+					except Exception as e:
+						print("--- Exception decoding Youtube vidlist ---")
+						print(traceback.format_exc())
+						print(f"Vidlist was: {vidlist}")
+						print(f"Search was: {query}")
+						raise
 
 					if len(vids) == 0:
 						await ctx.respond("No videos found")
