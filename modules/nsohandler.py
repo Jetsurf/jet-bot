@@ -18,7 +18,7 @@ class nsoHandler():
 		self.scheduler = AsyncIOScheduler()
 		self.scheduler.add_job(self.doStoreDM, 'cron', hour="*/2", minute='5', timezone='UTC') 
 		self.scheduler.add_job(self.updateS2JSON, 'cron', hour="*/2", minute='0', second='15', timezone='UTC')
-		self.scheduler.add_job(self.doFeed, 'cron', hour="*/2", minute='0', second='25', timezone='UTC')
+		self.scheduler.add_job(self.doFeed, 'cron', minute='*', timezone='UTC')#hour="*/2", minute='0', second='25', timezone='UTC')
 		self.scheduler.start()
 		self.mapJSON = None
 		self.storeJSON = None
@@ -80,7 +80,13 @@ class nsoHandler():
 			if theChannel is None:
 				continue;
 
-			await theChannel.send(embed=await self.make_notification(bool(mapflag), bool(srflag), bool(gearflag)))
+			try:
+				await theChannel.send(embed=await self.make_notification(bool(mapflag), bool(srflag), bool(gearflag)))
+			except Exception as e:
+				print(f"403 on feed, deleting feed from server: {theServer.id} and channel: {theChannel.id}")
+				stmt = 'DELETE FROM feeds WHERE serverid = %s AND channelid = %s'
+				await cur.execute(stmt, (theServer.id, theChannel.id, ))
+				print(f"Deleted {theServer.id} and channel {theChannel.id} from feeds")
 
 		await self.sqlBroker.close(cur)
 
