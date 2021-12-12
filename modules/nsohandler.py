@@ -18,7 +18,7 @@ class nsoHandler():
 		self.scheduler = AsyncIOScheduler()
 		self.scheduler.add_job(self.doStoreDM, 'cron', hour="*/2", minute='5', timezone='UTC') 
 		self.scheduler.add_job(self.updateS2JSON, 'cron', hour="*/2", minute='0', second='15', timezone='UTC')
-		self.scheduler.add_job(self.doFeed, 'cron', minute='*', timezone='UTC')#hour="*/2", minute='0', second='25', timezone='UTC')
+		self.scheduler.add_job(self.doFeed, 'cron', hour="*/2", minute='0', second='25', timezone='UTC')
 		self.scheduler.start()
 		self.mapJSON = None
 		self.storeJSON = None
