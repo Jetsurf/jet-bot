@@ -124,6 +124,10 @@ class voiceServer():
 		except:
 			return
 
+	def soundExists(self, sound):
+		path = f"{self.soundsDir}/{sound}.mp3"
+		return os.path.exists(path)
+
 	async def stop(self, ctx):
 		if self.source != None:
 			self.vclient.stop()
@@ -163,13 +167,21 @@ class voiceServer():
 
 	def decode_vidlist(self, vidlist):
 		vids = []
-		for result in vidlist:
-			r = result.get('videoRenderer')
-			if r:
-				title = ' '.join(list(map(lambda e: e.get("text"), r['title']['runs'])))
-				videoId = r['videoId']
-				length = r['lengthText']['simpleText']
-				vids.append({"videoId": videoId, "title": title, "length": length})
+		for e in vidlist:
+			if not e.get('itemSectionRenderer'):
+				continue  # Section does not contain videos
+			contents = e['itemSectionRenderer']['contents']
+			for result in contents:
+				r = result.get('videoRenderer')
+				if r:
+					if r.get('upcomingEventData'):
+						continue  # Scheduled upcoming video
+					vid = {}
+					vid['title'] = ' '.join(list(map(lambda e: e.get("text"), r['title']['runs'])))
+					vid['videoId'] = r['videoId']
+					if r.get('lengthText'):
+						vid['length'] = r['lengthText']['simpleText']
+					vids.append(vid)
 		return vids
 
 	def get_yt_json(self, soup):
@@ -215,8 +227,15 @@ class voiceServer():
 					soup = BeautifulSoup(source,'html5lib')
 					theJson = self.get_yt_json(soup)
 					data = json.loads(theJson)
-					vidlist = data['contents']['twoColumnSearchResultsRenderer']['primaryContents']['sectionListRenderer']['contents'][0]['itemSectionRenderer']['contents']
-					vids = self.decode_vidlist(vidlist)
+					vidlist = data['contents']['twoColumnSearchResultsRenderer']['primaryContents']['sectionListRenderer']['contents']
+					try:
+						vids = self.decode_vidlist(vidlist)
+					except Exception as e:
+						print("--- Exception decoding Youtube vidlist ---")
+						print(traceback.format_exc())
+						print(f"Vidlist was: {vidlist}")
+						print(f"Search was: {query}")
+						raise
 
 					if len(vids) == 0:
 						await ctx.respond("No videos found")

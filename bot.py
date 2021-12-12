@@ -518,11 +518,13 @@ async def cmdVoiceSounds(ctx):
 
 @play.command(name='sound', description="Plays one of my sound clips in voice")
 async def cmdVoicePlaySound(ctx, sound: Option(str, "Sound clip to play, get with /voice sounds")):
-	if serverVoices[ctx.guild.id].vclient is not None:
+	if not serverVoices[ctx.guild.id].vclient:
+		await ctx.respond("Not connected to voice.", ephemeral=True)
+	elif not serverVoices[ctx.guild.id].soundExists(sound):
+		await ctx.respond(f"I don't know of a sound named '{sound}'.", ephemeral=True)
+	else:
 		await ctx.respond(f"Attempting to play: {sound}", ephemeral=True)
 		await serverVoices[ctx.guild.id].playSound(sound)
-	else:
-		await ctx.respond("Not connected to voice.", ephemeral=True)
 
 @admin.command(name='playlist', description="Adds a URL or the current video to my playlist for /voice play random")
 async def cmdPlaylistAdd(ctx, url: Option(str, "URL to add to my playlist", required=True)):
