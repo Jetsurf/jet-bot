@@ -87,6 +87,7 @@ class nsoHandler():
 				stmt = 'DELETE FROM feeds WHERE serverid = %s AND channelid = %s'
 				await cur.execute(stmt, (theServer.id, theChannel.id, ))
 				print(f"Deleted {theServer.id} and channel {theChannel.id} from feeds")
+				await self.sqlBroker.c_commit(cur)
 
 		await self.sqlBroker.close(cur)
 
