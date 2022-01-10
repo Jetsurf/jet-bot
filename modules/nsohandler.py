@@ -78,7 +78,7 @@ class nsoHandler():
 
 			theChannel = theServer.get_channel(channelid)
 			if theChannel is None:
-				continue;
+				continue
 
 			try:
 				await theChannel.send(embed=await self.make_notification(bool(mapflag), bool(srflag), bool(gearflag)))
