@@ -78,11 +78,11 @@ class nsoHandler():
 
 			theChannel = theServer.get_channel(channelid)
 			if theChannel is None:
-				continue;
+				continue
 
 			try:
 				await theChannel.send(embed=await self.make_notification(bool(mapflag), bool(srflag), bool(gearflag)))
-			except Exception as e:
+			except discord.Forbidden:
 				print(f"403 on feed, deleting feed from server: {theServer.id} and channel: {theChannel.id}")
 				stmt = 'DELETE FROM feeds WHERE serverid = %s AND channelid = %s'
 				await cur.execute(stmt, (theServer.id, theChannel.id, ))
@@ -420,7 +420,7 @@ class nsoHandler():
 		embed = self.makeGearEmbed(theGear, "Gear you wanted to be notified about has appeared in the shop!", "Respond with 'order' to order, or 'stop' to stop recieving notifications (within the next two hours)")
 		try:
 			await theMem.send(embed=embed)
-		except discord.errors.Forbidden:
+		except discord.Forbidden:
 			print(f"Forbidden from messaging user {str(theMem.id)}, removing from DMs")
 			cur = await self.sqlBroker.connect()
 			stmt = "DELETE FROM storedms WHERE clientid = %s"
