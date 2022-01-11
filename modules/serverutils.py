@@ -11,15 +11,15 @@ class HelpDropDown(discord.ui.Select):
 		with os.scandir(helpdir) as iter:
 			for dirent in iter:
 				if dirent.is_file() and dirent.name.endswith('-slash.txt'):
-					lbl = ''
-					desc = ''
 					val = dirent.path  # Remove -slash.txt
 					with open(dirent.path, "r") as f:
 						for line in f:
 							if line.startswith('**'):
 								desc = line.replace('**','')
 							elif line.startswith('*'):
-								lbl = line.replace('*', '')			
+								lbl = line.replace('*', '')	
+							else:
+								break		
 					opt = discord.SelectOption(label=lbl, description=desc, value=val)
 					helpopts.append(opt)
 		
@@ -36,15 +36,22 @@ class HelpDropDown(discord.ui.Select):
 			embed = discord.Embed(colour=0x2AE5B8)
 			cmds = ""
 			name = ""
+			page = 1
 			for line in f:
 				if line.startswith('**'):
 					name = line.replace('**', '')
 				elif line.startswith('*'):
 					embed.title = line.replace('*', '')
 				else:
-					cmds += line
+					if len(cmds + line) > 1024:
+						embed.add_field(name=name, value=cmds, inline=False)
+						name = f"Page {str(page + 1)}"
+						page += 1
+						cmds = line
+					else:
+						cmds += line
 
-			embed.add_field(name=name, value=cmds)
+			embed.add_field(name=name, value=cmds, inline=False)
 
 		await interaction.response.edit_message(view=self.view, embed=embed)
 
