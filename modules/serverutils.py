@@ -1,32 +1,52 @@
 import discord
 import asyncio
 import mysqlhandler
+import os
+import code
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-sys.path.append('../views')
 
 class HelpDropDown(discord.ui.Select):
 	def __init__(self, helpdir):
 		helpopts = []
 		with os.scandir(helpdir) as iter:
 			for dirent in iter:
-				if dirent.is_file() and dirent.name.endswith('.txt'):
-					filename = dirent.name.rsplit(".", 1)[0]  # Remove extension
-					helpopts.append(filename)
-		helpopts.sort()
+				if dirent.is_file() and dirent.name.endswith('-slash.txt'):
+					lbl = ''
+					desc = ''
+					val = dirent.path  # Remove -slash.txt
+					with open(dirent.path, "r") as f:
+						for line in f:
+							if line.startswith('**'):
+								desc = line.replace('**','')
+							elif line.startswith('*'):
+								lbl = line.replace('*', '')			
+					opt = discord.SelectOption(label=lbl, description=desc, value=val)
+					helpopts.append(opt)
+		
 
-	async def initOpts(self, ctx, msg):
-
-
-		for emote in await ctx.guild.fetch_emojis():
-			if emote.is_usable():
-				options.append(discord.SelectOption(label=emote.name, description=emote.name, emoji=emote)) #f"<:{emote.name}:{str(emote.id)}>"))
-
-		super().__init__(placeholder=msg, options=options, custom_id=self.val)
+		super().__init__(
+			placeholder="Help Menu",
+			min_values=1,
+			max_values=1,
+			options=helpopts,
+		)
 
 	async def callback(self, interaction: discord.Interaction):
-		embed = discord.Embed(colour=0x2AE5B8)
-		embed.title = 
-		await interaction.response.self.values[0]
+		with open(self.values[0], "r") as f:
+			embed = discord.Embed(colour=0x2AE5B8)
+			cmds = ""
+			name = ""
+			for line in f:
+				if line.startswith('**'):
+					name = line.replace('**', '')
+				elif line.startswith('*'):
+					embed.title = line.replace('*', '')
+				else:
+					cmds += line
+
+			embed.add_field(name=name, value=cmds)
+
+		await interaction.response.edit_message(view=self.view, embed=embed)
 
 class HelpMenuView(discord.ui.View):
 	def __init__(self, helpdir):
@@ -259,18 +279,18 @@ class serverUtils():
 		else:
 			return False
 
-	def makeHelpEmbed(self, option):
+	async def print_help(self, message, prefix):
 		embed = discord.Embed(colour=0x2AE5B8)
 
-		if 'admin' in option:
+		if 'admin' in message.content:
 			file = self.helpfldr + '/admin.txt'
-		elif 'generalsn' in option:
+		elif 'generalsn' in message.content:
 			file = self.helpfldr + '/basesplatnet.txt'
-		elif 'usersn' in option:
+		elif 'usersn' in message.content:
 			file = self.helpfldr + '/usersplatnet.txt'
-		elif 'voice' in option:
+		elif 'voice' in message.content:
 			file = self.helpfldr + '/voice.txt'
-		elif 'ac' in option:
+		elif 'ac' in message.content:
 			file = self.helpfldr + '/ac.txt'
 		else:
 			file = self.helpfldr + '/base.txt'
@@ -289,14 +309,6 @@ class serverUtils():
 						theString = theString + line
 			embed.add_field(name='Commands', value=theString, inline=False)	
 			embed.set_footer(text="If you want something added or want to report a bug/error, run /support")
-
-
-	async def print_help(self, ctx, prefix, args=[]):
-		if not isinstance(ctx, MessageContext):
-
-			await ctx.send("Help Menu:", view=HelpMenuView(self.helpfldr))
-			return
-
 
 		await message.channel.send(embed=embed)
 
