@@ -287,7 +287,7 @@ async def cmdWeapInfo(ctx, name: Option(str, "Name of the weapon to get info for
 
 	await nsoHandler.cmdWeaps(ctx, args=[ 'info', str(name) ])
 
-@weapon.command(name='list', description='Gets a list pf weapons by type in Splatoon 2')
+@weapon.command(name='list', description='Gets a list of weapons by type in Splatoon 2')
 async def cmdWeapList(ctx, weaptype: Option(str, "Type of weapon to generate a list for", required=True, choices=[ weaptype.name() for weaptype in splatInfo.getAllWeaponTypes() ])):
 	await serverUtils.increment_cmd(ctx, 'weapons')
 
