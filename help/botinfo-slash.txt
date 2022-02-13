@@ -1,0 +1,4 @@
+*Bot Info Commands
+**Commands to join my support guild or see github
+`/github` : Displays my github link
+`/support` : Posts an invite link to my discord support guild

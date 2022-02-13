@@ -1,0 +1,9 @@
+*Splatoon 2 Splatnet Commands
+**Gets stats from your Splatnet account. Requires you to DM me with !token
+`/stats battle NUM` : Gets stats from NUM battle (last/1 is latest, up to 50)
+`/stats rank` : Shows your ranks in the ranked gamemodes
+`/stats multi` : Shows various stats from your gameplay
+`/stats sr` : Shows various stats from Salmon Run
+`/stats maps MAP` : Pulls stats for a specific map
+`/store order ID/ITEM NAME` : `/store currentgear` provides an ID. Use either the ID or the name of an item on the store to order it
+`/weapons stats WEAPON` : Pulls stats for a specific weapon
