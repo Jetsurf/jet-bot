@@ -36,7 +36,7 @@ class HelpDropDown(discord.ui.Select):
 			embed = discord.Embed(colour=0x2AE5B8)
 			cmds = ""
 			name = ""
-			page = 1
+			page = 2
 			for line in f:
 				if line.startswith('**'):
 					name = line.replace('**', '')
@@ -45,7 +45,7 @@ class HelpDropDown(discord.ui.Select):
 				else:
 					if len(cmds + line) > 1024:
 						embed.add_field(name=name, value=cmds, inline=False)
-						name = f"Page {str(page + 1)}"
+						name = f"Page {str(page)}"
 						page += 1
 						cmds = line
 					else:
