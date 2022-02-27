@@ -203,7 +203,7 @@ class serverUtils():
 			return False
 
 	async def changeStatus(self):
-		status = [ "Check Slash Commands!",
+		status = [ "Check /help for cmd info.",
 					"{} guilds",
 					"\U0001F355 \U00002795 \U0001F34D \U000027A1 \U0001F4A9" ]
 

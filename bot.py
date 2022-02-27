@@ -411,7 +411,7 @@ async def cmdVoicePlayUrl(ctx, url: Option(str, "URL of the video to play")):
 		await ctx.respond("Not connected to voice", ephemeral=True)
 
 @play.command(name='search', description="Searches SOURCE for a playable video/song")
-async def cmdVoicePlaySearch(ctx, source: Option(str, "Source to search", choices=[ 'youtube', 'soundcloud' ], default='youtube', required=True), search: Option(str, "Video to search for", required = True)):
+async def cmdVoicePlaySearch(ctx, source: Option(str, "Source to play", choices=[ 'youtube', 'soundcloud' ], default='url', required=True), search: Option(str, "Video to play/search for", required = True)):
 	if ctx.guild == None:
 		await ctx.respond("Can't DM me with this command.")
 		return
@@ -607,7 +607,7 @@ async def on_ready():
 		await nsoHandler.updateS2JSON()
 		await nsoTokens.updateAppVersion()
 		print('Done\n------')
-		await client.change_presence(status=discord.Status.online, activity=discord.Game("Check Slash Commands!"))
+		await client.change_presence(status=discord.Status.online, activity=discord.Game("Check /help for cmd info."))
 	else:
 		print('Finished reconnect')
 	doneStartup = True
