@@ -411,7 +411,7 @@ async def cmdVoicePlayUrl(ctx, url: Option(str, "URL of the video to play")):
 		await ctx.respond("Not connected to voice", ephemeral=True)
 
 @play.command(name='search', description="Searches SOURCE for a playable video/song")
-async def cmdVoicePlaySearch(ctx, source: Option(str, "Source to play", choices=[ 'youtube', 'soundcloud' ], required=True), search: Option(str, "Video to play/search for", required=True)):
+async def cmdVoicePlaySearch(ctx, source: Option(str, "Source to search", choices=[ 'youtube', 'soundcloud' ], required=True), search: Option(str, "Video to search for", required=True)):
 	if ctx.guild == None:
 		await ctx.respond("Can't DM me with this command.")
 		return
