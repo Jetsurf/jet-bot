@@ -45,19 +45,19 @@ class HelpDropDown(discord.ui.Select):
 		embed = discord.Embed(colour=0x2AE5B8)
 		embed.title = theFile['label']
 		name = theFile['desc']
-		cmds = ""
+		text = ""
 		page = 2
 
 		for line in theFile['fileData']:
-			if len(cmds + line) > 1024:
-				embed.add_field(name=name, value=cmds, inline=False)
+			if len(text + line) > 1024:
+				embed.add_field(name=name, value=text, inline=False)
 				name = f"Page {str(page)}"
 				page += 1
-				cmds = line
+				text = line
 			else:
-				cmds += line
+				text += line
 
-		embed.add_field(name=name, value=cmds, inline=False)
+		embed.add_field(name=name, value=text, inline=False)
 
 		await interaction.response.edit_message(view=self.view, embed=embed)
 
