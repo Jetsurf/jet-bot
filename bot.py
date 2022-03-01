@@ -41,11 +41,11 @@ store = SlashCommandGroup('store', 'Commands related to the Splatoon 2 store')
 stats = SlashCommandGroup('stats', 'Commands related to Splatoon 2 gameplay stats')
 acnh = SlashCommandGroup('acnh', "Commands related to Animal Crossing New Horizons")
 owner = SlashCommandGroup('owner', "Commands that are owner only")
-dm = admin.command_group(name='dm', description="Admin commands related to DM's on users leaving")
-feed = admin.command_group(name='feed', description='Admin commands related to SplatNet rotation feeds')
-announce = admin.command_group(name='announcements', description='Admin commands related to developer annoucenments')
-play = voice.command_group(name='play', description='Commands realted to playing audio')
-storedm = store.command_group('dm', description="Commands related to DM'ing on store changes")
+dm = admin.create_subgroup(name='dm', description="Admin commands related to DM's on users leaving")
+feed = admin.create_subgroup(name='feed', description='Admin commands related to SplatNet rotation feeds')
+announce = admin.create_subgroup(name='announcements', description='Admin commands related to developer annoucenments')
+play = voice.create_subgroup(name='play', description='Commands realted to playing audio')
+storedm = store.create_subgroup('dm', description="Commands related to DM'ing on store changes")
 
 def loadConfig():
 	global configData, helpfldr, mysqlHandler, dev, head
@@ -134,11 +134,18 @@ async def cmdStoreDMAbilty(ctx, flag: Option(str, "ABILITY/BRAND/GEAR to stop DM
 
 @client.slash_command(name='support', description='Sends a discord invite to my support guild.')
 async def cmdSupport(ctx):
+	await serverUtils.increment_cmd(ctx, 'support')
 	await ctx.respond('Here is a link to my support server: https://discord.gg/TcZgtP5', ephemeral=True)
 
 @client.slash_command(name='github', description='Sends a link to my github page')
 async def cmdGithub(ctx):
+	await serverUtils.increment_cmd(ctx, 'github')
 	await ctx.respond('Here is my github page! : https://github.com/Jetsurf/jet-bot', ephemeral=True)
+
+@client.slash_command(name='help', description='Displays the help menu')
+async def cmdHelp(ctx):
+	await serverUtils.increment_cmd(ctx, 'help')
+	await ctx.respond("Help Menu:", view=serverutils.HelpMenuView(configData['help']))
 
 @announce.command(name='set', description="Sets a chat channel to receive announcements from my developers")
 async def cmdAnnounceAdd(ctx, channel: Option(discord.TextChannel, "Channel to set to receive announcements", required=True)):
@@ -280,7 +287,7 @@ async def cmdWeapInfo(ctx, name: Option(str, "Name of the weapon to get info for
 
 	await nsoHandler.cmdWeaps(ctx, args=[ 'info', str(name) ])
 
-@weapon.command(name='list', description='Gets a list pf weapons by type in Splatoon 2')
+@weapon.command(name='list', description='Gets a list of weapons by type in Splatoon 2')
 async def cmdWeapList(ctx, weaptype: Option(str, "Type of weapon to generate a list for", required=True, choices=[ weaptype.name() for weaptype in splatInfo.getAllWeaponTypes() ])):
 	await serverUtils.increment_cmd(ctx, 'weapons')
 
@@ -404,7 +411,7 @@ async def cmdVoicePlayUrl(ctx, url: Option(str, "URL of the video to play")):
 		await ctx.respond("Not connected to voice", ephemeral=True)
 
 @play.command(name='search', description="Searches SOURCE for a playable video/song")
-async def cmdVoicePlaySearch(ctx, source: Option(str, "Source to search", choices=[ 'youtube', 'soundcloud' ], default='youtube', required=True), search: Option(str, "Video to search for", required = True)):
+async def cmdVoicePlaySearch(ctx, source: Option(str, "Source to search", choices=[ 'youtube', 'soundcloud' ], required=True), search: Option(str, "Video to search for", required=True)):
 	if ctx.guild == None:
 		await ctx.respond("Can't DM me with this command.")
 		return
@@ -568,7 +575,7 @@ async def on_ready():
 				owners.append(mem)
 				print(f"Loaded owner: {str(mem.name)}")
 			if len(owners) == len(ownerids):
-				break;
+				break
 	else:
 		print('RECONNECT TO DISCORD')
 
@@ -600,7 +607,7 @@ async def on_ready():
 		await nsoHandler.updateS2JSON()
 		await nsoTokens.updateAppVersion()
 		print('Done\n------')
-		await client.change_presence(status=discord.Status.online, activity=discord.Game("Check Slash Commands!"))
+		await client.change_presence(status=discord.Status.online, activity=discord.Game("Check /help for cmd info."))
 	else:
 		print('Finished reconnect')
 	doneStartup = True

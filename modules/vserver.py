@@ -228,6 +228,7 @@ class voiceServer():
 					theJson = self.get_yt_json(soup)
 					data = json.loads(theJson)
 					vidlist = data['contents']['twoColumnSearchResultsRenderer']['primaryContents']['sectionListRenderer']['contents']
+
 					try:
 						vids = self.decode_vidlist(vidlist)
 					except Exception as e:
@@ -302,6 +303,9 @@ class voiceServer():
 
 		if len(x) == 0:
 			await ctx.respond("You have nothing added to your playlist, use /admin playlist URL to add songs!")
+			return
+		if numToQueue <= 0:
+			await ctx.respond("Num of songs to play must be greater than 0.")
 			return
 
 		await ctx.defer()

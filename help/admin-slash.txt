@@ -1,0 +1,10 @@
+*Admin commands
+**Commands to conigure the bot for your guild. Requires guild admin. Can't DM me with these commands
+`/admin playlist URL`: Add the given URL to the `/voice play random` playlist
+`/admin dm add`: Subscribe to DMs on users leaving the server
+`/admin dm remove`: Unsubscribe from DMs on users leaving the server
+`/admin announcement set CHANNEL` : Sets a chat channel for announcements about restarts/new features from the devs
+`/admin announcement get` : Gets the name of the channel that is set to receive announcements
+`/admin announcement stop` : Disables announcements from the devs for the server
+`/admin feed create` : Create (or change) feed for rotation updates. Takes 3 True/False flags to put maps/sr/gear info in the feed.
+`/admin feed delete` : Deletes feed for a channel.

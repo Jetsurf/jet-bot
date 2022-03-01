@@ -1,7 +1,70 @@
 import discord
 import asyncio
 import mysqlhandler
+import os
+import code
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
+
+class HelpDropDown(discord.ui.Select):
+
+	def __init__(self, helpdir):
+		helpopts = []
+		self.helpdir = helpdir
+		with os.scandir(helpdir) as iter:
+			for dirent in iter:
+				if dirent.is_file() and dirent.name.endswith('-slash.txt'):
+					val = dirent.path  
+					theFile = self.readHelpFile(val)		
+					opt = discord.SelectOption(label=theFile['label'], description=theFile['desc'], value=val)
+					helpopts.append(opt)
+		
+		super().__init__(
+			placeholder="Help Menu",
+			min_values=1,
+			max_values=1,
+			options=helpopts,
+		)
+
+	def readHelpFile(self, file):
+		toReturn = {}
+		toReturn["fileData"] = ""
+
+		with open(file, "r") as f:
+			for line in f:
+				if line.startswith('**'):
+					toReturn['desc'] = line.replace('**', '')
+				elif line.startswith('*'):
+					toReturn['label'] = line.replace('*', '')
+				else:
+					toReturn['fileData'] += line
+		return toReturn
+
+	async def callback(self, interaction: discord.Interaction):
+		theFile = self.readHelpFile(self.values[0])
+
+		embed = discord.Embed(colour=0x2AE5B8)
+		embed.title = theFile['label']
+		name = theFile['desc']
+		text = ""
+		page = 2
+
+		for line in theFile['fileData']:
+			if len(text + line) > 1024:
+				embed.add_field(name=name, value=text, inline=False)
+				name = f"Page {str(page)}"
+				page += 1
+				text = line
+			else:
+				text += line
+
+		embed.add_field(name=name, value=text, inline=False)
+
+		await interaction.response.edit_message(view=self.view, embed=embed)
+
+class HelpMenuView(discord.ui.View):
+	def __init__(self, helpdir):
+		super().__init__()
+		self.add_item(HelpDropDown(helpdir))
 
 class serverUtils():
 	def __init__(self, client, mysqlhandler, serverconfig, helpfldr):
@@ -146,7 +209,7 @@ class serverUtils():
 			return False
 
 	async def changeStatus(self):
-		status = [ "Check Slash Commands!",
+		status = [ "Check /help for cmd info.",
 					"{} guilds",
 					"\U0001F355 \U00002795 \U0001F34D \U000027A1 \U0001F4A9" ]
 
@@ -259,6 +322,7 @@ class serverUtils():
 						theString = theString + line
 			embed.add_field(name='Commands', value=theString, inline=False)	
 			embed.set_footer(text="If you want something added or want to report a bug/error, run /support")
+
 		await message.channel.send(embed=embed)
 
 	async def report_cmd_totals(self, message):

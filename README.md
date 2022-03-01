@@ -10,7 +10,7 @@ has evolved into its primary purpose of fetching info from Nintendo Switch Onlin
 
 If you don't care about self-hosting the bot, you can use the following link:
 
-[![Discord Bots](https://discordbots.org/api/widget/542488723128844312.svg)](https://discordbots.org/bot/542488723128844312)
+[![Discord Bots](https://top.gg/api/widget/542488723128844312.svg)](https://top.gg/bot/542488723128844312)
 
 For self-hosting:
 [See Here](https://github.com/Jetsurf/jet-bot/wiki)
