@@ -6,24 +6,18 @@ import code
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 class HelpDropDown(discord.ui.Select):
+
 	def __init__(self, helpdir):
 		helpopts = []
+		self.helpdir = helpdir
 		with os.scandir(helpdir) as iter:
 			for dirent in iter:
 				if dirent.is_file() and dirent.name.endswith('-slash.txt'):
-					val = dirent.path  # Remove -slash.txt
-					with open(dirent.path, "r") as f:
-						for line in f:
-							if line.startswith('**'):
-								desc = line.replace('**','')
-							elif line.startswith('*'):
-								lbl = line.replace('*', '')	
-							else:
-								break		
-					opt = discord.SelectOption(label=lbl, description=desc, value=val)
+					val = dirent.path  
+					theFile = self.readHelpFile(val)		
+					opt = discord.SelectOption(label=theFile['label'], description=theFile['desc'], value=val)
 					helpopts.append(opt)
 		
-
 		super().__init__(
 			placeholder="Help Menu",
 			min_values=1,
@@ -31,27 +25,39 @@ class HelpDropDown(discord.ui.Select):
 			options=helpopts,
 		)
 
-	async def callback(self, interaction: discord.Interaction):
-		with open(self.values[0], "r") as f:
-			embed = discord.Embed(colour=0x2AE5B8)
-			cmds = ""
-			name = ""
-			page = 2
+	def readHelpFile(self, file):
+		toReturn = {}
+		toReturn["fileData"] = ""
+
+		with open(file, "r") as f:
 			for line in f:
 				if line.startswith('**'):
-					name = line.replace('**', '')
+					toReturn['desc'] = line.replace('**', '')
 				elif line.startswith('*'):
-					embed.title = line.replace('*', '')
+					toReturn['label'] = line.replace('*', '')
 				else:
-					if len(cmds + line) > 1024:
-						embed.add_field(name=name, value=cmds, inline=False)
-						name = f"Page {str(page)}"
-						page += 1
-						cmds = line
-					else:
-						cmds += line
+					toReturn['fileData'] += line
+		return toReturn
 
-			embed.add_field(name=name, value=cmds, inline=False)
+	async def callback(self, interaction: discord.Interaction):
+		theFile = self.readHelpFile(self.values[0])
+
+		embed = discord.Embed(colour=0x2AE5B8)
+		embed.title = theFile['label']
+		name = theFile['desc']
+		cmds = ""
+		page = 2
+
+		for line in theFile['fileData']:
+			if len(cmds + line) > 1024:
+				embed.add_field(name=name, value=cmds, inline=False)
+				name = f"Page {str(page)}"
+				page += 1
+				cmds = line
+			else:
+				cmds += line
+
+		embed.add_field(name=name, value=cmds, inline=False)
 
 		await interaction.response.edit_message(view=self.view, embed=embed)
 
