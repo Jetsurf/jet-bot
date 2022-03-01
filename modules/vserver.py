@@ -124,6 +124,10 @@ class voiceServer():
 		except:
 			return
 
+	def soundExists(self, sound):
+		path = f"{self.soundsDir}/{sound}.mp3"
+		return os.path.exists(path)
+
 	async def stop(self, ctx):
 		if self.source != None:
 			self.vclient.stop()
