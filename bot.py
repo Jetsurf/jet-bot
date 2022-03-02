@@ -16,6 +16,7 @@ splatInfo = splatinfo.SplatInfo()
 intents = discord.Intents.default()
 intents.members = True
 client = discord.Bot(intents=intents, chunk_guilds_at_startup=False)
+discord.http.API_VERSION = 9
 commandParser = None
 serverConfig = None
 mysqlHandler = None
