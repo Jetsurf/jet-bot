@@ -16,13 +16,13 @@ splatInfo = splatinfo.SplatInfo()
 intents = discord.Intents.default()
 intents.members = True
 client = discord.Bot(intents=intents, chunk_guilds_at_startup=False)
-discord.http.API_VERSION = 9
 commandParser = None
 serverConfig = None
 mysqlHandler = None
 nsoHandler = None
 nsoTokens = None
 ownerCmds = None
+#TODO? Make this not a hash table, but a class that isn't reliant on multiple instances?
 serverVoices = {}
 serverUtils = None
 acHandler = None
@@ -701,8 +701,8 @@ async def on_voice_state_update(mem, before, after):
 
 @client.event
 async def on_message(message):
-	global serverVoices, serverUtils, mysqlHandler
-	global nsoHandler, owners, commandParser, doneStartup, acHandler, nsoTokens, ownerCmds
+	global serverUtils, mysqlHandler
+	global nsoHandler, owners, commandParser, doneStartup, ownerCmds
 
 	# Filter out bots and system messages or handling of messages until startup is done
 	if message.author.bot or message.type != discord.MessageType.default or not doneStartup:
@@ -711,7 +711,7 @@ async def on_message(message):
 	command = message.content.lower()
 	channel = message.channel
 	context = messagecontext.MessageContext(message)
-
+	
 	if message.guild == None:
 		if message.author in owners:
 			if '!restart' in command:
@@ -735,15 +735,6 @@ async def on_message(message):
 	else:
 		theServer = message.guild.id
 
-	prefix = await commandParser.getPrefix(theServer)
-
-	if command.startswith('!prefix'):
-		await message.channel.send(f"The command prefix for this server is: {prefix}")
-	elif message.content.startswith('!help') and prefix not in '!':
-		await serverUtils.print_help(message, prefix)
-	elif ('pizza' in command and 'pineapple' in command) or ('\U0001F355' in message.content and '\U0001F34D' in message.content):
-		await channel.send(f"Don't ever think pineapple and pizza go together {message.author.name}!!!")		
-
 	parsed = await commandParser.parse(theServer, message.content)
 	if parsed == None:
 		return
@@ -751,158 +742,12 @@ async def on_message(message):
 	cmd = parsed['cmd']
 	args = parsed['args']
 
-	#Don't just fail if command count can't be incremented
-	try:
-		await serverUtils.increment_cmd(context, cmd)
-	except:
-		print("Failed to increment command... issue with MySQL?")
-
 	if cmd == 'eval':
 		await ownerCmds.eval(context, args[0])
 	elif cmd == 'getcons' and message.author in owners:
 		await mysqlHandler.printCons(message)
 	elif cmd == 'storejson' and message.author in owners:
 		await nsoHandler.getStoreJSON(context)
-	elif cmd == 'admin':
-		if await checkIfAdmin(context):
-			if len(args) == 0:
-				await message.channel.send("Options for admin commands are playlist, blacklist, dm, prefix, announcement, and feed")
-				await serverUtils.print_help(message, prefix)
-				return
-			subcommand = args[0].lower()
-			if subcommand == 'playlist':
-				await serverVoices[theServer].addGuildList(context, args)
-			elif subcommand == 'wtfboom':
-				await serverVoices[theServer].playWTF(message)
-			elif subcommand == 'tts':
-				await channel.send(args[1:].join(" "), tts=True)
-			elif subcommand == 'dm':
-				subcommand2 = args[1].lower()
-				if subcommand2 == 'add':
-					await serverUtils.addDM(context)
-				elif subcommand2 == 'remove':
-					await serverUtils.removeDM(context)
-			elif subcommand == "announcement":
-				subcommand2 = args[1].lower()
-				if subcommand2 == 'set':
-					await serverUtils.setAnnounceChannel(context, args)
-				elif subcommand2 == 'get':
-					channel = await serverUtils.getAnnounceChannel(message.guild.id)
-					if channel == None:
-						await message.channel.send("No channel is set to receive announcements")
-					else:
-						await message.channel.send(f"Current announcement channel is: {channel.name}")
-				elif subcommand2 == 'stop':
-					await serverUtils.stopAnnouncements(context)
-				else:
-					await message.channel.send("Usage: set CHANNEL, get, or stop")
-			elif subcommand == 'prefix':
-				if (len(args) == 1):
-					await channel.send(f"Current command prefix is: {prefix}")
-				elif (len(args) != 2) or (len(args[1]) < 0) or (len(args[1]) > 2):
-					await channel.send("Usage: ```admin prefix <char>``` where *char* is one or two characters")
-				else:
-					await commandParser.setPrefix(theServer, args[1])
-					await channel.send(f"New command prefix is: {await commandParser.getPrefix(theServer)}")
-			elif subcommand == 'feed':
-				if len(args) == 1:
-					await serverUtils.createFeed(context)
-				elif 'delete' in args[1].lower():
-					await serverUtils.deleteFeed(context)
-		else:
-			await channel.send(f"{message.author.name} you are not an admin... :cop:")
-	elif cmd == 'alive':
-		await channel.send(f"Hey {message.author.name}, I'm alive so shut up! :japanese_goblin:")
-	elif cmd == 'rank':
-		await nsoHandler.getRanks(context)
-	elif cmd == 'order':
-		print(f"Ordering gear for user: {message.author.name} and id {str(message.author.id)}")
-		await nsoHandler.orderGearCommand(context, args=args, is_slash=False)
-	elif cmd == 'stats':
-		await nsoHandler.getStats(context)
-	elif cmd == 'srstats':
-		await nsoHandler.getSRStats(context)
-	elif cmd == 'storedm':
-		await nsoHandler.addStoreDM(context, args)
-	elif cmd == 'passport':
-		await acHandler.passport(context)
-	elif cmd == 'github':
-		await channel.send('Here is my github page! : https://github.com/Jetsurf/jet-bot')
-	elif cmd == 'support':
-		await channel.send('Here is a link to my support server: https://discord.gg/TcZgtP5')
-	elif cmd == 'commands' or cmd == 'help':
-		await serverUtils.print_help(message, prefix)
-	elif cmd == 'sounds':
-		await channel.send(embed=serverVoices[theServer].createSoundsEmbed())
-	elif cmd == 'join':
-		if len(args) > 0:
-			await serverVoices[theServer].joinVoiceChannel(context, args)
-		else:
-			await serverVoices[theServer].joinVoiceChannel(context, args)
-	elif cmd == 'currentmaps':
-		await message.channel.send(embed=await nsoHandler.mapsEmbed())
-	elif cmd == 'nextmaps':
-		await message.channel.send(embed=await nsoHandler.mapsEmbed(offset=min(11, message.content.count('next'))))
-	elif cmd == 'currentsr':
-		await message.channel.send(embed=nsoHandler.srEmbed())
-	elif cmd == 'splatnetgear':
-		await nsoHandler.gearParser(context)
-	elif cmd == 'nextsr':
-		await message.channel.send(embed=nsoHandler.srEmbed(getNext=True))
-	elif (cmd == 'map') or (cmd == 'maps'):
-		await nsoHandler.cmdMaps(context, args)
-	elif (cmd == 'weapon') or (cmd == 'weapons'):
-		await nsoHandler.cmdWeaps(context, args)
-	elif (cmd == 'battle') or (cmd == 'battles'):
-		if len(args) < 1:
-			await message.channel.send("Usage: battle num <number> or battle last")
-		else:
-			if args[0] == 'last':
-				await nsoHandler.cmdBattles(context, 1)
-			elif args[0] == 'num' and len(args) > 1:
-				await nsoHandler.cmdBattles(context, int(args[1]))
-			else:
-				await message.channel.send("Usage: battle num <number> or battle last")
-	elif serverVoices[theServer].vclient is not None:
-		if cmd == 'currentsong':
-			if serverVoices[theServer].source is not None:
-				await channel.send(f"Currently Playing Video: {serverVoices[theServer].source.yturl}")
-			else:
-				await channel.send("I'm not playing anything.")
-		elif cmd == 'leavevoice':
-			await serverVoices[theServer].vclient.disconnect()
-			serverVoices[theServer].vclient = None
-		elif cmd == 'playrandom':
-			if len(args) > 0:
-				if args[0].isdigit():
-					await serverVoices[theServer].playRandom(context, int(args[0]))
-				else:
-					await message.channel.send("Num to play must be a number")
-			else:
-				await serverVoices[theServer].playRandom(context, 1)
-		elif cmd == 'play':
-			await serverVoices[theServer].setupPlay(context, args)
-		elif cmd == 'skip':
-			await serverVoices[theServer].stop(context)
-		elif (cmd == 'end') or (cmd == 'stop'):
-			serverVoices[theServer].end()
-		elif cmd == 'volume' or cmd == 'vol':
-			if len(command.split(' ')) < 2:
-				await message.channel.send("Need a value to set volume to!")
-				return
-			vol = command.split(' ')[1]
-			if not vol.isdigit():
-				await message.channel.send("Volume must be a digit 1-60")
-				return
-			if int(vol) > 60:
-				vol = 60
-			if serverVoices[theServer].source != None:
-				await channel.send(f"Setting Volume to {str(vol)}%")
-				serverVoices[theServer].source.volume = float(int(vol) / 100)
-		elif cmd == 'queue':
-			await serverVoices[theServer].printQueue(context)
-		else:
-			await serverVoices[theServer].playSound(cmd)
 
 	sys.stdout.flush()
 	sys.stderr.flush()
