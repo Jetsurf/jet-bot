@@ -224,39 +224,6 @@ class serverUtils():
 		else:
 			return False
 
-	async def print_help(self, message, prefix):
-		embed = discord.Embed(colour=0x2AE5B8)
-
-		if 'admin' in message.content:
-			file = self.helpfldr + '/admin.txt'
-		elif 'generalsn' in message.content:
-			file = self.helpfldr + '/basesplatnet.txt'
-		elif 'usersn' in message.content:
-			file = self.helpfldr + '/usersplatnet.txt'
-		elif 'voice' in message.content:
-			file = self.helpfldr + '/voice.txt'
-		elif 'ac' in message.content:
-			file = self.helpfldr + '/ac.txt'
-		else:
-			file = self.helpfldr + '/base.txt'
-
-		theString = ''
-		title = ''
-		with open(file, 'r') as f:
-			for line in f:
-				if '*' in line:
-					embed.title = line.replace('*', '')
-				else:
-					if line.startswith('!'):
-						line = line.replace('!', prefix)
-						theString = theString + "**" + line.replace(":", ":**")
-					else:
-						theString = theString + line
-			embed.add_field(name='Commands', value=theString, inline=False)	
-			embed.set_footer(text="If you want something added or want to report a bug/error, run /support")
-
-		await message.channel.send(embed=embed)
-
 	async def report_cmd_totals(self, message):
 		embed = discord.Embed(colour=0x00FFF3)
 		embed.title = "Command Totals"
