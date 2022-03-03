@@ -1318,7 +1318,7 @@ class nsoHandler():
 	async def cmdMaps(self, ctx, args):
 		#TODO: This can be made better, lets split this up into functions?
 		subcommand = args[0].lower()
-		elif subcommand == "list":
+		if subcommand == "list":
 			embed = discord.Embed(colour=0xF9FC5F)
 			embed.title = "Maps List"
 			embed.add_field(name="Maps (abbreviation)", value=", ".join(map(lambda item: item.format(), self.splatInfo.getAllMaps())), inline=False)

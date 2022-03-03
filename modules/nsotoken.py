@@ -493,18 +493,21 @@ class Nsotoken():
 					'Host': 'web.sd.lp1.acbaa.srv.nintendo.net',
 					'Accept': 'application/json, text/plain, */*',
 					'Accept-Encoding': 'gzip, deflate, br',
-					'X-Blanco-Version': '2.0.0',
+					'X-Blanco-Version': '2.1.0',
 					'Accept-Language': 'en-US,en;q=0.9',
 					'Content-Type': 'application/json',
 					'User-Agent': 'Mozilla/5.0 (Linux; Android 7.1.2; Pixel Build/NJH47D; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/59.0.3071.125 Mobile Safari/537.36',
-					'Referer' : 'https://web.sd.lp1.acbaa.srv.nintendo.net/?lang=en-US&na_country=US&na_lang=en-US'
+					'Referer' : 'https://web.sd.lp1.acbaa.srv.nintendo.net/?lang=en-US&na_country=US&na_lang=en-US',
+					'Origin' : ':https://web.sd.lp1.acbaa.srv.nintendo.net'
 				}
 
 				r = requests.get('https://web.sd.lp1.acbaa.srv.nintendo.net/api/sd/v1/users', headers=head, cookies=dict(_gtoken=gtoken))
 				thejson = json.loads(r.text)
+				print(str(thejson))
 				if thejson['users']:
 					r = requests.post("https://web.sd.lp1.acbaa.srv.nintendo.net/api/sd/v1/auth_token", headers=head, json=dict(userId=thejson['users'][0]['id']), cookies=dict(_gtoken=gtoken))
 					bearer = json.loads(r.text)
+					print(f"{str(r)} + {bearer}")
 					if r.cookies['_park_session'] == None or 'token' not in bearer:
 						print("ERROR GETTING AC _PARK_SESSION/BEARER")
 						return None
