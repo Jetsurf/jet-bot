@@ -208,7 +208,8 @@ async def cmdAdminDeleteFeed(ctx):
 		return
 
 	if await checkIfAdmin(ctx):
-		await serverUtils.deleteFeed(ctx, is_slash=True, bypass=True)
+		#TODO: Add view to confirm delete, better than using an argument
+		await serverUtils.deleteFeed(ctx, bypass=True)
 	else:
 		await ctx.respond("You aren't a guild administrator", ephemeral=True)
 
@@ -711,7 +712,7 @@ async def on_message(message):
 	command = message.content.lower()
 	channel = message.channel
 	context = messagecontext.MessageContext(message)
-	
+
 	if message.guild == None:
 		if message.author in owners:
 			if '!restart' in command:

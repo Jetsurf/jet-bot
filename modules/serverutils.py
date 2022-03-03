@@ -84,29 +84,15 @@ class serverUtils():
 		self.scheduler.add_job(self.changeStatus, 'cron', minute='*/5', timezone='UTC') 
 		self.scheduler.start()
 
-	async def deleteFeed(self, ctx, is_slash=False, bypass=False):
+	async def deleteFeed(self, ctx, bypass=False):
 		cur = await self.sqlBroker.connect()
 		stmt = "SELECT * FROM feeds WHERE serverid = %s AND channelid = %s"
 		await cur.execute(stmt, (ctx.guild.id, ctx.channel.id,))
 		chan = await cur.fetchone()
-		mapflag, srflag, gearflag = False, False, False
 
-		def check(m):
-			return m.author == ctx.user and m.channel == ctx.channel
-
+		#TODO: Need to improve this w/ confirmation to delete
 		if chan != None:
-			if bypass == False:
-				await ctx.respond("Delete feed for this channel (yes/no)? ")
-
-				createfeed = await self.client.wait_for('message', check=check)
-				if 'yes' in createfeed.content.lower():
-					saidYes = True
-				else:
-					saidYes = False
-			else:
-				saidYes = False
-
-			if saidYes or bypass:
+			if bypass:
 				stmt = "DELETE FROM feeds WHERE serverid = %s AND channelid = %s"
 				await cur.execute(stmt, (ctx.guild.id, ctx.channel.id,))
 				if cur.lastrowid != None:
@@ -127,62 +113,8 @@ class serverUtils():
 		stmt = "SELECT * FROM feeds WHERE serverid = %s AND channelid = %s"
 		await cur.execute(stmt, (ctx.guild.id, ctx.channel.id,))
 		chan = await cur.fetchone()
-		mapflag, srflag, gearflag = False, False, False
 
-		def check(m):
-			return m.author == ctx.user and m.channel == ctx.channel
-		if args == None:
-			if chan != None:
-				await ctx.respond("Feed already setup for this channel, create a new one? ")
-
-				createfeed = await self.client.wait_for('message', check=check)
-
-				if 'yes' in createfeed.content.lower():
-					stmt = "DELETE FROM feeds WHERE serverid = %s AND channelid = %s"
-					await cur.execute(stmt, (message.guild.id, message.channel.id,))
-					if cur.lastrowid != None:
-						await ctx.respond("Ok, creating feed. Would you like the feed notification to include Map rotations (yes/no)?")
-					else:
-						await ctx.respond("Error in setting up create feed.")
-						return False
-				else:
-					await ctx.respond("Ok, canceling.")
-					return False
-			else:
-				await ctx.respond("No feed is setup for this channel. Would you like to create one (yes/no)?")
-
-				feedresp = await self.client.wait_for('message', check=check)
-
-				if 'yes' in feedresp.content.lower():
-					await ctx.respond("Ok, creating feed. Would you like the feed notification to include Map rotations (yes/no)?")
-				else:
-					await ctx.respond("Ok, canceling.")
-					return False
-
-			mapresp = await self.client.wait_for('message', check=check)
-
-			if 'yes' in mapresp.content.lower():
-				await ctx.respond("Ok, adding Map rotations to the feed. Would you like the feed notification to include Salmon Run rotations (yes/no)?")
-				mapflag = True
-			else:
-				await ctx.respond("Ok, not adding Map rotations to the feed. Would you like the feed notification to include Salmon Run rotations (yes/no)?")
-
-			srresp = await self.client.wait_for('message', check=check)
-
-			if 'yes' in srresp.content.lower():
-				await ctx.respond("Ok, adding Salmon Run rotations to the feed. Would you like the feed notification to include Gear rotations (yes/no)?")
-				srflag = True
-			else:
-				await ctx.respond("Ok, not adding Salmon Run rotations to the feed. Would you like the feed notifications to include Gear rotations (yes/no)?")
-
-			gearresp = await self.client.wait_for('message', check=check)
-
-			if 'yes' in gearresp.content.lower():
-				await ctx.respond("Ok, adding Gear rotations to the feed. ")
-				gearflag = True
-			else:
-				await ctx.respond("Ok, not adding Gear rotations to the feed.")
-		elif chan != None and args[3] == True:
+		if chan != None and args[3] == True:
 			mapflag = args[0]
 			srflag = args[1]
 			gearflag = args[2]
