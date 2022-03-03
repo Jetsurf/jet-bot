@@ -1316,16 +1316,8 @@ class nsoHandler():
 		await ctx.respond(embed=embed)
 
 	async def cmdMaps(self, ctx, args):
-		if len(args) == 0:
-			await ctx.respond("Try 'maps help' for help")
-			return
-
+		#TODO: This can be made better, lets split this up into functions?
 		subcommand = args[0].lower()
-		if subcommand == "help":
-			await ctx.respond("**maps random [n]**: Generate a list of random maps\n"
-				"**maps stats MAP**: Show player stats for MAP\n"
-				"**maps callout MAP**: Show callouts for MAP\n"
-				"**maps list**: Lists all maps with abbreviations")
 		elif subcommand == "list":
 			embed = discord.Embed(colour=0xF9FC5F)
 			embed.title = "Maps List"
