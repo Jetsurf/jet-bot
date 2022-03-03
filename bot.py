@@ -6,7 +6,7 @@ from discord.commands import *
 #DBL Posting
 import urllib, urllib.request, requests, pymysql
 #Our Classes
-import nsotoken, commandparser, serverconfig, splatinfo, messagecontext, ownercmds
+import nsotoken, commandparser, serverconfig, splatinfo, ownercmds
 import vserver, mysqlhandler, mysqlschema, serverutils, nsohandler, achandler
 import stringcrypt
 

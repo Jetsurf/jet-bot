@@ -1379,20 +1379,9 @@ class nsoHandler():
 			await ctx.respond("Unknown subcommand. Try 'maps help'")
 
 	async def cmdWeaps(self, ctx, args):
-		if len(args) == 0:
-			await ctx.respond("Try 'weapons help' for help")
-			return
-
+		#TODO: This can be made better, lets split this up into functions?
 		subcommand = args[0].lower()
-		if subcommand == "help":
-			await ctx.respond("**weapons random [n]**: Generate a list of random weapons\n"
-				"**weapons stats WEAPON**: Show player stats for WEAPON\n"
-				"**weapons sub SUB**: Show all weapons with SUB\n"
-				"**weapons list TYPE**: Shows all weapons of TYPE\n"
-				"**weapons special SPECIAL**: Show all weapons with SPECIAL\n"
-				"**weapons info WEAPON**: Shows information about specific weapon named WEAPON\n")
-			return
-		elif subcommand == "info":
+		if subcommand == "info":
 			if len(args) > 1:
 				theWeapon = " ".join(args[1:])
 				match = self.splatInfo.matchWeapons(theWeapon)
