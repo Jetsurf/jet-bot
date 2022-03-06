@@ -3,6 +3,7 @@ sys.path.append('./modules')
 #Base Stuffs
 import discord, asyncio, subprocess, json, time, itertools
 from discord.commands import *
+from discord.ui import InputText, Modal
 #DBL Posting
 import urllib, urllib.request, requests, pymysql
 #Our Classes
@@ -82,6 +83,15 @@ def ensureEncryptionKey():
 	else:
 		print("Creating new secret key file...")
 		stringCrypt.writeSecretKeyFile(keyPath)
+
+@client.slash_command(name='token', description='Sets up a token to use for NSO commands')
+async def cmdToken(ctx):
+	embed = discord.Embed(colour=0x3FFF33)
+	embed.title = "Sign in Instructions"
+	embed.add_field(name="ins", value="Log in, right click the \"Select this person\" button, copy the link address, and paste it back to me or 'stop' to cancel", inline=False)
+	embed.set_image(url=f"{configData['hosted_url']}/images/nsohowto.png")
+
+	await ctx.respond(embed=embed, view=nsotoken.tokenMenuView(nsoTokens))
 
 @owner.command(name="emotes", description="Sets Emotes for use in Embeds (Custom emotes only)", default_permission=False)
 @permissions.is_owner()

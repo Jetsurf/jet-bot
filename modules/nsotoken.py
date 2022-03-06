@@ -1,11 +1,39 @@
 from __future__ import print_function
-import mysqlhandler, nsohandler
+import mysqlhandler, nsohandler, discord
 import requests, json, re, sys, uuid, time
 import os, base64, hashlib, random, string
+from discord.ui import *
+from discord.enums import ComponentType, InputTextStyle
 from datetime import datetime
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import googleplay
 from typing import Optional
+
+
+class tokenMenuView(discord.ui.View):
+	def __init__(self, nsotoken):
+		super().__init__()
+		self.nsoTokens = nsotoken
+
+		#self.add_item(embed)
+		self.add_item(discord.ui.Button(label="Sign In Link", url=Nsotoken.loginUrl(self.nsoTokens)))
+		#self.add_item(discord.ui.Button(label="URL Input"))
+
+	@discord.ui.button(label="URL Input")
+	async def Button(self, button: discord.ui.Button, interaction: discord.Interaction):
+		await interaction.response.send_modal(tokenHandler(self.nsoTokens, title="temp"))
+
+class tokenHandler(Modal):
+	def __init__(self, nsoTokens, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		self.title="Nintendo NSO Token Setup"
+		#self.add_tem(discord.Embed(title=))
+		
+		self.add_item(InputText(label="Requested Link from Nintendo", style=discord.InputTextStyle.long, placeholder="npf71b963c1b7b6d119://"))
+		
+	async def callback(self, interaction: discord.Interaction):
+		print(f"{self.children[0].value}")
+#class discord.ui.InputText(*, style=<InputTextStyle.short: 1>, custom_id=..., label, placeholder=None, min_length=None, max_length=None, required=True, value=None, row=None)
 
 class Nsotoken():
 	def __init__(self, client, mysqlhandler, hostedUrl, stringCrypt):
@@ -167,14 +195,14 @@ class Nsotoken():
 			await self.sqlBroker.rollback(cur)
 			await ctx.send("Something went wrong! If you want to report this, join my support discord and let the devs know what you were doing!")
 
-	async def login(self, ctx, flag=True):
-		cur = await self.sqlBroker.connect()
-		dupe = await self.__checkDuplicate(ctx.user.id, cur)
+	def loginUrl(self):
+		#cur = await self.sqlBroker.connect()
+		#dupe = await self.__checkDuplicate(ctx.user.id, cur)
 		
-		if dupe:
-			await ctx.send("You already have a token setup with me, if you need to refresh your token (due to an issue), DM me !deletetoken to perform this again.")
-			await self.sqlBroker.close(cur)
-			return
+		#if dupe:
+		#	await ctx.send("You already have a token setup with me, if you need to refresh your token (due to an issue), DM me !deletetoken to perform this again.")
+		#	await self.sqlBroker.close(cur)
+		#	return
 
 		auth_state = base64.urlsafe_b64encode(os.urandom(36))
 		auth_code_verifier = base64.urlsafe_b64encode(os.urandom(32))
@@ -205,6 +233,9 @@ class Nsotoken():
 
 		post_login = r.history[0].url
 
+		return post_login
+		
+	async def otherStuff(self, ctx, flag=True):
 		await ctx.send(f"Navigate to this URL in your browser: {post_login}")
 		await ctx.send("Log in, right click the \"Select this person\" button, copy the link address, and paste it back to me or 'stop' to cancel.")
 		if self.hostedUrl:
@@ -503,11 +534,9 @@ class Nsotoken():
 
 				r = requests.get('https://web.sd.lp1.acbaa.srv.nintendo.net/api/sd/v1/users', headers=head, cookies=dict(_gtoken=gtoken))
 				thejson = json.loads(r.text)
-				print(str(thejson))
 				if thejson['users']:
 					r = requests.post("https://web.sd.lp1.acbaa.srv.nintendo.net/api/sd/v1/auth_token", headers=head, json=dict(userId=thejson['users'][0]['id']), cookies=dict(_gtoken=gtoken))
 					bearer = json.loads(r.text)
-					print(f"{str(r)} + {bearer}")
 					if r.cookies['_park_session'] == None or 'token' not in bearer:
 						print("ERROR GETTING AC _PARK_SESSION/BEARER")
 						return None

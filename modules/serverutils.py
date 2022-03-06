@@ -97,8 +97,7 @@ class serverUtils():
 				await cur.execute(stmt, (ctx.guild.id, ctx.channel.id,))
 				if cur.lastrowid != None:
 					await self.sqlBroker.commit(cur)
-					if is_slash:
-						await ctx.respond("Ok, deleted feed.")
+					await ctx.respond("Ok, deleted feed.")
 					return True
 				else:
 					await self.sqlBroker.rollback(cur)
