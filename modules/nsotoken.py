@@ -9,31 +9,64 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import googleplay
 from typing import Optional
 
-
 class tokenMenuView(discord.ui.View):
 	def __init__(self, nsotoken):
 		super().__init__()
 		self.nsoTokens = nsotoken
 
-		#self.add_item(embed)
-		self.add_item(discord.ui.Button(label="Sign In Link", url=Nsotoken.loginUrl(self.nsoTokens)))
-		#self.add_item(discord.ui.Button(label="URL Input"))
+	async def init(self, ctx):
+		self.ctx = ctx
+		self.isDupe = await self.nsoTokens.checkSessionPresent(ctx)
+		cancel = discord.ui.Button(label="Cancel", style=discord.ButtonStyle.red)
+		cancel.callback = self.cancelButton
+		self.add_item(cancel)
 
-	@discord.ui.button(label="URL Input")
-	async def Button(self, button: discord.ui.Button, interaction: discord.Interaction):
-		await interaction.response.send_modal(tokenHandler(self.nsoTokens, title="temp"))
+		if not self.isDupe:
+			login = self.nsoTokens.loginUrl()
+			self.auth_code_verifier = login['auth_code_verifier']
+			self.add_item(discord.ui.Button(label="Sign In Link", url=login['url']))
+			urlBut = discord.ui.Button(label="Submit URL")
+			urlBut.callback = self.sendModal
+			self.add_item(urlBut)
+		else:
+			delbut = discord.ui.Button(label="Delete Tokens")
+			delbut.callback = self.deleteTokens
+			self.add_item(delbut)
+
+	async def deleteTokens(self, interaction: discord.Interaction):
+		ret = await self.nsoTokens.deleteTokens(interaction)
+
+		if ret:
+			interaction.response.edit_original_message("Token deleted")
+			self.stop()
+		else:
+			interaction.response.edit_original_message("Token failed to delete")
+			self.stop()
+
+	async def cancelButton(self, interaction: discord.Interaction):
+		self.stop()
+
+	async def sendModal(self, interaction: discord.Interaction):
+		await interaction.response.send_modal(modal=tokenHandler(self.nsoTokens, self.auth_code_verifier, title="Nintendo NSO Token Setup"))
 
 class tokenHandler(Modal):
-	def __init__(self, nsoTokens, *args, **kwargs):
+	def __init__(self, nsoTokens,  auth_code_verifier, *args, **kwargs):
+		self.nsoTokens = nsoTokens
+		self.auth_code_verifier = auth_code_verifier
 		super().__init__(*args, **kwargs)
 		self.title="Nintendo NSO Token Setup"
-		#self.add_tem(discord.Embed(title=))
-		
 		self.add_item(InputText(label="Requested Link from Nintendo", style=discord.InputTextStyle.long, placeholder="npf71b963c1b7b6d119://"))
 		
 	async def callback(self, interaction: discord.Interaction):
-		print(f"{self.children[0].value}")
-#class discord.ui.InputText(*, style=<InputTextStyle.short: 1>, custom_id=..., label, placeholder=None, min_length=None, max_length=None, required=True, value=None, row=None)
+		session_token_code = re.search('session_token_code=(.*)&', self.children[0].value)
+		if session_token_code is None:
+			return False
+			interaction.response.edit_original_message("Token Failed to Add")
+		else:
+			print(f"{self.children[0].value}")
+			await self.nsoTokens.postLogin(interaction, self.children[0].value, self.auth_code_verifier)
+			interaction.response.edit_original_message("Token Added")
+			return True
 
 class Nsotoken():
 	def __init__(self, client, mysqlhandler, hostedUrl, stringCrypt):
@@ -182,18 +215,20 @@ class Nsotoken():
 		await self.sqlBroker.close(cur)
 		return ret
 
-	async def deleteTokens(self, ctx):
+	async def deleteTokens(self, interaction):
 		cur = await self.sqlBroker.connect()
 		print("Deleting token")
 		stmt = "DELETE FROM tokens WHERE clientid = %s"
-		input = (ctx.user.id,)
+		input = (interaction.user.id,)
 		await cur.execute(stmt, input)
 		if cur.lastrowid != None:
 			await self.sqlBroker.commit(cur)
-			await ctx.send("Tokens deleted!")
+			await interaction.response.send_message(content="Tokens deleted! Rerun /token to setup a new one if desired.", ephemeral=True)
+			return True
 		else:
 			await self.sqlBroker.rollback(cur)
-			await ctx.send("Something went wrong! If you want to report this, join my support discord and let the devs know what you were doing!")
+			await interaction.response.send_message(content="Something went wrong! If you want to report this, join my support discord and let the devs know what you were doing!", ephemeral=True)
+			return False
 
 	def loginUrl(self):
 		#cur = await self.sqlBroker.connect()
@@ -233,55 +268,35 @@ class Nsotoken():
 
 		post_login = r.history[0].url
 
-		return post_login
+		return {'auth_code_verifier' : auth_code_verifier, 'url' : post_login}
 		
-	async def otherStuff(self, ctx, flag=True):
-		await ctx.send(f"Navigate to this URL in your browser: {post_login}")
-		await ctx.send("Log in, right click the \"Select this person\" button, copy the link address, and paste it back to me or 'stop' to cancel.")
-		if self.hostedUrl:
-			await ctx.send(f"{self.hostedUrl}/images/nsohowto.png")
-
-		while True:
-			def check(m):
-				return m.author == ctx.user and m.channel == ctx.channel
-
-			accounturl = await self.client.wait_for('message', check=check)
-			accounturl = accounturl.content
-
-			if 'stop' in accounturl.lower():
-				await self.sqlBroker.close(cur)
-				await ctx.send("Ok, stopping the token setup")
-				return
-			elif 'npf71b963c1b7b6d119' not in accounturl:
-				await ctx.send("Invalid URL, please copy the link in \"Select this person\" (or stop to cancel).")
-			else:
-				break
-
-		await ctx.defer()
-		session_token_code = re.search('session_token_code=(.*)&', accounturl)
+	async def postLogin(self, interaction, returnedUrl, auth_code_verifier):
+		cur = await self.sqlBroker.connect()
+		session_token_code = re.search('session_token_code=(.*)&', returnedUrl)
 		if session_token_code == None:
 			await self.sqlBroker.close(cur)
 			print(f"Issue with account url: {str(accounturl)}")
-			await ctx.send("Error in account url. Issue is logged, but you can report this in my support guild")
-			return
-
+			#await ctx.send("Error in account url. Issue is logged, but you can report this in my support guild")
+			return False
 		session_token_code = await self.__get_session_token(session_token_code.group(0)[19:-1], auth_code_verifier)
 		if session_token_code == None:
-			await ctx.send("Something went wrong! Make sure you are also using the latest link I gave you to sign in. If so, join my support discord and report that something broke!")
+			#await ctx.send("Something went wrong! Make sure you are also using the latest link I gave you to sign in. If so, join my support discord and report that something broke!")
 			await self.sqlBroker.close(cur)
 			return
 		else:
 			ciphertext = self.stringCrypt.encryptString(session_token_code)
-			await cur.execute("INSERT INTO tokens (clientid, session_time, session_token) VALUES(%s, NOW(), %s)", (ctx.user.id, ciphertext, ))
+			await cur.execute("INSERT INTO tokens (clientid, session_time, session_token) VALUES(%s, NOW(), %s)", (interaction.user.id, ciphertext, ))
 			if cur.lastrowid != None:
 				await self.sqlBroker.commit(cur)
-				if flag:
-					await ctx.send("Token added, NSO commands will now work! You shouldn't need to run this command again.")
-				else:
-					await ctx.send("Token added! Ordering...")
+				return True
+				#if flag:
+					#await ctx.send("Token added, NSO commands will now work! You shouldn't need to run this command again.")
+				#else:
+					#await ctx.send("Token added! Ordering...")
 			else:
 				await self.sqlBroker.rollback(cur)
-				await ctx.send("Something went wrong! Join my support discord and report that something broke!")
+				return False
+				#await ctx.send("Something went wrong! Join my support discord and report that something broke!")
 
 	#This method will always return the root key path for a game
 	async def doGameKeyRefresh(self, ctx, game='s2') -> Optional[dict]:

@@ -7,7 +7,7 @@ from discord.ui import InputText, Modal
 #DBL Posting
 import urllib, urllib.request, requests, pymysql
 #Our Classes
-import nsotoken, commandparser, serverconfig, splatinfo, ownercmds
+import nsotoken, commandparser, serverconfig, splatinfo, ownercmds, messagecontext
 import vserver, mysqlhandler, mysqlschema, serverutils, nsohandler, achandler
 import stringcrypt
 
@@ -86,12 +86,22 @@ def ensureEncryptionKey():
 
 @client.slash_command(name='token', description='Sets up a token to use for NSO commands')
 async def cmdToken(ctx):
-	embed = discord.Embed(colour=0x3FFF33)
-	embed.title = "Sign in Instructions"
-	embed.add_field(name="ins", value="Log in, right click the \"Select this person\" button, copy the link address, and paste it back to me or 'stop' to cancel", inline=False)
-	embed.set_image(url=f"{configData['hosted_url']}/images/nsohowto.png")
+	view = nsotoken.tokenMenuView(nsoTokens)
+	await view.init(ctx)
 
-	await ctx.respond(embed=embed, view=nsotoken.tokenMenuView(nsoTokens))
+	if view.isDupe:
+		embed = discord.Embed(colour=0x3FFF33)
+		embed.title = "Token Management"
+		embed.add_field(name="Token is already setup", value="Press cancel to close or 'Delete Token' to delete your tokens")
+	else:
+		embed = discord.Embed(colour=0x3FFF33)
+		embed.title = "Instructions"
+		embed.add_field(name="Sign In", value="Click the \"Sign In Link\" button, sign into your nintendo account, right click the \"Select this person\" button, copy the link address, then hit \"Submit URL\" and paste in the link to complete setup.", inline=False)
+		embed.set_image(url=f"{configData['hosted_url']}/images/nsohowto.png")
+
+	await ctx.respond(embed=embed, view=view, ephemeral=True)
+	await view.wait()
+	await ctx.delete()
 
 @owner.command(name="emotes", description="Sets Emotes for use in Embeds (Custom emotes only)", default_permission=False)
 @permissions.is_owner()
