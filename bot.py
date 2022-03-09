@@ -377,7 +377,7 @@ async def cmdBattle(ctx, battlenum: Option(int, "Battle Number, 1 being latest, 
 @owner.command(name='eval2', description="Eval a code block (Owners only)", default_permission=False)
 @permissions.is_owner()
 async def cmdEval(ctx):
-	await ctx.send_modal(ownercmds.evalModal(ownerCmds))
+	await ctx.send_modal(ownercmds.evalModal(ownerCmds, title="Eval"))
 	#await ownerCmds.eval(ctx, code, slash=True)
 
 @owner.command(name='nsojson', description="Get raw nso json")
