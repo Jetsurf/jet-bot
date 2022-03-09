@@ -186,6 +186,7 @@ class Nsotoken():
 
 		cur = await self.sqlBroker.connect()
 		await cur.execute("UPDATE tokens SET game_keys = %s, game_keys_time = NOW() WHERE (clientid = %s)", (ciphertext, clientid))
+		
 		await self.sqlBroker.commit(cur)
 
 	# Stores the given data at the dotted path.
@@ -279,13 +280,15 @@ class Nsotoken():
 			#await ctx.send("Error in account url. Issue is logged, but you can report this in my support guild")
 			return False
 		session_token_code = await self.__get_session_token(session_token_code.group(0)[19:-1], auth_code_verifier)
-		if session_token_code == None:
+		fc = await self.__setup_nso(session_token_code, one_shot=True)
+		print("")
+		if session_token_code == None or fc == None:
 			#await ctx.send("Something went wrong! Make sure you are also using the latest link I gave you to sign in. If so, join my support discord and report that something broke!")
 			await self.sqlBroker.close(cur)
 			return
 		else:
 			ciphertext = self.stringCrypt.encryptString(session_token_code)
-			await cur.execute("INSERT INTO tokens (clientid, session_time, session_token) VALUES(%s, NOW(), %s)", (interaction.user.id, ciphertext, ))
+			await cur.execute("INSERT INTO tokens (clientid, session_time, session_token, friendcode) VALUES(%s, NOW(), %s, %s)", (interaction.user.id, ciphertext, fc, ))
 			if cur.lastrowid != None:
 				await self.sqlBroker.commit(cur)
 				return True
@@ -378,7 +381,9 @@ class Nsotoken():
 		else:
 			return json.loads(r.text)
 
-	async def __setup_nso(self, session_token, game='s2'):
+
+
+	async def __setup_nso(self, session_token, game='s2', one_shot=False):
 		nsoAppInfo = await self.getAppVersion()
 		if nsoAppInfo == None:
 			print("__setup_nso(): No known NSO app version")
@@ -455,21 +460,28 @@ class Nsotoken():
 		body = {}
 		body["parameter"] = parameter
 
-		r = requests.post("https://api-lp1.znc.srv.nintendo.net/v2/Account/Login", headers=head, json=body)
-		splatoon_token = json.loads(r.text)
+		r = requests.post("https://api-lp1.znc.srv.nintendo.net/v3/Account/Login", headers=head, json=body)
+		acnt_api = json.loads(r.text)
 		if r.status_code != 200:
-			print(f"NSO ERROR IN LOGIN {r.status_code} {r.reason}: {str(splatoon_token)}")
+			print(f"NSO ERROR IN LOGIN {r.status_code} {r.reason}: {str(acnt_api)}")
 			return None
 
 		try:
-			idToken = splatoon_token["result"]["webApiServerCredential"]["accessToken"]
+			idToken = acnt_api["result"]["webApiServerCredential"]["accessToken"]
+			fc = acnt_api['result']['user']['links']['friendCode']['id']
+			print(f"Friend Code is: SW-{fc}")
 		except Exception as e:
 			print("YO! ORDER LIKELY EXPLODED. HERES THE JSON NINTENO SENT:")
-			print(str(splatoon_token))
+			print(str(acnt_api))
 			print("HERES THE EXCEPTION:")
 			print(str(e))
 			#Cross fingers this will shed light on this stupid bug
 			return None
+
+		if one_shot:
+			fc = acnt_api['result']['user']['links']['friendCode']['id']
+			print(f"Friend Code is: SW-{fc}")
+			return fc
 
 		timestamp = int(time.time())
 		guid = str(uuid.uuid4())
@@ -486,7 +498,7 @@ class Nsotoken():
 			'X-ProductVersion': nsoAppVer,
 			'Content-Type': 'application/json; charset=utf-8',
 			'Connection': 'Keep-Alive',
-			'Authorization': f'Bearer {splatoon_token["result"]["webApiServerCredential"]["accessToken"]}',
+			'Authorization': f'Bearer {acnt_api["result"]["webApiServerCredential"]["accessToken"]}',
 			'X-Platform': 'Android',
 			'Accept-Encoding': 'gzip'
 		}
@@ -556,7 +568,7 @@ class Nsotoken():
 						print("ERROR GETTING AC _PARK_SESSION/BEARER")
 						return None
 					else:
-						keys = { 'gtoken' : gtoken, 'park_session' : r.cookies['_park_session'], 'ac_bearer' : bearer['token'] }
+						keys = { 'gtoken' : gtoken, 'park_session' : r.cookies['_park_session'], 'ac_bearer' : bearer['token']  }
 						print("Got AC _park_session and bearer!")
 				else:
 					return None
