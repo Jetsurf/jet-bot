@@ -10,14 +10,15 @@ import googleplay
 from typing import Optional
 
 class tokenMenuView(discord.ui.View):
-	def __init__(self, nsotoken):
+	def __init__(self, nsotoken, hostedurl):
 		super().__init__()
 		self.nsoTokens = nsotoken
+		self.hostedurl = hostedurl
 
 	async def init(self, ctx):
 		self.ctx = ctx
 		self.isDupe = await self.nsoTokens.checkSessionPresent(ctx)
-		cancel = discord.ui.Button(label="Cancel", style=discord.ButtonStyle.red)
+		cancel = discord.ui.Button(label="Close", style=discord.ButtonStyle.red)
 		cancel.callback = self.cancelButton
 		self.add_item(cancel)
 
@@ -34,20 +35,21 @@ class tokenMenuView(discord.ui.View):
 			self.add_item(delbut)
 
 	async def deleteTokens(self, interaction: discord.Interaction):
-		ret = await self.nsoTokens.deleteTokens(interaction)
-
-		if ret:
-			interaction.response.edit_original_message("Token deleted")
-			self.stop()
+		if await self.nsoTokens.deleteTokens(interaction):
+			await interaction.response.edit_message(content='Tokens Deleted. To set them up again, run /token again.', embed=None, view=None)
 		else:
-			interaction.response.edit_original_message("Token failed to delete")
-			self.stop()
+			await interaction.response.edit_message(content='Tokens failed to delete, try again shortly or join my support guild.')
+		self.stop()
 
 	async def cancelButton(self, interaction: discord.Interaction):
+		await interaction.response.edit_message(content="Closing", embed=None, view=None)
 		self.stop()
 
 	async def sendModal(self, interaction: discord.Interaction):
-		await interaction.response.send_modal(modal=tokenHandler(self.nsoTokens, self.auth_code_verifier, title="Nintendo NSO Token Setup"))
+		self.disabled = True
+		modal = tokenHandler(self.nsoTokens, self.auth_code_verifier, title="Nintendo NSO Token Setup")
+		await interaction.response.send_modal(modal=modal)
+		await modal.wait()
 
 class tokenHandler(Modal):
 	def __init__(self, nsoTokens,  auth_code_verifier, *args, **kwargs):
@@ -59,14 +61,13 @@ class tokenHandler(Modal):
 		
 	async def callback(self, interaction: discord.Interaction):
 		session_token_code = re.search('session_token_code=(.*)&', self.children[0].value)
-		if session_token_code is None:
-			return False
-			interaction.response.edit_original_message("Token Failed to Add")
+
+		if session_token_code is not None and await self.nsoTokens.postLogin(interaction, self.children[0].value, self.auth_code_verifier):
+			await interaction.response.send_message("Token Added, run /token again to remove them from me.", ephemeral=True)
+			self.stop()
 		else:
-			print(f"{self.children[0].value}")
-			await self.nsoTokens.postLogin(interaction, self.children[0].value, self.auth_code_verifier)
-			interaction.response.edit_original_message("Token Added")
-			return True
+			await interaction.response.send_message("Token Failed to Add", ephemeral=True)
+			self.stop()						
 
 class Nsotoken():
 	def __init__(self, client, mysqlhandler, hostedUrl, stringCrypt):
@@ -224,11 +225,9 @@ class Nsotoken():
 		await cur.execute(stmt, input)
 		if cur.lastrowid != None:
 			await self.sqlBroker.commit(cur)
-			await interaction.response.send_message(content="Tokens deleted! Rerun /token to setup a new one if desired.", ephemeral=True)
 			return True
 		else:
 			await self.sqlBroker.rollback(cur)
-			await interaction.response.send_message(content="Something went wrong! If you want to report this, join my support discord and let the devs know what you were doing!", ephemeral=True)
 			return False
 
 	def loginUrl(self):
@@ -281,25 +280,26 @@ class Nsotoken():
 			return False
 		session_token_code = await self.__get_session_token(session_token_code.group(0)[19:-1], auth_code_verifier)
 		fc = await self.__setup_nso(session_token_code, one_shot=True)
-		print("")
 		if session_token_code == None or fc == None:
 			#await ctx.send("Something went wrong! Make sure you are also using the latest link I gave you to sign in. If so, join my support discord and report that something broke!")
 			await self.sqlBroker.close(cur)
 			return
 		else:
+			print(f"FC: {fc}")
+			await self.__setGameKey(interaction.user.id, 'nso', fc)
 			ciphertext = self.stringCrypt.encryptString(session_token_code)
-			await cur.execute("INSERT INTO tokens (clientid, session_time, session_token, friendcode) VALUES(%s, NOW(), %s, %s)", (interaction.user.id, ciphertext, fc, ))
+			await cur.execute("INSERT INTO tokens (clientid, session_time, session_token) VALUES(%s, NOW(), %s)", (interaction.user.id, ciphertext, ))
 			if cur.lastrowid != None:
 				await self.sqlBroker.commit(cur)
 				return True
-				#if flag:
-					#await ctx.send("Token added, NSO commands will now work! You shouldn't need to run this command again.")
+				await interaction.response.send_message("Token added, NSO commands will now work! You shouldn't need to run this command again.")
+				#TODO: GET ORDERING WORKING THROUGH THIS
 				#else:
 					#await ctx.send("Token added! Ordering...")
 			else:
 				await self.sqlBroker.rollback(cur)
 				return False
-				#await ctx.send("Something went wrong! Join my support discord and report that something broke!")
+				await interaction.response.send_message("Something went wrong! Join my support discord and report that something broke!")
 
 	#This method will always return the root key path for a game
 	async def doGameKeyRefresh(self, ctx, game='s2') -> Optional[dict]:
@@ -469,7 +469,6 @@ class Nsotoken():
 		try:
 			idToken = acnt_api["result"]["webApiServerCredential"]["accessToken"]
 			fc = acnt_api['result']['user']['links']['friendCode']['id']
-			print(f"Friend Code is: SW-{fc}")
 		except Exception as e:
 			print("YO! ORDER LIKELY EXPLODED. HERES THE JSON NINTENO SENT:")
 			print(str(acnt_api))
@@ -481,7 +480,7 @@ class Nsotoken():
 		if one_shot:
 			fc = acnt_api['result']['user']['links']['friendCode']['id']
 			print(f"Friend Code is: SW-{fc}")
-			return fc
+			return { 'fc' : fc }
 
 		timestamp = int(time.time())
 		guid = str(uuid.uuid4())
@@ -568,7 +567,7 @@ class Nsotoken():
 						print("ERROR GETTING AC _PARK_SESSION/BEARER")
 						return None
 					else:
-						keys = { 'gtoken' : gtoken, 'park_session' : r.cookies['_park_session'], 'ac_bearer' : bearer['token']  }
+						keys = { 'gtoken' : gtoken, 'park_session' : r.cookies['_park_session'], 'ac_bearer' : bearer['token'], 'fc' : fc }
 						print("Got AC _park_session and bearer!")
 				else:
 					return None
@@ -580,6 +579,6 @@ class Nsotoken():
 				return None
 			else:
 				print("Got a S2 token!")
-				keys = { 'iksm' : r.cookies['iksm_session'] }
+				keys = { 'iksm' : r.cookies['iksm_session'], 'fc' : fc }
 
 		return keys

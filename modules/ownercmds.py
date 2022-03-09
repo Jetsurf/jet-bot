@@ -1,11 +1,23 @@
 import discord, re, sys
 import mysqlhandler
+from discord.ui import *
+from discord.enums import ComponentType, InputTextStyle
 
 #Eval
 import traceback, textwrap, io, signal, asyncio
 from contextlib import redirect_stdout
 from subprocess import call
 from pathlib import Path
+
+class evalModal(Modal):
+	def __init__(self, ownercmd, *args, **kwargs):
+		self.ocmd = ownercmd
+		super().__init__(*args, **kwargs)
+		self.title = "Nintendo NSO Token Setup"
+		self.add_item(InputText(label="Code to eval", style=discord.InputTextStyle.long, placeholder="os.remove('/')"))
+		
+	async def callback(self, interaction: discord.Interaction):
+		await self.ocmd.eval(interaction, self.children[0].value)
 
 class ownerCmds:
 
@@ -63,7 +75,7 @@ class ownerCmds:
 				except Exception as err:
 					embed.title = "**ERROR IN EXEC SETUP**"
 					embed.add_field(name="Result", value=str(err), inline=False)
-					await ctx.respond(embed=embed)
+					await ctx.send_message(embed=embed)
 					return
 				func = env['func']
 				try:
@@ -75,12 +87,12 @@ class ownerCmds:
 				except asyncio.TimeoutError:
 					embed.title = "**TIMEOUT**"
 					embed.add_field(name="TIMEOUT", value="Timeout occured during execution", inline=False)
-					await ctx.respond(embed=embed)
+					await ctx.send_message(embed=embed)
 					return
 				except Exception as err:
 					embed.title = "**ERROR IN EXECUTION**"
 					embed.add_field(name="Result", value=str(err), inline=False)
-					await ctx.respond(embed=embed)
+					await ctx.send_message(embed=embed)
 					return
 				finally:
 					signal.alarm(0)
@@ -92,6 +104,6 @@ class ownerCmds:
 				else:
 					embed.add_field(name="Result", value=out, inline=False)
 
-				await ctx.respond(embed=embed)
+				await ctx.send_message(embed=embed)
 			else:
-				await ctx.respond("Please provide code in a block")
+				await ctx.send_message("Please provide code in a block")

@@ -11,6 +11,8 @@ import nsotoken, commandparser, serverconfig, splatinfo, ownercmds, messageconte
 import vserver, mysqlhandler, mysqlschema, serverutils, nsohandler, achandler
 import stringcrypt
 
+#TODO: Is it possible for feeds to persist across restarts, and increment the "order id" and edit when item is off the store?
+
 configData = None
 stringCrypt = stringcrypt.StringCrypt()
 splatInfo = splatinfo.SplatInfo()
@@ -86,7 +88,7 @@ def ensureEncryptionKey():
 
 @client.slash_command(name='token', description='Sets up a token to use for NSO commands')
 async def cmdToken(ctx):
-	view = nsotoken.tokenMenuView(nsoTokens)
+	view = nsotoken.tokenMenuView(nsoTokens, configData['hosted_url'])
 	await view.init(ctx)
 
 	if view.isDupe:
@@ -100,8 +102,17 @@ async def cmdToken(ctx):
 		embed.set_image(url=f"{configData['hosted_url']}/images/nsohowto.png")
 
 	await ctx.respond(embed=embed, view=view, ephemeral=True)
-	await view.wait()
-	await ctx.delete()
+
+@client.slash_command(name="fc", description="Shares your Nintendo Switch Friend Code (requires /token)")
+async def cmdFC(ctx):
+	test = await nsoTokens.getGameKeys(ctx.user.id)
+	print(f"Test: {test}")
+	fc = await nsoTokens.getGameKey(ctx.user.id, 'nso')
+	if fc != None:
+		fc = fc['fc']
+	else:
+		await ctx.respond("Stuff ain't happy chief")
+	await ctx.respond(f"Your Nintendo Switch friend code is: SW-{fc}")
 
 @owner.command(name="emotes", description="Sets Emotes for use in Embeds (Custom emotes only)", default_permission=False)
 @permissions.is_owner()
@@ -363,10 +374,11 @@ async def cmdBattle(ctx, battlenum: Option(int, "Battle Number, 1 being latest, 
 	await nsoHandler.cmdBattles(ctx, battlenum)
 
 #TODO: NEEDS GUILD RESTRICTION - need to dynamically load the home server
-@owner.command(name='eval', description="Eval a code block (Owners only)", default_permission=False)
+@owner.command(name='eval2', description="Eval a code block (Owners only)", default_permission=False)
 @permissions.is_owner()
-async def cmdEval(ctx, code: Option(str, "The code block to eval", required=True)):
-	await ownerCmds.eval(ctx, code, slash=True)
+async def cmdEval(ctx):
+	await ctx.send_modal(ownercmds.evalModal(ownerCmds))
+	#await ownerCmds.eval(ctx, code, slash=True)
 
 @owner.command(name='nsojson', description="Get raw nso json")
 @permissions.is_owner()
@@ -795,6 +807,8 @@ client.add_application_command(acnh)
 
 if dev:
 	client.add_application_command(owner)
+
+##TODO: It may be possible to edit the actual application command order, walk the sub command, then register_commands(owner)?
 
 sys.stdout.flush()
 sys.stderr.flush()
