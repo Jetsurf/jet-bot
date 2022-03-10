@@ -105,13 +105,12 @@ async def cmdToken(ctx):
 
 @client.slash_command(name="fc", description="Shares your Nintendo Switch Friend Code (requires /token)")
 async def cmdFC(ctx):
-	test = await nsoTokens.getGameKeys(ctx.user.id)
-	print(f"Test: {test}")
 	fc = await nsoTokens.getGameKey(ctx.user.id, 'nso')
 	if fc != None:
 		fc = fc['fc']
 	else:
 		await ctx.respond("Stuff ain't happy chief")
+		return
 	await ctx.respond(f"Your Nintendo Switch friend code is: SW-{fc}")
 
 @owner.command(name="emotes", description="Sets Emotes for use in Embeds (Custom emotes only)", default_permission=False)
@@ -373,12 +372,10 @@ async def cmdBattle(ctx, battlenum: Option(int, "Battle Number, 1 being latest, 
 	await serverUtils.increment_cmd(ctx, 'battle')
 	await nsoHandler.cmdBattles(ctx, battlenum)
 
-#TODO: NEEDS GUILD RESTRICTION - need to dynamically load the home server
-@owner.command(name='eval2', description="Eval a code block (Owners only)", default_permission=False)
+@owner.command(name='eval', description="Eval a code block (Owners only)", default_permission=False)
 @permissions.is_owner()
 async def cmdEval(ctx):
 	await ctx.send_modal(ownercmds.evalModal(ownerCmds, title="Eval"))
-	#await ownerCmds.eval(ctx, code, slash=True)
 
 @owner.command(name='nsojson', description="Get raw nso json")
 @permissions.is_owner()
@@ -636,7 +633,6 @@ async def on_ready():
 		await mysqlHandler.startUp()
 		mysqlSchema = mysqlschema.MysqlSchema(mysqlHandler)
 		await mysqlSchema.update()
-		await nsoTokens.migrateTokensTable()
 
 		await nsoHandler.updateS2JSON()
 		await nsoTokens.updateAppVersion()

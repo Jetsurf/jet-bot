@@ -60,7 +60,7 @@ class tokenHandler(Modal):
 		self.add_item(InputText(label="Requested Link from Nintendo", style=discord.InputTextStyle.long, placeholder="npf71b963c1b7b6d119://"))
 		
 	async def callback(self, interaction: discord.Interaction):
-		session_token_code = re.search('session_token_code=(.*)&', self.children[0].value)
+		session_token_code = re.search('session_token_code=([^&]*)&', self.children[0].value)
 
 		if session_token_code is not None and await self.nsoTokens.postLogin(interaction, self.children[0].value, self.auth_code_verifier):
 			await interaction.response.send_message("Token Added, run /token again to remove them from me.", ephemeral=True)
@@ -78,42 +78,6 @@ class Nsotoken():
 		self.hostedUrl = hostedUrl
 		self.stringCrypt = stringCrypt
 		self.scheduler.add_job(self.updateAppVersion, 'cron', hour="3", minute='0', second='35', timezone='UTC')
-
-	async def migrateTokensTable(self):
-		cur = await self.sqlBroker.connect()
-		if not await self.sqlBroker.hasTable(cur, 'tokens_migrate'):
-			await self.sqlBroker.commit(cur)
-			return
-
-		print("Migrating 'tokens_migrate' table...")
-		await cur.execute("SELECT * FROM tokens_migrate")
-		colnames = self.sqlBroker.getColumnNames(cur)
-		oldrows = await cur.fetchall()
-		for oldrow in oldrows:
-			oldrow = self.sqlBroker.rowToDict(colnames, oldrow)
-			print(f"  Migrating record for clientid {oldrow['clientid']}...")
-
-			gamekeys = {}
-			gamekeys['s2'] = {}
-			gamekeys['s2']['iksm'] = oldrow['token']
-			gamekeys['ac'] = {}
-			gamekeys['ac']['gtoken'] = oldrow['gtoken']
-			gamekeys['ac']['park_session'] = oldrow['park_session']
-			gamekeys['ac']['ac_bearer'] = oldrow['ac_bearer']
-
-			newrow = {}
-			newrow['clientid'] = oldrow['clientid']
-			newrow['session_time'] = oldrow['session_time'] if oldrow['session_time'] else datetime.now()
-			newrow['session_token'] = self.stringCrypt.encryptString(oldrow['session_token']) if oldrow['session_token'] else None
-			newrow['game_keys_time'] = oldrow['iksm_time']
-			newrow['game_keys'] = self.stringCrypt.encryptString(json.dumps(gamekeys))
-
-			await cur.execute("REPLACE INTO tokens (clientid, session_time, session_token, game_keys_time, game_keys) VALUES (%s, %s, %s, %s, %s)",
-			(newrow['clientid'], newrow['session_time'], newrow['session_token'], newrow['game_keys_time'], newrow['game_keys'],))
-
-		print("Migration complete, removing 'tokens_migrate' table...")
-		await cur.execute("DROP TABLE tokens_migrate")
-		await self.sqlBroker.commit(cur)
 
 	async def getAppVersion(self):
 		cur = await self.sqlBroker.connect()
@@ -279,39 +243,42 @@ class Nsotoken():
 			#await ctx.send("Error in account url. Issue is logged, but you can report this in my support guild")
 			return False
 		session_token_code = await self.__get_session_token(session_token_code.group(0)[19:-1], auth_code_verifier)
-		fc = await self.__setup_nso(session_token_code, one_shot=True)
-		if session_token_code == None or fc == None:
+		if session_token_code == None:
 			#await ctx.send("Something went wrong! Make sure you are also using the latest link I gave you to sign in. If so, join my support discord and report that something broke!")
 			await self.sqlBroker.close(cur)
 			return
-		else:
-			print(f"FC: {fc}")
-			await self.__setGameKey(interaction.user.id, 'nso', fc)
+		else:			
 			ciphertext = self.stringCrypt.encryptString(session_token_code)
 			await cur.execute("INSERT INTO tokens (clientid, session_time, session_token) VALUES(%s, NOW(), %s)", (interaction.user.id, ciphertext, ))
 			if cur.lastrowid != None:
 				await self.sqlBroker.commit(cur)
-				return True
-				await interaction.response.send_message("Token added, NSO commands will now work! You shouldn't need to run this command again.")
+				#await interaction.response.send_message("Token added, NSO commands will now work! You shouldn't need to run this command again.")
+				if await self.doGameKeyRefresh(interaction, 'nso'):
+					return True
+				else:
+					return False
 				#TODO: GET ORDERING WORKING THROUGH THIS
 				#else:
 					#await ctx.send("Token added! Ordering...")
 			else:
 				await self.sqlBroker.rollback(cur)
 				return False
-				await interaction.response.send_message("Something went wrong! Join my support discord and report that something broke!")
+				#await interaction.response.send_message("Something went wrong! Join my support discord and report that something broke!")
 
 	#This method will always return the root key path for a game
 	async def doGameKeyRefresh(self, ctx, game='s2') -> Optional[dict]:
-		await ctx.defer()
+		if isinstance(ctx, discord.ApplicationContext):
+			await ctx.defer()
 		session_token = await self.__get_session_token_mysql(ctx.user.id)
 		keys = await self.__setup_nso(session_token, game)
 
 		if keys == 500:
-			await ctx.respond("Temporary issue with NSO logins. Please try again in a minute.")
+			if isinstance(ctx, discord.ApplicationContext):
+				await ctx.respond("Temporary issue with NSO logins. Please try again in a minute.")
 			return None
 		if keys == None:
-			await ctx.respond("Error getting token, I have logged this for my owners")
+			if isinstance(ctx, discord.ApplicationContext):
+				await ctx.respond("Error getting token, I have logged this for my owners")
 			return None
 
 		await self.__setGameKey(ctx.user.id, game, keys)
@@ -383,7 +350,7 @@ class Nsotoken():
 
 
 
-	async def __setup_nso(self, session_token, game='s2', one_shot=False):
+	async def __setup_nso(self, session_token, game='s2'):
 		nsoAppInfo = await self.getAppVersion()
 		if nsoAppInfo == None:
 			print("__setup_nso(): No known NSO app version")
@@ -470,14 +437,11 @@ class Nsotoken():
 			idToken = acnt_api["result"]["webApiServerCredential"]["accessToken"]
 			fc = acnt_api['result']['user']['links']['friendCode']['id']
 		except Exception as e:
-			print("YO! ORDER LIKELY EXPLODED. HERES THE JSON NINTENO SENT:")
-			print(str(acnt_api))
-			print("HERES THE EXCEPTION:")
-			print(str(e))
-			#Cross fingers this will shed light on this stupid bug
+			print(f"Account API Call failed. H: {str(acnt_api)}")
+			print(f"HERES THE EXCEPTION: {str(e)}")
 			return None
 
-		if one_shot:
+		if game == 'nso':
 			fc = acnt_api['result']['user']['links']['friendCode']['id']
 			print(f"Friend Code is: SW-{fc}")
 			return { 'fc' : fc }
@@ -567,7 +531,7 @@ class Nsotoken():
 						print("ERROR GETTING AC _PARK_SESSION/BEARER")
 						return None
 					else:
-						keys = { 'gtoken' : gtoken, 'park_session' : r.cookies['_park_session'], 'ac_bearer' : bearer['token'], 'fc' : fc }
+						keys = { 'gtoken' : gtoken, 'park_session' : r.cookies['_park_session'], 'ac_bearer' : bearer['token'] }
 						print("Got AC _park_session and bearer!")
 				else:
 					return None
@@ -579,6 +543,6 @@ class Nsotoken():
 				return None
 			else:
 				print("Got a S2 token!")
-				keys = { 'iksm' : r.cookies['iksm_session'], 'fc' : fc }
+				keys = { 'iksm' : r.cookies['iksm_session'] }
 
 		return keys
