@@ -409,7 +409,7 @@ class Nsotoken():
 		body = {}
 		body["parameter"] = parameter
 
-		r = requests.post("https://api-lp1.znc.srv.nintendo.net/v2/Account/Login", headers=head, json=body)
+		r = requests.post("https://api-lp1.znc.srv.nintendo.net/v3/Account/Login", headers=head, json=body)
 		splatoon_token = json.loads(r.text)
 		if r.status_code != 200:
 			print(f"NSO ERROR IN LOGIN {r.status_code} {r.reason}: {str(splatoon_token)}")
