@@ -1,4 +1,5 @@
 import discord, asyncio
+from discord.ui import *
 import mysqlhandler, nsotoken
 import time, requests
 import json, os
@@ -8,6 +9,31 @@ import messagecontext
 import io
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
+class orderView(discord.ui.View):
+	def __init__(self, nsohandler, nsotoken, user):
+		super().__init__()
+		self.nsoToken = nsotoken
+		self.nsoHandler = nsohandler
+		self.user = user
+		self.confirm = False
+
+	async def initView(self):
+		orderBut = discord.ui.Button(label="Order Item")
+		if await self.nsoToken.checkSessionPresent(self.user):
+			orderBut.callback = self.orderItem
+		else:
+			self.stop()
+			return None
+		self.add_item(orderBut)
+
+	async def orderItem(self, interaction: discord.Interaction):
+		if self.confirm:
+			await self.nsoHandler.orderGearCommand(interaction.response, order=5, override=True)
+			self.stop()
+		else:
+			await self.nsoHandler.orderGearCommand(interaction, order=5)
+			self.confirm=True
+
 class nsoHandler():
 	def __init__(self, client, mysqlHandler, nsotoken, splatInfo, hostedUrl):
 		self.client = client
@@ -16,7 +42,7 @@ class nsoHandler():
 		self.hostedUrl = hostedUrl
 		self.app_timezone_offset = str(int((time.mktime(time.gmtime()) - time.mktime(time.localtime()))/60))
 		self.scheduler = AsyncIOScheduler()
-		self.scheduler.add_job(self.doStoreDM, 'cron', hour="*/2", minute='5', timezone='UTC') 
+		self.scheduler.add_job(self.doStoreDM, 'cron', minute='*', timezone='UTC')#hour="*/2", minute='5', timezone='UTC') 
 		self.scheduler.add_job(self.updateS2JSON, 'cron', hour="*/2", minute='0', second='15', timezone='UTC')
 		self.scheduler.add_job(self.doFeed, 'cron', hour="*/2", minute='0', second='25', timezone='UTC')
 		self.scheduler.start()
@@ -410,16 +436,15 @@ class nsoHandler():
 		await ctx.respond(embed=embed)
 
 	async def handleDM(self, theMem, theGear):
-		def checkDM(m):
-			return m.author.id == theMem.id and m.guild == None
-
 		theSkill = theGear['skill']['name']
 		theType = theGear['gear']['name']
 		theBrand = theGear['gear']['brand']['name']
 
 		embed = self.makeGearEmbed(theGear, "Gear you wanted to be notified about has appeared in the shop!", "Respond with 'order' to order, or 'stop' to stop recieving notifications (within the next two hours)")
 		try:
-			await theMem.send(embed=embed)
+			view = orderView(self, self.nsotoken, theMem)
+			await view.initView()
+			await theMem.send(embed=embed, view=view)
 		except discord.Forbidden:
 			print(f"Forbidden from messaging user {str(theMem.id)}, removing from DMs")
 			cur = await self.sqlBroker.connect()
@@ -430,120 +455,6 @@ class nsoHandler():
 			return
 
 		print(f"Messaged {theMem.name}")
-
-		def check1(m):
-			return True if isinstance(m.channel, discord.channel.DMChannel) and m.author.name == theMem.name and not m.author.bot else False
-
-		# Discord.py changed timeouts to throw exceptions...
-		try:
-			resp = await self.client.wait_for('message', timeout=7100, check=check1)
-		except:
-			return
-
-		cur = await self.sqlBroker.connect()
-		if 'stop' in resp.content.lower():
-			stmt = "SELECT COUNT(*) FROM storedms WHERE (clientid = %s) AND ((ability = %s) OR (brand = %s) OR (gearname = %s))"
-			await cur.execute(stmt, (theMem.id, theSkill, theBrand, theType, ))
-			count = await cur.fetchone()
-			if count[0] > 1:
-				while True:
-					stmt = 'SELECT ability, brand, gearname FROM storedms WHERE (clientid = %s) AND ((ability = %s) OR (brand = %s) OR (gearname = %s))'
-					await cur.execute(stmt, (theMem.id, theSkill, theBrand, theType, ))
-					fields = await cur.fetchall()
-					abilFlag = False
-					branFlag = False
-					gearFlag = False
-					string = "You have multiple flags from this item to notify you on, which of the following would you like to remove? ("
-					for i in fields:
-						if i[0] != None:
-							abilFlag = True
-							string+=f"{theSkill}/"
-						if i[1] != None:
-							branFlag = True
-							string+=f"{theBrand}/"
-						if i[2] != None:
-							gearFlag = True
-							string+=f"{theType}/"
-
-					string+= "all/quit to stop removing DM triggers)"
-
-					await theMem.send(string)
-					try:
-						confirm = await self.client.wait_for('message', timeout=5, check=checkDM)
-					except:
-						await theMem.send("Didn't get a response from you on DM flags")
-						break
-					if confirm.content.lower() == theSkill.lower() and abilFlag:
-						stmt = 'DELETE FROM storedms WHERE (clientid = %s) AND (ability = %s)'
-						await cur.execute(stmt, (theMem.id, theSkill, ))
-						abilFlag = False
-						await theMem.send(f"Ok, removed you from being DM'ed when gear with ability {theSkill} appears in the shop!")
-					elif confirm.content.lower() == theBrand.lower() and branFlag:
-						stmt = 'DELETE FROM storedms WHERE (clientid = %s) AND (brand = %s)'
-						await cur.execute(stmt, (theMem.id, theBrand, ))
-						branFlag = False
-						await theMem.send(f"Ok, removed you from being DM'ed when gear by brand {theBrand} appears in the shop!")
-					elif confirm.content.lower() == theType.lower() and abilFlag:
-						stmt = 'DELETE FROM storedms WHERE (clientid = %s) AND (gearname = %s)'
-						await cur.execute(stmt, (theMem.id, theType, ))
-						await self.sqlBroker.commit(cur)
-						gearFlag = False
-						await theMem.send(f"Ok, removed you from being DM'ed when {theAbility} appears in the shop!")
-					elif confirm.content.lower() == 'all':
-						stmt = 'DELETE FROM storedms WHERE (clientid = %s) AND ((ability = %s) OR (brand = %s) OR (gearname = %s))'
-						await cur.execute(stmt, (theMem.id, theSkill, theBrand, theType, ))
-						await theMem.send("Ok removed you from all flags to be DM'ed on associated with this item")
-						break
-					elif confirm.content.lower() == 'quit':
-						await theMem.send("Ok, stopping removal of DM flags!")
-						break
-					else:
-						await theMem.send("Didn't understand that")
-
-					if not abilFlag and not branFlag and not gearFlag:
-						await theMem.send("Ok, no more flags on this item to DM you on!")
-						break
-				await self.sqlBroker.commit(cur)
-			else:
-				stmt = 'SELECT ability, brand, gearname FROM storedms WHERE (clientid = %s) AND ((ability = %s) OR (brand = %s) OR (gearname = %s))'
-				await cur.execute(stmt, (theMem.id, theSkill, theBrand, theType, ))
-				fields = await cur.fetchone()
-				if fields[0] != None:
-					await theMem.send(f"Ok, I won't DM you again when gear with ability {theSkill} appears in the shop.")
-				elif fields[1] != None:
-					await theMem.send(f"Ok, I won't DM you again when gear by {theBrand} appears in the shop.")
-				else:
-					await theMem.send(f"Ok, I won't DM you again when {theType} appears in the shop.")
-
-				stmt = 'DELETE FROM storedms WHERE (clientid = %s) AND ((ability = %s) OR (brand = %s) OR (gearname = %s))'
-
-				await cur.execute(stmt, (theMem.id, theSkill, theBrand, theType, ))
-				await self.sqlBroker.commit(cur)
-
-		elif 'order' in resp.content.lower():
-			await self.sqlBroker.close(cur)
-			context = messagecontext.MessageContext(resp)
-			print(f"Ordering gear for: {str(context.user.name)}")
-			await self.orderGearCommand(context, order=5, is_slash=False, override=True)
-		else:
-			#Response but nothing understood
-			print(f"Keeping {theMem.name} in DM's")
-			stmt = 'SELECT ability, brand, gearname FROM storedms WHERE (clientid = %s) AND ((ability = %s) OR (brand = %s) OR (gearname = %s))'
-			await cur.execute(stmt, (theMem.id, theSkill, theBrand, theType, ))
-			fields = await cur.fetchall()
-			await self.sqlBroker.close(cur)
-			string = "Didn't understand that. The item I notified you about will be on the store for another 10 hours. I'll DM you again when gear with "
-			for i in fields:
-				if i[0] != None:
-					string+=theSkill + ", "
-				if i[1] != None:
-					string+=theBrand + ", "
-				if i[2] != None:
-					string+=theType + ", "
-
-			string = "".join(string.rsplit(", ", 1)) + " appears in the shop"
-			string = " or ".join(string.rsplit(", ", 1))
-			await theMem.send(string)
 
 	async def doStoreDM(self):
 		cur = await self.sqlBroker.connect()
@@ -910,11 +821,7 @@ class nsoHandler():
 		embed.add_field(name="Directions", value=dirs, inline=False)
 		return embed
 
-	async def orderGearCommand(self, ctx, args=None, order=-1, override=False, is_slash=True):
-
-		def check(m):
-			return m.author == ctx.user and m.channel == ctx.channel
-
+	async def orderGearCommand(self, ctx, args=None, order=-1, override=False):
 		if not await self.nsotoken.checkSessionPresent(ctx) and order == -1:
 			await ctx.respond("You don't have a token setup with me! Please DM me !token with how to get one setup!")
 			return
@@ -929,6 +836,10 @@ class nsoHandler():
 
 		if order != -1:
 			merchid = self.storeJSON['merchandises'][order]['id']
+			if isinstance(ctx, discord.Interaction):
+				await self.orderGear(ctx, merchid, override=override, is_view=True)
+			else:
+				await self.orderGear(ctx, merchid, override=override)
 		elif args != None:
 			if len(args) == 0:
 				await ctx.respond("I need an item to order, please use 'ID to order' from `/store currentgear!`")
@@ -947,17 +858,12 @@ class nsoHandler():
 				return
 
 			merchid = match.get().merchid()
+			await self.orderGear(ctx, merchid, override=override)
 		else:
 			await ctx.respond("Order called improperly! Please report this to my support discord!")
 			return
 
-		await self.orderGear(ctx, merchid, override=override, is_slash=is_slash)
-
-	async def orderGear(self, ctx, merchid, override=False, is_slash=True):
-		# Filter for incoming messages, this is still using regular message objects
-		def messageCheck(m):
-			return (m.author.id == ctx.user.id) and (m.channel.id == ctx.channel.id)
-
+	async def orderGear(self, ctx, merchid, override=False, is_view=False, ir=None):
 		thejson = await self.getNSOJSON(ctx, self.app_head, "https://app.splatoon2.nintendo.net/api/timeline")
 		if thejson == None:
 			return
@@ -973,45 +879,36 @@ class nsoHandler():
 		gearToBuy = merches[0]
 		orderedFlag = thejson.get('ordered_info') != None
 
-		if not is_slash and not override:
-			embed = self.makeGearEmbed(gearToBuy, f"{ctx.user.name} - Order gear?", "Respond with 'yes' to place your order, 'no' to cancel")
-			await ctx.respond(embed=embed)
-			confirmation = await self.client.wait_for('message', check=messageCheck)
-			if not 'yes' in confirmation.content.lower():
-				await ctx.respond(f"{ctx.user.name} - order canceled")
-				return
-
 		if not orderedFlag:
-			if await self.postNSOStore(ctx, gearToBuy['id'], tmp_app_head_shop):
-				await ctx.respond(f"{ctx.user.name} - ordered!")
+			ret = await self.postNSOStore(ctx, gearToBuy['id'], tmp_app_head_shop)
+			if is_view:
+				if ret:
+					embed = self.makeGearEmbed(gearToBuy, f"{ctx.user.name} ordered!", "Go talk to Murch in game to get it!")
+					await ctx.followup(embed=embed)
+				else:
+					embed = self.makeGearEmbed(gearToBuy, f"{ctx.user.name}, failed to order", "You can try running this command again, but there is likely an issue with NSO")
+					await ctx.followup(embed=embed)
 			else:
-				await ctx.respond(f"{ctx.user.name} - failed to order")
+				if ret:
+					await ctx.respond(f"{ctx.user.name} - ordered!")
+				else:
+					await ctx.respond(f"{ctx.user.name} - failed to order")
 		else:
 			ordered = thejson['ordered_info']
-			if not override and is_slash:
+			if not override and is_view:
 				embed = self.makeGearEmbed(ordered, f"{ctx.user.name}, you already have an item on order!", "Run this command with override set to True to order")
 				await ctx.respond(embed=embed)
 				return
-			elif not is_slash:
-				embed = self.makeGearEmbed(ordered, f"{ctx.user.name}, you already have an item on order!", "Respond with 'yes' to replace your order, 'no' to cancel")
-				await ctx.respond(embed=embed)
 
-			if not is_slash:
-				confirmation = await self.client.wait_for('message', check=messageCheck)
-				if 'yes' in confirmation.content.lower():
-					if await self.postNSOStore(ctx, gearToBuy['id'], tmp_app_head_shop, override=True):
-						await ctx.respond(f"{ctx.user.name} - ordered!")
-					else:
-						await ctx.respond(f"{ctx.user.name} - failed to order")
-			elif is_slash and override: 
+			if is_view and override: 
 				if await self.postNSOStore(ctx, gearToBuy['id'], tmp_app_head_shop, override=True):
 					embed = self.makeGearEmbed(gearToBuy, f"{ctx.user.name} ordered!", "Go talk to Murch in game to get it!")
-					await ctx.respond(embed=embed)
+					await ctx.followup(embed=embed)
 				else:
 					embed = self.makeGearEmbed(gearToBuy, f"{ctx.user.name}, failed to order", "You can try running this command again, but there is likely an issue with NSO")
-					await ctx.respond(embed=embed)
+					await ctx.followup(embed=embed)
 			else:
-				await ctx.respond(f"{ctx.user.name} - something went wrong...")
+				await ctx.followup(content=f"{ctx.user.name} - something went wrong...")
 
 	async def postNSOStore(self, ctx, gid, app_head, override=False):
 		s2_token = await self.nsotoken.getGameKey(ctx.user.id, "s2.iksm")

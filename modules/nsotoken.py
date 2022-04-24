@@ -50,6 +50,8 @@ class tokenMenuView(discord.ui.View):
 		modal = tokenHandler(self.nsoTokens, self.auth_code_verifier, title="Nintendo NSO Token Setup")
 		await interaction.response.send_modal(modal=modal)
 		await modal.wait()
+		self.clear_items()
+		self.stop()
 
 class tokenHandler(Modal):
 	def __init__(self, nsoTokens,  auth_code_verifier, *args, **kwargs):
@@ -63,10 +65,10 @@ class tokenHandler(Modal):
 		session_token_code = re.search('session_token_code=([^&]*)&', self.children[0].value)
 
 		if session_token_code is not None and await self.nsoTokens.postLogin(interaction, self.children[0].value, self.auth_code_verifier):
-			await interaction.response.send_message("Token Added, run /token again to remove them from me.", ephemeral=True)
+			await interaction.response.send_message("Token Added, run /token again to remove them from me. You can dismiss the first message now.", ephemeral=True)
 			self.stop()
 		else:
-			await interaction.response.send_message("Token Failed to Add", ephemeral=True)
+			await interaction.response.send_message("Token Failed to Add. Rerun /token again, and you can dismiss the first message now.", ephemeral=True)
 			self.stop()						
 
 class Nsotoken():
@@ -177,7 +179,13 @@ class Nsotoken():
 
 	async def checkSessionPresent(self, ctx):
 		cur = await self.sqlBroker.connect()
-		ret = await self.__checkDuplicate(ctx.user.id, cur)
+		print(f"Class: {type(ctx)}")
+		if not isinstance(ctx, discord.Member):
+			print("Context call")
+			ret = await self.__checkDuplicate(ctx.user.id, cur)
+		else:
+			print("Interaction call")
+			ret = await self.__checkDuplicate(ctx.id, cur)
 		await self.sqlBroker.close(cur)
 		return ret
 
