@@ -775,8 +775,6 @@ async def on_message(message):
 		await ownerCmds.eval(context, args[0])
 	elif cmd == 'getcons' and message.author in owners:
 		await mysqlHandler.printCons(message)
-	elif cmd == 'storejson' and message.author in owners:
-		await nsoHandler.getStoreJSON(context)
 
 	sys.stdout.flush()
 	sys.stderr.flush()

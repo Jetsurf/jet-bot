@@ -28,10 +28,12 @@ class orderView(discord.ui.View):
 
 	async def orderItem(self, interaction: discord.Interaction):
 		if self.confirm:
-			await self.nsoHandler.orderGearCommand(interaction.response, order=5, override=True)
-			self.stop()
+			await self.nsoHandler.orderGearCommand(interaction, order=5, override=True, view=self)
+			if self.user != None:
+				self.clear_items()
+				self.stop()
 		else:
-			await self.nsoHandler.orderGearCommand(interaction, order=5)
+			await self.nsoHandler.orderGearCommand(interaction, order=5, view=self)
 			self.confirm=True
 
 class nsoHandler():
@@ -440,7 +442,7 @@ class nsoHandler():
 		theType = theGear['gear']['name']
 		theBrand = theGear['gear']['brand']['name']
 
-		embed = self.makeGearEmbed(theGear, "Gear you wanted to be notified about has appeared in the shop!", "Respond with 'order' to order, or 'stop' to stop recieving notifications (within the next two hours)")
+		embed = self.makeGearEmbed(theGear, "Gear you wanted to be notified about has appeared in the shop!", "You can order with the button below. If you don't see it, run /token.")
 		try:
 			view = orderView(self, self.nsotoken, theMem)
 			await view.initView()
@@ -482,10 +484,6 @@ class nsoHandler():
 				continue
 
 			asyncio.ensure_future(self.handleDM(theMem, theGear))
-
-	async def getStoreJSON(self, ctx):
-		theGear = self.storeJSON['merchandises'][5]
-		await ctx.respond(f"```{str(theGear)}```")
 
 	#While this certainly can mimic any user in the DB, this is only used for debugging JSON output from Nintendo
 	async def getNSOJSONRaw(self, ctx, args):
@@ -803,8 +801,11 @@ class nsoHandler():
 		embed.add_field(name="Clam Blitz", value=cbrank, inline=True)
 		await ctx.respond(embed=embed)
 
-	def makeGearEmbed(self, gear, title, dirs) -> discord.Embed:
-		embed = discord.Embed(colour=0xF9FC5F)
+	def makeGearEmbed(self, gear, title, dirs, colour=None) -> discord.Embed:
+		if colour != None:
+			embed = discord.Embed(colour=colour)
+		else:
+			embed = discord.Embed(colour=0xF9FC5F)
 		embed.title = title
 		embed.set_thumbnail(url=f"https://splatoon2.ink/assets/splatnet{gear['gear']['image']}")
 		embed.add_field(name="Brand", value=gear['gear']['brand']['name'], inline=True)
@@ -821,23 +822,16 @@ class nsoHandler():
 		embed.add_field(name="Directions", value=dirs, inline=False)
 		return embed
 
-	async def orderGearCommand(self, ctx, args=None, order=-1, override=False):
-		if not await self.nsotoken.checkSessionPresent(ctx) and order == -1:
-			await ctx.respond("You don't have a token setup with me! Please DM me !token with how to get one setup!")
+	async def orderGearCommand(self, ctx, args=None, order=-1, override=False, view=None):
+		if not await self.nsotoken.checkSessionPresent(ctx):
+			await ctx.respond("You don't have a token setup with me! Please run /token to get one setup!")
 			return
-		elif not await self.nsotoken.checkSessionPresent(ctx) and order != -1:
-			await ctx.respond("You don't have a token setup with me, would you like to set one up now? (Yes/No)")
-			resp = await self.client.wait_for('message', check=check)
-			if resp.content.lower() == "yes":
-				await self.nsotoken.login(ctx, flag=False)
-			else:
-				await ctx.respond("Ok! If you want to setup a token to order in the future, DM me !token")
-				return
 
+		#TODO: See if order flag can be removed, also check if order from ctx with int works
 		if order != -1:
 			merchid = self.storeJSON['merchandises'][order]['id']
 			if isinstance(ctx, discord.Interaction):
-				await self.orderGear(ctx, merchid, override=override, is_view=True)
+				await self.orderGear(ctx, merchid, override=override, view=view)
 			else:
 				await self.orderGear(ctx, merchid, override=override)
 		elif args != None:
@@ -863,7 +857,7 @@ class nsoHandler():
 			await ctx.respond("Order called improperly! Please report this to my support discord!")
 			return
 
-	async def orderGear(self, ctx, merchid, override=False, is_view=False, ir=None):
+	async def orderGear(self, ctx, merchid, override=False, view=None):
 		thejson = await self.getNSOJSON(ctx, self.app_head, "https://app.splatoon2.nintendo.net/api/timeline")
 		if thejson == None:
 			return
@@ -881,13 +875,13 @@ class nsoHandler():
 
 		if not orderedFlag:
 			ret = await self.postNSOStore(ctx, gearToBuy['id'], tmp_app_head_shop)
-			if is_view:
+			if view != None:
 				if ret:
 					embed = self.makeGearEmbed(gearToBuy, f"{ctx.user.name} ordered!", "Go talk to Murch in game to get it!")
-					await ctx.followup(embed=embed)
+					await ctx.response.send_message(embed=embed)
 				else:
 					embed = self.makeGearEmbed(gearToBuy, f"{ctx.user.name}, failed to order", "You can try running this command again, but there is likely an issue with NSO")
-					await ctx.followup(embed=embed)
+					await ctx.response.send_message(embed=embed)
 			else:
 				if ret:
 					await ctx.respond(f"{ctx.user.name} - ordered!")
@@ -895,20 +889,28 @@ class nsoHandler():
 					await ctx.respond(f"{ctx.user.name} - failed to order")
 		else:
 			ordered = thejson['ordered_info']
-			if not override and is_view:
-				embed = self.makeGearEmbed(ordered, f"{ctx.user.name}, you already have an item on order!", "Run this command with override set to True to order")
-				await ctx.respond(embed=embed)
-				return
-
-			if is_view and override: 
-				if await self.postNSOStore(ctx, gearToBuy['id'], tmp_app_head_shop, override=True):
-					embed = self.makeGearEmbed(gearToBuy, f"{ctx.user.name} ordered!", "Go talk to Murch in game to get it!")
-					await ctx.followup(embed=embed)
+			
+			if not override:
+				if view != None:
+					embed = self.makeGearEmbed(ordered, f"{ctx.user.name}, you already have an item on order!", "Hit order again to confirm.", colour=0xFF3399)
+					await ctx.response.send_message(embed=embed)
+					return
 				else:
-					embed = self.makeGearEmbed(gearToBuy, f"{ctx.user.name}, failed to order", "You can try running this command again, but there is likely an issue with NSO")
-					await ctx.followup(embed=embed)
+					embed = self.makeGearEmbed(ordered, f"{ctx.user.name}, you already have an item on order!", "Run this command with override set to True to order")
+					await ctx.respond(embed=embed)
 			else:
-				await ctx.followup(content=f"{ctx.user.name} - something went wrong...")
+				if await self.postNSOStore(ctx, gearToBuy['id'], tmp_app_head_shop, override=True):
+					embed = self.makeGearEmbed(gearToBuy, f"{ctx.user.name} ordered!", "Go talk to Murch in game to get it!", colour=0x33CC33)
+					if view != None:
+						await ctx.response.send_message(embed=embed)
+					else:
+						await ctx.respond(embed=embed)
+				else:
+					embed = self.makeGearEmbed(gearToBuy, f"{ctx.user.name}, failed to order", "You can try running this command again, but there is likely an issue with NSO", colour=0xFF0000)
+					if view != None:
+						await ctx.response.send_message(embed=embed)
+					else:
+						await ctx.respond(embed=embed)
 
 	async def postNSOStore(self, ctx, gid, app_head, override=False):
 		s2_token = await self.nsotoken.getGameKey(ctx.user.id, "s2.iksm")
