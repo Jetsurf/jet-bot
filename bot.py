@@ -84,14 +84,8 @@ def ensureEncryptionKey():
 		print("Creating new secret key file...")
 		stringCrypt.writeSecretKeyFile(keyPath)
 
-def is_owner():
-	global owners
-	async def predicate(ctx):
-		return ctx.author in owners
-	return commands.check(predicate)
-
 @owner.command(name="emotes", description="Sets Emotes for use in Embeds (Custom emotes only)", default_permission=False)
-@is_owner()
+@commands.is_owner()
 async def emotePicker(ctx, turfwar: Option(str, "Emote to use for turfwar"), ranked: Option(str, "Emote to use for ranked"), league: Option(str, "Emote to use for league"), badge100k: Option(str, "Emote to use for the 100k inked badge"),
 	badge500k: Option(str, "Emote to use for the 500k inked badge"), badge1m: Option(str, "Emote to use for the 1m inked badge"), badge10m: Option(str, "Emote to use for the 10m inked badge")):
 	
@@ -350,12 +344,12 @@ async def cmdBattle(ctx, battlenum: Option(int, "Battle Number, 1 being latest, 
 
 #TODO: NEEDS GUILD RESTRICTION - need to dynamically load the home server
 @owner.command(name='eval', description="Eval a code block (Owners only)", default_permission=False)
-@is_owner()
+@commands.is_owner()
 async def cmdEval(ctx, code: Option(str, "The code block to eval", required=True)):
 	await ownerCmds.eval(ctx, code, slash=True)
 
 @owner.command(name='nsojson', description="Get raw nso json")
-@is_owner()
+@commands.is_owner()
 async def cmdNSOJson(ctx, endpoint: Option(str, "Endpoint to get json from", choices=['base', 'battle', 'fullbattle', 'sr'], required=True), user: Option(str, "ID of a user to mimic", required=False), battleid: Option(str, "If endpoint is fullbattle, provide battleid to get", required=False)):
 	if ctx.user not in owners:
 		await ctx.respond("Not an owner", ephemeral=True)
