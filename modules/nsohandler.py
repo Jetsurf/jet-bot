@@ -16,6 +16,7 @@ class orderView(discord.ui.View):
 		self.nsoHandler = nsohandler
 		self.user = user
 		self.confirm = False
+		self.timeout = 6900.0
 
 	async def initView(self):
 		orderBut = discord.ui.Button(label="Order Item")
@@ -31,6 +32,7 @@ class orderView(discord.ui.View):
 			await self.nsoHandler.orderGearCommand(interaction, order=5, override=True, view=self)
 			if self.user != None:
 				self.clear_items()
+				await interaction.edit_
 				self.stop()
 		else:
 			await self.nsoHandler.orderGearCommand(interaction, order=5, view=self)
@@ -822,6 +824,7 @@ class nsoHandler():
 		embed.add_field(name="Directions", value=dirs, inline=False)
 		return embed
 
+	#TODO: Delete view arg?
 	async def orderGearCommand(self, ctx, args=None, order=-1, override=False, view=None):
 		if not await self.nsotoken.checkSessionPresent(ctx):
 			await ctx.respond("You don't have a token setup with me! Please run /token to get one setup!")
