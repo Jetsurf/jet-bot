@@ -1,9 +1,12 @@
+from mysql.connector import pooling
+from pynso.nso import NSO
 import os, sys, re
 sys.path.append('./modules')
 #Base Stuffs
 import discord, asyncio, subprocess, json, time, itertools
 from discord.commands import *
 from discord.ui import InputText, Modal
+from discord.ext import commands
 #DBL Posting
 import urllib, urllib.request, requests, pymysql
 #Our Classes
@@ -50,32 +53,30 @@ feed = admin.create_subgroup(name='feed', description='Admin commands related to
 announce = admin.create_subgroup(name='announcements', description='Admin commands related to developer annoucenments')
 play = voice.create_subgroup(name='play', description='Commands realted to playing audio')
 storedm = store.create_subgroup('dm', description="Commands related to DM'ing on store changes")
+nsoo = None
 
 def loadConfig():
-	global configData, helpfldr, mysqlHandler, dev, head
+	global configData, helpfldr, mysqlHandler, dev, head, nso
+	#try:
+	with open('./config/discordbot.json', 'r') as json_config:
+		configData = json.load(json_config)
+
 	try:
-		with open('./config/discordbot.json', 'r') as json_config:
-			configData = json.load(json_config)
+		head = { 'Authorization': configData['discordbottok'] }
+		configData['discordbottok'] = ""
+		dev = False
+	except:
+		print('No ID/Token for top.gg, skipping')
 
-		try:
-			head = { 'Authorization': configData['discordbottok'] }
-			configData['discordbottok'] = ""
-			dev = False
-		except:
-			print('No ID/Token for top.gg, skipping')
+	mysqlHandler = mysqlhandler.mysqlHandler(configData['mysql_host'], configData['mysql_user'], configData['mysql_pw'], configData['mysql_db'])
+	nsoo = NSO(db_host=configData['mysql_host'], db_name='pynso', db_user=configData['mysql_user'], db_pass=configData['mysql_pw'])
+	#Get the secrets the F out!
+	configData['mysql_host'] = ""
+	configData['mysql_user'] = ""
+	configData['mysql_pw'] = ""
+	configData['mysql_db'] = ""
 
-		mysqlHandler = mysqlhandler.mysqlHandler(configData['mysql_host'], configData['mysql_user'], configData['mysql_pw'], configData['mysql_db'])
-
-		#Get the secrets the F out!
-		configData['mysql_host'] = ""
-		configData['mysql_user'] = ""
-		configData['mysql_pw'] = ""
-		configData['mysql_db'] = ""
-
-		print('Config Loaded')
-	except Exception as e:
-		print(f"Failed to load config: {str(e)}")
-		quit(1)
+	print('Config Loaded')
 
 def ensureEncryptionKey():
 	global stringCrypt, keyPath
@@ -114,7 +115,8 @@ async def cmdFC(ctx):
 	await ctx.respond(f"Your Nintendo Switch friend code is: SW-{fc}")
 
 @owner.command(name="emotes", description="Sets Emotes for use in Embeds (Custom emotes only)", default_permission=False)
-@permissions.is_owner()
+#TODO: Revisit these owner only commands, likely want to remove this decorator and use the owners object to check in function
+@commands.is_owner()
 async def emotePicker(ctx, turfwar: Option(str, "Emote to use for turfwar"), ranked: Option(str, "Emote to use for ranked"), league: Option(str, "Emote to use for league"), badge100k: Option(str, "Emote to use for the 100k inked badge"),
 	badge500k: Option(str, "Emote to use for the 500k inked badge"), badge1m: Option(str, "Emote to use for the 1m inked badge"), badge10m: Option(str, "Emote to use for the 10m inked badge")):
 	
@@ -373,12 +375,12 @@ async def cmdBattle(ctx, battlenum: Option(int, "Battle Number, 1 being latest, 
 	await nsoHandler.cmdBattles(ctx, battlenum)
 
 @owner.command(name='eval', description="Eval a code block (Owners only)", default_permission=False)
-@permissions.is_owner()
+@commands.is_owner()
 async def cmdEval(ctx):
 	await ctx.send_modal(ownercmds.evalModal(ownerCmds, title="Eval"))
 
 @owner.command(name='nsojson', description="Get raw nso json")
-@permissions.is_owner()
+@commands.is_owner()
 async def cmdNSOJson(ctx, endpoint: Option(str, "Endpoint to get json from", choices=['base', 'battle', 'fullbattle', 'sr'], required=True), user: Option(str, "ID of a user to mimic", required=False), battleid: Option(str, "If endpoint is fullbattle, provide battleid to get", required=False)):
 	if ctx.user not in owners:
 		await ctx.respond("Not an owner", ephemeral=True)

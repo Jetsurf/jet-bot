@@ -1,3 +1,5 @@
+import pynso
+from pynso import s2_api
 import discord, asyncio
 from discord.ui import *
 import mysqlhandler, nsotoken
@@ -40,6 +42,7 @@ class orderView(discord.ui.View):
 
 class nsoHandler():
 	def __init__(self, client, mysqlHandler, nsotoken, splatInfo, hostedUrl):
+		self.nso = s2_api.Splatoon2()
 		self.client = client
 		self.splatInfo = splatInfo
 		self.sqlBroker = mysqlHandler
@@ -177,6 +180,7 @@ class nsoHandler():
 		return embed
 
 	async def updateS2JSON(self):
+		#TODO : Make user agent include all owners in this vs my hard coded ID
 		useragent = { 'User-Agent' : 'jet-bot/1.0 (discord:jetsurf#8514)' }
 		print("S2JSON CACHE: Updating...")
 		#Do store JSON update
@@ -542,7 +546,6 @@ class nsoHandler():
 		results_list = requests.get(url, headers=header, cookies=dict(iksm_session=iksm['iksm']))
 		thejson = json.loads(results_list.text)	
 
-
 		if 'AUTHENTICATION_ERROR' in str(thejson):
 			iksm = await self.nsotoken.doGameKeyRefresh(ctx)
 			if iksm == None:
@@ -671,9 +674,12 @@ class nsoHandler():
 		await ctx.respond(embed=embed)
 
 	async def getStats(self, ctx):
-		thejson = await self.getNSOJSON(ctx, self.app_head, "https://app.splatoon2.nintendo.net/api/records")
-		if thejson == None:
-			return
+		iksm = await self.nsotoken.getGameKey(ctx.user.id, "s2")
+		thejson = self.nso.get_player_records(iksm)
+
+		#thejson = await self.getNSOJSON(ctx, self.app_head, "https://app.splatoon2.nintendo.net/api/records")
+		#if thejson == None:
+			#return
 
 		embed = discord.Embed(colour=0x0004FF)
 		name = thejson['records']['player']['nickname']
