@@ -41,8 +41,8 @@ class orderView(discord.ui.View):
 			self.confirm=True
 
 class nsoHandler():
-	def __init__(self, client, mysqlHandler, nsotoken, splatInfo, hostedUrl):
-		self.nso = s2_api.Splatoon2()
+	def __init__(self, client, mysqlHandler, nsotoken, splatInfo, hostedUrl, pynso):
+		self.nso = pynso
 		self.client = client
 		self.splatInfo = splatInfo
 		self.sqlBroker = mysqlHandler
@@ -675,7 +675,8 @@ class nsoHandler():
 
 	async def getStats(self, ctx):
 		iksm = await self.nsotoken.getGameKey(ctx.user.id, "s2")
-		thejson = self.nso.get_player_records(iksm)
+		await ctx.defer()
+		thejson = self.nso.s2_api.get_player_records(ctx.user.id)
 
 		#thejson = await self.getNSOJSON(ctx, self.app_head, "https://app.splatoon2.nintendo.net/api/records")
 		#if thejson == None:

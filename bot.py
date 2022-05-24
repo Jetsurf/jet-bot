@@ -1,4 +1,3 @@
-from mysql.connector import pooling
 from pynso.nso import NSO
 import os, sys, re
 sys.path.append('./modules')
@@ -37,6 +36,7 @@ owners = []
 dev = True
 head = {}
 keyPath = './config/db-secret-key.hex'
+pynso = None
 
 #SubCommand Groups
 cmdGroups = {}
@@ -53,10 +53,9 @@ feed = admin.create_subgroup(name='feed', description='Admin commands related to
 announce = admin.create_subgroup(name='announcements', description='Admin commands related to developer annoucenments')
 play = voice.create_subgroup(name='play', description='Commands realted to playing audio')
 storedm = store.create_subgroup('dm', description="Commands related to DM'ing on store changes")
-nsoo = None
 
 def loadConfig():
-	global configData, helpfldr, mysqlHandler, dev, head, nso
+	global configData, helpfldr, mysqlHandler, dev, head, pynso
 	#try:
 	with open('./config/discordbot.json', 'r') as json_config:
 		configData = json.load(json_config)
@@ -69,7 +68,7 @@ def loadConfig():
 		print('No ID/Token for top.gg, skipping')
 
 	mysqlHandler = mysqlhandler.mysqlHandler(configData['mysql_host'], configData['mysql_user'], configData['mysql_pw'], configData['mysql_db'])
-	nsoo = NSO(db_host=configData['mysql_host'], db_name='pynso', db_user=configData['mysql_user'], db_pass=configData['mysql_pw'])
+	pynso = NSO(db_host=configData['mysql_host'], db_name='pynso', db_user=configData['mysql_user'], db_pass=configData['mysql_pw'], bot_mode=True)
 	#Get the secrets the F out!
 	configData['mysql_host'] = ""
 	configData['mysql_user'] = ""
@@ -585,7 +584,7 @@ async def checkIfAdmin(ctx):
 
 @client.event
 async def on_ready():
-	global client, mysqlHandler, serverUtils, serverVoices, splatInfo, configData, ownerCmds
+	global client, mysqlHandler, serverUtils, serverVoices, splatInfo, configData, ownerCmds, pynso
 	global nsoHandler, nsoTokens, head, dev, owners, commandParser, doneStartup, acHandler, stringCrypt
 
 	if not doneStartup:
@@ -630,7 +629,7 @@ async def on_ready():
 		ownerCmds = ownercmds.ownerCmds(client, mysqlHandler, commandParser, owners)
 		serverUtils = serverutils.serverUtils(client, mysqlHandler, serverConfig, configData['help'])
 		nsoTokens = nsotoken.Nsotoken(client, mysqlHandler, configData.get('hosted_url'), stringCrypt)
-		nsoHandler = nsohandler.nsoHandler(client, mysqlHandler, nsoTokens, splatInfo, configData.get('hosted_url'))
+		nsoHandler = nsohandler.nsoHandler(client, mysqlHandler, nsoTokens, splatInfo, configData.get('hosted_url'), pynso)
 		acHandler = achandler.acHandler(client, mysqlHandler, nsoTokens, configData)
 		await mysqlHandler.startUp()
 		mysqlSchema = mysqlschema.MysqlSchema(mysqlHandler)
