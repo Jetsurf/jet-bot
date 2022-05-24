@@ -1,4 +1,5 @@
-from pynso.nso import NSO
+from pynso.nso_api import NSO_API
+from pynso.imink import IMink
 import os, sys, re
 sys.path.append('./modules')
 #Base Stuffs
@@ -68,7 +69,7 @@ def loadConfig():
 		print('No ID/Token for top.gg, skipping')
 
 	mysqlHandler = mysqlhandler.mysqlHandler(configData['mysql_host'], configData['mysql_user'], configData['mysql_pw'], configData['mysql_db'])
-	pynso = NSO(db_host=configData['mysql_host'], db_name='pynso', db_user=configData['mysql_user'], db_pass=configData['mysql_pw'], bot_mode=True)
+
 	#Get the secrets the F out!
 	configData['mysql_host'] = ""
 	configData['mysql_user'] = ""

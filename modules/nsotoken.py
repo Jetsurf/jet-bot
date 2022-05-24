@@ -254,7 +254,7 @@ class Nsotoken():
 		if session_token_code == None:
 			#await ctx.send("Something went wrong! Make sure you are also using the latest link I gave you to sign in. If so, join my support discord and report that something broke!")
 			await self.sqlBroker.close(cur)
-			return
+			return False
 		else:			
 			ciphertext = self.stringCrypt.encryptString(session_token_code)
 			await cur.execute("INSERT INTO tokens (clientid, session_time, session_token) VALUES(%s, NOW(), %s)", (interaction.user.id, ciphertext, ))
@@ -277,7 +277,7 @@ class Nsotoken():
 	async def doGameKeyRefresh(self, ctx, game='s2') -> Optional[dict]:
 		if isinstance(ctx, discord.ApplicationContext):
 			await ctx.defer()
-		session_token = await self.__get_session_token_mysql(ctx.user.id)
+		session_token = await self.get_session_token_mysql(ctx.user.id)
 		keys = await self.__setup_nso(session_token, game)
 
 		if keys == 500:
@@ -292,7 +292,7 @@ class Nsotoken():
 		await self.__setGameKey(ctx.user.id, game, keys)
 		return keys
 
-	async def __get_session_token_mysql(self, userid) -> Optional[str]:
+	async def get_session_token_mysql(self, userid) -> Optional[str]:
 		cur = await self.sqlBroker.connect()
 		stmt = "SELECT session_token FROM tokens WHERE clientid = %s"
 		await cur.execute(stmt, (str(userid),))
@@ -335,6 +335,7 @@ class Nsotoken():
 	def __callImink(self, id_token, guid, timestamp, method):
 		api_app_head = {
 			'Content-Type': 'application/json; charset=utf-8',
+			#TODO: Make this user agent send bot owner, not my hardcoded id
 			'User-Agent' : 'Jet-bot/1.0.0 (discord=jetsurf#8514)'
 		}
 		api_app_body = {
@@ -355,8 +356,6 @@ class Nsotoken():
 			return None
 		else:
 			return json.loads(r.text)
-
-
 
 	async def __setup_nso(self, session_token, game='s2'):
 		nsoAppInfo = await self.getAppVersion()

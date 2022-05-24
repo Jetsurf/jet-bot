@@ -1,5 +1,7 @@
 import pynso
-from pynso import s2_api
+from pynso.nso_api import NSO_API
+from pynso.imink import IMink
+from pynso.nso_api_s2 import NSO_API_S2
 import discord, asyncio
 from discord.ui import *
 import mysqlhandler, nsotoken
@@ -43,6 +45,7 @@ class orderView(discord.ui.View):
 class nsoHandler():
 	def __init__(self, client, mysqlHandler, nsotoken, splatInfo, hostedUrl, pynso):
 		self.nso = pynso
+		self.nsoObjs = {}
 		self.client = client
 		self.splatInfo = splatInfo
 		self.sqlBroker = mysqlHandler
@@ -674,10 +677,17 @@ class nsoHandler():
 		await ctx.respond(embed=embed)
 
 	async def getStats(self, ctx):
-		iksm = await self.nsotoken.getGameKey(ctx.user.id, "s2")
+		session = await self.nsotoken.get_session_token_mysql(ctx.user.id)
 		await ctx.defer()
-		thejson = self.nso.s2_api.get_player_records(ctx.user.id)
+		if hash(ctx.user.id) not in self.nsoObjs:
+			imink = IMink()
+			app_version = "2.1.1"
 
+			nso = NSO_API(app_version, imink, 123, session)
+			self.nsoObjs[hash(ctx.user.id)] = nso
+			#nso.on_keys_update(handle_keys_update)
+
+		thejson = self.nsoObjs[hash(ctx.user.id)].s2.do_records_request()
 		#thejson = await self.getNSOJSON(ctx, self.app_head, "https://app.splatoon2.nintendo.net/api/records")
 		#if thejson == None:
 			#return
