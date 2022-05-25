@@ -630,7 +630,7 @@ async def on_ready():
 		ownerCmds = ownercmds.ownerCmds(client, mysqlHandler, commandParser, owners)
 		serverUtils = serverutils.serverUtils(client, mysqlHandler, serverConfig, configData['help'])
 		nsoTokens = nsotoken.Nsotoken(client, mysqlHandler, configData.get('hosted_url'), stringCrypt)
-		nsoHandler = nsohandler.nsoHandler(client, mysqlHandler, nsoTokens, splatInfo, configData.get('hosted_url'), pynso)
+		nsoHandler = nsohandler.nsoHandler(client, mysqlHandler, nsoTokens, splatInfo, configData.get('hosted_url'), pynso, stringCrypt)
 		acHandler = achandler.acHandler(client, mysqlHandler, nsoTokens, configData)
 		await mysqlHandler.startUp()
 		mysqlSchema = mysqlschema.MysqlSchema(mysqlHandler)

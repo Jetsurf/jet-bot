@@ -43,8 +43,9 @@ class orderView(discord.ui.View):
 			self.confirm=True
 
 class nsoHandler():
-	def __init__(self, client, mysqlHandler, nsotoken, splatInfo, hostedUrl, pynso):
+	def __init__(self, client, mysqlHandler, nsotoken, splatInfo, hostedUrl, pynso, stringcrypt):
 		self.nso = pynso
+		self.stringcrypt = stringcrypt
 		self.nso_clients = {}
 		self.client = client
 		self.imink = IMink("Jet-bot/1.0.0 (discord=jetsurf#8514)")  # TODO: Figure out bot owner automatically
@@ -106,6 +107,9 @@ class nsoHandler():
 		nsoAppInfo = await self.nsotoken.getAppVersion()
 		nso = NSO_API(nsoAppInfo['version'], self.imink, userid)
 
+		# Register callback for when keys change
+		nso.on_keys_update(self.nso_client_keys_updated)
+
 		session = await self.nsotoken.get_session_token_mysql(userid)
 		nso.set_session_token(session)
 
@@ -119,6 +123,29 @@ class nsoHandler():
 			if idle_seconds > (4 * 3600):
 				print(f"NSO client for {userid} not used for {int(idle_seconds)} seconds. Deleting.")
 				del self.nso_clients[userid]
+
+	# This is a callback which is called by pynso when a client object's
+	#  keys change.
+	# This callback is not async, so we use asyncio.create_task to call
+	#  an async method later that does the actual work.
+	def nso_client_keys_updated(self, nso, userid):
+		print(f"Time to save keys for user {userid}")
+		asyncio.create_task(self.nso_client_save_keys(userid))
+
+	async def nso_client_save_keys(self, userid):
+		if not self.nso_clients.get(userid):
+			return  # No client for this user
+
+		keys = self.nso_clients[userid].get_keys()
+		plaintext = json.dumps(keys)
+		ciphertext = self.stringcrypt.encryptString(plaintext)
+		#print(f"nso_client_save_keys: {plaintext} -> {ciphertext}")
+
+		cur = await self.sqlBroker.connect()
+		await cur.execute("DELETE FROM nso_client_keys WHERE (clientid = %s)", (userid,))
+		await cur.execute("INSERT INTO nso_client_keys (clientid, updatetime, jsonkeys) VALUES (%s, NOW(), %s)", (userid, ciphertext))
+		await self.sqlBroker.commit(cur)
+		return
 
 	async def doFeed(self):
 		cur = await self.sqlBroker.connect()
