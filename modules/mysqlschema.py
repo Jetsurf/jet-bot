@@ -130,6 +130,20 @@ class MysqlSchema():
 			)
 			await self.sqlBroker.c_commit(cur)
 
+		if not await self.sqlBroker.hasTable(cur, 'nso_client_keys'):
+			print("Creating table 'nso_client_keys'...")
+			await cur.execute(
+			"""
+			CREATE TABLE nso_client_keys (
+			clientid   BIGINT UNSIGNED NOT NULL,
+			updatetime DATETIME NOT NULL,
+			jsonkeys   TEXT NULL,
+			PRIMARY KEY(clientid)
+			) ENGINE=InnoDB
+			"""
+			)
+			await self.sqlBroker.c_commit(cur)
+
 		if not await self.sqlBroker.hasTable(cur, 'emotes'):
 			print("Creating table 'emotes'...")
 			await cur.execute(
