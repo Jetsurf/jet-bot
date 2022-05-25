@@ -107,11 +107,17 @@ class nsoHandler():
 		nsoAppInfo = await self.nsotoken.getAppVersion()
 		nso = NSO_API(nsoAppInfo['version'], self.imink, userid)
 
+		# If we have keys, load them into the client
+		keys = await self.nso_client_load_keys(userid)
+		if keys:
+			nso.set_keys(keys)
+		else:
+			# As a fallback, try to pull in token from old key store
+			session = await self.nsotoken.get_session_token_mysql(userid)
+			nso.set_session_token(session)
+
 		# Register callback for when keys change
 		nso.on_keys_update(self.nso_client_keys_updated)
-
-		session = await self.nsotoken.get_session_token_mysql(userid)
-		nso.set_session_token(session)
 
 		self.nso_clients[userid] = nso
 		return nso
@@ -146,6 +152,21 @@ class nsoHandler():
 		await cur.execute("INSERT INTO nso_client_keys (clientid, updatetime, jsonkeys) VALUES (%s, NOW(), %s)", (userid, ciphertext))
 		await self.sqlBroker.commit(cur)
 		return
+
+	async def nso_client_load_keys(self, userid):
+		cur = await self.sqlBroker.connect()
+		await cur.execute("SELECT jsonkeys FROM nso_client_keys WHERE (clientid = %s) LIMIT 1", (userid,))
+		row = await cur.fetchone()
+		await self.sqlBroker.commit(cur)
+
+		if (row == None) or (row[0] == None):
+			return None  # No keys
+
+		ciphertext = row[0]
+		plaintext = self.stringcrypt.decryptString(ciphertext)
+		#print(f"getGameKeys: {ciphertext} -> {plaintext}")
+		keys = json.loads(plaintext)
+		return keys
 
 	async def doFeed(self):
 		cur = await self.sqlBroker.connect()
