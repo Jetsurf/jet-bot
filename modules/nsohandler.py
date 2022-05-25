@@ -56,6 +56,7 @@ class nsoHandler():
 		self.scheduler.add_job(self.doStoreDM, 'cron', minute='*', timezone='UTC')#hour="*/2", minute='5', timezone='UTC') 
 		self.scheduler.add_job(self.updateS2JSON, 'cron', hour="*/2", minute='0', second='15', timezone='UTC')
 		self.scheduler.add_job(self.doFeed, 'cron', hour="*/2", minute='0', second='25', timezone='UTC')
+		self.scheduler.add_job(self.nso_client_cleanup, 'cron', minute='*', timezone='UTC')#hour="*/1", minute='10', timezone='UTC') 
 		self.scheduler.start()
 		self.mapJSON = None
 		self.storeJSON = None
@@ -110,6 +111,14 @@ class nsoHandler():
 
 		self.nso_clients[userid] = nso
 		return nso
+
+	async def nso_client_cleanup(self):
+		for userid in list(self.nso_clients):
+			client = self.nso_clients[userid]
+			idle_seconds = client.get_idle_seconds()
+			if idle_seconds > (4 * 3600):
+				print(f"NSO client for {userid} not used for {int(idle_seconds)} seconds. Deleting.")
+				del self.nso_clients[userid]
 
 	async def doFeed(self):
 		cur = await self.sqlBroker.connect()
