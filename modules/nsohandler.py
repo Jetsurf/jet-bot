@@ -45,8 +45,9 @@ class orderView(discord.ui.View):
 class nsoHandler():
 	def __init__(self, client, mysqlHandler, nsotoken, splatInfo, hostedUrl, pynso):
 		self.nso = pynso
-		self.nsoObjs = {}
+		self.nso_clients = {}
 		self.client = client
+		self.imink = IMink("Jet-bot/1.0.0 (discord=jetsurf#8514)")  # TODO: Figure out bot owner automatically
 		self.splatInfo = splatInfo
 		self.sqlBroker = mysqlHandler
 		self.hostedUrl = hostedUrl
@@ -93,6 +94,22 @@ class nsoHandler():
 			'Accept-Encoding': 'gzip, deflate',
 			'Accept-Language': 'en-us'
 		}
+
+	# Given a userid, returns an NSO client for that user.
+	async def get_nso_client(self, userid):
+		# If we already have a client for this user, just return it
+		if self.nso_clients.get(userid):
+			return self.nso_clients[userid]
+
+		# Construct a new one for this user
+		nsoAppInfo = await self.nsotoken.getAppVersion()
+		nso = NSO_API(nsoAppInfo['version'], self.imink, userid)
+
+		session = await self.nsotoken.get_session_token_mysql(userid)
+		nso.set_session_token(session)
+
+		self.nso_clients[userid] = nso
+		return nso
 
 	async def doFeed(self):
 		cur = await self.sqlBroker.connect()
@@ -677,20 +694,12 @@ class nsoHandler():
 		await ctx.respond(embed=embed)
 
 	async def getStats(self, ctx):
-		session = await self.nsotoken.get_session_token_mysql(ctx.user.id)
 		await ctx.defer()
-		if hash(ctx.user.id) not in self.nsoObjs:
-			imink = IMink()
-			app_version = "2.1.1"
 
-			nso = NSO_API(app_version, imink, 123, session)
-			self.nsoObjs[hash(ctx.user.id)] = nso
-			#nso.on_keys_update(handle_keys_update)
-
-		thejson = self.nsoObjs[hash(ctx.user.id)].s2.do_records_request()
-		#thejson = await self.getNSOJSON(ctx, self.app_head, "https://app.splatoon2.nintendo.net/api/records")
-		#if thejson == None:
-			#return
+		nso = await self.get_nso_client(ctx.user.id)
+		thejson = nso.s2.do_records_request()
+		if thejson == None:
+			return  # TODO: Error message?
 
 		embed = discord.Embed(colour=0x0004FF)
 		name = thejson['records']['player']['nickname']
