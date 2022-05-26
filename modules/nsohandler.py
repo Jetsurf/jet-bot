@@ -524,38 +524,25 @@ class nsoHandler():
 		return thejson
 
 	async def weaponParser(self, ctx, weapid):
-		thejson = await self.getNSOJSON(ctx, self.app_head, "https://app.splatoon2.nintendo.net/api/records")
-		if thejson == None:
+		await ctx.defer()
+
+		nso = await self.nsotoken.get_nso_client(ctx.user.id)
+		data = nso.s2.get_weapon_stats(weapid)
+		if data == None:
+			ctx.respond("No token...")
+			return  # TODO: Error message?
+
+		if data['weapon_data'] == None:
+			ctx.respond("I can't find any data on that weapon for you.")
 			return
-
-		try:
-			weapondata = thejson['records']['weapon_stats']
-		except:
-			await message.channel.send("Error while retrieving json for weapon stats, this has been logged with my owners.")
-			print(f"ERROR IN WEAPON JSON:\n{str(thejson)}")
-			return
-
-		theweapdata = None
-		gotweap = False
-		for i in weapondata:
-			if int(i) == weapid:
-				gotweap = True
-				theweapdata = weapondata[i]
-				break
-
-		if not gotweap:
-			await ctx.respond("I have no stats for that weapon for you")
-			return
-
-		name = thejson['records']['player']['nickname']
-		turfinked = theweapdata['total_paint_point']
-		turfstring = str(turfinked)
 		
 		cur = await self.sqlBroker.connect()
 		await cur.execute("SELECT badge100k, badge500k, badge1m, badge10m FROM emotes WHERE myid = %s", (self.client.user.id,))
 		emotes = await cur.fetchone()
 		await self.sqlBroker.commit(cur)
 
+		turfinked = data['weapon_data']['turf_inked']
+		turfstring = str(turfinked)
 		if turfinked >= 100000:
 			turfstring = f"{str(turfinked)}{emotes[0] if emotes != None else ''}"
 		if turfinked >= 500000:
@@ -564,22 +551,13 @@ class nsoHandler():
 			turfstring = f"{str(turfinked)}{emotes[2] if emotes != None else ''}"
 		if turfinked >= 9999999:
 			turfstring = f"{str(turfinked)}{emotes[3] if emotes != None else ''}"
-		wins = theweapdata['win_count']
-		loss = theweapdata['lose_count']
-		if (wins + loss) != 0:
-			winper = int(wins / (wins + loss) * 100)
-		else:
-			winper = 0
-
-		freshcur = theweapdata['win_meter']
-		freshmax = theweapdata['max_win_meter']
 
 		embed = discord.Embed(colour=0x0004FF)
-		embed.title = f"{str(name)}'s Stats for {theweapdata['weapon']['name']}"
-		embed.set_thumbnail(url=f"https://splatoon2.ink/assets/splatnet{theweapdata['weapon']['image']}")
-		embed.add_field(name="Wins/Losses/%", value=f"{str(wins)}/{str(loss)}/{str(winper)}%", inline=True)
+		embed.title = f"{str(data['player_name'])}'s Stats for {data['weapon_data']['name']}"
+		embed.set_thumbnail(url=f"https://splatoon2.ink/assets/splatnet{data['weapon_data']['image']}")
+		embed.add_field(name="Wins/Losses/%", value=f"{str(data['weapon_data']['wins'])}/{str(data['weapon_data']['losses'])}/{str(data['weapon_data']['percent'])}%", inline=True)
 		embed.add_field(name="Turf Inked", value=turfstring, inline=True)
-		embed.add_field(name="Freshness (Current/Max)", value=f"{str(freshcur)}/{str(freshmax)}", inline=True)
+		embed.add_field(name="Freshness (Current/Max)", value=f"{str(data['weapon_data']['freshness_current'])}/{str(data['weapon_data']['freshness_max'])}", inline=True)
 
 		await ctx.respond(embed=embed)
 
@@ -593,7 +571,7 @@ class nsoHandler():
 			return  # TODO: Error message?
 
 		embed = discord.Embed(colour=0x0004FF)
-		embed.title = f"{data['playername']}'s Stats for {data['mapname']} (Wins/Losses/%)"
+		embed.title = f"{data['player_name']}'s Stats for {data['map_name']} (Wins/Losses/%)"
 
 		embed.set_thumbnail(url=f"https://splatoon2.ink/assets/splatnet{data['image']}")
 		embed.add_field(name="Splat Zones", value=f"{str(data['SZ']['wins'])}/{str(data['SZ']['losses'])}/{str(data['SZ']['percent'])}%", inline=True)
