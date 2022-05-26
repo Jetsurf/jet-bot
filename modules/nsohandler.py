@@ -1,7 +1,4 @@
-import pynso
-from pynso.nso_api import NSO_API
-from pynso.imink import IMink
-from pynso.nso_api_s2 import NSO_API_S2
+
 import discord, asyncio
 from discord.ui import *
 import mysqlhandler, nsotoken
@@ -43,12 +40,8 @@ class orderView(discord.ui.View):
 			self.confirm=True
 
 class nsoHandler():
-	def __init__(self, client, mysqlHandler, nsotoken, splatInfo, hostedUrl, pynso, stringcrypt):
-		self.nso = pynso
-		self.stringcrypt = stringcrypt
-		self.nso_clients = {}
+	def __init__(self, client, mysqlHandler, nsotoken, splatInfo, hostedUrl):
 		self.client = client
-		self.imink = IMink("Jet-bot/1.0.0 (discord=jetsurf#8514)")  # TODO: Figure out bot owner automatically
 		self.splatInfo = splatInfo
 		self.sqlBroker = mysqlHandler
 		self.hostedUrl = hostedUrl
@@ -57,116 +50,11 @@ class nsoHandler():
 		self.scheduler.add_job(self.doStoreDM, 'cron', minute='*', timezone='UTC')#hour="*/2", minute='5', timezone='UTC') 
 		self.scheduler.add_job(self.updateS2JSON, 'cron', hour="*/2", minute='0', second='15', timezone='UTC')
 		self.scheduler.add_job(self.doFeed, 'cron', hour="*/2", minute='0', second='25', timezone='UTC')
-		self.scheduler.add_job(self.nso_client_cleanup, 'cron', minute='*', timezone='UTC')#hour="*/1", minute='10', timezone='UTC') 
 		self.scheduler.start()
 		self.mapJSON = None
 		self.storeJSON = None
 		self.srJSON= None
 		self.nsotoken = nsotoken
-		self.app_head = {
-			'Host': 'app.splatoon2.nintendo.net',
-			'x-unique-id': '8386546935489260343',
-			'x-requested-with': 'XMLHttpRequest',
-			'x-timezone-offset': self.app_timezone_offset,
-			'User-Agent': 'Mozilla/5.0 (Linux; Android 7.1.2; Pixel Build/NJH47D; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/59.0.3071.125 Mobile Safari/537.36',
-			'Accept': '*/*',
-			'Referer': 'https://app.splatoon2.nintendo.net/home',
-			'Accept-Encoding': 'gzip, deflate',
-			'Accept-Language': 'en-us'
-		}
-		self.app_head_shop = {
- 		   "origin": "https://app.splatoon2.nintendo.net",
-    		"x-unique-id": '16131049444609162796',
-    		"x-requested-with": "XMLHttpRequest",
-    		"x-timezone-offset": self.app_timezone_offset,
-    		"User-Agent": "Mozilla/5.0 (Linux; Android 7.1.2; Pixel Build/NJH47D; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/59.0.3071.125 Mobile Safari/537.36",
-    		"Accept": "*/*",
-    		"Referer": "https://app.splatoon2.nintendo.net/results",
-    		"Accept-Encoding": "gzip, deflate",
-    		"Accept-Language": "en-US"
-		}
-		self.app_head_coop = {
-			'Host': 'app.splatoon2.nintendo.net',
-			'x-unique-id': '8386546935489260343',
-			'x-requested-with': 'XMLHttpRequest',
-			'x-timezone-offset': self.app_timezone_offset,
-			'User-Agent': 'Mozilla/5.0 (Linux; Android 7.1.2; Pixel Build/NJH47D; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/59.0.3071.125 Mobile Safari/537.36',
-			'Accept': '*/*',
-			'Referer': 'https://app.splatoon2.nintendo.net/coop',
-			'Accept-Encoding': 'gzip, deflate',
-			'Accept-Language': 'en-us'
-		}
-
-	# Given a userid, returns an NSO client for that user.
-	async def get_nso_client(self, userid):
-		# If we already have a client for this user, just return it
-		if self.nso_clients.get(userid):
-			return self.nso_clients[userid]
-
-		# Construct a new one for this user
-		nsoAppInfo = await self.nsotoken.getAppVersion()
-		nso = NSO_API(nsoAppInfo['version'], self.imink, userid)
-
-		# If we have keys, load them into the client
-		keys = await self.nso_client_load_keys(userid)
-		if keys:
-			nso.set_keys(keys)
-		else:
-			# As a fallback, try to pull in token from old key store
-			session = await self.nsotoken.get_session_token_mysql(userid)
-			nso.set_session_token(session)
-
-		# Register callback for when keys change
-		nso.on_keys_update(self.nso_client_keys_updated)
-
-		self.nso_clients[userid] = nso
-		return nso
-
-	async def nso_client_cleanup(self):
-		for userid in list(self.nso_clients):
-			client = self.nso_clients[userid]
-			idle_seconds = client.get_idle_seconds()
-			if idle_seconds > (4 * 3600):
-				print(f"NSO client for {userid} not used for {int(idle_seconds)} seconds. Deleting.")
-				del self.nso_clients[userid]
-
-	# This is a callback which is called by pynso when a client object's
-	#  keys change.
-	# This callback is not async, so we use asyncio.create_task to call
-	#  an async method later that does the actual work.
-	def nso_client_keys_updated(self, nso, userid):
-		print(f"Time to save keys for user {userid}")
-		asyncio.create_task(self.nso_client_save_keys(userid))
-
-	async def nso_client_save_keys(self, userid):
-		if not self.nso_clients.get(userid):
-			return  # No client for this user
-
-		keys = self.nso_clients[userid].get_keys()
-		plaintext = json.dumps(keys)
-		ciphertext = self.stringcrypt.encryptString(plaintext)
-		#print(f"nso_client_save_keys: {plaintext} -> {ciphertext}")
-
-		cur = await self.sqlBroker.connect()
-		await cur.execute("DELETE FROM nso_client_keys WHERE (clientid = %s)", (userid,))
-		await cur.execute("INSERT INTO nso_client_keys (clientid, updatetime, jsonkeys) VALUES (%s, NOW(), %s)", (userid, ciphertext))
-		await self.sqlBroker.commit(cur)
-		return
-
-	async def nso_client_load_keys(self, userid):
-		cur = await self.sqlBroker.connect()
-		await cur.execute("SELECT jsonkeys FROM nso_client_keys WHERE (clientid = %s) LIMIT 1", (userid,))
-		row = await cur.fetchone()
-		await self.sqlBroker.commit(cur)
-
-		if (row == None) or (row[0] == None):
-			return None  # No keys
-
-		ciphertext = row[0]
-		plaintext = self.stringcrypt.decryptString(ciphertext)
-		#print(f"getGameKeys: {ciphertext} -> {plaintext}")
-		keys = json.loads(plaintext)
-		return keys
 
 	async def doFeed(self):
 		cur = await self.sqlBroker.connect()
@@ -696,66 +584,31 @@ class nsoHandler():
 		await ctx.respond(embed=embed)
 
 	async def mapParser(self, ctx, mapid):
-		thejson = await self.getNSOJSON(ctx, self.app_head, "https://app.splatoon2.nintendo.net/api/records")
-		if thejson == None:
-			return
+		await ctx.defer()
 
-		try:
-			allmapdata = thejson['records']['stage_stats']
-		except:
-			await ctx.respond("Error retrieving json for stage_stats. This has been logged for my owners.")
-			print(f"ERROR IN MAP JSON:\n{str(thejson)}")
-			return
+		nso = await self.nsotoken.get_nso_client(ctx.user.id)
+		data = nso.s2.get_map_stats(mapid)
+		if data == None:
+			ctx.respond("No token...")
+			return  # TODO: Error message?
 
-		themapdata = None
-		for i in allmapdata:
-			if int(i) == mapid:
-				themapdata = allmapdata[i]
-				break
-
-		name = thejson['records']['player']['nickname']
 		embed = discord.Embed(colour=0x0004FF)
-		embed.title = f"{str(name)}'s Stats for {themapdata['stage']['name']} (Wins/Losses/%)"
+		embed.title = f"{data['playername']}'s Stats for {data['mapname']} (Wins/Losses/%)"
 
-		rmwin = themapdata['hoko_win']
-		rmloss = themapdata['hoko_lose']
-		szwin = themapdata['area_win']
-		szloss = themapdata['area_lose']
-		tcwin = themapdata['yagura_win']
-		tcloss = themapdata['yagura_lose']
-		cbwin = themapdata['asari_win']
-		cbloss = themapdata['asari_lose']
-
-		if (rmwin + rmloss) != 0:
-			rmpercent = int(rmwin / (rmwin + rmloss) * 100)
-		else:
-			rmpercent = 0
-		if (szwin + szloss) != 0:
-			szpercent = int(szwin / (szwin + szloss) * 100)
-		else:
-			szpercent = 0
-		if (tcwin + tcloss) != 0:
-			tcpercent = int(tcwin / (tcwin + tcloss) * 100)
-		else:
-			tcpercent = 0
-		if (cbwin + cbloss) != 0:
-			cbpercent = int(cbwin / (cbwin + cbloss) * 100)
-		else:
-			cbpercent = 0
-
-		embed.set_thumbnail(url=f"https://splatoon2.ink/assets/splatnet{themapdata['stage']['image']}")
-		embed.add_field(name="Splat Zones", value=f"{str(szwin)}/{str(szloss)}/{str(szpercent)}%", inline=True)
-		embed.add_field(name="Rainmaker", value=f"{str(rmwin)}/{str(rmloss)}/{str(rmpercent)}%", inline=True)
-		embed.add_field(name="Tower Control", value=f"{str(tcwin)}/{str(tcloss)}/{str(tcpercent)}%", inline=True)
-		embed.add_field(name="Clam Blitz", value=f"{str(cbwin)}/{str(cbloss)}/{str(cbpercent)}%", inline=True)
+		embed.set_thumbnail(url=f"https://splatoon2.ink/assets/splatnet{data['image']}")
+		embed.add_field(name="Splat Zones", value=f"{str(data['SZ']['wins'])}/{str(data['SZ']['losses'])}/{str(data['SZ']['percent'])}%", inline=True)
+		embed.add_field(name="Rainmaker", value=f"{str(data['RM']['wins'])}/{str(data['RM']['losses'])}/{str(data['RM']['percent'])}%", inline=True)
+		embed.add_field(name="Tower Control", value=f"{str(data['TC']['wins'])}/{str(data['TC']['losses'])}/{str(data['TC']['percent'])}%", inline=True)
+		embed.add_field(name="Clam Blitz", value=f"{str(data['CB']['wins'])}/{str(data['CB']['losses'])}/{str(data['CB']['percent'])}%", inline=True)
 		await ctx.respond(embed=embed)
 
 	async def getStats(self, ctx):
 		await ctx.defer()
 
-		nso = await self.get_nso_client(ctx.user.id)
+		nso = await self.nsotoken.get_nso_client(ctx.user.id)
 		thejson = nso.s2.do_records_request()
 		if thejson == None:
+			ctx.respond("No token...")
 			return  # TODO: Error message?
 
 		embed = discord.Embed(colour=0x0004FF)
@@ -857,33 +710,20 @@ class nsoHandler():
 		await ctx.respond(embed=embed)
 
 	async def getRanks(self, ctx):
-		thejson = await self.getNSOJSON(ctx, self.app_head, "https://app.splatoon2.nintendo.net/api/records")
-		if thejson == None:
-			return
+		await ctx.defer()
 
-		name = thejson['records']['player']['nickname']
-		szrank = thejson['records']['player']['udemae_zones']['name']
-		if szrank == "S+":
-			szrank += str(thejson['records']['player']['udemae_zones']['s_plus_number'])
-
-		rmrank = thejson['records']['player']['udemae_rainmaker']['name']
-		if rmrank == "S+":
-			rmrank += str(thejson['records']['player']['udemae_rainmaker']['s_plus_number'])
-
-		tcrank = thejson['records']['player']['udemae_tower']['name']
-		if tcrank == "S+":
-			tcrank += str(thejson['records']['player']['udemae_tower']['s_plus_number'])
-
-		cbrank = thejson['records']['player']['udemae_clam']['name']
-		if cbrank == "S+":
-			cbrank += str(thejson['records']['player']['udemae_clam']['s_plus_number'])
+		nso = await self.nsotoken.get_nso_client(ctx.user.id)
+		ranks = nso.s2.get_ranks()
+		if ranks == None:
+			ctx.respond("No token...")
+			return  # TODO: Error message?
 
 		embed = discord.Embed(colour=0xFF7800)
-		embed.title = name + "'s Ranks"
-		embed.add_field(name="Splat Zones", value=szrank, inline=True)
-		embed.add_field(name="Tower Control", value=tcrank, inline=True)
-		embed.add_field(name="Rainmaker", value=rmrank, inline=True)
-		embed.add_field(name="Clam Blitz", value=cbrank, inline=True)
+		embed.title = f"{ranks['name']}'s Ranks"
+		embed.add_field(name="Splat Zones", value=ranks['SZ'], inline=True)
+		embed.add_field(name="Tower Control", value=ranks['TC'], inline=True)
+		embed.add_field(name="Rainmaker", value=ranks['RM'], inline=True)
+		embed.add_field(name="Clam Blitz", value=ranks['CB'], inline=True)
 		await ctx.respond(embed=embed)
 
 	def makeGearEmbed(self, gear, title, dirs, colour=None) -> discord.Embed:
@@ -950,7 +790,7 @@ class nsoHandler():
 
 		tmp_app_head_shop = self.app_head_shop
 		tmp_app_head_shop['x-unique-id'] = thejson['unique_id']
-
+		print("Test " + thejson['unique_id'] )
 		thejson = await self.getNSOJSON(ctx, self.app_head, "https://app.splatoon2.nintendo.net/api/onlineshop/merchandises")
 		merches = list(filter(lambda g: g['id'] == merchid, thejson['merchandises']))
 		if len(merches) == 0:
