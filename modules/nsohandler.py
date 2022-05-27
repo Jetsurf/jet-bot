@@ -637,53 +637,28 @@ class nsoHandler():
 		await ctx.respond(embed=embed)
 
 	async def getSRStats(self, ctx):
-		thejson = await self.getNSOJSON(ctx, self.app_head_coop, "https://app.splatoon2.nintendo.net/api/coop_results")
-		if thejson == None:
-			return
+		await ctx.defer()
 
-		name = thejson['results'][0]['my_result']['name']	
-		jobresults = thejson['results']
-		jobcard = thejson['summary']['card']
-		rank = thejson['summary']['stats'][0]['grade']['name']
-		points = thejson['summary']['stats'][0]['grade_point']
+		nso = await self.nsotoken.get_nso_client(ctx.user.id)
+		srdata = nso.s2.get_sr_stats()
+		if srdata == None:
+			ctx.respond("No token...")
+			return  # TODO: Error message?
+
+
+		#print(str(srdata))
 		embed = discord.Embed(colour=0xFF9B00)
-		embed.title = f"{name} - {rank} {str(points)} - Salmon Run Stats"
+		embed.title = f"{srdata['player_name']} - {srdata['rank_name']} {str(srdata['rank_points'])} - Salmon Run Stats"
 
-		embed.add_field(name="Overall Stats", value=f"Shifts Worked: {str(jobcard['job_num'])}\nTeammates Rescued: {str(jobcard['help_total'])}\nGolden Eggs Collected: {str(jobcard['golden_ikura_total'])}\nPower Eggs Collected: {str(jobcard['ikura_total'])}\nTotal Points: {str(jobcard['kuma_point_total'])}", inline=True)
+		embed.add_field(name="Overall Stats", value=f"Shifts Worked: {str(srdata['overall_stats']['matches_total'])}\nTeammates Rescued: {str(srdata['overall_stats']['help_total'])}\nGolden Eggs Collected: {str(srdata['overall_stats']['golden_eggs_total'])}\nPower Eggs Collected: {str(srdata['overall_stats']['power_eggs_total'])}\nTotal Points: {str(srdata['overall_stats']['points_total'])}", inline=True)
+		embed.add_field(name=f"Avgerage Stats (Last {str(srdata['recent_stats']['matches_total'])} Games)", value=f"Teammates Rescued: {str(srdata['recent_stats']['help_average'])}\nTimes Died: {str(srdata['recent_stats']['deaths_average'])}\nGolden Eggs: {str(srdata['recent_stats']['golden_eggs_average'])}\nPower Eggs: {str(srdata['recent_stats']['power_eggs_average'])} \nHazard Level: {str(srdata['recent_stats']['hazard_average'])}%", inline=True)
+		embed.add_field(name=f"Total Stats (Last {str(srdata['recent_stats']['matches_total'])} Games)", value=f"Teammates Rescued: {str(srdata['recent_stats']['help_total'])}\nTimes Died: {str(srdata['recent_stats']['deaths_total'])}\nGolden Eggs: {str(srdata['recent_stats']['golden_eggs_total'])}\nPower Eggs: {str(srdata['recent_stats']['power_eggs_total'])}", inline=True)
 
-		sheadcnt, stingcnt, flyfshcnt, seelcnt, scrapcnt, mawscnt, drizcnt, deathcnt, rescnt, matches, hazardpts, geggs, peggs = 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-		for i in jobresults:
-			matches += 1
-			deathcnt += i['my_result']['dead_count']
-			rescnt += i['my_result']['help_count']
-			hazardpts += i['danger_rate']
-			geggs += i['my_result']['golden_ikura_num']
-			peggs += i['my_result']['ikura_num']
-			for j in i['my_result']['boss_kill_counts']:
-				y = i['my_result']['boss_kill_counts'][j]
-				if 'Steelhead' in y['boss']['name']:
-					sheadcnt += y['count']
-				if 'Stinger' in y['boss']['name']:
-					stingcnt += y['count']
-				if 'Flyfish' in y['boss']['name']:
-					flyfshcnt += y['count']
-				if 'Steel Eel' in y['boss']['name']:
-					seelcnt += y['count']
-				if 'Scrapper' in y['boss']['name']:
-					scrapcnt += y['count']
-				if 'Maws' in y['boss']['name']:
-					mawscnt += y['count']
-				if 'Drizzler' in y['boss']['name']:
-					drizcnt += y['count']
+		killstring = ""
+		for k, v in srdata['boss_stats'].items():
+			killstring += f"{k}: {v}\n"
 
-		hazardavg = int(hazardpts / matches)
-		geggsavg = int(geggs / matches)
-		peggsavg = int(peggs / matches)
-		deathsavg = int(deathcnt / matches)
-		resavg = int(rescnt / matches)
-		embed.add_field(name=f"Avgerage Stats (Last {str(matches)} Games)", value=f"Teammates Rescued: {str(resavg)}\nTimes Died: {str(deathsavg)}\nGolden Eggs: {str(geggsavg)}\nPower Eggs: {str(peggsavg)} \nHazard Level: {str(hazardavg)}%", inline=True)
-		embed.add_field(name=f"Total Stats (Last {str(matches)} Games)", value=f"Teammates Rescued: {str(rescnt)}\nTimes Died: {str(deathcnt)}\nGolden Eggs: {str(geggs)}\nPower Eggs: {str(peggs)}", inline=True)
-		embed.add_field(name=f"Boss Kill Counts (Last {str(matches)} games)", value=f"Steelhead: {str(sheadcnt)}\nStinger: {str(stingcnt)}\nFlyfish: {str(flyfshcnt)}\nSteel Eel: {str(seelcnt)}\nScrapper: {str(scrapcnt)}\nMaws: {str(mawscnt)}\nDrizzler: {str(drizcnt)}", inline=True)
+		embed.add_field(name=f"Boss Kill Counts (Last {str(srdata['recent_stats']['matches_total'])} games)", value=killstring, inline=True)
 
 		await ctx.respond(embed=embed)
 
