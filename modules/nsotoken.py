@@ -18,20 +18,20 @@ from typing import Optional
 class tokenMenuView(discord.ui.View):
 	def __init__(self, nsotoken, hostedurl):
 		super().__init__()
-		self.nsoTokens = nsotoken
+		self.nsotoken = nsotoken
 		self.hostedurl = hostedurl
 
 	async def init(self, ctx):
 		self.ctx = ctx
-		self.isDupe = await self.nsoTokens.checkSessionPresent(ctx)
+		self.nso = await self.nsotoken.get_nso_client(ctx.user.id)
+		self.isDupe = True if self.nso.session_token != None else False
 		cancel = discord.ui.Button(label="Close", style=discord.ButtonStyle.red)
 		cancel.callback = self.cancelButton
 		self.add_item(cancel)
 
 		if not self.isDupe:
-			login = self.nsoTokens.loginUrl()
-			self.auth_code_verifier = login['auth_code_verifier']
-			self.add_item(discord.ui.Button(label="Sign In Link", url=login['url']))
+			login = self.nso.get_login_challenge_url()
+			self.add_item(discord.ui.Button(label="Sign In Link", url=login))
 			urlBut = discord.ui.Button(label="Submit URL")
 			urlBut.callback = self.sendModal
 			self.add_item(urlBut)
@@ -41,7 +41,7 @@ class tokenMenuView(discord.ui.View):
 			self.add_item(delbut)
 
 	async def deleteTokens(self, interaction: discord.Interaction):
-		if await self.nsoTokens.deleteTokens(interaction):
+		if await self.nsotoken.deleteTokens(interaction):
 			await interaction.response.edit_message(content='Tokens Deleted. To set them up again, run /token again.', embed=None, view=None)
 		else:
 			await interaction.response.edit_message(content='Tokens failed to delete, try again shortly or join my support guild.')
@@ -53,29 +53,26 @@ class tokenMenuView(discord.ui.View):
 
 	async def sendModal(self, interaction: discord.Interaction):
 		self.disabled = True
-		modal = tokenHandler(self.nsoTokens, self.auth_code_verifier, title="Nintendo NSO Token Setup")
+		modal = tokenHandler(self.nso, title="Nintendo NSO Token Setup")
 		await interaction.response.send_modal(modal=modal)
 		await modal.wait()
 		self.clear_items()
 		self.stop()
 
 class tokenHandler(Modal):
-	def __init__(self, nsoTokens,  auth_code_verifier, *args, **kwargs):
-		self.nsoTokens = nsoTokens
-		self.auth_code_verifier = auth_code_verifier
-		super().__init__(*args, **kwargs)
+	def __init__(self, nso, *args, **kwargs):
+		self.nso = nso
 		self.title="Nintendo NSO Token Setup"
+		super().__init__(*args, **kwargs)
 		self.add_item(InputText(label="Requested Link from Nintendo", style=discord.InputTextStyle.long, placeholder="npf71b963c1b7b6d119://"))
 		
 	async def callback(self, interaction: discord.Interaction):
-		session_token_code = re.search('session_token_code=([^&]*)&', self.children[0].value)
-
-		if session_token_code is not None and await self.nsoTokens.postLogin(interaction, self.children[0].value, self.auth_code_verifier):
+		if self.nso.complete_login_challenge(self.children[0].value):
 			await interaction.response.send_message("Token Added, run /token again to remove them from me. You can dismiss the first message now.", ephemeral=True)
 			self.stop()
 		else:
 			await interaction.response.send_message("Token Failed to Add. Rerun /token again, and you can dismiss the first message now.", ephemeral=True)
-			self.stop()						
+			self.stop()
 
 class Nsotoken():
 	def __init__(self, client, mysqlhandler, hostedUrl, stringCrypt):
@@ -104,10 +101,6 @@ class Nsotoken():
 		keys = await self.nso_client_load_keys(userid)
 		if keys:
 			nso.set_keys(keys)
-		elif await self.checkSessionPresent(userid):
-			# As a fallback, try to pull in token from old key store
-			session = await self.get_session_token_mysql(userid)
-			nso.set_session_token(session)
 
 		# Register callback for when keys change
 		nso.on_keys_update(self.nso_client_keys_updated)
@@ -239,7 +232,7 @@ class Nsotoken():
 	async def deleteTokens(self, interaction):
 		cur = await self.sqlBroker.connect()
 		print("Deleting token")
-		stmt = "DELETE FROM tokens WHERE clientid = %s"
+		stmt = "DELETE FROM nso_client_keys WHERE (clientid = %s)"
 		input = (interaction.user.id,)
 		await cur.execute(stmt, input)
 		if cur.lastrowid != None:

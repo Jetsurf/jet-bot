@@ -1,4 +1,3 @@
-
 import discord, asyncio
 from discord.ui import *
 import mysqlhandler, nsotoken
@@ -645,8 +644,6 @@ class nsoHandler():
 			ctx.respond("No token...")
 			return  # TODO: Error message?
 
-
-		#print(str(srdata))
 		embed = discord.Embed(colour=0xFF9B00)
 		embed.title = f"{srdata['player_name']} - {srdata['rank_name']} {str(srdata['rank_points'])} - Salmon Run Stats"
 
@@ -702,9 +699,13 @@ class nsoHandler():
 
 	#TODO: Delete view arg?
 	async def orderGearCommand(self, ctx, args=None, order=-1, override=False, view=None):
-		if not await self.nsotoken.checkSessionPresent(ctx):
-			await ctx.respond("You don't have a token setup with me! Please run /token to get one setup!")
-			return
+		await ctx.defer()
+
+		nso = await self.nsotoken.get_nso_client(ctx.user.id)
+		
+		if not nso.ensure_api_tokens():
+			ctx.respond("No token...")
+			return  # TODO: Error message?
 
 		#TODO: See if order flag can be removed, also check if order from ctx with int works
 		if order != -1:
@@ -731,7 +732,9 @@ class nsoHandler():
 				return
 
 			merchid = match.get().merchid()
-			await self.orderGear(ctx, merchid, override=override)
+			ret = nso.s2.post_store_purchase(merchid, override)
+			print(str(ret))
+			await ctx.respond("I did something... check console")
 		else:
 			await ctx.respond("Order called improperly! Please report this to my support discord!")
 			return
