@@ -37,7 +37,6 @@ owners = []
 dev = True
 head = {}
 keyPath = './config/db-secret-key.hex'
-pynso = None
 
 #SubCommand Groups
 cmdGroups = {}
@@ -145,7 +144,7 @@ async def cmdStoreDMAbilty(ctx, flag: Option(str, "ABILITY/BRAND/GEAR to DM you 
 		await ctx.respond("Can't DM me with this command.")
 		return
 	await serverUtils.increment_cmd(ctx, 'storedm')
-	await nsoHandler.addStoreDM(ctx, [ str(flag) ], True)
+	await nsoHandler.addStoreDM(ctx, [ str(flag) ])
 
 @storedm.command(name='list', description='Shows you everything you are set to recieve a DM for')
 async def cmdStoreDMAbilty(ctx):

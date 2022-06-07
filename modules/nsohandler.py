@@ -159,7 +159,7 @@ class nsoHandler():
 		response = urllib.request.urlopen(req)
 		self.srJSON = json.loads(response.read().decode())
 
-	async def addStoreDM(self, ctx, args, is_slash=False):
+	async def addStoreDM(self, ctx, args):
 		if len(args) == 0:
 			await ctx.respond("I need an item/brand/ability to search for!")
 			return
@@ -233,22 +233,6 @@ class nsoHandler():
 
 			await self.sqlBroker.close(cur)
 			return
-		else:
-			if not is_slash:
-				def check2(m):
-					return m.author == ctx.user and m.channel == ctx.channel
-
-				if match1.isValid():
-					await ctx.respond(f"{ctx.user.name} do you want me to DM you when gear with ability {term} appears in the shop? (Respond Yes/No)")
-				elif match2.isValid():
-					await ctx.respond(f"{ctx.user.name} do you want me to DM you when gear by brand {term} appears in the shop? (Respond Yes/No)")
-				else:
-					await ctx.respond(f"{ctx.user.name} do you want me to DM you when {term} appears in the shop? (Respond Yes/No)")
-
-				resp = await self.client.wait_for('message', check=check2)
-				if 'yes' not in resp.content.lower():
-					await ctx.respond("Ok, I haven't added you to receive a DM.")
-					return
 
 		stmt = "SELECT COUNT(*) FROM storedms WHERE clientid = %s"
 		await cur.execute(stmt, (str(ctx.user.id),))
