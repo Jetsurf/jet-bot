@@ -210,7 +210,7 @@ class Nsotoken():
 		return keys
 
 	async def __checkDuplicate(self, id, cur):
-		await cur.execute("SELECT COUNT(*) FROM tokens WHERE clientid = %s", (str(id),))
+		await cur.execute("SELECT COUNT(*) FROM nso_client_keys WHERE clientid = %s", (str(id),))
 		count = await cur.fetchone()
 		if count[0] > 0:
 			return True

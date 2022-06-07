@@ -32,7 +32,6 @@ class orderView(discord.ui.View):
 			await self.nsoHandler.orderGearCommand(interaction, order=5, override=True, view=self)
 			if self.user != None:
 				self.clear_items()
-				await interaction.edit_
 				self.stop()
 		else:
 			await self.nsoHandler.orderGearCommand(interaction, order=5, view=self)
@@ -455,73 +454,6 @@ class nsoHandler():
 
 			asyncio.ensure_future(self.handleDM(theMem, theGear))
 
-	#While this certainly can mimic any user in the DB, this is only used for debugging JSON output from Nintendo
-	async def getNSOJSONRaw(self, ctx, args):
-		if args.get('user') != None:
-			print(f"ID: {args.get('user')}")
-			iksm = await self.nsotoken.getGameKey(int(args.get('user')), "s2")
-		else:
-			iksm = await self.nsotoken.getGameKey(ctx.user.id, "s2")
-
-		if iksm.get('iksm') == None:
-			await ctx.repsond("Sorry, can't find iksm", ephemeral=True)
-			return
-
-		if args['endpoint'] == 'base':
-			url = "https://app.splatoon2.nintendo.net/api/records"
-			header = self.app_head
-		elif args['endpoint'] == 'sr':
-			url = "https://app.splatoon2.nintendo.net/api/coop_results"
-			header = self.app_head_coop
-		elif args['endpoint'] == 'fullbattle':
-			if args['battleid'] == None:
-				await ctx.respond("Battleid required when endpoint is fullbattle", ephemeral=True)
-				return
-
-			url = f"https://app.splatoon2.nintendo.net/api/results/{args['battleid']}"
-			header = self.app_head
-		elif args['endpoint'] == 'battle':
-			url = "https://app.splatoon2.nintendo.net/api/results"
-			header = self.app_head
-
-		results_list = requests.get(url, headers=header, cookies=dict(iksm_session=iksm['iksm']))
-		thejson = json.loads(results_list.text)	
-
-		if 'AUTHENTICATION_ERROR' in str(thejson):
-			iksm = await self.nsotoken.doGameKeyRefresh(ctx)
-			results_list = requests.get(url, headers=header, cookies=dict(iksm_session=iksm['iksm']))
-			thejson = json.loads(results_list.text)
-
-		f = io.StringIO(results_list.text)
-		jsonToSend = discord.File(fp=f, filename = 'data.json')
-		await ctx.respond(file=jsonToSend, ephemeral=True)
-
-	async def getNSOJSON(self, ctx, header, url):
-		if not await self.nsotoken.checkSessionPresent(ctx):
-			await ctx.respond("You don't have a token setup with me! Please DM me !token with how to get one setup!")
-			return
-
-		iksm = await self.nsotoken.getGameKey(ctx.user.id, "s2")
-		if iksm == None:
-			iksm = await self.nsotoken.doGameKeyRefresh(ctx)
-			if iksm == None:
-				return None
-
-		results_list = requests.get(url, headers=header, cookies=dict(iksm_session=iksm['iksm']))
-		thejson = json.loads(results_list.text)	
-
-		if 'AUTHENTICATION_ERROR' in str(thejson):
-			iksm = await self.nsotoken.doGameKeyRefresh(ctx)
-			if iksm == None:
-				return None
-
-			results_list = requests.get(url, headers=header, cookies=dict(iksm_session=iksm['iksm']))
-			thejson = json.loads(results_list.text)
-			if 'AUTHENTICATION_ERROR' in str(thejson):
-				return None
-
-		return thejson
-
 	async def weaponParser(self, ctx, weapid):
 		await ctx.defer()
 
@@ -699,7 +631,8 @@ class nsoHandler():
 
 	#TODO: Delete view arg?
 	async def orderGearCommand(self, ctx, args=None, order=-1, override=False, view=None):
-		await ctx.defer()
+		if view == None:
+			await ctx.defer()
 
 		nso = await self.nsotoken.get_nso_client(ctx.user.id)
 		
@@ -711,9 +644,16 @@ class nsoHandler():
 		if order != -1:
 			merchid = self.storeJSON['merchandises'][order]['id']
 			if isinstance(ctx, discord.Interaction):
-				await self.orderGear(ctx, merchid, override=override, view=view)
+				ret = nso.s2.post_store_purchase(merchid, override)
+				print(f"ORDER RET: {str(ret)}")
+				#await self.orderGear(ctx, merchid, override=override, view=view)
+				await ctx.response.send_message("I did something... check console")
+				#View response is view.response.send_message()
 			else:
-				await self.orderGear(ctx, merchid, override=override)
+				ret = nso.s2.post_store_purchase(merchid, override)
+				print(f"ORDER CMD RET: {ret}")
+				await ctx.respond("I did something... check console")
+				#await self.orderGear(ctx, merchid, override=override)
 		elif args != None:
 			if len(args) == 0:
 				await ctx.respond("I need an item to order, please use 'ID to order' from `/store currentgear!`")
@@ -738,73 +678,6 @@ class nsoHandler():
 		else:
 			await ctx.respond("Order called improperly! Please report this to my support discord!")
 			return
-
-	async def orderGear(self, ctx, merchid, override=False, view=None):
-		thejson = await self.getNSOJSON(ctx, self.app_head, "https://app.splatoon2.nintendo.net/api/timeline")
-		if thejson == None:
-			return
-
-		tmp_app_head_shop = self.app_head_shop
-		tmp_app_head_shop['x-unique-id'] = thejson['unique_id']
-		print("Test " + thejson['unique_id'] )
-		thejson = await self.getNSOJSON(ctx, self.app_head, "https://app.splatoon2.nintendo.net/api/onlineshop/merchandises")
-		merches = list(filter(lambda g: g['id'] == merchid, thejson['merchandises']))
-		if len(merches) == 0:
-			await ctx.respond("Can't find that merch in the store!")
-			return
-		gearToBuy = merches[0]
-		orderedFlag = thejson.get('ordered_info') != None
-
-		if not orderedFlag:
-			ret = await self.postNSOStore(ctx, gearToBuy['id'], tmp_app_head_shop)
-			if view != None:
-				if ret:
-					embed = self.makeGearEmbed(gearToBuy, f"{ctx.user.name} ordered!", "Go talk to Murch in game to get it!")
-					await ctx.response.send_message(embed=embed)
-				else:
-					embed = self.makeGearEmbed(gearToBuy, f"{ctx.user.name}, failed to order", "You can try running this command again, but there is likely an issue with NSO")
-					await ctx.response.send_message(embed=embed)
-			else:
-				if ret:
-					await ctx.respond(f"{ctx.user.name} - ordered!")
-				else:
-					await ctx.respond(f"{ctx.user.name} - failed to order")
-		else:
-			ordered = thejson['ordered_info']
-			
-			if not override:
-				if view != None:
-					embed = self.makeGearEmbed(ordered, f"{ctx.user.name}, you already have an item on order!", "Hit order again to confirm.", colour=0xFF3399)
-					await ctx.response.send_message(embed=embed)
-					return
-				else:
-					embed = self.makeGearEmbed(ordered, f"{ctx.user.name}, you already have an item on order!", "Run this command with override set to True to order")
-					await ctx.respond(embed=embed)
-			else:
-				if await self.postNSOStore(ctx, gearToBuy['id'], tmp_app_head_shop, override=True):
-					embed = self.makeGearEmbed(gearToBuy, f"{ctx.user.name} ordered!", "Go talk to Murch in game to get it!", colour=0x33CC33)
-					if view != None:
-						await ctx.response.send_message(embed=embed)
-					else:
-						await ctx.respond(embed=embed)
-				else:
-					embed = self.makeGearEmbed(gearToBuy, f"{ctx.user.name}, failed to order", "You can try running this command again, but there is likely an issue with NSO", colour=0xFF0000)
-					if view != None:
-						await ctx.response.send_message(embed=embed)
-					else:
-						await ctx.respond(embed=embed)
-
-	async def postNSOStore(self, ctx, gid, app_head, override=False):
-		s2_token = await self.nsotoken.getGameKey(ctx.user.id, "s2.iksm")
-		url = f"https://app.splatoon2.nintendo.net/api/onlineshop/order/{gid}"
-		if override:
-			payload = { "override" : 1 }
-			response = requests.post(url, headers=app_head, cookies=dict(iksm_session=s2_token), data=payload)
-		else:
-			response = requests.post(url, headers=app_head, cookies=dict(iksm_session=s2_token))
-		resp = json.loads(response.text)
-
-		return response.status_code == 200
 
 	async def gearParser(self, ctx=None, flag=0):
 		theTime = int(time.time())
@@ -1006,19 +879,23 @@ class nsoHandler():
 		return srdata
 
 	async def battleParser(self, ctx, num=1):
-		recordjson = await self.getNSOJSON(ctx, self.app_head, "https://app.splatoon2.nintendo.net/api/records")
+		await ctx.defer()
+
+		nso = await self.nsotoken.get_nso_client(ctx.user.id)
+		recordjson = nso.s2.do_records_request()
 		if recordjson == None:
-			return
+			ctx.respond("No token...")
+			return  # TODO: Error message?
 
 		embed = discord.Embed(colour=0x0004FF)
-		battlejson = await self.getNSOJSON(ctx, self.app_head, "https://app.splatoon2.nintendo.net/api/results")
+		battlejson = nso.s2.get_all_battles()
 
 		accountname = recordjson['records']['player']['nickname']
 		thebattle = battlejson['results'][num - 1]
 		battletype = thebattle['game_mode']['name']
 		battleid = thebattle['battle_number']
 
-		fullbattle = await self.getNSOJSON(ctx, self.app_head, f"https://app.splatoon2.nintendo.net/api/results/{battleid}")
+		fullbattle = nso.s2.get_full_battle(battleid)
 		enemyteam = fullbattle['other_team_members']
 		myteam = fullbattle['my_team_members']
 		mystats = fullbattle['player_result']
