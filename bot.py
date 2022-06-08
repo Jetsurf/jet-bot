@@ -56,26 +56,29 @@ storedm = store.create_subgroup('dm', description="Commands related to DM'ing on
 
 def loadConfig():
 	global configData, helpfldr, mysqlHandler, dev, head, pynso
-	#try:
-	with open('./config/discordbot.json', 'r') as json_config:
-		configData = json.load(json_config)
-
 	try:
-		head = { 'Authorization': configData['discordbottok'] }
-		configData['discordbottok'] = ""
-		dev = False
-	except:
-		print('No ID/Token for top.gg, skipping')
+		with open('./config/discordbot.json', 'r') as json_config:
+			configData = json.load(json_config)
 
-	mysqlHandler = mysqlhandler.mysqlHandler(configData['mysql_host'], configData['mysql_user'], configData['mysql_pw'], configData['mysql_db'])
+		try:
+			head = { 'Authorization': configData['discordbottok'] }
+			configData['discordbottok'] = ""
+			dev = False
+		except:
+			print('No ID/Token for top.gg, skipping')
 
-	#Get the secrets the F out!
-	configData['mysql_host'] = ""
-	configData['mysql_user'] = ""
-	configData['mysql_pw'] = ""
-	configData['mysql_db'] = ""
+		mysqlHandler = mysqlhandler.mysqlHandler(configData['mysql_host'], configData['mysql_user'], configData['mysql_pw'], configData['mysql_db'])
 
-	print('Config Loaded')
+		#Get the secrets the F out!
+		configData['mysql_host'] = ""
+		configData['mysql_user'] = ""
+		configData['mysql_pw'] = ""
+		configData['mysql_db'] = ""
+
+		print('Config Loaded')
+	except Exception as e:
+		print(f"Failed to load config: {str(e)}")
+		quit(1)
 
 def ensureEncryptionKey():
 	global stringCrypt, keyPath
