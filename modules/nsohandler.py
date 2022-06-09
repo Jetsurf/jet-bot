@@ -29,12 +29,12 @@ class orderView(discord.ui.View):
 
 	async def orderItem(self, interaction: discord.Interaction):
 		if self.confirm:
-			await self.nsoHandler.orderGearCommand(interaction, order=5, override=True, view=self)
+			await self.nsoHandler.orderGearCommand(interaction, args=['5'], override=True)
 			if self.user != None:
 				self.clear_items()
 				self.stop()
 		else:
-			await self.nsoHandler.orderGearCommand(interaction, order=5, view=self)
+			await self.nsoHandler.orderGearCommand(interaction, args=['5'])
 			self.confirm=True
 
 class nsoHandler():
@@ -614,30 +614,16 @@ class nsoHandler():
 		return embed
 
 	#TODO: Delete view arg?
-	async def orderGearCommand(self, ctx, args=None, order=-1, override=False, view=None):
+	async def orderGearCommand(self, ctx, args=None, override=False):
 		if view == None:
 			await ctx.defer()
 
 		nso = await self.nsotoken.get_nso_client(ctx.user.id)
 		
 		if not nso.ensure_api_tokens():
+			#The error check for being called by view is not needed, only shows button if tokens are present
 			ctx.respond("No token...")
 			return  # TODO: Error message?
-
-		#TODO: See if order flag can be removed, also check if order from ctx with int works
-		if order != -1:
-			merchid = self.storeJSON['merchandises'][order]['id']
-			if isinstance(ctx, discord.Interaction):
-				ret = nso.s2.post_store_purchase(merchid, override)
-				print(f"ORDER RET: {str(ret)}")
-				#await self.orderGear(ctx, merchid, override=override, view=view)
-				await ctx.response.send_message("I did something... check console")
-				#View response is view.response.send_message()
-			else:
-				ret = nso.s2.post_store_purchase(merchid, override)
-				print(f"ORDER CMD RET: {ret}")
-				await ctx.respond("I did something... check console")
-				#await self.orderGear(ctx, merchid, override=override)
 		elif args != None:
 			if len(args) == 0:
 				await ctx.respond("I need an item to order, please use 'ID to order' from `/store currentgear!`")
@@ -657,8 +643,20 @@ class nsoHandler():
 
 			merchid = match.get().merchid()
 			ret = nso.s2.post_store_purchase(merchid, override)
-			print(str(ret))
-			await ctx.respond("I did something... check console")
+			if isinstance(ctx, discord.Interaction):
+				if ret == None:
+					await ctx.response.send_message("Something went horribly horribly wrong, you should fix that")
+				elif 'code' in ret:
+					await ctx.response.send_message("You have something on order dingus")
+				else:
+					await ctx.response.send_message("Success?!")
+			else:
+				if ret == None:
+					await ctx.respond("Something went horribly horribly wrong, you should fix that")
+				elif 'code' in ret:
+					await ctx.respond("You have something on order dingus")
+				else:
+					await ctx.respond("Success?!")
 		else:
 			await ctx.respond("Order called improperly! Please report this to my support discord!")
 			return
