@@ -20,7 +20,8 @@ class orderView(discord.ui.View):
 
 	async def initView(self):
 		orderBut = discord.ui.Button(label="Order Item")
-		if await self.nsoToken.checkSessionPresent(self.user):
+		nso = await self.nsoToken.get_nso_client(self.user.id)
+		if nso != None:
 			orderBut.callback = self.orderItem
 		else:
 			self.stop()
@@ -598,6 +599,7 @@ class nsoHandler():
 		else:
 			embed = discord.Embed(colour=0xF9FC5F)
 		embed.title = title
+		print(f"TESTING: GEAR {gear}")
 		embed.set_thumbnail(url=f"https://splatoon2.ink/assets/splatnet{gear['gear']['image']}")
 		embed.add_field(name="Brand", value=gear['gear']['brand']['name'], inline=True)
 		embed.add_field(name="Name", value=gear['gear']['name'], inline=True)
@@ -641,6 +643,7 @@ class nsoHandler():
 				await ctx.respond(match.errorMessage("Try command `/store currentgear` for a list."))
 				return
 
+			
 			merchid = match.get().merchid()
 			ret = nso.s2.post_store_purchase(merchid, override)
 			if isinstance(ctx, discord.Interaction):
@@ -649,9 +652,10 @@ class nsoHandler():
 					await ctx.response.send_message("Something went horribly horribly wrong, you should fix that")
 					return
 				elif 'code' in ret:
-					embed = self.makeGearEmbed(ret, f"{ctx.user.name}, you already have an item on order!", "Hit 'Order Item' again to confirm the order.")
+					merch = nso.s2.get_store_json()
+					embed = self.makeGearEmbed(merch['ordered_info'], f"{ctx.user.name}, you already have an item on order!", "Hit 'Order Item' again to confirm the order.")
 				else:
-					embed = self.makeGearEmbed(ret, f"{ctx.user.name} - Ordered!", "Go talk to Murch in game to get it!")
+					embed = self.makeGearEmbed(ret['ordered_info'], f"{ctx.user.name} - Ordered!", "Go talk to Murch in game to get it!")
 
 				await ctx.response.send_message(embed=embed)
 			else:
