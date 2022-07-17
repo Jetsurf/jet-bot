@@ -2,6 +2,7 @@ from bs4 import BeautifulSoup
 import requests
 import re
 
+# TODO: This is an ugly hack. Look into using: https://github.com/JoMingyu/google-play-scraper
 class GooglePlay():
 	def getAppVersion(self, packageName):
 		params = {'id': packageName, 'hl' : 'en_US'}
@@ -11,22 +12,18 @@ class GooglePlay():
 			print(f"getAppVersion(): Retrieving '{response.url}' got status code {response.status_code}")
 			return None
 
-		soup = BeautifulSoup(response.text, 'html5lib')
-		label = soup.find(self.filterVersionLabelElement)
-		if label == None:
-			print(f"getAppVersion(): Cannot find version label")
-			return None
+		return self.getAppVersionFromHtml(response.text)
 
-		version = label.find_next_sibling().string
-		if version == None:
-			print(f"getAppVersion(): Cannot find version string")
-			return None
+	def getAppVersionFromHtml(self, html):
+		soup = BeautifulSoup(html, 'html5lib')
+		scripts = soup.find_all(self.filterScriptElement)
 
-		if not re.fullmatch(r'^[0-9]+([.][0-9]+)*', version):
-			print(f"getAppVersion(): Rejecting strange-looking version string '{version}'")
-			return None
+		for s in scripts:
+			match = re.search(r'\[\[\["([0-9]+([.][0-9]+)*)"', s.string)
+			if match:
+				return match[1]
 
-		return version
+		return None
 
-	def filterVersionLabelElement(self, tag):
-		return (tag.name == 'div') and (tag.string == "Current Version")
+	def filterScriptElement(self, tag):
+		return (tag.name == 'script') and (tag.string != None) and ("AF_initDataCallback" in tag.string)
