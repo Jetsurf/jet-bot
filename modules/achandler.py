@@ -55,3 +55,43 @@ class acHandler():
 
 		await ctx.respond(embed=embed)
 		print("Got a passport!")
+
+	async def ac_emote(self, ctx, emote):
+		await ctx.defer()
+
+		nso = await self.nsotoken.get_nso_client(ctx.user.id)
+		resp = nso.acnh.send_emote(emote)
+		if resp == None:
+			await ctx.respond("No token...")
+			return
+		else:
+			await ctx.respond(f"Stuff happened? Here's resp: ```{resp}```")
+			return
+
+	async def get_ac_emotes(self, ctx):
+		await ctx.defer()
+
+		nso = await self.nsotoken.get_nso_client(ctx.user.id)
+		resp = nso.acnh.get_emotes()
+		if resp == None:
+			await ctx.respond("No token...")
+			return
+		else:
+			emotes={}
+			for emote in resp['emoticons']:
+				emote.pop('url')
+
+			await ctx.respond(f"Stuff happened? Here's resp: ```{resp}```")
+			return
+
+	async def ac_message(self, ctx, msg):
+		await ctx.defer()
+
+		nso = await self.nsotoken.get_nso_client(ctx.user.id)
+		resp = nso.acnh.send_message(msg)
+		if resp == None:
+			await ctx.respond("No token...")
+			return
+		else:
+			await ctx.respond(f"Stuff happened? Here's resp: ```{resp}```")
+			return

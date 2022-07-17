@@ -645,18 +645,25 @@ class nsoHandler():
 			ret = nso.s2.post_store_purchase(merchid, override)
 			if isinstance(ctx, discord.Interaction):
 				if ret == None:
+					#TODO: Make this sane, what can we actually log here?
 					await ctx.response.send_message("Something went horribly horribly wrong, you should fix that")
+					return
 				elif 'code' in ret:
-					await ctx.response.send_message("You have something on order dingus")
+					embed = self.makeGearEmbed(ret, f"{ctx.user.name}, you already have an item on order!", "Hit 'Order Item' again to confirm the order.")
 				else:
-					await ctx.response.send_message("Success?!")
+					embed = self.makeGearEmbed(ret, f"{ctx.user.name} - Ordered!", "Go talk to Murch in game to get it!")
+
+				await ctx.response.send_message(embed=embed)
 			else:
 				if ret == None:
+					#TODO: Make this sane, what can we actually log here?
 					await ctx.respond("Something went horribly horribly wrong, you should fix that")
+					return
 				elif 'code' in ret:
-					await ctx.respond("You have something on order dingus")
+					embed = self.makeGearEmbed(ret, f"{ctx.user.name}, you already have an item on order!", "Run this command with override set to True to order")
 				else:
-					await ctx.respond("Success?!")
+					embed = self.makeGearEmbed(ret, f"{ctx.user.name} - Ordered!", "Go talk to Murch in game to get it!")
+				await ctx.respond(embed=embed)
 		else:
 			await ctx.respond("Order called improperly! Please report this to my support discord!")
 			return

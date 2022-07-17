@@ -108,13 +108,12 @@ async def cmdToken(ctx):
 
 @client.slash_command(name="fc", description="Shares your Nintendo Switch Friend Code (requires /token)")
 async def cmdFC(ctx):
-	fc = await nsoTokens.getGameKey(ctx.user.id, 'nso')
-	if fc != None:
-		fc = fc['fc']
-	else:
+	nso = await nsoTokens.get_nso_client(ctx.user.id)
+	fc = nso.get_friend_code()
+	if fc == None:
 		await ctx.respond("Stuff ain't happy chief")
-		return
-	await ctx.respond(f"Your Nintendo Switch friend code is: SW-{fc}")
+	else:
+		await ctx.respond(f"Your Nintendo Switch friend code is: SW-{fc}")
 
 @owner.command(name="emotes", description="Sets Emotes for use in Embeds (Custom emotes only)", default_permission=False)
 #TODO: Revisit these owner only commands, likely want to remove this decorator and use the owners object to check in function
@@ -129,6 +128,21 @@ async def emotePicker(ctx, turfwar: Option(str, "Emote to use for turfwar"), ran
 async def cmdACNHPassport(ctx):
 	await serverUtils.increment_cmd(ctx, 'passport')
 	await acHandler.passport(ctx)
+
+@acnh.command(name='emote', description="Makes your ACNH character do an emote.")
+async def cmdACNHEmote(ctx, emote: Option(str, "The emote to do")):
+	#await serverUtils.increment_cmd(ctx, 'passport')
+	await acHandler.ac_emote(ctx, emote)
+
+@acnh.command(name='getemotes', description="Gets available emotes for your ACNH character to do")
+async def cmdACNHGetEmotes(ctx):
+	#await serverUtils.increment_cmd(ctx, 'passport')
+	await acHandler.get_ac_emotes(ctx)
+
+@acnh.command(name='message', description="What to make your ACNH character say.")
+async def cmdACNHEmote(ctx, message: Option(str, "The message to send")):
+	#await serverUtils.increment_cmd(ctx, 'passport')
+	await acHandler.ac_message(ctx, message)
 
 @store.command(name='currentgear', description="See the current gear on the SplatNet store")
 async def cmdStoreCurrent(ctx):

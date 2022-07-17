@@ -209,26 +209,6 @@ class Nsotoken():
 		keys = json.loads(plaintext)
 		return keys
 
-	async def __checkDuplicate(self, id, cur):
-		await cur.execute("SELECT COUNT(*) FROM nso_client_keys WHERE clientid = %s", (str(id),))
-		count = await cur.fetchone()
-		if count[0] > 0:
-			return True
-		else:
-			return False
-
-	async def checkSessionPresent(self, ctx):
-		cur = await self.sqlBroker.connect()
-		print(f"Class: {type(ctx)}")
-		if not isinstance(ctx, discord.Member):
-			print("Context call")
-			ret = await self.__checkDuplicate(ctx.user.id, cur)
-		else:
-			print("Interaction call")
-			ret = await self.__checkDuplicate(ctx.id, cur)
-		await self.sqlBroker.close(cur)
-		return ret
-
 	async def deleteTokens(self, interaction):
 		cur = await self.sqlBroker.connect()
 		print("Deleting token")
@@ -241,15 +221,4 @@ class Nsotoken():
 		else:
 			await self.sqlBroker.rollback(cur)
 			return False
-
-	async def get_session_token_mysql(self, userid) -> Optional[str]:
-		cur = await self.sqlBroker.connect()
-		stmt = "SELECT session_token FROM tokens WHERE clientid = %s"
-		await cur.execute(stmt, (str(userid),))
-		ciphertext = await cur.fetchone()
-		await self.sqlBroker.close(cur)
-		if ciphertext == None:
-			return None
-		else:
-			return self.stringCrypt.decryptString(ciphertext[0])
 			
