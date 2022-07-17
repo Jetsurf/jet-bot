@@ -4,6 +4,7 @@ import pynso
 from pynso.nso_api import NSO_API
 from pynso.imink import IMink
 from pynso.nso_api_s2 import NSO_API_S2
+
 import mysqlhandler, nsohandler, discord
 import requests, json, re, sys, uuid, time
 import os, base64, hashlib, random, string
@@ -11,7 +12,7 @@ from discord.ui import *
 from discord.enums import ComponentType, InputTextStyle
 from datetime import datetime
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-import googleplay
+import google_play_scraper
 from typing import Optional
 #TODO: Clean up these imports, this file is going to be mess
 
@@ -174,8 +175,8 @@ class Nsotoken():
 				print("Skipping NSO version check -- cached data is recent")
 				return
 
-		gp = googleplay.GooglePlay()
-		newVersion = gp.getAppVersion("com.nintendo.znca")
+		nsogp = google_play_scraper.app('com.nintendo.znca', lang='en', country='us')
+		newVersion = nsogp['version']
 		if newVersion == None:
 			print(f"Couldn't retrieve NSO app version?")
 			return
