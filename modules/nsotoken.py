@@ -218,6 +218,8 @@ class Nsotoken():
 		await cur.execute(stmt, input)
 		if cur.lastrowid != None:
 			await self.sqlBroker.commit(cur)
+			#Delete the nso object, as we destroyed tokens
+			del self.nso_clients[input]
 			return True
 		else:
 			await self.sqlBroker.rollback(cur)
