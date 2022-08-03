@@ -662,9 +662,10 @@ class nsoHandler():
 					await ctx.respond("Something went horribly horribly wrong, you should fix that")
 					return
 				elif 'code' in ret:
-					embed = self.makeGearEmbed(ret, f"{ctx.user.name}, you already have an item on order!", "Run this command with override set to True to order")
+					merch = nso.s2.get_store_json()
+					embed = self.makeGearEmbed(merch['ordered_info'], f"{ctx.user.name}, you already have an item on order!", "Run this command with override set to True to order")
 				else:
-					embed = self.makeGearEmbed(ret, f"{ctx.user.name} - Ordered!", "Go talk to Murch in game to get it!")
+					embed = self.makeGearEmbed(ret['ordered_info'], f"{ctx.user.name} - Ordered!", "Go talk to Murch in game to get it!")
 				await ctx.respond(embed=embed)
 		else:
 			await ctx.respond("Order called improperly! Please report this to my support discord!")
