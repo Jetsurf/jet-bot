@@ -445,8 +445,8 @@ class nsoHandler():
 		nso = await self.nsotoken.get_nso_client(ctx.user.id)
 		data = nso.s2.get_weapon_stats(weapid)
 		if data == None:
-			ctx.respond("No token...")
-			return  # TODO: Error message?
+			ctx.respond("You don't have a NSO token setup! Run /token to get started.")
+			return
 
 		if data['weapon_data'] == None:
 			ctx.respond("I can't find any data on that weapon for you.")
@@ -483,8 +483,8 @@ class nsoHandler():
 		nso = await self.nsotoken.get_nso_client(ctx.user.id)
 		data = nso.s2.get_map_stats(mapid)
 		if data == None:
-			ctx.respond("No token...")
-			return  # TODO: Error message?
+			ctx.respond("You don't have a NSO token setup! Run /token to get started.")
+			return
 
 		embed = discord.Embed(colour=0x0004FF)
 		embed.title = f"{data['player_name']}'s Stats for {data['map_name']} (Wins/Losses/%)"
@@ -502,8 +502,8 @@ class nsoHandler():
 		nso = await self.nsotoken.get_nso_client(ctx.user.id)
 		thejson = nso.s2.do_records_request()
 		if thejson == None:
-			ctx.respond("No token...")
-			return  # TODO: Error message?
+			ctx.respond("You don't have a NSO token setup! Run /token to get started.")
+			return
 
 		embed = discord.Embed(colour=0x0004FF)
 		name = thejson['records']['player']['nickname']
@@ -558,8 +558,8 @@ class nsoHandler():
 		nso = await self.nsotoken.get_nso_client(ctx.user.id)
 		srdata = nso.s2.get_sr_stats()
 		if srdata == None:
-			ctx.respond("No token...")
-			return  # TODO: Error message?
+			ctx.respond("You don't have a NSO token setup! Run /token to get started.")
+			return
 
 		embed = discord.Embed(colour=0xFF9B00)
 		embed.title = f"{srdata['player_name']} - {srdata['rank_name']} {str(srdata['rank_points'])} - Salmon Run Stats"
@@ -582,8 +582,8 @@ class nsoHandler():
 		nso = await self.nsotoken.get_nso_client(ctx.user.id)
 		ranks = nso.s2.get_ranks()
 		if ranks == None:
-			ctx.respond("No token...")
-			return  # TODO: Error message?
+			ctx.respond("You don't have a NSO token setup! Run /token to get started.")
+			return
 
 		embed = discord.Embed(colour=0xFF7800)
 		embed.title = f"{ranks['name']}'s Ranks"
@@ -599,7 +599,6 @@ class nsoHandler():
 		else:
 			embed = discord.Embed(colour=0xF9FC5F)
 		embed.title = title
-		print(f"TESTING: GEAR {gear}")
 		embed.set_thumbnail(url=f"https://splatoon2.ink/assets/splatnet{gear['gear']['image']}")
 		embed.add_field(name="Brand", value=gear['gear']['brand']['name'], inline=True)
 		embed.add_field(name="Name", value=gear['gear']['name'], inline=True)
@@ -615,7 +614,6 @@ class nsoHandler():
 		embed.add_field(name="Directions", value=dirs, inline=False)
 		return embed
 
-	#TODO: Delete view arg?
 	async def orderGearCommand(self, ctx, args=None, override=False):
 		if view == None:
 			await ctx.defer()
@@ -624,11 +622,11 @@ class nsoHandler():
 		
 		if not nso.ensure_api_tokens():
 			#The error check for being called by view is not needed, only shows button if tokens are present
-			ctx.respond("No token...")
-			return  # TODO: Error message?
+			ctx.respond("You don't have a NSO token setup! Run /token to get started.")
+			return
 		elif args != None:
 			if len(args) == 0:
-				await ctx.respond("I need an item to order, please use 'ID to order' from `/store currentgear!`")
+				await ctx.respond("I need an item to order, please use 'ID to order' or the item name from `/store currentgear!`")
 				return
 
 			# Build a list of SplatStoreMerch items to match against
@@ -756,24 +754,24 @@ class nsoHandler():
 		turf = {}
 		turf['stage_a'] = trfWar[offset]['stage_a']
 		turf['stage_b'] = trfWar[offset]['stage_b']
-		turf['end']  = trfWar[offset]['end_time']
+		turf['end']     = trfWar[offset]['end_time']
 
-		end   = trfWar[offset]['end_time']
-		theTime  = end - theTime
-		theTime  = theTime % 86400
-		hours = int(theTime / 3600)
-		theTime  = theTime % 3600
-		mins  = int(theTime / 60)
+		end     = trfWar[offset]['end_time']
+		theTime = end - theTime
+		theTime = theTime % 86400
+		hours   = int(theTime / 3600)
+		theTime = theTime % 3600
+		mins    = int(theTime / 60)
 
 		rnk = {}
 		rnk['stage_a'] = ranked[offset]['stage_a']
 		rnk['stage_b'] = ranked[offset]['stage_b']
-		rnk['rule'] = ranked[offset]['rule']
+		rnk['rule']    = ranked[offset]['rule']
 
 		lge = {}
 		lge['stage_a'] = league[offset]['stage_a']
 		lge['stage_b'] = league[offset]['stage_b']
-		lge['rule'] = league[offset]['rule']
+		lge['rule']    = league[offset]['rule']
 
 		data = {}
 		data['hours']  = hours
@@ -793,10 +791,10 @@ class nsoHandler():
 			getNext=True
 
 		weaps = data['weapons']
-		map = data['map']
-		days = data['days']
+		map   = data['map']
+		days  = data['days']
 		hours = data['hours']
-		mins = data['mins']
+		mins  = data['mins']
 
 		if getNext == 0:
 			embed.title = "Current Salmon Run"
@@ -877,8 +875,8 @@ class nsoHandler():
 		nso = await self.nsotoken.get_nso_client(ctx.user.id)
 		recordjson = nso.s2.do_records_request()
 		if recordjson == None:
-			ctx.respond("No token...")
-			return  # TODO: Error message?
+			ctx.respond("You don't have a NSO token setup! Run /token to get started.")
+			return
 
 		embed = discord.Embed(colour=0x0004FF)
 		battlejson = nso.s2.get_all_battles()
@@ -1117,8 +1115,5 @@ class nsoHandler():
 		else:
 			await ctx.respond("Unknown subcommand. Try 'weapons help'")
 
-	async def cmdBattles(self, ctx, num):
-		if num <= 50 and num > 0:
-			await self.battleParser(ctx, num)
-		else:
-			await ctx.respond("Battlenum needs to be between 1-50!")
+
+		

@@ -387,8 +387,11 @@ async def cmdStats(ctx):
 
 @stats.command(name='battle', description='Get stats from a battle (1-50)')
 async def cmdBattle(ctx, battlenum: Option(int, "Battle Number, 1 being latest, 50 max", required=True, default=1)):
+	if not battlenum <= 50 and not battlenum > 0:
+		await ctx.respond("Battlenum needs to be between 1-50!")
+		return
 	await serverUtils.increment_cmd(ctx, 'battle')
-	await nsoHandler.cmdBattles(ctx, battlenum)
+	await nsoHandler.battleParser(ctx, battlenum)
 
 @owner.command(name='eval', description="Eval a code block (Owners only)", default_permission=False)
 @commands.is_owner()
