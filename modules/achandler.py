@@ -17,6 +17,7 @@ class acHandler():
 		await ctx.defer()
 
 		nso = await self.nsotoken.get_nso_client(ctx.user.id)
+		print(f"DEBUG: TOKENS: {str(nso.get_keys())}")
 		userjson = nso.acnh.get_users_json()
 		if userjson == None:
 			await ctx.respond("No token...")

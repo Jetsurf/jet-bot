@@ -130,6 +130,7 @@ class Nsotoken():
 			return  # No client for this user
 
 		keys = self.nso_clients[userid].get_keys()
+		print(f"DEBUG: {str(keys)}")
 		plaintext = json.dumps(keys)
 		ciphertext = self.stringCrypt.encryptString(plaintext)
 		#print(f"nso_client_save_keys: {plaintext} -> {ciphertext}")
@@ -212,14 +213,15 @@ class Nsotoken():
 
 	async def deleteTokens(self, interaction):
 		cur = await self.sqlBroker.connect()
-		print("Deleting token")
+		print("Deleting token and nso client")
+		#self.nso_clients[interaction.user.id] = None
 		stmt = "DELETE FROM nso_client_keys WHERE (clientid = %s)"
-		input = (interaction.user.id,)
-		await cur.execute(stmt, input)
+		instmt = (interaction.user.id,)
+		await cur.execute(stmt, instmt)
 		if cur.lastrowid != None:
 			await self.sqlBroker.commit(cur)
 			#Delete the nso object, as we destroyed tokens
-			del self.nso_clients[input]
+			del self.nso_clients[interaction.user.id]
 			return True
 		else:
 			await self.sqlBroker.rollback(cur)
