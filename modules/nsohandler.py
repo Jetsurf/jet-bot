@@ -1295,7 +1295,7 @@ class nsoHandler():
 			teamstring += f" - {i['player']['weapon']['name']} - {str(i['kill_count'] + i['assist_count'])}({str(i['assist_count'])})/{str(i['death_count'])}/{str(i['special_count'])}\n"
 
 		if not placedPlayer:
-			teamstring += f"{mystats['player']['nickname']} - "
+			teamstring += f"{mystats['player']['nickname']}"
 			if myrank != None:
 				teamstring += " - " + myrank
 			teamstring += f" - {myweapon} - {str(mykills)}({str(myassists)})/{str(mydeaths)}/{str(specials)}\n"
