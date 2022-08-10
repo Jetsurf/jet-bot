@@ -500,55 +500,24 @@ class nsoHandler():
 		await ctx.defer()
 
 		nso = await self.nsotoken.get_nso_client(ctx.user.id)
-		thejson = nso.s2.do_records_request()
-		if thejson == None:
+		if nso == None:
 			ctx.respond("You don't have a NSO token setup! Run /token to get started.")
 			return
 
+		playerData = nso.s2.get_player_stats()
+		if playerData == None:
+			#TODO: Make the message better
+			await ctx.respond("Something went wrong!")
+			return
+
 		embed = discord.Embed(colour=0x0004FF)
-		name = thejson['records']['player']['nickname']
-		turfinked = thejson['challenges']['total_paint_point_octa'] + thejson['challenges']['total_paint_point']
-		turfsquid = thejson['challenges']['total_paint_point']
-		turfocto = thejson['challenges']['total_paint_point_octa']
-		totalwins = thejson['records']['win_count']
-		totalloss = thejson['records']['lose_count']
-		recentwins = thejson['records']['recent_win_count']
-		recentloss = thejson['records']['recent_lose_count']
-		if recentloss + recentwins > 0:
-			recentperc = "{:.0%}".format(recentwins/(recentwins + recentloss))
-			totalperc = "{:.0%}".format(totalwins/(totalwins + totalloss))
-		else:
-			recentperc = "0%"
-			totalperc = "0%"
-
-		maxleagueteam = thejson['records']['player']['max_league_point_team']
-		maxleaguepair = thejson['records']['player']['max_league_point_pair']
-		species = thejson['records']['player']['player_type']['species'].capitalize()
-		gender = thejson['records']['player']['player_type']['style']
-		leaguepairgold = thejson['records']['league_stats']['pair']['gold_count']
-		leaguepairsilver = thejson['records']['league_stats']['pair']['silver_count']
-		leaguepairbronze = thejson['records']['league_stats']['pair']['bronze_count']
-		leaguepairnone = thejson['records']['league_stats']['pair']['no_medal_count']
-		leagueteamgold = thejson['records']['league_stats']['team']['gold_count']
-		leagueteamsilver = thejson['records']['league_stats']['team']['silver_count']
-		leagueteambronze = thejson['records']['league_stats']['team']['bronze_count']
-		leagueteamnone = thejson['records']['league_stats']['team']['no_medal_count']
-
-		topweap = None
-		topink = 0
-		for i in thejson['records']['weapon_stats']:
-			j = thejson['records']['weapon_stats'][i]
-			if topink < int(j['total_paint_point']):
-				topink = int(j['total_paint_point'])
-				topweap = j
-
-		embed.title = f"{str(name)} - {species} {gender} - Stats"
-		embed.add_field(name='Turf Inked', value=f"Squid: {str(turfsquid)}\nOcto: {str(turfocto)}\nTotal: {str(turfinked)}", inline=True)
-		embed.add_field(name='Wins/Losses/%', value=f"Last 50: {str(recentwins)}/{str(recentloss)}/{recentperc}\nTotal: {str(totalwins)}/{str(totalloss)}/{totalperc}", inline=True)
-		embed.add_field(name='Top League Points', value=f"Team League: {str(maxleagueteam)}\nPair League: {str(maxleaguepair)}", inline=True)
-		embed.add_field(name='Team League Medals', value=f"Gold: {str(leagueteamgold)}\nSilver: {str(leagueteamsilver)}\nBronze: {str(leagueteambronze)}\nUnranked: {str(leagueteamnone)}", inline=True)
-		embed.add_field(name='Pair League Medals', value=f"Gold: {str(leaguepairgold)}\nSilver: {str(leaguepairsilver)}\nBronze: {str(leaguepairbronze)}\nUnranked: {str(leaguepairnone)}", inline=True)
-		embed.add_field(name='Favorite Weapon', value=f"{topweap['weapon']['name']} with {str(topink)} turf inked total", inline=True)
+		embed.title = f"{playerData['name']} - {playerData['species']} {playerData['gender']} - Stats"
+		embed.add_field(name='Turf Inked', value=f"Squid: {str(playerData['turf_stats']['inked_squid'])}\nOcto: {str(playerData['turf_stats']['inked_octo'])}\nTotal: {str(playerData['turf_stats']['inked_total'])}", inline=True)
+		embed.add_field(name='Wins/Losses/%', value=f"Last 50: {str(playerData['wl_stats']['recent_wins'])}/{str(playerData['wl_stats']['recent_loss'])}/{playerData['wl_stats']['recent_percent']}\nTotal: {str(playerData['wl_stats']['total_wins'])}/{str(playerData['wl_stats']['recent_loss'])}/{playerData['wl_stats']['total_percent']}", inline=True)
+		embed.add_field(name='Top League Points', value=f"Team League: {str(playerData['league_stats']['max_rank_team'])}\nPair League: {str(playerData['league_stats']['max_rank_pair'])}", inline=True)
+		embed.add_field(name='Team League Medals', value=f"Gold: {str(playerData['league_stats']['team_gold'])}\nSilver: {str(playerData['league_stats']['team_silver'])}\nBronze: {str(playerData['league_stats']['team_bronze'])}\nUnranked: {str(playerData['league_stats']['team_none'])}", inline=True)
+		embed.add_field(name='Pair League Medals', value=f"Gold: {str(playerData['league_stats']['pair_gold'])}\nSilver: {str(playerData['league_stats']['pair_silver'])}\nBronze: {str(playerData['league_stats']['pair_bronze'])}\nUnranked: {str(playerData['league_stats']['pair_none'])}", inline=True)
+		embed.add_field(name='Favorite Weapon', value=f"{playerData['top_weapon']['name']} with {str(playerData['top_weapon']['total_inked'])} turf inked total", inline=True)
 
 		await ctx.respond(embed=embed)
 
@@ -888,6 +857,7 @@ class nsoHandler():
 		battleid = thebattle['battle_number']
 
 		fullbattle = nso.s2.get_full_battle(battleid)
+		
 		enemyteam = fullbattle['other_team_members']
 		myteam = fullbattle['my_team_members']
 		mystats = fullbattle['player_result']
@@ -945,8 +915,9 @@ class nsoHandler():
 			teamstring += f" - {i['player']['weapon']['name']} - {str(i['kill_count'] + i['assist_count'])}({str(i['assist_count'])})/{str(i['death_count'])}/{str(i['special_count'])}\n"
 
 		if not placedPlayer:
+			teamstring += f"{mystats['player']['nickname']} - "
 			if myrank != None:
-				teamstring += " - " + myrank
+				teamstring += f" - {myrank}"
 			teamstring += f" - {myweapon} - {str(mykills)}({str(myassists)})/{str(mydeaths)}/{str(specials)}\n"
 
 		for i in enemyteam:
@@ -1115,6 +1086,3 @@ class nsoHandler():
 				await ctx.respond(out)
 		else:
 			await ctx.respond("Unknown subcommand. Try 'weapons help'")
-
-
-		

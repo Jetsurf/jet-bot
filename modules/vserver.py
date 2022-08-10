@@ -87,6 +87,12 @@ class voiceServer():
 					tmpvclient = self.vclient
 					self.vclient = None
 					await tmpvclient.disconnect()
+
+				#Lets *ACTUALLY* check to see if we're connected
+				temp = get(ctx.bot.voice_clients, guild=ctx.guild)
+				if temp != None:
+					await temp.disconnect()
+					
 				self.vclient = await channel.connect()
 				await ctx.respond(f"Joined voice channel: {channel.name}")
 			else:
