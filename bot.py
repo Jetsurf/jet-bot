@@ -14,8 +14,6 @@ import nsotoken, commandparser, serverconfig, splatinfo, ownercmds, messageconte
 import vserver, mysqlhandler, mysqlschema, serverutils, nsohandler, achandler
 import stringcrypt
 
-#TODO: Is it possible for feeds to persist across restarts, and increment the "order id" and edit when item is off the store?
-
 configData = None
 stringCrypt = stringcrypt.StringCrypt()
 splatInfo = splatinfo.SplatInfo()
@@ -121,7 +119,6 @@ async def cmdFC(ctx):
 		await ctx.respond(f" Nintendo Switch friend code is: SW-{fc}")
 
 @owner.command(name="emotes", description="Sets Emotes for use in Embeds (Custom emotes only)", default_permission=False)
-#TODO: Revisit these owner only commands, likely want to remove this decorator and use the owners object to check in function
 @commands.is_owner()
 async def emotePicker(ctx, turfwar: Option(str, "Emote to use for turfwar"), ranked: Option(str, "Emote to use for ranked"), league: Option(str, "Emote to use for league"), badge100k: Option(str, "Emote to use for the 100k inked badge"),
 	badge500k: Option(str, "Emote to use for the 500k inked badge"), badge1m: Option(str, "Emote to use for the 1m inked badge"), badge10m: Option(str, "Emote to use for the 10m inked badge")):
@@ -136,12 +133,12 @@ async def cmdACNHPassport(ctx):
 
 @acnh.command(name='emote', description="Makes your ACNH character do an emote.")
 async def cmdACNHEmote(ctx, emote: Option(str, "The emote to do")):
-	#await serverUtils.increment_cmd(ctx, 'passport')
+	await serverUtils.increment_cmd(ctx, 'emote')
 	await acHandler.ac_emote(ctx, emote)
 
 @acnh.command(name='getemotes', description="Gets available emotes for your ACNH character to do")
 async def cmdACNHGetEmotes(ctx):
-	await serverUtils.increment_cmd(ctx, 'emote')
+	await serverUtils.increment_cmd(ctx, 'getemotes')
 	await acHandler.get_ac_emotes(ctx)
 
 @acnh.command(name='message', description="What to make your ACNH character say.")
@@ -261,7 +258,7 @@ async def cmdAdminDeleteFeed(ctx):
 		return
 
 	if await checkIfAdmin(ctx):
-		#TODO: Add view to confirm delete, better than using an argument
+		#TODO: Add view to confirm delete, better than using an argument - this will be a future update
 		await serverUtils.deleteFeed(ctx, bypass=True)
 	else:
 		await ctx.respond("You aren't a guild administrator", ephemeral=True)

@@ -23,8 +23,9 @@ class acHandler():
 
 		userjson = nso.acnh.get_users_json()
 		if userjson == None:
-			await ctx.respond("Generic error... clean me up")
-			#TODO: Best place to break if "account" doesn't have ACNH?
+			await ctx.respond("Something went wrong. Please let my owners in my support guild know this broke as it's a new feature!")
+			print(f"ACNH: Passport call returned nothing: userid {str(ctx.user.id)}")
+			#TODO: Best place to break if "account" doesn't have ACNH? - TO TEST
 			return
 		else:
 			user = userjson['users'][0]

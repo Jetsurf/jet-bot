@@ -56,6 +56,7 @@ class nsoHandler():
 		self.nsotoken = nsotoken
 
 	async def doFeed(self):
+		#TODO: Future Update: Is it possible to put the orderid button into gear feeds. Expire the button after that rotation
 		cur = await self.sqlBroker.connect()
 		stmt = "SELECT * FROM feeds"
 		feeds = await cur.execute(stmt)
@@ -125,7 +126,7 @@ class nsoHandler():
 			else:
 				titleval = 'Current SR Rotation'
 				timename = 'Time Until SR Rotation'
-			#TODO Check this
+			
 			embed.add_field(name="Salmon Run", value=titleval, inline=False)
 			embed.add_field(name='Map', value=srdata['map']['name'], inline=True)
 			embed.add_field(name='Weapons', value=srdata['weapons'].replace('\n', ', ', 3), inline=True)
@@ -183,7 +184,6 @@ class nsoHandler():
 				term = match2.get().name()
 
 		#Search Items
-		match3 = None
 		if flag != True:
 			match3 = self.splatInfo.matchGear(term)
 			if match3.isValid():
@@ -443,10 +443,15 @@ class nsoHandler():
 		await ctx.defer()
 
 		nso = await self.nsotoken.get_nso_client(ctx.user.id)
-		data = nso.s2.get_weapon_stats(weapid)
-		if data == None:
+		if nso == None:
 			ctx.respond("You don't have a NSO token setup! Run /token to get started.")
 			return
+
+		data = nso.s2.get_weapon_stats(weapid)
+		if data == None:
+			print(f"NSOHANDLER: weaponParser call returned None: userid {ctx.user.id}")
+			await ctx.respond("Something went wrong! As this is new, please report this to my support guild.")
+			return	
 
 		if data['weapon_data'] == None:
 			ctx.respond("I can't find any data on that weapon for you.")
@@ -481,10 +486,15 @@ class nsoHandler():
 		await ctx.defer()
 
 		nso = await self.nsotoken.get_nso_client(ctx.user.id)
-		data = nso.s2.get_map_stats(mapid)
-		if data == None:
+		if nso == None:
 			ctx.respond("You don't have a NSO token setup! Run /token to get started.")
 			return
+
+		data = nso.s2.get_map_stats(mapid)
+		if data == None:
+			print(f"NSOHANDLER: mapParser call returned None: userid {ctx.user.id}")
+			await ctx.respond("Something went wrong! As this is new, please report this to my support guild.")
+			return			
 
 		embed = discord.Embed(colour=0x0004FF)
 		embed.title = f"{data['player_name']}'s Stats for {data['map_name']} (Wins/Losses/%)"
@@ -506,8 +516,8 @@ class nsoHandler():
 
 		playerData = nso.s2.get_player_stats()
 		if playerData == None:
-			#TODO: Make the message better
-			await ctx.respond("Something went wrong!")
+			print(f"NSOHANDLER: getStats call returned None: userid {ctx.user.id}")
+			await ctx.respond("Something went wrong! As this is new, please report this to my support guild.")
 			return
 
 		embed = discord.Embed(colour=0x0004FF)
@@ -610,13 +620,12 @@ class nsoHandler():
 				await ctx.respond(match.errorMessage("Try command `/store currentgear` for a list."))
 				return
 
-			
 			merchid = match.get().merchid()
 			ret = nso.s2.post_store_purchase(merchid, override)
 			if isinstance(ctx, discord.Interaction):
 				if ret == None:
-					#TODO: Make this sane, what can we actually log here?
-					await ctx.response.send_message("Something went horribly horribly wrong, you should fix that")
+					await ctx.response.send_message("Something went wrong. As this is fairly new, please tell my owners in my support guild!")
+					print(f"NSOHANDLER: View Order: ERROR: merchid {str(merchid)} override {str(override)} and userid {str(ctx.user.id)}")
 					return
 				elif 'code' in ret:
 					merch = nso.s2.get_store_json()
@@ -627,8 +636,8 @@ class nsoHandler():
 				await ctx.response.send_message(embed=embed)
 			else:
 				if ret == None:
-					#TODO: Make this sane, what can we actually log here?
-					await ctx.respond("Something went horribly horribly wrong, you should fix that")
+					await ctx.response.send_message("Something went wrong. As this is fairly new, please tell my owners in my support guild!")
+					print(f"NSOHANDLER: Slash CMD Order: ERROR: merchid {str(merchid)} override {str(override)} and userid {str(ctx.user.id)}")
 					return
 				elif 'code' in ret:
 					merch = nso.s2.get_store_json()
