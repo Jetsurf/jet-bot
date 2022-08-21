@@ -16,14 +16,14 @@ class acHandler():
 	async def passport(self, ctx):
 		await ctx.defer()
 
-		nso = await self.nsotoken.get_nso_client(ctx.user.id)
-		print(f"DEBUG: TOKENS: {str(nso.get_keys())}")
+		nso = await self.nsotoken.get_nso_client(ctx.user.id)		
+		if nso == None:
+			await ctx.respond("You don't have a NSO token setup! Run /token to get started.")
+			return
+
 		userjson = nso.acnh.get_users_json()
 		if userjson == None:
-			await ctx.respond("No token...")
-			return  # TODO: Error message?
-
-		if userjson == None:
+			await ctx.respond("Generic error... clean me up")
 			#TODO: Best place to break if "account" doesn't have ACNH?
 			return
 		else:
@@ -61,38 +61,48 @@ class acHandler():
 		await ctx.defer()
 
 		nso = await self.nsotoken.get_nso_client(ctx.user.id)
+		if nso == None:
+			await ctx.respond("You don't have a NSO token setup! Run /token to get started.")
+			return
+		
 		resp = nso.acnh.send_emote(emote)
 		if resp == None:
-			await ctx.respond("No token...")
+			await ctx.respond("Something went wrong. Please let my owners know this broke as it's a new feature!")
 			return
-		else:
-			await ctx.respond(f"Stuff happened? Here's resp: ```{resp}```")
-			return
+
+		await ctx.respond(f"Stuff happened? Here's resp: ```{resp}```")
+		return
 
 	async def get_ac_emotes(self, ctx):
 		await ctx.defer()
 
 		nso = await self.nsotoken.get_nso_client(ctx.user.id)
+		if nso == None:
+			await ctx.respond("You don't have a NSO token setup! Run /token to get started.")
+			return
+
 		resp = nso.acnh.get_emotes()
 		if resp == None:
-			await ctx.respond("No token...")
-			return
-		else:
-			emotes={}
-			for emote in resp['emoticons']:
-				emote.pop('url')
+			await ctx.respond("Something went wrong. Please let my owners know this broke as it's a new feature!")
+		emotes={}
+		for emote in resp['emoticons']:
+			emote.pop('url')
 
-			await ctx.respond(f"Stuff happened? Here's resp: ```{resp}```")
-			return
+		await ctx.respond(f"Stuff happened? Here's resp: ```{resp}```")
+		return
 
 	async def ac_message(self, ctx, msg):
 		await ctx.defer()
 
 		nso = await self.nsotoken.get_nso_client(ctx.user.id)
+		if nso == None:
+			await ctx.respond("You don't have a NSO token setup! Run /token to get started.")
+			return
+		
 		resp = nso.acnh.send_message(msg)
 		if resp == None:
-			await ctx.respond("No token...")
+			await ctx.respond("Something went wrong. Please let my owners know this broke as it's a new feature!")
 			return
-		else:
-			await ctx.respond(f"Stuff happened? Here's resp: ```{resp}```")
-			return
+
+		await ctx.respond(f"Stuff happened? Here's resp: ```{resp}```")
+		return

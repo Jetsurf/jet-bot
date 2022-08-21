@@ -21,14 +21,13 @@ stringCrypt = stringcrypt.StringCrypt()
 splatInfo = splatinfo.SplatInfo()
 intents = discord.Intents.default()
 intents.members = True
-client = discord.Bot(intents=intents, chunk_guilds_at_startup=False)
+client = discord.AutoShardedBot(intents=intents, chunk_guilds_at_startup=False)
 commandParser = None
 serverConfig = None
 mysqlHandler = None
 nsoHandler = None
 nsoTokens = None
 ownerCmds = None
-#TODO? Make this not a hash table, but a class that isn't reliant on multiple instances?
 serverVoices = {}
 serverUtils = None
 acHandler = None
@@ -398,14 +397,6 @@ async def cmdBattle(ctx, battlenum: Option(int, "Battle Number, 1 being latest, 
 async def cmdEval(ctx):
 	await ctx.send_modal(ownercmds.evalModal(ownerCmds, title="Eval"))
 
-@owner.command(name='nsojson', description="Get raw nso json")
-@commands.is_owner()
-async def cmdNSOJson(ctx, endpoint: Option(str, "Endpoint to get json from", choices=['base', 'battle', 'fullbattle', 'sr'], required=True), user: Option(str, "ID of a user to mimic", required=False), battleid: Option(str, "If endpoint is fullbattle, provide battleid to get", required=False)):
-	if ctx.user not in owners:
-		await ctx.respond("Not an owner", ephemeral=True)
-
-	await nsoHandler.getNSOJSONRaw(ctx, { 'endpoint': endpoint, 'user': user, 'battleid': battleid })
-
 @voice.command(name='join', description='Join a voice chat channel')
 async def cmdVoiceJoin(ctx, channel: Option(discord.VoiceChannel, "Voice Channel to join", required=False)):
 	if ctx.guild == None:
@@ -761,25 +752,18 @@ async def on_message(message):
 	channel = message.channel
 	context = messagecontext.MessageContext(message)
 
-	if message.guild == None:
-		if message.author in owners:
-			if '!restart' in command:
-				await channel.send("Going to restart!")
-				await mysqlHandler.close_pool()
-				await client.close()
-				sys.stderr.flush()
-				sys.stdout.flush()
-				sys.exit(0)
-			elif '!cmdreport' in command:
-				await serverUtils.report_cmd_totals(message)
-			elif '!announce' in command:
-				await serverUtils.doAnnouncement(message)
-		if '!token' in command:
-			await nsoTokens.login(context)
-		elif '!deletetoken' in command:
-				await nsoTokens.deleteTokens(context)
-		elif '!storedm' in command:
-			await channel.send("Sorry, for performance reasons, you cannot DM me !storedm :frowning:")
+	if message.guild == None and message.author in owners:
+		if '!restart' in command:
+			await channel.send("Going to restart!")
+			await mysqlHandler.close_pool()
+			await client.close()
+			sys.stderr.flush()
+			sys.stdout.flush()
+			sys.exit(0)
+		elif '!cmdreport' in command:
+			await serverUtils.report_cmd_totals(message)
+		elif '!announce' in command:
+			await serverUtils.doAnnouncement(message)
 		return
 	else:
 		theServer = message.guild.id
@@ -791,7 +775,7 @@ async def on_message(message):
 	cmd = parsed['cmd']
 	args = parsed['args']
 
-	if cmd == 'eval':
+	if cmd == 'eval' and message_author in owners:
 		await ownerCmds.eval(context, args[0])
 	elif cmd == 'getcons' and message.author in owners:
 		await mysqlHandler.printCons(message)
@@ -808,6 +792,9 @@ if configData.get('output_to_log'):
 
 ensureEncryptionKey()
 
+if dev:
+	client.add_application_command(owner)	
+
 print('**********NEW SESSION**********')
 print('Logging into discord')
 
@@ -819,13 +806,9 @@ client.add_application_command(voice)
 client.add_application_command(admin)
 client.add_application_command(acnh)
 
-if dev:
-	client.add_application_command(owner)
-
-##TODO: It may be possible to edit the actual application command order, walk the sub command, then register_commands(owner)?
-
 sys.stdout.flush()
 sys.stderr.flush()
 token = configData['token']
 configData['token'] = ""
+
 client.run(token)
