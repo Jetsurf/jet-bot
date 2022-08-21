@@ -67,10 +67,18 @@ class acHandler():
 		
 		resp = nso.acnh.send_emote(emote)
 		if resp == None:
-			await ctx.respond("Something went wrong. Please let my owners know this broke as it's a new feature!")
-			return
+			await ctx.respond("Something went wrong. Please let my owners in my support guild know this broke as it's a new feature!")
+			print(f"ACNH: Emote call returned nothing: userid {str(ctx.user.id)} with emote {emote}")
+		elif 'code' in resp and resp['code'] == '1001':
+			await ctx.respond("You aren't online in ACNH! Go talk to Orville at the airport to go online.")
+		elif 'code' in resp and resp['code'] == '3002':
+			await ctx.respond("Invalid emote! Run /acnh getemotes to see your available emotes. Must match exactly.")
+		elif 'status' in resp and resp['status'] == 'success':
+			await ctx.respond("Emote sent!")
+		else:
+			await ctx.respond("Something went wrong! Please let me owners know this broke in my support guild, as it's a new feature!")
+			print(f"ACNH: Emote call returned something unexpected: {resp} with user {str(ctx.user.id)} and emote {emote}")
 
-		await ctx.respond(f"Stuff happened? Here's resp: ```{resp}```")
 		return
 
 	async def get_ac_emotes(self, ctx):
@@ -84,11 +92,18 @@ class acHandler():
 		resp = nso.acnh.get_emotes()
 		if resp == None:
 			await ctx.respond("Something went wrong. Please let my owners know this broke as it's a new feature!")
+			return
+
+		embed = discord.Embed(colour=0x0004FF)
+		embed.title = "Available ACNH Emotes"
+		emoteString = ""
 		emotes={}
 		for emote in resp['emoticons']:
 			emote.pop('url')
+			emoteString += f"{emote['label']}\n"
 
-		await ctx.respond(f"Stuff happened? Here's resp: ```{resp}```")
+		embed.add_field(name="Emotes", value=emoteString, inline=False)
+		await ctx.respond(embed=embed)
 		return
 
 	async def ac_message(self, ctx, msg):
@@ -101,8 +116,14 @@ class acHandler():
 		
 		resp = nso.acnh.send_message(msg)
 		if resp == None:
-			await ctx.respond("Something went wrong. Please let my owners know this broke as it's a new feature!")
-			return
+			await ctx.respond("Something went wrong. Please let my owners in my support guild know this broke as it's a new feature!")
+			print(f"ACNH: Message call returned nothing: userid {str(ctx.user.id)} with emote {emote}")
+		elif 'code' in resp and resp['code'] == '1001':
+			await ctx.respond("You aren't online in ACNH! Go talk to Orville at the airport to go online.")
+		elif 'status' in resp and resp['status'] == 'success':
+			await ctx.respond("Message sent!")
+		else:
+			await ctx.respond("Something went wrong! Please let me owners know this broke in my support guild, as it's a new feature!")
+			print(f"ACNH: Message call returned something unexpected: {resp} with user {str(ctx.user.id)} and emote {emote}")
 
-		await ctx.respond(f"Stuff happened? Here's resp: ```{resp}```")
 		return

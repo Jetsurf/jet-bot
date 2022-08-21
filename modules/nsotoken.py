@@ -1,11 +1,13 @@
 from __future__ import print_function
 import asyncio
+
+#PyNSO Specific
 import pynso
 from pynso.nso_api import NSO_API
 from pynso.imink import IMink
 from pynso.nso_api_s2 import NSO_API_S2
 
-import mysqlhandler, nsohandler, discord
+import mysqlhandler, discord
 import requests, json, re, sys, uuid, time
 import os, base64, hashlib, random, string
 from discord.ui import *
@@ -14,7 +16,6 @@ from datetime import datetime
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import google_play_scraper
 from typing import Optional
-#TODO: Clean up these imports, this file is going to be mess
 
 class tokenMenuView(discord.ui.View):
 	def __init__(self, nsotoken, hostedurl):
@@ -130,7 +131,7 @@ class Nsotoken():
 			return  # No client for this user
 
 		keys = self.nso_clients[userid].get_keys()
-		print(f"DEBUG: {str(keys)}")
+		#print(f"DEBUG: {str(keys)}")
 		plaintext = json.dumps(keys)
 		ciphertext = self.stringCrypt.encryptString(plaintext)
 		#print(f"nso_client_save_keys: {plaintext} -> {ciphertext}")
