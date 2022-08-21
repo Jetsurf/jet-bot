@@ -108,9 +108,15 @@ async def cmdToken(ctx):
 @client.slash_command(name="fc", description="Shares your Nintendo Switch Friend Code (requires /token)")
 async def cmdFC(ctx):
 	nso = await nsoTokens.get_nso_client(ctx.user.id)
+	if nso == None:
+		await ctx.respond("No token setup! Run /token to get started.")
+		return
+
+	await serverUtils.increment_cmd(ctx, 'fc')
 	fc = nso.get_friend_code()
 	if fc == None:
-		await ctx.respond("Stuff ain't happy chief")
+		await ctx.respond("Something went wrong! Please let my owners in my support guild know this broke!")
+		print(f"NSO FC call returned nothing: userid {ctx.user.id}")
 	else:
 		await ctx.respond(f" Nintendo Switch friend code is: SW-{fc}")
 
