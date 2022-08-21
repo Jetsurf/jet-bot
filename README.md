@@ -88,6 +88,9 @@ The following commands require you to DM the bot with `!token` and follow the in
 
 ### Animal Crossing: New Horizons Commands
  - `/acnh passport` : Posts your passport for Animal Crossing: New Horizons
+ - `/acnh getemotes` : Gets all available emotes to use with `/acnh emote`
+ - `/acnh emote` : Makes your character in ACNH perform an emote. Must be connected to the internet with your game
+ - `/acnh message` : Makes your character in ACNH say a message. Must be connected to the internet with your game
 
  ### Bot Info Commands
  
