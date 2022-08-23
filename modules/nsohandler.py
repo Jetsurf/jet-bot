@@ -561,7 +561,7 @@ class nsoHandler():
 		nso = await self.nsotoken.get_nso_client(ctx.user.id)
 		ranks = nso.s2.get_ranks()
 		if ranks == None:
-			ctx.respond("You don't have a NSO token setup! Run /token to get started.")
+			await ctx.respond("You don't have a NSO token setup! Run /token to get started.")
 			return
 
 		embed = discord.Embed(colour=0xFF7800)
