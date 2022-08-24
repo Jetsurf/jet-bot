@@ -389,7 +389,7 @@ class Nsotoken():
 			'Accept-Encoding': 'gzip'
 		}
 		idToken = id_response["access_token"]
-		timestamp = int(time.time())
+		timestamp = int(time.time() * 1000) - 1000
 		guid = str(uuid.uuid4())
 		f = self.__callImink(idToken, guid, timestamp, 1)
 		if f == None:
@@ -425,7 +425,7 @@ class Nsotoken():
 			#Cross fingers this will shed light on this stupid bug
 			return None
 
-		timestamp = int(time.time())
+		timestamp = int(time.time() * 1000) - 1000
 		guid = str(uuid.uuid4())
 		f = self.__callImink(idToken,guid, timestamp, 2)
 		if f == None:
