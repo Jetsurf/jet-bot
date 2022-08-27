@@ -15,11 +15,16 @@ If you don't care about self-hosting the bot, you can use the following link:
 For self-hosting:
 [See Here](https://github.com/Jetsurf/jet-bot/wiki)
 
+## Credit
+[S2S](https://github.com/frozenpandaman/splatnet2statink) - Foundation of iksm
+[iMink](https://github.com/JoneWang/imink) - Built-in F-Token provider
+
 ## NOTE
 
 DM'ing the bot with !token and giving it the link it requests pulls your account sesion token from Nintendo to grant it access to game specific data. It is identical to logging into the NSO App on your phone.
 The game specific tokens are ONLY used to access your Splatoon 2 stats and ACNH passports to post within Discord and order gear for you. The account session token is used to refresh game tokens if they expire. They are used for nothing else.
 Feel free to look over [modules/nsotoken.py](https://github.com/Jetsurf/jet-bot/blob/master/modules/nsotoken.py) to audit the handling of keys yourself.
+
 
 ## Commands
 
