@@ -15,6 +15,11 @@ If you don't care about self-hosting the bot, you can use the following link:
 For self-hosting:
 [See Here](https://github.com/Jetsurf/jet-bot/wiki)
 
+## Credit
+[S2S](https://github.com/frozenpandaman/splatnet2statink) - [eli!](https://twitter.com/frozenpandaman) Foundation of iksm
+
+[iMink](https://github.com/JoneWang/imink) - [Jone Wang](https://twitter.com/JoneWang) - Built-in F-Token provider
+
 ## NOTE
 
 Running /token and giving it the link it requests pulls your account sesion token from Nintendo to grant it access to game specific data. It is identical to logging into the NSO App on your phone.
@@ -103,4 +108,5 @@ The following commands require you to run `/token` and follow the instructions. 
 # License
 
 [GPLv3](https://www.gnu.org/licenses/gpl-3.0.html)
+
 

@@ -89,7 +89,7 @@ class voiceServer():
 					await tmpvclient.disconnect()
 
 				#Lets *ACTUALLY* check to see if we're connected
-				temp = get(ctx.bot.voice_clients, guild=ctx.guild)
+				temp = discord.utils.get(ctx.bot.voice_clients, guild=ctx.guild)
 				if temp != None:
 					await temp.disconnect()
 					
