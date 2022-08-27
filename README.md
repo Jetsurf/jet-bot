@@ -16,8 +16,9 @@ For self-hosting:
 [See Here](https://github.com/Jetsurf/jet-bot/wiki)
 
 ## Credit
-[S2S](https://github.com/frozenpandaman/splatnet2statink) - Foundation of iksm
-[iMink](https://github.com/JoneWang/imink) - Built-in F-Token provider
+[S2S](https://github.com/frozenpandaman/splatnet2statink) - [@frozenpandaman](https://twitter.com/frozenpandaman) Foundation of iksm
+
+[iMink](https://github.com/JoneWang/imink) - [@jonewang](https://twitter.com/JoneWang) - Built-in F-Token provider
 
 ## NOTE
 
