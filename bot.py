@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 from pynso.nso_api import NSO_API
 from pynso.imink import IMink
 import os, sys, re
