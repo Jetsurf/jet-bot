@@ -54,7 +54,48 @@ weaponData = [
 	[6020, 'Undercover Brella'   , 'Ink Mine'     , 'Reefslider'      , 'Shelter_Compact_00'     , 'Brella'   , 18,  9100, 180],
 ]
 
+subweaponData = [
+	[12, 'Angle Shooter', 'LineMarker'   , ['as', 'marker']],
+	[ 7, 'Autobomb'     , 'Bomb_Robot'   , ['ab', 'aub', 'chicken', 'chickens', 'robot']],
+	[ 2, 'Burst Bomb'   , 'Bomb_Quick'   , ['bb', 'bub']],
+	[ 6, 'Curling Bomb' , 'Bomb_Curling' , ['cb', 'cub']],
+	[ 5, 'Fizzy Bomb'   , 'Bomb_Fizzy'   , ['fb', 'fib', 'soda']],
+	[10, 'Ink Mine'     , 'Trap'         , ['im', 'mines', 'trap']],
+	[ 9, 'Point Sensor' , 'PointSensor'  , ['ps']],
+	[ 4, 'Splash Wall'  , 'Shield'       , ['sw']],
+	[ 0, 'Splat Bomb'   , 'Bomb_Splash'  , ['spb', 'triangle']],
+	[ 3, 'Sprinkler'    , 'Sprinkler'    , ['sp']],
+	[ 8, 'Squid Beakon' , 'Beacon'       , ['sb', 'beacon']],
+	[ 1, 'Suction Bomb' , 'Bomb_Suction' , ['sub', 'suck', 'succ']],
+	[13, 'Torpedo'      , 'Bomb_Torpedo' , ['t']],
+	[11, 'Toxic Mist'   , 'PoisonMist'   , ['tm', 'fart', 'poison', 'disruptor']],
+]
+
+specialData = [
+	['Big Bubbler'     , 'SpGreatBarrier'  , ['bub', 'boob', 'boobler', 'barrier']],
+	['Booyah Bomb'     , 'SpNiceBall'      , ['byb']],
+	['Crab Tank'       , 'SpChariot'       , ['ct', 'chariot']],
+	['Ink Storm'       , 'SpInkStorm'      , ['is', 'rain']],
+	['Ink Vac'         , 'SpBlower'        , ['iv', 'vacuum', 'blower']],
+	['Inkjet'          , 'SpJetpack'       , ['ij', 'jetpack']],
+	['Killer Wail 5.1' , 'SpMicroLaser'    , ['kw', 'kw51', 'kw5.1', 'microlaser']],
+	['Reefslider'      , 'SpSkewer'        , ['rs', 'shark', 'skewer']],
+	['Tacticooler'     , 'SpEnergyStand'   , ['tc', 'soda', 'drinks', 'energy']],
+	['Tenta Missiles'  , 'SpMultiMissile'  , ['tm']],
+	['Triple Inkstrike', 'SpTripleTornado' , ['ti', 'tis', '3i', '3is', 'tornado']],
+	['Trizooka'        , 'SpUltraShot'     , ['tz', '3z', 'ultrashot']],
+	['Ultra Stamp'     , 'SpUltraStamp'    , ['us', 'hammer', 'ultrastamp']],
+	['Wave Breaker'    , 'SpShockSonar'    , ['wb', 'shock', 'sonar']],
+	['Zipcaster'       , 'SpSuperHook'     , ['zc', 'spiderman', 'superhook', 'hook']],
+]
+
 import gameinfo.matchset
+
+class Splat3Subweapon(gameinfo.matchset.MatchItem):
+	pass
+
+class Splat3Special(gameinfo.matchset.MatchItem):
+	pass
 
 class Splat3WeaponType(gameinfo.matchset.MatchItem):
 	def __init__(self, name, pluralName, abbrevs):
@@ -99,8 +140,24 @@ class Splat3Weapon(gameinfo.matchset.MatchItem):
 
 class Splat3():
 	def __init__(self):
+		self.initSubweapons()
+		self.initSpecials()
 		self.initWeaponTypes()
 		self.initWeapons()
+
+	def initSubweapons(self):
+		self.subweapons = gameinfo.matchset.MatchSet('subweapon', [])
+		for sw in subweaponData:
+			name    = sw[1]
+			abbrevs = sw[3]
+			self.subweapons.append(Splat3Subweapon(name, abbrevs))
+
+	def initSpecials(self):
+		self.specials = gameinfo.matchset.MatchSet('special', [])
+		for s in specialData:
+			name    = s[0]
+			abbrevs = s[2]
+			self.specials.append(Splat3Special(name, abbrevs))
 
 	def initWeaponTypes(self):
 		self.weaponTypes = gameinfo.matchset.MatchSet('weapon type', [
