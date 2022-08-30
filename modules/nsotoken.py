@@ -131,7 +131,6 @@ class Nsotoken():
 			return  # No client for this user
 
 		keys = self.nso_clients[userid].get_keys()
-		#print(f"DEBUG: {str(keys)}")
 		plaintext = json.dumps(keys)
 		ciphertext = self.stringCrypt.encryptString(plaintext)
 		#print(f"nso_client_save_keys: {plaintext} -> {ciphertext}")

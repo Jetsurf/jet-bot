@@ -631,6 +631,7 @@ class nsoHandler():
 					merch = nso.s2.get_store_json()
 					embed = self.makeGearEmbed(merch['ordered_info'], f"{ctx.user.name}, you already have an item on order!", "Hit 'Order Item' again to confirm the order.")
 				else:
+					print(f"Ordering {str(ret['ordered_info']['gear']['name'])} for {ctx.user.name} via View")
 					embed = self.makeGearEmbed(ret['ordered_info'], f"{ctx.user.name} - Ordered!", "Go talk to Murch in game to get it!")
 
 				await ctx.response.send_message(embed=embed)
@@ -643,6 +644,7 @@ class nsoHandler():
 					merch = nso.s2.get_store_json()
 					embed = self.makeGearEmbed(merch['ordered_info'], f"{ctx.user.name}, you already have an item on order!", "Run this command with override set to True to order")
 				else:
+					print(f"Ordering {str(ret['ordered_info']['gear']['name'])} for {ctx.user.name} via Slash CMD")
 					embed = self.makeGearEmbed(ret['ordered_info'], f"{ctx.user.name} - Ordered!", "Go talk to Murch in game to get it!")
 				await ctx.respond(embed=embed)
 		else:
