@@ -8,5 +8,5 @@ pynacl
 html5lib
 pycryptodome
 requests
-google-play-scraper
+itunes-app-scraper-dmi
 pynso

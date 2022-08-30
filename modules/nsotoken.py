@@ -14,7 +14,7 @@ from discord.ui import *
 from discord.enums import ComponentType, InputTextStyle
 from datetime import datetime
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-import google_play_scraper
+from itunes_app_scraper.scraper import AppStoreScraper
 from typing import Optional
 
 class tokenMenuView(discord.ui.View):
@@ -177,7 +177,9 @@ class Nsotoken():
 				print("Skipping NSO version check -- cached data is recent")
 				return
 
-		nsogp = google_play_scraper.app('com.nintendo.znca', lang='en', country='us')
+		scraper = AppStoreScraper()
+		nsogp = scraper.get_app_details(1234806557) #iOS App ID
+
 		newVersion = nsogp['version']
 		if newVersion == None:
 			print(f"Couldn't retrieve NSO app version?")
