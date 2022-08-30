@@ -27,16 +27,18 @@ class HelpDropDown(discord.ui.Select):
 
 	def readHelpFile(self, file):
 		toReturn = {}
-		toReturn["fileData"] = ""
+		toReturn["fileData"] = []
 
 		with open(file, "r") as f:
-			for line in f:
-				if line.startswith('**'):
-					toReturn['desc'] = line.replace('**', '')
-				elif line.startswith('*'):
-					toReturn['label'] = line.replace('*', '')
-				else:
-					toReturn['fileData'] += line
+			lines = f.readlines()
+
+		for line in lines:
+			if line.startswith('**'):
+				toReturn['desc'] = line.replace('**', '')
+			elif line.startswith('*'):
+				toReturn['label'] = line.replace('*', '')
+			else:
+				toReturn['fileData'].append(line)
 		return toReturn
 
 	async def callback(self, interaction: discord.Interaction):
