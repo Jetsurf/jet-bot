@@ -1,4 +1,5 @@
 import discord, asyncio
+from discord.ui import *
 import mysqlhandler, nsotoken
 import time, requests
 import json, os
@@ -7,6 +8,35 @@ import splatinfo
 import messagecontext
 import io
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
+
+class orderView(discord.ui.View):
+	def __init__(self, nsohandler, nsotoken, user):
+		super().__init__()
+		self.nsoToken = nsotoken
+		self.nsoHandler = nsohandler
+		self.user = user
+		self.confirm = False
+		self.timeout = 6900.0
+
+	async def initView(self):
+		orderBut = discord.ui.Button(label="Order Item")
+		nso = await self.nsoToken.get_nso_client(self.user.id)
+		if nso != None:
+			orderBut.callback = self.orderItem
+		else:
+			self.stop()
+			return None
+		self.add_item(orderBut)
+
+	async def orderItem(self, interaction: discord.Interaction):
+		if self.confirm:
+			await self.nsoHandler.orderGearCommand(interaction, args=['5'], override=True)
+			if self.user != None:
+				self.clear_items()
+				self.stop()
+		else:
+			await self.nsoHandler.orderGearCommand(interaction, args=['5'])
+			self.confirm=True
 
 class nsoHandler():
 	def __init__(self, client, mysqlHandler, nsotoken, splatInfo, hostedUrl):
@@ -24,41 +54,9 @@ class nsoHandler():
 		self.storeJSON = None
 		self.srJSON= None
 		self.nsotoken = nsotoken
-		self.app_head = {
-			'Host': 'app.splatoon2.nintendo.net',
-			'x-unique-id': '8386546935489260343',
-			'x-requested-with': 'XMLHttpRequest',
-			'x-timezone-offset': self.app_timezone_offset,
-			'User-Agent': 'Mozilla/5.0 (Linux; Android 7.1.2; Pixel Build/NJH47D; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/59.0.3071.125 Mobile Safari/537.36',
-			'Accept': '*/*',
-			'Referer': 'https://app.splatoon2.nintendo.net/home',
-			'Accept-Encoding': 'gzip, deflate',
-			'Accept-Language': 'en-us'
-		}
-		self.app_head_shop = {
- 		   "origin": "https://app.splatoon2.nintendo.net",
-    		"x-unique-id": '16131049444609162796',
-    		"x-requested-with": "XMLHttpRequest",
-    		"x-timezone-offset": self.app_timezone_offset,
-    		"User-Agent": "Mozilla/5.0 (Linux; Android 7.1.2; Pixel Build/NJH47D; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/59.0.3071.125 Mobile Safari/537.36",
-    		"Accept": "*/*",
-    		"Referer": "https://app.splatoon2.nintendo.net/results",
-    		"Accept-Encoding": "gzip, deflate",
-    		"Accept-Language": "en-US"
-		}
-		self.app_head_coop = {
-			'Host': 'app.splatoon2.nintendo.net',
-			'x-unique-id': '8386546935489260343',
-			'x-requested-with': 'XMLHttpRequest',
-			'x-timezone-offset': self.app_timezone_offset,
-			'User-Agent': 'Mozilla/5.0 (Linux; Android 7.1.2; Pixel Build/NJH47D; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/59.0.3071.125 Mobile Safari/537.36',
-			'Accept': '*/*',
-			'Referer': 'https://app.splatoon2.nintendo.net/coop',
-			'Accept-Encoding': 'gzip, deflate',
-			'Accept-Language': 'en-us'
-		}
 
 	async def doFeed(self):
+		#TODO: Future Update: Is it possible to put the orderid button into gear feeds. Expire the button after that rotation
 		cur = await self.sqlBroker.connect()
 		stmt = "SELECT * FROM feeds"
 		feeds = await cur.execute(stmt)
@@ -128,7 +126,7 @@ class nsoHandler():
 			else:
 				titleval = 'Current SR Rotation'
 				timename = 'Time Until SR Rotation'
-			#TODO Check this
+			
 			embed.add_field(name="Salmon Run", value=titleval, inline=False)
 			embed.add_field(name='Map', value=srdata['map']['name'], inline=True)
 			embed.add_field(name='Weapons', value=srdata['weapons'].replace('\n', ', ', 3), inline=True)
@@ -147,6 +145,7 @@ class nsoHandler():
 		return embed
 
 	async def updateS2JSON(self):
+		#TODO : Make user agent include all owners in this vs my hard coded ID
 		useragent = { 'User-Agent' : 'jet-bot/1.0 (discord:jetsurf#8514)' }
 		print("S2JSON CACHE: Updating...")
 		#Do store JSON update
@@ -162,7 +161,7 @@ class nsoHandler():
 		response = urllib.request.urlopen(req)
 		self.srJSON = json.loads(response.read().decode())
 
-	async def addStoreDM(self, ctx, args, is_slash=False):
+	async def addStoreDM(self, ctx, args):
 		if len(args) == 0:
 			await ctx.respond("I need an item/brand/ability to search for!")
 			return
@@ -185,7 +184,6 @@ class nsoHandler():
 				term = match2.get().name()
 
 		#Search Items
-		match3 = None
 		if flag != True:
 			match3 = self.splatInfo.matchGear(term)
 			if match3.isValid():
@@ -236,22 +234,6 @@ class nsoHandler():
 
 			await self.sqlBroker.close(cur)
 			return
-		else:
-			if not is_slash:
-				def check2(m):
-					return m.author == ctx.user and m.channel == ctx.channel
-
-				if match1.isValid():
-					await ctx.respond(f"{ctx.user.name} do you want me to DM you when gear with ability {term} appears in the shop? (Respond Yes/No)")
-				elif match2.isValid():
-					await ctx.respond(f"{ctx.user.name} do you want me to DM you when gear by brand {term} appears in the shop? (Respond Yes/No)")
-				else:
-					await ctx.respond(f"{ctx.user.name} do you want me to DM you when {term} appears in the shop? (Respond Yes/No)")
-
-				resp = await self.client.wait_for('message', check=check2)
-				if 'yes' not in resp.content.lower():
-					await ctx.respond("Ok, I haven't added you to receive a DM.")
-					return
 
 		stmt = "SELECT COUNT(*) FROM storedms WHERE clientid = %s"
 		await cur.execute(stmt, (str(ctx.user.id),))
@@ -410,16 +392,15 @@ class nsoHandler():
 		await ctx.respond(embed=embed)
 
 	async def handleDM(self, theMem, theGear):
-		def checkDM(m):
-			return m.author.id == theMem.id and m.guild == None
-
 		theSkill = theGear['skill']['name']
 		theType = theGear['gear']['name']
 		theBrand = theGear['gear']['brand']['name']
 
-		embed = self.makeGearEmbed(theGear, "Gear you wanted to be notified about has appeared in the shop!", "Respond with 'order' to order, or 'stop' to stop recieving notifications (within the next two hours)")
+		embed = self.makeGearEmbed(theGear, "Gear you wanted to be notified about has appeared in the shop!", "You can order with the button below. If you don't see it, run /token.")
 		try:
-			await theMem.send(embed=embed)
+			view = orderView(self, self.nsotoken, theMem)
+			await view.initView()
+			await theMem.send(embed=embed, view=view)
 		except discord.Forbidden:
 			print(f"Forbidden from messaging user {str(theMem.id)}, removing from DMs")
 			cur = await self.sqlBroker.connect()
@@ -430,120 +411,6 @@ class nsoHandler():
 			return
 
 		print(f"Messaged {theMem.name}")
-
-		def check1(m):
-			return True if isinstance(m.channel, discord.channel.DMChannel) and m.author.name == theMem.name and not m.author.bot else False
-
-		# Discord.py changed timeouts to throw exceptions...
-		try:
-			resp = await self.client.wait_for('message', timeout=7100, check=check1)
-		except:
-			return
-
-		cur = await self.sqlBroker.connect()
-		if 'stop' in resp.content.lower():
-			stmt = "SELECT COUNT(*) FROM storedms WHERE (clientid = %s) AND ((ability = %s) OR (brand = %s) OR (gearname = %s))"
-			await cur.execute(stmt, (theMem.id, theSkill, theBrand, theType, ))
-			count = await cur.fetchone()
-			if count[0] > 1:
-				while True:
-					stmt = 'SELECT ability, brand, gearname FROM storedms WHERE (clientid = %s) AND ((ability = %s) OR (brand = %s) OR (gearname = %s))'
-					await cur.execute(stmt, (theMem.id, theSkill, theBrand, theType, ))
-					fields = await cur.fetchall()
-					abilFlag = False
-					branFlag = False
-					gearFlag = False
-					string = "You have multiple flags from this item to notify you on, which of the following would you like to remove? ("
-					for i in fields:
-						if i[0] != None:
-							abilFlag = True
-							string+=f"{theSkill}/"
-						if i[1] != None:
-							branFlag = True
-							string+=f"{theBrand}/"
-						if i[2] != None:
-							gearFlag = True
-							string+=f"{theType}/"
-
-					string+= "all/quit to stop removing DM triggers)"
-
-					await theMem.send(string)
-					try:
-						confirm = await self.client.wait_for('message', timeout=5, check=checkDM)
-					except:
-						await theMem.send("Didn't get a response from you on DM flags")
-						break
-					if confirm.content.lower() == theSkill.lower() and abilFlag:
-						stmt = 'DELETE FROM storedms WHERE (clientid = %s) AND (ability = %s)'
-						await cur.execute(stmt, (theMem.id, theSkill, ))
-						abilFlag = False
-						await theMem.send(f"Ok, removed you from being DM'ed when gear with ability {theSkill} appears in the shop!")
-					elif confirm.content.lower() == theBrand.lower() and branFlag:
-						stmt = 'DELETE FROM storedms WHERE (clientid = %s) AND (brand = %s)'
-						await cur.execute(stmt, (theMem.id, theBrand, ))
-						branFlag = False
-						await theMem.send(f"Ok, removed you from being DM'ed when gear by brand {theBrand} appears in the shop!")
-					elif confirm.content.lower() == theType.lower() and abilFlag:
-						stmt = 'DELETE FROM storedms WHERE (clientid = %s) AND (gearname = %s)'
-						await cur.execute(stmt, (theMem.id, theType, ))
-						await self.sqlBroker.commit(cur)
-						gearFlag = False
-						await theMem.send(f"Ok, removed you from being DM'ed when {theAbility} appears in the shop!")
-					elif confirm.content.lower() == 'all':
-						stmt = 'DELETE FROM storedms WHERE (clientid = %s) AND ((ability = %s) OR (brand = %s) OR (gearname = %s))'
-						await cur.execute(stmt, (theMem.id, theSkill, theBrand, theType, ))
-						await theMem.send("Ok removed you from all flags to be DM'ed on associated with this item")
-						break
-					elif confirm.content.lower() == 'quit':
-						await theMem.send("Ok, stopping removal of DM flags!")
-						break
-					else:
-						await theMem.send("Didn't understand that")
-
-					if not abilFlag and not branFlag and not gearFlag:
-						await theMem.send("Ok, no more flags on this item to DM you on!")
-						break
-				await self.sqlBroker.commit(cur)
-			else:
-				stmt = 'SELECT ability, brand, gearname FROM storedms WHERE (clientid = %s) AND ((ability = %s) OR (brand = %s) OR (gearname = %s))'
-				await cur.execute(stmt, (theMem.id, theSkill, theBrand, theType, ))
-				fields = await cur.fetchone()
-				if fields[0] != None:
-					await theMem.send(f"Ok, I won't DM you again when gear with ability {theSkill} appears in the shop.")
-				elif fields[1] != None:
-					await theMem.send(f"Ok, I won't DM you again when gear by {theBrand} appears in the shop.")
-				else:
-					await theMem.send(f"Ok, I won't DM you again when {theType} appears in the shop.")
-
-				stmt = 'DELETE FROM storedms WHERE (clientid = %s) AND ((ability = %s) OR (brand = %s) OR (gearname = %s))'
-
-				await cur.execute(stmt, (theMem.id, theSkill, theBrand, theType, ))
-				await self.sqlBroker.commit(cur)
-
-		elif 'order' in resp.content.lower():
-			await self.sqlBroker.close(cur)
-			context = messagecontext.MessageContext(resp)
-			print(f"Ordering gear for: {str(context.user.name)}")
-			await self.orderGearCommand(context, order=5, is_slash=False, override=True)
-		else:
-			#Response but nothing understood
-			print(f"Keeping {theMem.name} in DM's")
-			stmt = 'SELECT ability, brand, gearname FROM storedms WHERE (clientid = %s) AND ((ability = %s) OR (brand = %s) OR (gearname = %s))'
-			await cur.execute(stmt, (theMem.id, theSkill, theBrand, theType, ))
-			fields = await cur.fetchall()
-			await self.sqlBroker.close(cur)
-			string = "Didn't understand that. The item I notified you about will be on the store for another 10 hours. I'll DM you again when gear with "
-			for i in fields:
-				if i[0] != None:
-					string+=theSkill + ", "
-				if i[1] != None:
-					string+=theBrand + ", "
-				if i[2] != None:
-					string+=theType + ", "
-
-			string = "".join(string.rsplit(", ", 1)) + " appears in the shop"
-			string = " or ".join(string.rsplit(", ", 1))
-			await theMem.send(string)
 
 	async def doStoreDM(self):
 		cur = await self.sqlBroker.connect()
@@ -572,111 +439,31 @@ class nsoHandler():
 
 			asyncio.ensure_future(self.handleDM(theMem, theGear))
 
-	async def getStoreJSON(self, ctx):
-		theGear = self.storeJSON['merchandises'][5]
-		await ctx.respond(f"```{str(theGear)}```")
-
-	#While this certainly can mimic any user in the DB, this is only used for debugging JSON output from Nintendo
-	async def getNSOJSONRaw(self, ctx, args):
-		if args.get('user') != None:
-			print(f"ID: {args.get('user')}")
-			iksm = await self.nsotoken.getGameKey(int(args.get('user')), "s2")
-		else:
-			iksm = await self.nsotoken.getGameKey(ctx.user.id, "s2")
-
-		if iksm.get('iksm') == None:
-			await ctx.repsond("Sorry, can't find iksm", ephemeral=True)
-			return
-
-		if args['endpoint'] == 'base':
-			url = "https://app.splatoon2.nintendo.net/api/records"
-			header = self.app_head
-		elif args['endpoint'] == 'sr':
-			url = "https://app.splatoon2.nintendo.net/api/coop_results"
-			header = self.app_head_coop
-		elif args['endpoint'] == 'fullbattle':
-			if args['battleid'] == None:
-				await ctx.respond("Battleid required when endpoint is fullbattle", ephemeral=True)
-				return
-
-			url = f"https://app.splatoon2.nintendo.net/api/results/{args['battleid']}"
-			header = self.app_head
-		elif args['endpoint'] == 'battle':
-			url = "https://app.splatoon2.nintendo.net/api/results"
-			header = self.app_head
-
-		results_list = requests.get(url, headers=header, cookies=dict(iksm_session=iksm['iksm']))
-		thejson = json.loads(results_list.text)	
-
-		if 'AUTHENTICATION_ERROR' in str(thejson):
-			iksm = await self.nsotoken.doGameKeyRefresh(ctx)
-			results_list = requests.get(url, headers=header, cookies=dict(iksm_session=iksm['iksm']))
-			thejson = json.loads(results_list.text)
-
-		f = io.StringIO(results_list.text)
-		jsonToSend = discord.File(fp=f, filename = 'data.json')
-		await ctx.respond(file=jsonToSend, ephemeral=True)
-
-	async def getNSOJSON(self, ctx, header, url):
-		if not await self.nsotoken.checkSessionPresent(ctx):
-			await ctx.respond("You don't have a token setup with me! Please DM me !token with how to get one setup!")
-			return
-
-		iksm = await self.nsotoken.getGameKey(ctx.user.id, "s2")
-		if iksm == None:
-			iksm = await self.nsotoken.doGameKeyRefresh(ctx)
-			if iksm == None:
-				return None
-
-		results_list = requests.get(url, headers=header, cookies=dict(iksm_session=iksm['iksm']))
-		thejson = json.loads(results_list.text)	
-
-
-		if 'AUTHENTICATION_ERROR' in str(thejson):
-			iksm = await self.nsotoken.doGameKeyRefresh(ctx)
-			if iksm == None:
-				return None
-
-			results_list = requests.get(url, headers=header, cookies=dict(iksm_session=iksm['iksm']))
-			thejson = json.loads(results_list.text)
-			if 'AUTHENTICATION_ERROR' in str(thejson):
-				return None
-
-		return thejson
-
 	async def weaponParser(self, ctx, weapid):
-		thejson = await self.getNSOJSON(ctx, self.app_head, "https://app.splatoon2.nintendo.net/api/records")
-		if thejson == None:
+		await ctx.defer()
+
+		nso = await self.nsotoken.get_nso_client(ctx.user.id)
+		if nso == None:
+			ctx.respond("You don't have a NSO token setup! Run /token to get started.")
 			return
 
-		try:
-			weapondata = thejson['records']['weapon_stats']
-		except:
-			await message.channel.send("Error while retrieving json for weapon stats, this has been logged with my owners.")
-			print(f"ERROR IN WEAPON JSON:\n{str(thejson)}")
+		data = nso.s2.get_weapon_stats(weapid)
+		if data == None:
+			print(f"NSOHANDLER: weaponParser call returned None: userid {ctx.user.id}")
+			await ctx.respond("Something went wrong! As this is new, please report this to my support guild.")
+			return	
+
+		if data['weapon_data'] == None:
+			ctx.respond("I can't find any data on that weapon for you.")
 			return
-
-		theweapdata = None
-		gotweap = False
-		for i in weapondata:
-			if int(i) == weapid:
-				gotweap = True
-				theweapdata = weapondata[i]
-				break
-
-		if not gotweap:
-			await ctx.respond("I have no stats for that weapon for you")
-			return
-
-		name = thejson['records']['player']['nickname']
-		turfinked = theweapdata['total_paint_point']
-		turfstring = str(turfinked)
 		
 		cur = await self.sqlBroker.connect()
 		await cur.execute("SELECT badge100k, badge500k, badge1m, badge10m FROM emotes WHERE myid = %s", (self.client.user.id,))
 		emotes = await cur.fetchone()
 		await self.sqlBroker.commit(cur)
 
+		turfinked = data['weapon_data']['turf_inked']
+		turfstring = str(turfinked)
 		if turfinked >= 100000:
 			turfstring = f"{str(turfinked)}{emotes[0] if emotes != None else ''}"
 		if turfinked >= 500000:
@@ -685,215 +472,111 @@ class nsoHandler():
 			turfstring = f"{str(turfinked)}{emotes[2] if emotes != None else ''}"
 		if turfinked >= 9999999:
 			turfstring = f"{str(turfinked)}{emotes[3] if emotes != None else ''}"
-		wins = theweapdata['win_count']
-		loss = theweapdata['lose_count']
-		if (wins + loss) != 0:
-			winper = int(wins / (wins + loss) * 100)
-		else:
-			winper = 0
-
-		freshcur = theweapdata['win_meter']
-		freshmax = theweapdata['max_win_meter']
 
 		embed = discord.Embed(colour=0x0004FF)
-		embed.title = f"{str(name)}'s Stats for {theweapdata['weapon']['name']}"
-		embed.set_thumbnail(url=f"https://splatoon2.ink/assets/splatnet{theweapdata['weapon']['image']}")
-		embed.add_field(name="Wins/Losses/%", value=f"{str(wins)}/{str(loss)}/{str(winper)}%", inline=True)
+		embed.title = f"{str(data['player_name'])}'s Stats for {data['weapon_data']['name']}"
+		embed.set_thumbnail(url=f"https://splatoon2.ink/assets/splatnet{data['weapon_data']['image']}")
+		embed.add_field(name="Wins/Losses/%", value=f"{str(data['weapon_data']['wins'])}/{str(data['weapon_data']['losses'])}/{str(data['weapon_data']['percent'])}%", inline=True)
 		embed.add_field(name="Turf Inked", value=turfstring, inline=True)
-		embed.add_field(name="Freshness (Current/Max)", value=f"{str(freshcur)}/{str(freshmax)}", inline=True)
+		embed.add_field(name="Freshness (Current/Max)", value=f"{str(data['weapon_data']['freshness_current'])}/{str(data['weapon_data']['freshness_max'])}", inline=True)
 
 		await ctx.respond(embed=embed)
 
 	async def mapParser(self, ctx, mapid):
-		thejson = await self.getNSOJSON(ctx, self.app_head, "https://app.splatoon2.nintendo.net/api/records")
-		if thejson == None:
+		await ctx.defer()
+
+		nso = await self.nsotoken.get_nso_client(ctx.user.id)
+		if nso == None:
+			ctx.respond("You don't have a NSO token setup! Run /token to get started.")
 			return
 
-		try:
-			allmapdata = thejson['records']['stage_stats']
-		except:
-			await ctx.respond("Error retrieving json for stage_stats. This has been logged for my owners.")
-			print(f"ERROR IN MAP JSON:\n{str(thejson)}")
-			return
+		data = nso.s2.get_map_stats(mapid)
+		if data == None:
+			print(f"NSOHANDLER: mapParser call returned None: userid {ctx.user.id}")
+			await ctx.respond("Something went wrong! As this is new, please report this to my support guild.")
+			return			
 
-		themapdata = None
-		for i in allmapdata:
-			if int(i) == mapid:
-				themapdata = allmapdata[i]
-				break
-
-		name = thejson['records']['player']['nickname']
 		embed = discord.Embed(colour=0x0004FF)
-		embed.title = f"{str(name)}'s Stats for {themapdata['stage']['name']} (Wins/Losses/%)"
+		embed.title = f"{data['player_name']}'s Stats for {data['map_name']} (Wins/Losses/%)"
 
-		rmwin = themapdata['hoko_win']
-		rmloss = themapdata['hoko_lose']
-		szwin = themapdata['area_win']
-		szloss = themapdata['area_lose']
-		tcwin = themapdata['yagura_win']
-		tcloss = themapdata['yagura_lose']
-		cbwin = themapdata['asari_win']
-		cbloss = themapdata['asari_lose']
-
-		if (rmwin + rmloss) != 0:
-			rmpercent = int(rmwin / (rmwin + rmloss) * 100)
-		else:
-			rmpercent = 0
-		if (szwin + szloss) != 0:
-			szpercent = int(szwin / (szwin + szloss) * 100)
-		else:
-			szpercent = 0
-		if (tcwin + tcloss) != 0:
-			tcpercent = int(tcwin / (tcwin + tcloss) * 100)
-		else:
-			tcpercent = 0
-		if (cbwin + cbloss) != 0:
-			cbpercent = int(cbwin / (cbwin + cbloss) * 100)
-		else:
-			cbpercent = 0
-
-		embed.set_thumbnail(url=f"https://splatoon2.ink/assets/splatnet{themapdata['stage']['image']}")
-		embed.add_field(name="Splat Zones", value=f"{str(szwin)}/{str(szloss)}/{str(szpercent)}%", inline=True)
-		embed.add_field(name="Rainmaker", value=f"{str(rmwin)}/{str(rmloss)}/{str(rmpercent)}%", inline=True)
-		embed.add_field(name="Tower Control", value=f"{str(tcwin)}/{str(tcloss)}/{str(tcpercent)}%", inline=True)
-		embed.add_field(name="Clam Blitz", value=f"{str(cbwin)}/{str(cbloss)}/{str(cbpercent)}%", inline=True)
+		embed.set_thumbnail(url=f"https://splatoon2.ink/assets/splatnet{data['image']}")
+		embed.add_field(name="Splat Zones", value=f"{str(data['SZ']['wins'])}/{str(data['SZ']['losses'])}/{str(data['SZ']['percent'])}%", inline=True)
+		embed.add_field(name="Rainmaker", value=f"{str(data['RM']['wins'])}/{str(data['RM']['losses'])}/{str(data['RM']['percent'])}%", inline=True)
+		embed.add_field(name="Tower Control", value=f"{str(data['TC']['wins'])}/{str(data['TC']['losses'])}/{str(data['TC']['percent'])}%", inline=True)
+		embed.add_field(name="Clam Blitz", value=f"{str(data['CB']['wins'])}/{str(data['CB']['losses'])}/{str(data['CB']['percent'])}%", inline=True)
 		await ctx.respond(embed=embed)
 
 	async def getStats(self, ctx):
-		thejson = await self.getNSOJSON(ctx, self.app_head, "https://app.splatoon2.nintendo.net/api/records")
-		if thejson == None:
+		await ctx.defer()
+
+		nso = await self.nsotoken.get_nso_client(ctx.user.id)
+		if nso == None:
+			ctx.respond("You don't have a NSO token setup! Run /token to get started.")
+			return
+
+		playerData = nso.s2.get_player_stats()
+		if playerData == None:
+			print(f"NSOHANDLER: getStats call returned None: userid {ctx.user.id}")
+			await ctx.respond("Something went wrong! As this is new, please report this to my support guild.")
 			return
 
 		embed = discord.Embed(colour=0x0004FF)
-		name = thejson['records']['player']['nickname']
-		turfinked = thejson['challenges']['total_paint_point_octa'] + thejson['challenges']['total_paint_point']
-		turfsquid = thejson['challenges']['total_paint_point']
-		turfocto = thejson['challenges']['total_paint_point_octa']
-		totalwins = thejson['records']['win_count']
-		totalloss = thejson['records']['lose_count']
-		recentwins = thejson['records']['recent_win_count']
-		recentloss = thejson['records']['recent_lose_count']
-		if recentloss + recentwins > 0:
-			recentperc = "{:.0%}".format(recentwins/(recentwins + recentloss))
-			totalperc = "{:.0%}".format(totalwins/(totalwins + totalloss))
-		else:
-			recentperc = "0%"
-			totalperc = "0%"
-
-		maxleagueteam = thejson['records']['player']['max_league_point_team']
-		maxleaguepair = thejson['records']['player']['max_league_point_pair']
-		species = thejson['records']['player']['player_type']['species'].capitalize()
-		gender = thejson['records']['player']['player_type']['style']
-		leaguepairgold = thejson['records']['league_stats']['pair']['gold_count']
-		leaguepairsilver = thejson['records']['league_stats']['pair']['silver_count']
-		leaguepairbronze = thejson['records']['league_stats']['pair']['bronze_count']
-		leaguepairnone = thejson['records']['league_stats']['pair']['no_medal_count']
-		leagueteamgold = thejson['records']['league_stats']['team']['gold_count']
-		leagueteamsilver = thejson['records']['league_stats']['team']['silver_count']
-		leagueteambronze = thejson['records']['league_stats']['team']['bronze_count']
-		leagueteamnone = thejson['records']['league_stats']['team']['no_medal_count']
-
-		topweap = None
-		topink = 0
-		for i in thejson['records']['weapon_stats']:
-			j = thejson['records']['weapon_stats'][i]
-			if topink < int(j['total_paint_point']):
-				topink = int(j['total_paint_point'])
-				topweap = j
-
-		embed.title = f"{str(name)} - {species} {gender} - Stats"
-		embed.add_field(name='Turf Inked', value=f"Squid: {str(turfsquid)}\nOcto: {str(turfocto)}\nTotal: {str(turfinked)}", inline=True)
-		embed.add_field(name='Wins/Losses/%', value=f"Last 50: {str(recentwins)}/{str(recentloss)}/{recentperc}\nTotal: {str(totalwins)}/{str(totalloss)}/{totalperc}", inline=True)
-		embed.add_field(name='Top League Points', value=f"Team League: {str(maxleagueteam)}\nPair League: {str(maxleaguepair)}", inline=True)
-		embed.add_field(name='Team League Medals', value=f"Gold: {str(leagueteamgold)}\nSilver: {str(leagueteamsilver)}\nBronze: {str(leagueteambronze)}\nUnranked: {str(leagueteamnone)}", inline=True)
-		embed.add_field(name='Pair League Medals', value=f"Gold: {str(leaguepairgold)}\nSilver: {str(leaguepairsilver)}\nBronze: {str(leaguepairbronze)}\nUnranked: {str(leaguepairnone)}", inline=True)
-		embed.add_field(name='Favorite Weapon', value=f"{topweap['weapon']['name']} with {str(topink)} turf inked total", inline=True)
+		embed.title = f"{playerData['name']} - {playerData['species']} {playerData['gender']} - Stats"
+		embed.add_field(name='Turf Inked', value=f"Squid: {str(playerData['turf_stats']['inked_squid'])}\nOcto: {str(playerData['turf_stats']['inked_octo'])}\nTotal: {str(playerData['turf_stats']['inked_total'])}", inline=True)
+		embed.add_field(name='Wins/Losses/%', value=f"Last 50: {str(playerData['wl_stats']['recent_wins'])}/{str(playerData['wl_stats']['recent_loss'])}/{playerData['wl_stats']['recent_percent']}\nTotal: {str(playerData['wl_stats']['total_wins'])}/{str(playerData['wl_stats']['recent_loss'])}/{playerData['wl_stats']['total_percent']}", inline=True)
+		embed.add_field(name='Top League Points', value=f"Team League: {str(playerData['league_stats']['max_rank_team'])}\nPair League: {str(playerData['league_stats']['max_rank_pair'])}", inline=True)
+		embed.add_field(name='Team League Medals', value=f"Gold: {str(playerData['league_stats']['team_gold'])}\nSilver: {str(playerData['league_stats']['team_silver'])}\nBronze: {str(playerData['league_stats']['team_bronze'])}\nUnranked: {str(playerData['league_stats']['team_none'])}", inline=True)
+		embed.add_field(name='Pair League Medals', value=f"Gold: {str(playerData['league_stats']['pair_gold'])}\nSilver: {str(playerData['league_stats']['pair_silver'])}\nBronze: {str(playerData['league_stats']['pair_bronze'])}\nUnranked: {str(playerData['league_stats']['pair_none'])}", inline=True)
+		embed.add_field(name='Favorite Weapon', value=f"{playerData['top_weapon']['name']} with {str(playerData['top_weapon']['total_inked'])} turf inked total", inline=True)
 
 		await ctx.respond(embed=embed)
 
 	async def getSRStats(self, ctx):
-		thejson = await self.getNSOJSON(ctx, self.app_head_coop, "https://app.splatoon2.nintendo.net/api/coop_results")
-		if thejson == None:
+		await ctx.defer()
+
+		nso = await self.nsotoken.get_nso_client(ctx.user.id)
+		srdata = nso.s2.get_sr_stats()
+		if srdata == None:
+			ctx.respond("You don't have a NSO token setup! Run /token to get started.")
 			return
 
-		name = thejson['results'][0]['my_result']['name']	
-		jobresults = thejson['results']
-		jobcard = thejson['summary']['card']
-		rank = thejson['summary']['stats'][0]['grade']['name']
-		points = thejson['summary']['stats'][0]['grade_point']
 		embed = discord.Embed(colour=0xFF9B00)
-		embed.title = f"{name} - {rank} {str(points)} - Salmon Run Stats"
+		embed.title = f"{srdata['player_name']} - {srdata['rank_name']} {str(srdata['rank_points'])} - Salmon Run Stats"
 
-		embed.add_field(name="Overall Stats", value=f"Shifts Worked: {str(jobcard['job_num'])}\nTeammates Rescued: {str(jobcard['help_total'])}\nGolden Eggs Collected: {str(jobcard['golden_ikura_total'])}\nPower Eggs Collected: {str(jobcard['ikura_total'])}\nTotal Points: {str(jobcard['kuma_point_total'])}", inline=True)
+		embed.add_field(name="Overall Stats", value=f"Shifts Worked: {str(srdata['overall_stats']['matches_total'])}\nTeammates Rescued: {str(srdata['overall_stats']['help_total'])}\nGolden Eggs Collected: {str(srdata['overall_stats']['golden_eggs_total'])}\nPower Eggs Collected: {str(srdata['overall_stats']['power_eggs_total'])}\nTotal Points: {str(srdata['overall_stats']['points_total'])}", inline=True)
+		embed.add_field(name=f"Avgerage Stats (Last {str(srdata['recent_stats']['matches_total'])} Games)", value=f"Teammates Rescued: {str(srdata['recent_stats']['help_average'])}\nTimes Died: {str(srdata['recent_stats']['deaths_average'])}\nGolden Eggs: {str(srdata['recent_stats']['golden_eggs_average'])}\nPower Eggs: {str(srdata['recent_stats']['power_eggs_average'])} \nHazard Level: {str(srdata['recent_stats']['hazard_average'])}%", inline=True)
+		embed.add_field(name=f"Total Stats (Last {str(srdata['recent_stats']['matches_total'])} Games)", value=f"Teammates Rescued: {str(srdata['recent_stats']['help_total'])}\nTimes Died: {str(srdata['recent_stats']['deaths_total'])}\nGolden Eggs: {str(srdata['recent_stats']['golden_eggs_total'])}\nPower Eggs: {str(srdata['recent_stats']['power_eggs_total'])}", inline=True)
 
-		sheadcnt, stingcnt, flyfshcnt, seelcnt, scrapcnt, mawscnt, drizcnt, deathcnt, rescnt, matches, hazardpts, geggs, peggs = 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-		for i in jobresults:
-			matches += 1
-			deathcnt += i['my_result']['dead_count']
-			rescnt += i['my_result']['help_count']
-			hazardpts += i['danger_rate']
-			geggs += i['my_result']['golden_ikura_num']
-			peggs += i['my_result']['ikura_num']
-			for j in i['my_result']['boss_kill_counts']:
-				y = i['my_result']['boss_kill_counts'][j]
-				if 'Steelhead' in y['boss']['name']:
-					sheadcnt += y['count']
-				if 'Stinger' in y['boss']['name']:
-					stingcnt += y['count']
-				if 'Flyfish' in y['boss']['name']:
-					flyfshcnt += y['count']
-				if 'Steel Eel' in y['boss']['name']:
-					seelcnt += y['count']
-				if 'Scrapper' in y['boss']['name']:
-					scrapcnt += y['count']
-				if 'Maws' in y['boss']['name']:
-					mawscnt += y['count']
-				if 'Drizzler' in y['boss']['name']:
-					drizcnt += y['count']
+		killstring = ""
+		for k, v in srdata['boss_stats'].items():
+			killstring += f"{k}: {v}\n"
 
-		hazardavg = int(hazardpts / matches)
-		geggsavg = int(geggs / matches)
-		peggsavg = int(peggs / matches)
-		deathsavg = int(deathcnt / matches)
-		resavg = int(rescnt / matches)
-		embed.add_field(name=f"Avgerage Stats (Last {str(matches)} Games)", value=f"Teammates Rescued: {str(resavg)}\nTimes Died: {str(deathsavg)}\nGolden Eggs: {str(geggsavg)}\nPower Eggs: {str(peggsavg)} \nHazard Level: {str(hazardavg)}%", inline=True)
-		embed.add_field(name=f"Total Stats (Last {str(matches)} Games)", value=f"Teammates Rescued: {str(rescnt)}\nTimes Died: {str(deathcnt)}\nGolden Eggs: {str(geggs)}\nPower Eggs: {str(peggs)}", inline=True)
-		embed.add_field(name=f"Boss Kill Counts (Last {str(matches)} games)", value=f"Steelhead: {str(sheadcnt)}\nStinger: {str(stingcnt)}\nFlyfish: {str(flyfshcnt)}\nSteel Eel: {str(seelcnt)}\nScrapper: {str(scrapcnt)}\nMaws: {str(mawscnt)}\nDrizzler: {str(drizcnt)}", inline=True)
+		embed.add_field(name=f"Boss Kill Counts (Last {str(srdata['recent_stats']['matches_total'])} games)", value=killstring, inline=True)
 
 		await ctx.respond(embed=embed)
 
 	async def getRanks(self, ctx):
-		thejson = await self.getNSOJSON(ctx, self.app_head, "https://app.splatoon2.nintendo.net/api/records")
-		if thejson == None:
+		await ctx.defer()
+
+		nso = await self.nsotoken.get_nso_client(ctx.user.id)
+		ranks = nso.s2.get_ranks()
+		if ranks == None:
+			await ctx.respond("You don't have a NSO token setup! Run /token to get started.")
 			return
 
-		name = thejson['records']['player']['nickname']
-		szrank = thejson['records']['player']['udemae_zones']['name']
-		if szrank == "S+":
-			szrank += str(thejson['records']['player']['udemae_zones']['s_plus_number'])
-
-		rmrank = thejson['records']['player']['udemae_rainmaker']['name']
-		if rmrank == "S+":
-			rmrank += str(thejson['records']['player']['udemae_rainmaker']['s_plus_number'])
-
-		tcrank = thejson['records']['player']['udemae_tower']['name']
-		if tcrank == "S+":
-			tcrank += str(thejson['records']['player']['udemae_tower']['s_plus_number'])
-
-		cbrank = thejson['records']['player']['udemae_clam']['name']
-		if cbrank == "S+":
-			cbrank += str(thejson['records']['player']['udemae_clam']['s_plus_number'])
-
 		embed = discord.Embed(colour=0xFF7800)
-		embed.title = name + "'s Ranks"
-		embed.add_field(name="Splat Zones", value=szrank, inline=True)
-		embed.add_field(name="Tower Control", value=tcrank, inline=True)
-		embed.add_field(name="Rainmaker", value=rmrank, inline=True)
-		embed.add_field(name="Clam Blitz", value=cbrank, inline=True)
+		embed.title = f"{ranks['name']}'s Ranks"
+		embed.add_field(name="Splat Zones", value=ranks['SZ'], inline=True)
+		embed.add_field(name="Tower Control", value=ranks['TC'], inline=True)
+		embed.add_field(name="Rainmaker", value=ranks['RM'], inline=True)
+		embed.add_field(name="Clam Blitz", value=ranks['CB'], inline=True)
 		await ctx.respond(embed=embed)
 
-	def makeGearEmbed(self, gear, title, dirs) -> discord.Embed:
-		embed = discord.Embed(colour=0xF9FC5F)
+	def makeGearEmbed(self, gear, title, dirs, colour=None) -> discord.Embed:
+		if colour != None:
+			embed = discord.Embed(colour=colour)
+		else:
+			embed = discord.Embed(colour=0xF9FC5F)
 		embed.title = title
 		embed.set_thumbnail(url=f"https://splatoon2.ink/assets/splatnet{gear['gear']['image']}")
 		embed.add_field(name="Brand", value=gear['gear']['brand']['name'], inline=True)
@@ -910,28 +593,19 @@ class nsoHandler():
 		embed.add_field(name="Directions", value=dirs, inline=False)
 		return embed
 
-	async def orderGearCommand(self, ctx, args=None, order=-1, override=False, is_slash=True):
+	async def orderGearCommand(self, ctx, args=None, override=False):
+		if view == None:
+			await ctx.defer()
 
-		def check(m):
-			return m.author == ctx.user and m.channel == ctx.channel
-
-		if not await self.nsotoken.checkSessionPresent(ctx) and order == -1:
-			await ctx.respond("You don't have a token setup with me! Please DM me !token with how to get one setup!")
+		nso = await self.nsotoken.get_nso_client(ctx.user.id)
+		
+		if not nso.ensure_api_tokens():
+			#The error check for being called by view is not needed, only shows button if tokens are present
+			ctx.respond("You don't have a NSO token setup! Run /token to get started.")
 			return
-		elif not await self.nsotoken.checkSessionPresent(ctx) and order != -1:
-			await ctx.respond("You don't have a token setup with me, would you like to set one up now? (Yes/No)")
-			resp = await self.client.wait_for('message', check=check)
-			if resp.content.lower() == "yes":
-				await self.nsotoken.login(ctx, flag=False)
-			else:
-				await ctx.respond("Ok! If you want to setup a token to order in the future, DM me !token")
-				return
-
-		if order != -1:
-			merchid = self.storeJSON['merchandises'][order]['id']
 		elif args != None:
 			if len(args) == 0:
-				await ctx.respond("I need an item to order, please use 'ID to order' from `/store currentgear!`")
+				await ctx.respond("I need an item to order, please use 'ID to order' or the item name from `/store currentgear!`")
 				return
 
 			# Build a list of SplatStoreMerch items to match against
@@ -947,83 +621,35 @@ class nsoHandler():
 				return
 
 			merchid = match.get().merchid()
+			ret = nso.s2.post_store_purchase(merchid, override)
+			if isinstance(ctx, discord.Interaction):
+				if ret == None:
+					await ctx.response.send_message("Something went wrong. As this is fairly new, please tell my owners in my support guild!")
+					print(f"NSOHANDLER: View Order: ERROR: merchid {str(merchid)} override {str(override)} and userid {str(ctx.user.id)}")
+					return
+				elif 'code' in ret:
+					merch = nso.s2.get_store_json()
+					embed = self.makeGearEmbed(merch['ordered_info'], f"{ctx.user.name}, you already have an item on order!", "Hit 'Order Item' again to confirm the order.")
+				else:
+					print(f"Ordering {str(ret['ordered_info']['gear']['name'])} for {ctx.user.name} via View")
+					embed = self.makeGearEmbed(ret['ordered_info'], f"{ctx.user.name} - Ordered!", "Go talk to Murch in game to get it!")
+
+				await ctx.response.send_message(embed=embed)
+			else:
+				if ret == None:
+					await ctx.response.send_message("Something went wrong. As this is fairly new, please tell my owners in my support guild!")
+					print(f"NSOHANDLER: Slash CMD Order: ERROR: merchid {str(merchid)} override {str(override)} and userid {str(ctx.user.id)}")
+					return
+				elif 'code' in ret:
+					merch = nso.s2.get_store_json()
+					embed = self.makeGearEmbed(merch['ordered_info'], f"{ctx.user.name}, you already have an item on order!", "Run this command with override set to True to order")
+				else:
+					print(f"Ordering {str(ret['ordered_info']['gear']['name'])} for {ctx.user.name} via Slash CMD")
+					embed = self.makeGearEmbed(ret['ordered_info'], f"{ctx.user.name} - Ordered!", "Go talk to Murch in game to get it!")
+				await ctx.respond(embed=embed)
 		else:
 			await ctx.respond("Order called improperly! Please report this to my support discord!")
 			return
-
-		await self.orderGear(ctx, merchid, override=override, is_slash=is_slash)
-
-	async def orderGear(self, ctx, merchid, override=False, is_slash=True):
-		# Filter for incoming messages, this is still using regular message objects
-		def messageCheck(m):
-			return (m.author.id == ctx.user.id) and (m.channel.id == ctx.channel.id)
-
-		thejson = await self.getNSOJSON(ctx, self.app_head, "https://app.splatoon2.nintendo.net/api/timeline")
-		if thejson == None:
-			return
-
-		tmp_app_head_shop = self.app_head_shop
-		tmp_app_head_shop['x-unique-id'] = thejson['unique_id']
-
-		thejson = await self.getNSOJSON(ctx, self.app_head, "https://app.splatoon2.nintendo.net/api/onlineshop/merchandises")
-		merches = list(filter(lambda g: g['id'] == merchid, thejson['merchandises']))
-		if len(merches) == 0:
-			await ctx.respond("Can't find that merch in the store!")
-			return
-		gearToBuy = merches[0]
-		orderedFlag = thejson.get('ordered_info') != None
-
-		if not is_slash and not override:
-			embed = self.makeGearEmbed(gearToBuy, f"{ctx.user.name} - Order gear?", "Respond with 'yes' to place your order, 'no' to cancel")
-			await ctx.respond(embed=embed)
-			confirmation = await self.client.wait_for('message', check=messageCheck)
-			if not 'yes' in confirmation.content.lower():
-				await ctx.respond(f"{ctx.user.name} - order canceled")
-				return
-
-		if not orderedFlag:
-			if await self.postNSOStore(ctx, gearToBuy['id'], tmp_app_head_shop):
-				await ctx.respond(f"{ctx.user.name} - ordered!")
-			else:
-				await ctx.respond(f"{ctx.user.name} - failed to order")
-		else:
-			ordered = thejson['ordered_info']
-			if not override and is_slash:
-				embed = self.makeGearEmbed(ordered, f"{ctx.user.name}, you already have an item on order!", "Run this command with override set to True to order")
-				await ctx.respond(embed=embed)
-				return
-			elif not is_slash:
-				embed = self.makeGearEmbed(ordered, f"{ctx.user.name}, you already have an item on order!", "Respond with 'yes' to replace your order, 'no' to cancel")
-				await ctx.respond(embed=embed)
-
-			if not is_slash:
-				confirmation = await self.client.wait_for('message', check=messageCheck)
-				if 'yes' in confirmation.content.lower():
-					if await self.postNSOStore(ctx, gearToBuy['id'], tmp_app_head_shop, override=True):
-						await ctx.respond(f"{ctx.user.name} - ordered!")
-					else:
-						await ctx.respond(f"{ctx.user.name} - failed to order")
-			elif is_slash and override: 
-				if await self.postNSOStore(ctx, gearToBuy['id'], tmp_app_head_shop, override=True):
-					embed = self.makeGearEmbed(gearToBuy, f"{ctx.user.name} ordered!", "Go talk to Murch in game to get it!")
-					await ctx.respond(embed=embed)
-				else:
-					embed = self.makeGearEmbed(gearToBuy, f"{ctx.user.name}, failed to order", "You can try running this command again, but there is likely an issue with NSO")
-					await ctx.respond(embed=embed)
-			else:
-				await ctx.respond(f"{ctx.user.name} - something went wrong...")
-
-	async def postNSOStore(self, ctx, gid, app_head, override=False):
-		s2_token = await self.nsotoken.getGameKey(ctx.user.id, "s2.iksm")
-		url = f"https://app.splatoon2.nintendo.net/api/onlineshop/order/{gid}"
-		if override:
-			payload = { "override" : 1 }
-			response = requests.post(url, headers=app_head, cookies=dict(iksm_session=s2_token), data=payload)
-		else:
-			response = requests.post(url, headers=app_head, cookies=dict(iksm_session=s2_token))
-		resp = json.loads(response.text)
-
-		return response.status_code == 200
 
 	async def gearParser(self, ctx=None, flag=0):
 		theTime = int(time.time())
@@ -1109,24 +735,24 @@ class nsoHandler():
 		turf = {}
 		turf['stage_a'] = trfWar[offset]['stage_a']
 		turf['stage_b'] = trfWar[offset]['stage_b']
-		turf['end']  = trfWar[offset]['end_time']
+		turf['end']     = trfWar[offset]['end_time']
 
-		end   = trfWar[offset]['end_time']
-		theTime  = end - theTime
-		theTime  = theTime % 86400
-		hours = int(theTime / 3600)
-		theTime  = theTime % 3600
-		mins  = int(theTime / 60)
+		end     = trfWar[offset]['end_time']
+		theTime = end - theTime
+		theTime = theTime % 86400
+		hours   = int(theTime / 3600)
+		theTime = theTime % 3600
+		mins    = int(theTime / 60)
 
 		rnk = {}
 		rnk['stage_a'] = ranked[offset]['stage_a']
 		rnk['stage_b'] = ranked[offset]['stage_b']
-		rnk['rule'] = ranked[offset]['rule']
+		rnk['rule']    = ranked[offset]['rule']
 
 		lge = {}
 		lge['stage_a'] = league[offset]['stage_a']
 		lge['stage_b'] = league[offset]['stage_b']
-		lge['rule'] = league[offset]['rule']
+		lge['rule']    = league[offset]['rule']
 
 		data = {}
 		data['hours']  = hours
@@ -1146,10 +772,10 @@ class nsoHandler():
 			getNext=True
 
 		weaps = data['weapons']
-		map = data['map']
-		days = data['days']
+		map   = data['map']
+		days  = data['days']
 		hours = data['hours']
-		mins = data['mins']
+		mins  = data['mins']
 
 		if getNext == 0:
 			embed.title = "Current Salmon Run"
@@ -1225,19 +851,24 @@ class nsoHandler():
 		return srdata
 
 	async def battleParser(self, ctx, num=1):
-		recordjson = await self.getNSOJSON(ctx, self.app_head, "https://app.splatoon2.nintendo.net/api/records")
+		await ctx.defer()
+
+		nso = await self.nsotoken.get_nso_client(ctx.user.id)
+		recordjson = nso.s2.do_records_request()
 		if recordjson == None:
+			ctx.respond("You don't have a NSO token setup! Run /token to get started.")
 			return
 
 		embed = discord.Embed(colour=0x0004FF)
-		battlejson = await self.getNSOJSON(ctx, self.app_head, "https://app.splatoon2.nintendo.net/api/results")
+		battlejson = nso.s2.get_all_battles()
 
 		accountname = recordjson['records']['player']['nickname']
 		thebattle = battlejson['results'][num - 1]
 		battletype = thebattle['game_mode']['name']
 		battleid = thebattle['battle_number']
 
-		fullbattle = await self.getNSOJSON(ctx, self.app_head, f"https://app.splatoon2.nintendo.net/api/results/{battleid}")
+		fullbattle = nso.s2.get_full_battle(battleid)
+		
 		enemyteam = fullbattle['other_team_members']
 		myteam = fullbattle['my_team_members']
 		mystats = fullbattle['player_result']
@@ -1297,7 +928,7 @@ class nsoHandler():
 		if not placedPlayer:
 			teamstring += f"{mystats['player']['nickname']}"
 			if myrank != None:
-				teamstring += " - " + myrank
+				teamstring += f" - {myrank}"
 			teamstring += f" - {myweapon} - {str(mykills)}({str(myassists)})/{str(mydeaths)}/{str(specials)}\n"
 
 		for i in enemyteam:
@@ -1317,17 +948,9 @@ class nsoHandler():
 		await ctx.respond(embed=embed)
 
 	async def cmdMaps(self, ctx, args):
-		if len(args) == 0:
-			await ctx.respond("Try 'maps help' for help")
-			return
-
+		#TODO: This can be made better, lets split this up into functions?
 		subcommand = args[0].lower()
-		if subcommand == "help":
-			await ctx.respond("**maps random [n]**: Generate a list of random maps\n"
-				"**maps stats MAP**: Show player stats for MAP\n"
-				"**maps callout MAP**: Show callouts for MAP\n"
-				"**maps list**: Lists all maps with abbreviations")
-		elif subcommand == "list":
+		if subcommand == "list":
 			embed = discord.Embed(colour=0xF9FC5F)
 			embed.title = "Maps List"
 			embed.add_field(name="Maps (abbreviation)", value=", ".join(map(lambda item: item.format(), self.splatInfo.getAllMaps())), inline=False)
@@ -1363,7 +986,7 @@ class nsoHandler():
 		elif "callout" in subcommand:
 			themap = self.splatInfo.matchMaps(" ".join(args[1:]))
 			if not themap.isValid():
-				await ctx.respond(themap.errorMessage("Try command 'maps list' for a list."))
+				await ctx.respond(themap.errorMessage("Couldn't find that map. Try command 'maps list' for a list."))
 				return
 
 			if self.hostedUrl == None:
@@ -1380,20 +1003,9 @@ class nsoHandler():
 			await ctx.respond("Unknown subcommand. Try 'maps help'")
 
 	async def cmdWeaps(self, ctx, args):
-		if len(args) == 0:
-			await ctx.respond("Try 'weapons help' for help")
-			return
-
+		#TODO: This can be made better, lets split this up into functions?
 		subcommand = args[0].lower()
-		if subcommand == "help":
-			await ctx.respond("**weapons random [n]**: Generate a list of random weapons\n"
-				"**weapons stats WEAPON**: Show player stats for WEAPON\n"
-				"**weapons sub SUB**: Show all weapons with SUB\n"
-				"**weapons list TYPE**: Shows all weapons of TYPE\n"
-				"**weapons special SPECIAL**: Show all weapons with SPECIAL\n"
-				"**weapons info WEAPON**: Shows information about specific weapon named WEAPON\n")
-			return
-		elif subcommand == "info":
+		if subcommand == "info":
 			if len(args) > 1:
 				theWeapon = " ".join(args[1:])
 				match = self.splatInfo.matchWeapons(theWeapon)
@@ -1485,9 +1097,3 @@ class nsoHandler():
 				await ctx.respond(out)
 		else:
 			await ctx.respond("Unknown subcommand. Try 'weapons help'")
-
-	async def cmdBattles(self, ctx, num):
-		if num <= 50 and num > 0:
-			await self.battleParser(ctx, num)
-		else:
-			await ctx.respond("Battlenum needs to be between 1-50!")

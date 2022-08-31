@@ -22,15 +22,9 @@ For self-hosting:
 
 ## NOTE
 
-DM'ing the bot with !token and giving it the link it requests pulls your account sesion token from Nintendo to grant it access to game specific data. It is identical to logging into the NSO App on your phone.
+Running /token and giving it the link it requests pulls your account sesion token from Nintendo to grant it access to game specific data. It is identical to logging into the NSO App on your phone.
 The game specific tokens are ONLY used to access your Splatoon 2 stats and ACNH passports to post within Discord and order gear for you. The account session token is used to refresh game tokens if they expire. They are used for nothing else.
 Feel free to look over [modules/nsotoken.py](https://github.com/Jetsurf/jet-bot/blob/master/modules/nsotoken.py) to audit the handling of keys yourself.
-
-
-## Commands
-
-NOTE: This bot is now using slash commands, message commands still work (run !help), but are deprecated and will go away once discord disables message content access for bots
-The following sections list the different commands that are available.
 
 ### Admin commands
 
@@ -82,7 +76,7 @@ These commands cannot be used in DM's.
  
 ### Splatoon 2 Splatnet Commands
 
-The following commands require you to DM the bot with `!token` and follow the instructions. DM `!deletetoken` to remove all tokens from the bot.
+The following commands require you to run `/token` and follow the instructions. Run `/token` again to remove all tokens from the bot.
 
  - `/stats battle NUM` : Gets stats from NUM last battle (1 is latest, upto 50)
  - `/stats rank` : Shows your ranks in the ranked gamemodes
@@ -93,9 +87,20 @@ The following commands require you to DM the bot with `!token` and follow the in
  - `/weapons stats WEAPON` : Pulls stats for a specific weapon
 
 ### Animal Crossing: New Horizons Commands
- - `/acnh passport` : Posts your passport for Animal Crossing: New Horizons
 
- ### Bot Info Commands
+The following commands require you to run `/token` and follow the instructions. Run `/token` again to remove all tokens from the bot.
+
+ - `/acnh passport` : Posts your passport for Animal Crossing: New Horizons
+ - `/acnh getemotes` : Gets all available emotes to use with `/acnh emote`
+ - `/acnh emote` : Makes your character in ACNH perform an emote. Must be connected to the internet with your game
+ - `/acnh message` : Makes your character in ACNH say a message. Must be connected to the internet with your game
+
+### Misc Commands
+
+ - `/fc` : Displays your NSO friend code, if you have a token setup
+ - `/token` : Used to setup a NSO token. Required for specific commands
+
+### Bot Info Commands
  
  - `/github` : Displays my github link
  - `/support` : Posts an invite link to my discord support guild
@@ -103,4 +108,5 @@ The following commands require you to DM the bot with `!token` and follow the in
 # License
 
 [GPLv3](https://www.gnu.org/licenses/gpl-3.0.html)
+
 

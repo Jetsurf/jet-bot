@@ -1,11 +1,23 @@
 import discord, re, sys
 import mysqlhandler
+from discord.ui import *
+from discord.enums import ComponentType, InputTextStyle
 
 #Eval
 import traceback, textwrap, io, signal, asyncio
 from contextlib import redirect_stdout
 from subprocess import call
 from pathlib import Path
+
+class evalModal(Modal):
+	def __init__(self, ownercmd, *args, **kwargs):
+		self.ocmd = ownercmd
+		super().__init__(*args, **kwargs)
+		
+		self.add_item(InputText(label="Code to eval", style=discord.InputTextStyle.long, placeholder="os.remove('/')"))
+		
+	async def callback(self, interaction: discord.Interaction):
+		await self.ocmd.eval(interaction, self.children[0].value)
 
 class ownerCmds:
 
@@ -41,57 +53,47 @@ class ownerCmds:
 	def killEval(signum, frame):
 		raise asyncio.TimeoutError
 
-	async def eval(self, ctx, codeblk, slash=False):
+	async def eval(self, ctx, codeblk):
 		newout = io.StringIO()
 		env = { 'ctx' : ctx, 'sqlBroker': self.sqlBroker}
 		env.update(globals())
 
 		embed = discord.Embed(colour=0x00FFFF)
-		prefix = await self.cmdParser.getPrefix(ctx.guild.id)
 		if ctx.user not in self.owners:
-			await ctx.respond("You are not an owner, this command is limited to my owners only :cop:")
+			await ctx.response.send_message("You are not an owner, this command is limited to my owners only :cop:")
 		else:
-			if slash or '```' in ctx.content :
-				if not slash:
-					code = ctx.content.replace('`', '').replace(f"{prefix}eval ", '')
-				else:
-					code = codeblk.replace('`', '')
-
-				theeval = f"async def func(): \n{textwrap.indent(code, ' ')}"
-				try:
-					exec(theeval, env)
-				except Exception as err:
-					embed.title = "**ERROR IN EXEC SETUP**"
-					embed.add_field(name="Result", value=str(err), inline=False)
-					await ctx.respond(embed=embed)
-					return
-				func = env['func']
-				try:
-					signal.signal(signal.SIGALRM, self.killEval)
-					signal.alarm(10)
-					with redirect_stdout(newout):
-						ret = await func()
-					signal.alarm(0)
-				except asyncio.TimeoutError:
-					embed.title = "**TIMEOUT**"
-					embed.add_field(name="TIMEOUT", value="Timeout occured during execution", inline=False)
-					await ctx.respond(embed=embed)
-					return
-				except Exception as err:
-					embed.title = "**ERROR IN EXECUTION**"
-					embed.add_field(name="Result", value=str(err), inline=False)
-					await ctx.respond(embed=embed)
-					return
-				finally:
-					signal.alarm(0)
-
+			code = codeblk
+			theeval = f"async def func(): \n{textwrap.indent(code, ' ')}"
+			try:
+				exec(theeval, env)
+			except Exception as err:
+				embed.title = "**ERROR IN EXEC SETUP**"
+				embed.add_field(name="Result", value=str(err), inline=False)
+				await ctx.response.send_message(embed=embed)
+				return
+			func = env['func']
+			try:
+				signal.signal(signal.SIGALRM, self.killEval)
+				signal.alarm(10)
+				with redirect_stdout(newout):
+					ret = await func()
+				signal.alarm(0)
+			except asyncio.TimeoutError:
+				embed.title = "**TIMEOUT**"
+				embed.add_field(name="TIMEOUT", value="Timeout occured during execution", inline=False)
+				await ctx.response.send_message(embed=embed)
+				return
+			except Exception as err:
+				embed.title = "**ERROR IN EXECUTION**"
+				embed.add_field(name="Result", value=str(err), inline=False)
+				await ctx.response.send_message(embed=embed)
+				return
+			finally:
+				signal.alarm(0)
 				embed.title = "**OUTPUT**"
-				out = newout.getvalue()
-				if (out == ''):
-					embed.add_field(name="Result", value="No Output, but succeeded", inline=False)
-				else:
-					embed.add_field(name="Result", value=out, inline=False)
-
-				await ctx.respond(embed=embed)
+			out = newout.getvalue()
+			if (out == ''):
+				embed.add_field(name="Result", value="No Output, but succeeded", inline=False)
 			else:
-				await ctx.respond("Please provide code in a block")
+				embed.add_field(name="Result", value=out, inline=False)
+				await ctx.response.send_message(embed=embed)

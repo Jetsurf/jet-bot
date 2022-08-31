@@ -12,105 +12,26 @@ class acHandler():
 		self.nsotoken = nsotoken
 		self.hostedUrl = configData.get('hosted_url')
 		self.webDir = configData.get('web_dir')
-		self.user_app_head = {
-			'Host': 'web.sd.lp1.acbaa.srv.nintendo.net',
-			'User-Agent': 'Mozilla/5.0 (Linux; Android 7.1.2; Pixel Build/NJH47D; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/59.0.3071.125 Mobile Safari/537.36',
-			'Accept': 'application/json, text/plain, */*',
-			'Connection': 'keep-alive',
-			'Referer': 'https://web.sd.lp1.acbaa.srv.nintendo.net/?lang=en-US&na_country=US&na_lang=en-US',
-			'Accept-Encoding': 'gzip, deflate, br',
-			'Accept-Language': 'en-us'
-		}
-		self.user_auth_app_head = {
-			'Host': 'web.sd.lp1.acbaa.srv.nintendo.net',
-			'User-Agent': 'Mozilla/5.0 (Linux; Android 7.1.2; Pixel Build/NJH47D; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/59.0.3071.125 Mobile Safari/537.36',
-			'Accept': 'application/json, text/plain, */*',
-			'Connection': 'keep-alive',
-			'Referer': 'https://web.sd.lp1.acbaa.srv.nintendo.net/players/passport',
-			'Authorization' : 'tmp',
-			'Accept-Encoding': 'gzip, deflate, br',
-			'Accept-Language': 'en-us'
-		}
-		self.user_gcookie = {
-			'_dnt' : '1',
-			'_ga' : 'GA1.2.235595523.1520818620',
-			'_gtoken' : 'tmp'
-		}
-		self.user_pcookie = {
-			'_dnt' : '1',
-			'_ga' : 'GA1.2.235595523.1520818620',
-			'_gtoken' : 'tmp',
-			'_park_session' : 'tmp'
-		}
-
-	async def getNSOJSON(self, ctx, header, url):
-		if not await self.nsotoken.checkSessionPresent(ctx):
-			await ctx.respond("You don't have a token setup with me! Please DM me !token with how to get one setup!")
-			return
-
-		tokens = await self.nsotoken.getGameKey(ctx.user.id, 'ac')
-		if tokens == None:
-			tokens = await self.nsotoken.doGameKeyRefresh(ctx, 'ac')
-			if tokens == None:
-				return
-
-		gtoken = tokens['gtoken']
-		parktoken = tokens['park_session']
-		bearer = tokens['ac_bearer']
-		gtokenFlag = False
-
-		if 'users' in url.lower() and '0x' not in url.lower():
-			gtokenFlag = True
-			self.user_gcookie['_gtoken'] = gtoken
-			r = requests.get(url, headers=header, cookies=self.user_gcookie)
-			thejson = json.loads(r.text)
-		else:
-			self.user_pcookie['_gtoken'] = gtoken
-			self.user_pcookie['_park_session'] = parktoken
-			self.user_auth_app_head['Authorization'] = f"Bearer {bearer}"
-			r = requests.get(url, headers=header, cookies=self.user_pcookie)
-			thejson = json.loads(r.text)
-
-		if r.status_code == 401:
-			await self.nsotoken.doGameKeyRefresh(ctx, 'ac')
-			tokens = await self.nsotoken.getGameKeys(ctx.user.id)
-			if tokens == None:
-				return
-
-			gtoken = tokens['ac']['gtoken']
-			parktoken = tokens['ac']['park_session']
-			bearer = tokens['ac']['ac_bearer']
-
-			if gtokenFlag:
-				self.user_gcookie['_gtoken'] = gtoken
-				r = requests.get(url, headers=header, cookies=self.user_gcookie)
-				thejson = json.loads(r.text)
-			else:
-				self.user_pcookie['_gtoken'] = gtoken
-				self.user_pcookie['_park_session'] = parktoken
-				self.user_auth_app_head['Authorization'] = f"Bearer {bearer}"
-				r = requests.get(url, headers=header, cookies=self.user_pcookie)
-				thejson = json.loads(r.text)
-
-			if r.status_code == 401:
-				print("FAILURE TO RENEW AC TOKENS")
-				return None
-
-		return thejson
 
 	async def passport(self, ctx):
-		if not await self.nsotoken.checkSessionPresent(ctx):
-			await ctx.respond("You don't have a token setup with me! Please DM me !token with how to get one setup!")
+		await ctx.defer()
+
+		nso = await self.nsotoken.get_nso_client(ctx.user.id)		
+		if nso == None:
+			await ctx.respond("You don't have a NSO token setup! Run /token to get started.")
 			return
 
-		userjson = await self.getNSOJSON(ctx, self.user_app_head, 'https://web.sd.lp1.acbaa.srv.nintendo.net/api/sd/v1/users')
+		userjson = nso.acnh.get_users_json()
 		if userjson == None:
+			await ctx.respond("Something went wrong. Please let my owners in my support guild know this broke as it's a new feature!")
+			print(f"ACNH: Passport call returned nothing: userid {str(ctx.user.id)}")
+			#TODO: Best place to break if "account" doesn't have ACNH? - TO TEST
 			return
 		else:
 			user = userjson['users'][0]
 
-		detaileduser = await self.getNSOJSON(ctx, self.user_auth_app_head, f"https://web.sd.lp1.acbaa.srv.nintendo.net/api/sd/v1/users/{user['id']}/profile?language=en-US")
-		landjson = await self.getNSOJSON(ctx, self.user_auth_app_head, f"https://web.sd.lp1.acbaa.srv.nintendo.net/api/sd/v1/lands/{user['land']['id']}/profile?language=en-US")
+		detaileduser = nso.acnh.get_detailed_user_json()
+		landjson = nso.acnh.get_lands_json()
 		profilepic = requests.get(user['image'])
 		profileid = re.search('(?<=user_profile/).*(?=\?)', user['image']).group()
 
@@ -136,3 +57,74 @@ class acHandler():
 
 		await ctx.respond(embed=embed)
 		print("Got a passport!")
+
+	async def ac_emote(self, ctx, emote):
+		await ctx.defer()
+
+		nso = await self.nsotoken.get_nso_client(ctx.user.id)
+		if nso == None:
+			await ctx.respond("You don't have a NSO token setup! Run /token to get started.")
+			return
+		
+		resp = nso.acnh.send_emote(emote)
+		if resp == None:
+			await ctx.respond("Something went wrong. Please let my owners in my support guild know this broke as it's a new feature!")
+			print(f"ACNH: Emote call returned nothing: userid {str(ctx.user.id)} with emote {emote}")
+		elif 'code' in resp and resp['code'] == '1001':
+			await ctx.respond("You aren't online in ACNH! Go talk to Orville at the airport to go online.")
+		elif 'code' in resp and resp['code'] == '3002':
+			await ctx.respond("Invalid emote! Run /acnh getemotes to see your available emotes. Must match exactly.")
+		elif 'status' in resp and resp['status'] == 'success':
+			await ctx.respond("Emote sent!")
+		else:
+			await ctx.respond("Something went wrong! Please let me owners know this broke in my support guild, as it's a new feature!")
+			print(f"ACNH: Emote call returned something unexpected: {resp} with user {str(ctx.user.id)} and emote {emote}")
+
+		return
+
+	async def get_ac_emotes(self, ctx):
+		await ctx.defer()
+
+		nso = await self.nsotoken.get_nso_client(ctx.user.id)
+		if nso == None:
+			await ctx.respond("You don't have a NSO token setup! Run /token to get started.")
+			return
+
+		resp = nso.acnh.get_emotes()
+		if resp == None:
+			await ctx.respond("Something went wrong. Please let my owners know this broke as it's a new feature!")
+			return
+
+		embed = discord.Embed(colour=0x0004FF)
+		embed.title = "Available ACNH Emotes"
+		emoteString = ""
+		emotes={}
+		for emote in resp['emoticons']:
+			emote.pop('url')
+			emoteString += f"{emote['label']}\n"
+
+		embed.add_field(name="Emotes", value=emoteString, inline=False)
+		await ctx.respond(embed=embed)
+		return
+
+	async def ac_message(self, ctx, msg):
+		await ctx.defer()
+
+		nso = await self.nsotoken.get_nso_client(ctx.user.id)
+		if nso == None:
+			await ctx.respond("You don't have a NSO token setup! Run /token to get started.")
+			return
+		
+		resp = nso.acnh.send_message(msg)
+		if resp == None:
+			await ctx.respond("Something went wrong. Please let my owners in my support guild know this broke as it's a new feature!")
+			print(f"ACNH: Message call returned nothing: userid {str(ctx.user.id)} with emote {emote}")
+		elif 'code' in resp and resp['code'] == '1001':
+			await ctx.respond("You aren't online in ACNH! Go talk to Orville at the airport to go online.")
+		elif 'status' in resp and resp['status'] == 'success':
+			await ctx.respond("Message sent!")
+		else:
+			await ctx.respond("Something went wrong! Please let me owners know this broke in my support guild, as it's a new feature!")
+			print(f"ACNH: Message call returned something unexpected: {resp} with user {str(ctx.user.id)} and emote {emote}")
+
+		return

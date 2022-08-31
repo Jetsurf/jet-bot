@@ -27,16 +27,18 @@ class HelpDropDown(discord.ui.Select):
 
 	def readHelpFile(self, file):
 		toReturn = {}
-		toReturn["fileData"] = ""
+		toReturn["fileData"] = []
 
 		with open(file, "r") as f:
-			for line in f:
-				if line.startswith('**'):
-					toReturn['desc'] = line.replace('**', '')
-				elif line.startswith('*'):
-					toReturn['label'] = line.replace('*', '')
-				else:
-					toReturn['fileData'] += line
+			lines = f.readlines()
+
+		for line in lines:
+			if line.startswith('**'):
+				toReturn['desc'] = line.replace('**', '')
+			elif line.startswith('*'):
+				toReturn['label'] = line.replace('*', '')
+			else:
+				toReturn['fileData'].append(line)
 		return toReturn
 
 	async def callback(self, interaction: discord.Interaction):
@@ -76,7 +78,7 @@ class serverUtils():
 		self.valid_commands = {
 			'base'		: 		[ "help", "github", "support" ],
 			'base_sn' 	: 		[ "currentmaps", "nextmaps", "nextsr", "currentsr", "splatnetgear", "storedm" ],
-			'user_sn'	:		[ "rank", "stats", "srstats", "order", "passport" ],
+			'user_sn'	:		[ "rank", "stats", "srstats", "order", "passport", "emote", "message", "getemotes", "fc" ],
 			'hybrid_sn' : 		[ "weapon", "weapons","map", "maps", "battle", "battles" ],
 			'voice' 	:	 	[ "join", "play", "playrandom", "currentsong", "queue", "stop", "skip", "volume", "sounds", "leavevoice" ]
 		}
@@ -84,35 +86,20 @@ class serverUtils():
 		self.scheduler.add_job(self.changeStatus, 'cron', minute='*/5', timezone='UTC') 
 		self.scheduler.start()
 
-	async def deleteFeed(self, ctx, is_slash=False, bypass=False):
+	async def deleteFeed(self, ctx, bypass=False):
 		cur = await self.sqlBroker.connect()
 		stmt = "SELECT * FROM feeds WHERE serverid = %s AND channelid = %s"
 		await cur.execute(stmt, (ctx.guild.id, ctx.channel.id,))
 		chan = await cur.fetchone()
-		mapflag, srflag, gearflag = False, False, False
 
-		def check(m):
-			return m.author == ctx.user and m.channel == ctx.channel
-
+		#TODO: Need to improve this w/ confirmation to delete
 		if chan != None:
-			if bypass == False:
-				await ctx.respond("Delete feed for this channel (yes/no)? ")
-
-				createfeed = await self.client.wait_for('message', check=check)
-				if 'yes' in createfeed.content.lower():
-					saidYes = True
-				else:
-					saidYes = False
-			else:
-				saidYes = False
-
-			if saidYes or bypass:
+			if bypass:
 				stmt = "DELETE FROM feeds WHERE serverid = %s AND channelid = %s"
 				await cur.execute(stmt, (ctx.guild.id, ctx.channel.id,))
 				if cur.lastrowid != None:
 					await self.sqlBroker.commit(cur)
-					if is_slash:
-						await ctx.respond("Ok, deleted feed.")
+					await ctx.respond("Ok, deleted feed.")
 					return True
 				else:
 					await self.sqlBroker.rollback(cur)
@@ -127,62 +114,8 @@ class serverUtils():
 		stmt = "SELECT * FROM feeds WHERE serverid = %s AND channelid = %s"
 		await cur.execute(stmt, (ctx.guild.id, ctx.channel.id,))
 		chan = await cur.fetchone()
-		mapflag, srflag, gearflag = False, False, False
 
-		def check(m):
-			return m.author == ctx.user and m.channel == ctx.channel
-		if args == None:
-			if chan != None:
-				await ctx.respond("Feed already setup for this channel, create a new one? ")
-
-				createfeed = await self.client.wait_for('message', check=check)
-
-				if 'yes' in createfeed.content.lower():
-					stmt = "DELETE FROM feeds WHERE serverid = %s AND channelid = %s"
-					await cur.execute(stmt, (message.guild.id, message.channel.id,))
-					if cur.lastrowid != None:
-						await ctx.respond("Ok, creating feed. Would you like the feed notification to include Map rotations (yes/no)?")
-					else:
-						await ctx.respond("Error in setting up create feed.")
-						return False
-				else:
-					await ctx.respond("Ok, canceling.")
-					return False
-			else:
-				await ctx.respond("No feed is setup for this channel. Would you like to create one (yes/no)?")
-
-				feedresp = await self.client.wait_for('message', check=check)
-
-				if 'yes' in feedresp.content.lower():
-					await ctx.respond("Ok, creating feed. Would you like the feed notification to include Map rotations (yes/no)?")
-				else:
-					await ctx.respond("Ok, canceling.")
-					return False
-
-			mapresp = await self.client.wait_for('message', check=check)
-
-			if 'yes' in mapresp.content.lower():
-				await ctx.respond("Ok, adding Map rotations to the feed. Would you like the feed notification to include Salmon Run rotations (yes/no)?")
-				mapflag = True
-			else:
-				await ctx.respond("Ok, not adding Map rotations to the feed. Would you like the feed notification to include Salmon Run rotations (yes/no)?")
-
-			srresp = await self.client.wait_for('message', check=check)
-
-			if 'yes' in srresp.content.lower():
-				await ctx.respond("Ok, adding Salmon Run rotations to the feed. Would you like the feed notification to include Gear rotations (yes/no)?")
-				srflag = True
-			else:
-				await ctx.respond("Ok, not adding Salmon Run rotations to the feed. Would you like the feed notifications to include Gear rotations (yes/no)?")
-
-			gearresp = await self.client.wait_for('message', check=check)
-
-			if 'yes' in gearresp.content.lower():
-				await ctx.respond("Ok, adding Gear rotations to the feed. ")
-				gearflag = True
-			else:
-				await ctx.respond("Ok, not adding Gear rotations to the feed.")
-		elif chan != None and args[3] == True:
+		if chan != None and args[3] == True:
 			mapflag = args[0]
 			srflag = args[1]
 			gearflag = args[2]
@@ -291,39 +224,6 @@ class serverUtils():
 			return True
 		else:
 			return False
-
-	async def print_help(self, message, prefix):
-		embed = discord.Embed(colour=0x2AE5B8)
-
-		if 'admin' in message.content:
-			file = self.helpfldr + '/admin.txt'
-		elif 'generalsn' in message.content:
-			file = self.helpfldr + '/basesplatnet.txt'
-		elif 'usersn' in message.content:
-			file = self.helpfldr + '/usersplatnet.txt'
-		elif 'voice' in message.content:
-			file = self.helpfldr + '/voice.txt'
-		elif 'ac' in message.content:
-			file = self.helpfldr + '/ac.txt'
-		else:
-			file = self.helpfldr + '/base.txt'
-
-		theString = ''
-		title = ''
-		with open(file, 'r') as f:
-			for line in f:
-				if '*' in line:
-					embed.title = line.replace('*', '')
-				else:
-					if line.startswith('!'):
-						line = line.replace('!', prefix)
-						theString = theString + "**" + line.replace(":", ":**")
-					else:
-						theString = theString + line
-			embed.add_field(name='Commands', value=theString, inline=False)	
-			embed.set_footer(text="If you want something added or want to report a bug/error, run /support")
-
-		await message.channel.send(embed=embed)
 
 	async def report_cmd_totals(self, message):
 		embed = discord.Embed(colour=0x00FFF3)

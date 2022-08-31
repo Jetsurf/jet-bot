@@ -1,13 +1,17 @@
+#!/usr/bin/env python3
+from pynso.nso_api import NSO_API
+from pynso.imink import IMink
 import os, sys, re
 sys.path.append('./modules')
 #Base Stuffs
 import discord, asyncio, subprocess, json, time, itertools
 from discord.commands import *
+from discord.ui import InputText, Modal
 from discord.ext import commands
 #DBL Posting
 import urllib, urllib.request, requests, pymysql
 #Our Classes
-import nsotoken, commandparser, serverconfig, splatinfo, messagecontext, ownercmds
+import nsotoken, commandparser, serverconfig, splatinfo, ownercmds, messagecontext
 import vserver, mysqlhandler, mysqlschema, serverutils, nsohandler, achandler
 import stringcrypt
 
@@ -16,8 +20,7 @@ stringCrypt = stringcrypt.StringCrypt()
 splatInfo = splatinfo.SplatInfo()
 intents = discord.Intents.default()
 intents.members = True
-client = discord.Bot(intents=intents, chunk_guilds_at_startup=False)
-discord.http.API_VERSION = 9
+client = discord.AutoShardedBot(intents=intents, chunk_guilds_at_startup=False)
 commandParser = None
 serverConfig = None
 mysqlHandler = None
@@ -50,7 +53,7 @@ play = voice.create_subgroup(name='play', description='Commands realted to playi
 storedm = store.create_subgroup('dm', description="Commands related to DM'ing on store changes")
 
 def loadConfig():
-	global configData, helpfldr, mysqlHandler, dev, head
+	global configData, helpfldr, mysqlHandler, dev, head, pynso
 	try:
 		with open('./config/discordbot.json', 'r') as json_config:
 			configData = json.load(json_config)
@@ -84,6 +87,38 @@ def ensureEncryptionKey():
 		print("Creating new secret key file...")
 		stringCrypt.writeSecretKeyFile(keyPath)
 
+@client.slash_command(name='token', description='Manages your tokens to use NSO commands')
+async def cmdToken(ctx):
+	view = nsotoken.tokenMenuView(nsoTokens, configData['hosted_url'])
+	await view.init(ctx)
+
+	if view.isDupe:
+		embed = discord.Embed(colour=0x3FFF33)
+		embed.title = "Token Management"
+		embed.add_field(name="Token is already setup", value="Press cancel to close or 'Delete Token' to delete your tokens")
+	else:
+		embed = discord.Embed(colour=0x3FFF33)
+		embed.title = "Instructions"
+		embed.add_field(name="Sign In", value="1) Click the \"Sign In Link\" button\n2) Sign into your nintendo account\n3) Right click the \"Select this person\" button and copy the link address\n3) Hit \"Submit URL\" and paste in the link to complete setup.", inline=False)
+		embed.set_image(url=f"{configData['hosted_url']}/images/nsohowto.png")
+
+	await ctx.respond(embed=embed, view=view, ephemeral=True)
+
+@client.slash_command(name="fc", description="Shares your Nintendo Switch Friend Code (requires /token)")
+async def cmdFC(ctx):
+	nso = await nsoTokens.get_nso_client(ctx.user.id)
+	if nso == None:
+		await ctx.respond("No token setup! Run /token to get started.")
+		return
+
+	await serverUtils.increment_cmd(ctx, 'fc')
+	fc = nso.get_friend_code()
+	if fc == None:
+		await ctx.respond("Something went wrong! Please let my owners in my support guild know this broke!")
+		print(f"NSO FC call returned nothing: userid {ctx.user.id}")
+	else:
+		await ctx.respond(f" Nintendo Switch friend code is: SW-{fc}")
+
 @owner.command(name="emotes", description="Sets Emotes for use in Embeds (Custom emotes only)", default_permission=False)
 @commands.is_owner()
 async def emotePicker(ctx, turfwar: Option(str, "Emote to use for turfwar"), ranked: Option(str, "Emote to use for ranked"), league: Option(str, "Emote to use for league"), badge100k: Option(str, "Emote to use for the 100k inked badge"),
@@ -96,6 +131,21 @@ async def emotePicker(ctx, turfwar: Option(str, "Emote to use for turfwar"), ran
 async def cmdACNHPassport(ctx):
 	await serverUtils.increment_cmd(ctx, 'passport')
 	await acHandler.passport(ctx)
+
+@acnh.command(name='emote', description="Makes your ACNH character do an emote.")
+async def cmdACNHEmote(ctx, emote: Option(str, "The emote to do")):
+	await serverUtils.increment_cmd(ctx, 'emote')
+	await acHandler.ac_emote(ctx, emote)
+
+@acnh.command(name='getemotes', description="Gets available emotes for your ACNH character to do")
+async def cmdACNHGetEmotes(ctx):
+	await serverUtils.increment_cmd(ctx, 'getemotes')
+	await acHandler.get_ac_emotes(ctx)
+
+@acnh.command(name='message', description="What to make your ACNH character say.")
+async def cmdACNHEmote(ctx, message: Option(str, "The message to send")):
+	await serverUtils.increment_cmd(ctx, 'message')
+	await acHandler.ac_message(ctx, message)
 
 @store.command(name='currentgear', description="See the current gear on the SplatNet store")
 async def cmdStoreCurrent(ctx):
@@ -114,7 +164,7 @@ async def cmdStoreDMAbilty(ctx, flag: Option(str, "ABILITY/BRAND/GEAR to DM you 
 		await ctx.respond("Can't DM me with this command.")
 		return
 	await serverUtils.increment_cmd(ctx, 'storedm')
-	await nsoHandler.addStoreDM(ctx, [ str(flag) ], True)
+	await nsoHandler.addStoreDM(ctx, [ str(flag) ])
 
 @storedm.command(name='list', description='Shows you everything you are set to recieve a DM for')
 async def cmdStoreDMAbilty(ctx):
@@ -209,7 +259,8 @@ async def cmdAdminDeleteFeed(ctx):
 		return
 
 	if await checkIfAdmin(ctx):
-		await serverUtils.deleteFeed(ctx, is_slash=True, bypass=True)
+		#TODO: Add view to confirm delete, better than using an argument - this will be a future update
+		await serverUtils.deleteFeed(ctx, bypass=True)
 	else:
 		await ctx.respond("You aren't a guild administrator", ephemeral=True)
 
@@ -339,23 +390,16 @@ async def cmdStats(ctx):
 
 @stats.command(name='battle', description='Get stats from a battle (1-50)')
 async def cmdBattle(ctx, battlenum: Option(int, "Battle Number, 1 being latest, 50 max", required=True, default=1)):
+	if battlenum >= 50 or battlenum < 0:
+		await ctx.respond("Battlenum needs to be between 1-50!")
+		return
 	await serverUtils.increment_cmd(ctx, 'battle')
-	await nsoHandler.cmdBattles(ctx, battlenum)
+	await nsoHandler.battleParser(ctx, battlenum)
 
-#TODO: NEEDS GUILD RESTRICTION - need to dynamically load the home server
 @owner.command(name='eval', description="Eval a code block (Owners only)", default_permission=False)
 @commands.is_owner()
-async def cmdEval(ctx, code: Option(str, "The code block to eval", required=True)):
-	await ownerCmds.eval(ctx, code, slash=True)
-
-@owner.command(name='nsojson', description="Get raw nso json")
-@commands.is_owner()
-async def cmdNSOJson(ctx, endpoint: Option(str, "Endpoint to get json from", choices=['base', 'battle', 'fullbattle', 'sr'], required=True), user: Option(str, "ID of a user to mimic", required=False), battleid: Option(str, "If endpoint is fullbattle, provide battleid to get", required=False)):
-	if ctx.user not in owners:
-		await ctx.respond("Not an owner", ephemeral=True)
-
-	await nsoHandler.getNSOJSONRaw(ctx, { 'endpoint': endpoint, 'user': user, 'battleid': battleid })
-
+async def cmdEval(ctx):
+	await ctx.send_modal(ownercmds.evalModal(ownerCmds, title="Eval"))
 
 @voice.command(name='join', description='Join a voice chat channel')
 async def cmdVoiceJoin(ctx, channel: Option(discord.VoiceChannel, "Voice Channel to join", required=False)):
@@ -554,7 +598,7 @@ async def checkIfAdmin(ctx):
 
 @client.event
 async def on_ready():
-	global client, mysqlHandler, serverUtils, serverVoices, splatInfo, configData, ownerCmds
+	global client, mysqlHandler, serverUtils, serverVoices, splatInfo, configData, ownerCmds, pynso
 	global nsoHandler, nsoTokens, head, dev, owners, commandParser, doneStartup, acHandler, stringCrypt
 
 	if not doneStartup:
@@ -604,7 +648,6 @@ async def on_ready():
 		await mysqlHandler.startUp()
 		mysqlSchema = mysqlschema.MysqlSchema(mysqlHandler)
 		await mysqlSchema.update()
-		await nsoTokens.migrateTokensTable()
 
 		await nsoHandler.updateS2JSON()
 		await nsoTokens.updateAppVersion()
@@ -702,8 +745,8 @@ async def on_voice_state_update(mem, before, after):
 
 @client.event
 async def on_message(message):
-	global serverVoices, serverUtils, mysqlHandler
-	global nsoHandler, owners, commandParser, doneStartup, acHandler, nsoTokens, ownerCmds
+	global serverUtils, mysqlHandler
+	global nsoHandler, owners, commandParser, doneStartup, ownerCmds
 
 	# Filter out bots and system messages or handling of messages until startup is done
 	if message.author.bot or message.type != discord.MessageType.default or not doneStartup:
@@ -713,37 +756,21 @@ async def on_message(message):
 	channel = message.channel
 	context = messagecontext.MessageContext(message)
 
-	if message.guild == None:
-		if message.author in owners:
-			if '!restart' in command:
-				await channel.send("Going to restart!")
-				await mysqlHandler.close_pool()
-				await client.close()
-				sys.stderr.flush()
-				sys.stdout.flush()
-				sys.exit(0)
-			elif '!cmdreport' in command:
-				await serverUtils.report_cmd_totals(message)
-			elif '!announce' in command:
-				await serverUtils.doAnnouncement(message)
-		if '!token' in command:
-			await nsoTokens.login(context)
-		elif '!deletetoken' in command:
-				await nsoTokens.deleteTokens(context)
-		elif '!storedm' in command:
-			await channel.send("Sorry, for performance reasons, you cannot DM me !storedm :frowning:")
+	if message.guild == None and message.author in owners:
+		if '!restart' in command:
+			await channel.send("Going to restart!")
+			await mysqlHandler.close_pool()
+			await client.close()
+			sys.stderr.flush()
+			sys.stdout.flush()
+			sys.exit(0)
+		elif '!cmdreport' in command:
+			await serverUtils.report_cmd_totals(message)
+		elif '!announce' in command:
+			await serverUtils.doAnnouncement(message)
 		return
 	else:
 		theServer = message.guild.id
-
-	prefix = await commandParser.getPrefix(theServer)
-
-	if command.startswith('!prefix'):
-		await message.channel.send(f"The command prefix for this server is: {prefix}")
-	elif message.content.startswith('!help') and prefix not in '!':
-		await serverUtils.print_help(message, prefix)
-	elif ('pizza' in command and 'pineapple' in command) or ('\U0001F355' in message.content and '\U0001F34D' in message.content):
-		await channel.send(f"Don't ever think pineapple and pizza go together {message.author.name}!!!")		
 
 	parsed = await commandParser.parse(theServer, message.content)
 	if parsed == None:
@@ -752,158 +779,10 @@ async def on_message(message):
 	cmd = parsed['cmd']
 	args = parsed['args']
 
-	#Don't just fail if command count can't be incremented
-	try:
-		await serverUtils.increment_cmd(context, cmd)
-	except:
-		print("Failed to increment command... issue with MySQL?")
-
-	if cmd == 'eval':
+	if cmd == 'eval' and message_author in owners:
 		await ownerCmds.eval(context, args[0])
 	elif cmd == 'getcons' and message.author in owners:
 		await mysqlHandler.printCons(message)
-	elif cmd == 'storejson' and message.author in owners:
-		await nsoHandler.getStoreJSON(context)
-	elif cmd == 'admin':
-		if await checkIfAdmin(context):
-			if len(args) == 0:
-				await message.channel.send("Options for admin commands are playlist, blacklist, dm, prefix, announcement, and feed")
-				await serverUtils.print_help(message, prefix)
-				return
-			subcommand = args[0].lower()
-			if subcommand == 'playlist':
-				await serverVoices[theServer].addGuildList(context, args)
-			elif subcommand == 'wtfboom':
-				await serverVoices[theServer].playWTF(message)
-			elif subcommand == 'tts':
-				await channel.send(args[1:].join(" "), tts=True)
-			elif subcommand == 'dm':
-				subcommand2 = args[1].lower()
-				if subcommand2 == 'add':
-					await serverUtils.addDM(context)
-				elif subcommand2 == 'remove':
-					await serverUtils.removeDM(context)
-			elif subcommand == "announcement":
-				subcommand2 = args[1].lower()
-				if subcommand2 == 'set':
-					await serverUtils.setAnnounceChannel(context, args)
-				elif subcommand2 == 'get':
-					channel = await serverUtils.getAnnounceChannel(message.guild.id)
-					if channel == None:
-						await message.channel.send("No channel is set to receive announcements")
-					else:
-						await message.channel.send(f"Current announcement channel is: {channel.name}")
-				elif subcommand2 == 'stop':
-					await serverUtils.stopAnnouncements(context)
-				else:
-					await message.channel.send("Usage: set CHANNEL, get, or stop")
-			elif subcommand == 'prefix':
-				if (len(args) == 1):
-					await channel.send(f"Current command prefix is: {prefix}")
-				elif (len(args) != 2) or (len(args[1]) < 0) or (len(args[1]) > 2):
-					await channel.send("Usage: ```admin prefix <char>``` where *char* is one or two characters")
-				else:
-					await commandParser.setPrefix(theServer, args[1])
-					await channel.send(f"New command prefix is: {await commandParser.getPrefix(theServer)}")
-			elif subcommand == 'feed':
-				if len(args) == 1:
-					await serverUtils.createFeed(context)
-				elif 'delete' in args[1].lower():
-					await serverUtils.deleteFeed(context)
-		else:
-			await channel.send(f"{message.author.name} you are not an admin... :cop:")
-	elif cmd == 'alive':
-		await channel.send(f"Hey {message.author.name}, I'm alive so shut up! :japanese_goblin:")
-	elif cmd == 'rank':
-		await nsoHandler.getRanks(context)
-	elif cmd == 'order':
-		print(f"Ordering gear for user: {message.author.name} and id {str(message.author.id)}")
-		await nsoHandler.orderGearCommand(context, args=args, is_slash=False)
-	elif cmd == 'stats':
-		await nsoHandler.getStats(context)
-	elif cmd == 'srstats':
-		await nsoHandler.getSRStats(context)
-	elif cmd == 'storedm':
-		await nsoHandler.addStoreDM(context, args)
-	elif cmd == 'passport':
-		await acHandler.passport(context)
-	elif cmd == 'github':
-		await channel.send('Here is my github page! : https://github.com/Jetsurf/jet-bot')
-	elif cmd == 'support':
-		await channel.send('Here is a link to my support server: https://discord.gg/TcZgtP5')
-	elif cmd == 'commands' or cmd == 'help':
-		await serverUtils.print_help(message, prefix)
-	elif cmd == 'sounds':
-		await channel.send(embed=serverVoices[theServer].createSoundsEmbed())
-	elif cmd == 'join':
-		if len(args) > 0:
-			await serverVoices[theServer].joinVoiceChannel(context, args)
-		else:
-			await serverVoices[theServer].joinVoiceChannel(context, args)
-	elif cmd == 'currentmaps':
-		await message.channel.send(embed=await nsoHandler.mapsEmbed())
-	elif cmd == 'nextmaps':
-		await message.channel.send(embed=await nsoHandler.mapsEmbed(offset=min(11, message.content.count('next'))))
-	elif cmd == 'currentsr':
-		await message.channel.send(embed=nsoHandler.srEmbed())
-	elif cmd == 'splatnetgear':
-		await nsoHandler.gearParser(context)
-	elif cmd == 'nextsr':
-		await message.channel.send(embed=nsoHandler.srEmbed(getNext=True))
-	elif (cmd == 'map') or (cmd == 'maps'):
-		await nsoHandler.cmdMaps(context, args)
-	elif (cmd == 'weapon') or (cmd == 'weapons'):
-		await nsoHandler.cmdWeaps(context, args)
-	elif (cmd == 'battle') or (cmd == 'battles'):
-		if len(args) < 1:
-			await message.channel.send("Usage: battle num <number> or battle last")
-		else:
-			if args[0] == 'last':
-				await nsoHandler.cmdBattles(context, 1)
-			elif args[0] == 'num' and len(args) > 1:
-				await nsoHandler.cmdBattles(context, int(args[1]))
-			else:
-				await message.channel.send("Usage: battle num <number> or battle last")
-	elif serverVoices[theServer].vclient is not None:
-		if cmd == 'currentsong':
-			if serverVoices[theServer].source is not None:
-				await channel.send(f"Currently Playing Video: {serverVoices[theServer].source.yturl}")
-			else:
-				await channel.send("I'm not playing anything.")
-		elif cmd == 'leavevoice':
-			await serverVoices[theServer].vclient.disconnect()
-			serverVoices[theServer].vclient = None
-		elif cmd == 'playrandom':
-			if len(args) > 0:
-				if args[0].isdigit():
-					await serverVoices[theServer].playRandom(context, int(args[0]))
-				else:
-					await message.channel.send("Num to play must be a number")
-			else:
-				await serverVoices[theServer].playRandom(context, 1)
-		elif cmd == 'play':
-			await serverVoices[theServer].setupPlay(context, args)
-		elif cmd == 'skip':
-			await serverVoices[theServer].stop(context)
-		elif (cmd == 'end') or (cmd == 'stop'):
-			serverVoices[theServer].end()
-		elif cmd == 'volume' or cmd == 'vol':
-			if len(command.split(' ')) < 2:
-				await message.channel.send("Need a value to set volume to!")
-				return
-			vol = command.split(' ')[1]
-			if not vol.isdigit():
-				await message.channel.send("Volume must be a digit 1-60")
-				return
-			if int(vol) > 60:
-				vol = 60
-			if serverVoices[theServer].source != None:
-				await channel.send(f"Setting Volume to {str(vol)}%")
-				serverVoices[theServer].source.volume = float(int(vol) / 100)
-		elif cmd == 'queue':
-			await serverVoices[theServer].printQueue(context)
-		else:
-			await serverVoices[theServer].playSound(cmd)
 
 	sys.stdout.flush()
 	sys.stderr.flush()
@@ -917,6 +796,9 @@ if configData.get('output_to_log'):
 
 ensureEncryptionKey()
 
+if dev:
+	client.add_application_command(owner)	
+
 print('**********NEW SESSION**********')
 print('Logging into discord')
 
@@ -928,11 +810,9 @@ client.add_application_command(voice)
 client.add_application_command(admin)
 client.add_application_command(acnh)
 
-if dev:
-	client.add_application_command(owner)
-
 sys.stdout.flush()
 sys.stderr.flush()
 token = configData['token']
 configData['token'] = ""
+
 client.run(token)
