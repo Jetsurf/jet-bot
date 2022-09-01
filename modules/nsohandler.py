@@ -21,7 +21,7 @@ class orderView(discord.ui.View):
 	async def initView(self):
 		orderBut = discord.ui.Button(label="Order Item")
 		nso = await self.nsoToken.get_nso_client(self.user.id)
-		if nso.session_token != None:
+		if nso.is_logged_in() != None:
 			orderBut.callback = self.orderItem
 		else:
 			self.stop()
@@ -443,7 +443,7 @@ class nsoHandler():
 		await ctx.defer()
 
 		nso = await self.nsotoken.get_nso_client(ctx.user.id)
-		if nso.session_token == None:
+		if nso.is_logged_in() == None:
 			await ctx.respond("You don't have a NSO token setup! Run /token to get started.")
 			return
 
@@ -486,7 +486,7 @@ class nsoHandler():
 		await ctx.defer()
 
 		nso = await self.nsotoken.get_nso_client(ctx.user.id)
-		if nso.session_token == None:
+		if nso.is_logged_in() == None:
 			await ctx.respond("You don't have a NSO token setup! Run /token to get started.")
 			return
 
@@ -510,7 +510,7 @@ class nsoHandler():
 		await ctx.defer()
 
 		nso = await self.nsotoken.get_nso_client(ctx.user.id)
-		if nso.session_token == None:
+		if nso.is_logged_in() == None:
 			await ctx.respond("You don't have a NSO token setup! Run /token to get started.")
 			return
 
