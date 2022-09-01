@@ -224,21 +224,6 @@ class Nsotoken():
 		await self.sqlBroker.commit(cur)
 		return
 
-	async def getGameKeys(self, clientid):
-		cur = await self.sqlBroker.connect()
-		await cur.execute("SELECT game_keys FROM tokens WHERE (clientid = %s) LIMIT 1", (str(clientid),))
-		row = await cur.fetchone()
-		await self.sqlBroker.commit(cur)
-
-		if (row == None) or (row[0] == None):
-			return {}  # No keys
-
-		ciphertext = row[0]
-		plaintext = self.stringCrypt.decryptString(ciphertext)
-		#print(f"getGameKeys: {ciphertext} -> {plaintext}")
-		keys = json.loads(plaintext)
-		return keys
-
 	async def deleteTokens(self, interaction):
 		cur = await self.sqlBroker.connect()
 		print("Deleting token and nso client")
