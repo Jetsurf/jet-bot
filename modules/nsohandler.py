@@ -169,6 +169,7 @@ class nsoHandler():
 		term = " ".join(args).lower()
 
 		flag = False
+		match3 = None
 		#Search Abilities
 		if flag != True: #Pre-emptive for adding in pure gear
 			match1 = self.splatInfo.matchAbilities(term)
