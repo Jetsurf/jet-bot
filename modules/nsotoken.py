@@ -26,7 +26,7 @@ class tokenMenuView(discord.ui.View):
 	async def init(self, ctx):
 		self.ctx = ctx
 		self.nso = await self.nsotoken.get_nso_client(ctx.user.id)
-		self.isDupe = True if self.nso.session_token != None else False
+		self.isDupe = self.nso.is_logged_in()
 		cancel = discord.ui.Button(label="Close", style=discord.ButtonStyle.red)
 		cancel.callback = self.cancelButton
 		self.add_item(cancel)
@@ -243,7 +243,6 @@ class Nsotoken():
 	async def deleteTokens(self, interaction):
 		cur = await self.sqlBroker.connect()
 		print("Deleting token and nso client")
-		#self.nso_clients[interaction.user.id] = None
 		stmt = "DELETE FROM nso_client_keys WHERE (clientid = %s)"
 		instmt = (interaction.user.id,)
 		await cur.execute(stmt, instmt)
