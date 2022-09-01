@@ -4,6 +4,7 @@
 class MessageContext:
 	def __init__(self, message):
 		self.message = message
+		self.response = Response(message)
 
 	@property
 	def channel(self):
@@ -32,3 +33,12 @@ class MessageContext:
 	@property
 	def defer(self):
 		return self.message.channel.trigger_typing
+
+class Response:
+
+	def __init__(self, message):
+		self.message = message
+
+	@property
+	def send_message(self):
+		return self.message.channel.send
