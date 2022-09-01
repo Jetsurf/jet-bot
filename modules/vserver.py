@@ -211,7 +211,7 @@ class voiceServer():
 			await ctx.respond("Not connected to voice")
 			return
 
-		if 'https://' in args[0]:
+		if args[0].startswith('https://') or args[0].startswith('http://'):
 			try:
 				tempPlayer = await YTDLSource.from_url(args[0])
 				self.ytQueue.put(tempPlayer)
