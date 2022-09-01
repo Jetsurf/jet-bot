@@ -207,9 +207,9 @@ class voiceServer():
 		if len(args) == 0:
 			return
 
-	        if self.vclient == None:
-	            await ctx.respond("Not connected to voice")
-        	    return
+		if self.vclient == None:
+			await ctx.respond("Not connected to voice")
+			return
 
 		if 'https://' in args[0]:
 			try:
