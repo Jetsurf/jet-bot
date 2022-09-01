@@ -89,6 +89,33 @@ class Nsotoken():
 		self.imink = IMink("Jet-bot/1.0.0 (discord=jetsurf#8514)")  # TODO: Figure out bot owner automatically
 		self.nso_clients = {}
 
+	async def migrate_tokens_if_needed(self):
+		cur = await self.sqlBroker.connect()
+
+		if not await self.sqlBroker.hasTable(cur, 'tokens'):
+			return  # No such table
+
+		await cur.execute("SELECT clientid, session_token FROM tokens")
+		rows = await cur.fetchall()
+
+		for row in rows:
+			clientid = row[0]
+			session_token_ciphertext = row[1]
+
+			print(f"MIGRATE user {clientid}")
+
+			client = await self.get_nso_client(clientid)
+			if client.is_logged_in():
+				print("  Already has new-style tokens, not migrating...")
+				continue
+
+			session_token = self.stringCrypt.decryptString(session_token_ciphertext)
+			client.set_session_token(session_token)
+			await self.nso_client_save_keys(clientid)
+
+		# TODO: If everything works, we can eventually drop the old table
+		#await cur.execute("DROP TABLE tokens")
+
 	# Given a userid, returns an NSO client for that user.
 	async def get_nso_client(self, userid):
 		# If we already have a client for this user, just return it
