@@ -327,6 +327,7 @@ class voiceServer():
 				tempPlayer = await YTDLSource.from_url(x[numToPlay - 1][0])
 			except Exception as e:
 				print(f"ERROR: Failure on song {x[numToPlay - 1][0]} {str(e)}")
+				traceback.print_exception(*sys.exc_info())
 				sys.stdout.flush()
 				continue
 
