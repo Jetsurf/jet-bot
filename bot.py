@@ -780,7 +780,7 @@ async def on_message(message):
 	cmd = parsed['cmd']
 	args = parsed['args']
 
-	if cmd == 'eval' and message_author in owners:
+	if cmd == 'eval' and message.author in owners:
 		await ownerCmds.eval(context, args[0])
 	elif cmd == 'getcons' and message.author in owners:
 		await mysqlHandler.printCons(message)
