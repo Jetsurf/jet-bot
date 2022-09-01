@@ -21,7 +21,7 @@ class orderView(discord.ui.View):
 	async def initView(self):
 		orderBut = discord.ui.Button(label="Order Item")
 		nso = await self.nsoToken.get_nso_client(self.user.id)
-		if nso != None:
+		if nso.is_logged_in():
 			orderBut.callback = self.orderItem
 		else:
 			self.stop()
@@ -443,8 +443,8 @@ class nsoHandler():
 		await ctx.defer()
 
 		nso = await self.nsotoken.get_nso_client(ctx.user.id)
-		if nso == None:
-			ctx.respond("You don't have a NSO token setup! Run /token to get started.")
+		if not nso.is_logged_in():
+			await ctx.respond("You don't have a NSO token setup! Run /token to get started.")
 			return
 
 		data = nso.s2.get_weapon_stats(weapid)
@@ -486,8 +486,8 @@ class nsoHandler():
 		await ctx.defer()
 
 		nso = await self.nsotoken.get_nso_client(ctx.user.id)
-		if nso == None:
-			ctx.respond("You don't have a NSO token setup! Run /token to get started.")
+		if not nso.is_logged_in():
+			await ctx.respond("You don't have a NSO token setup! Run /token to get started.")
 			return
 
 		data = nso.s2.get_map_stats(mapid)
@@ -510,8 +510,8 @@ class nsoHandler():
 		await ctx.defer()
 
 		nso = await self.nsotoken.get_nso_client(ctx.user.id)
-		if nso == None:
-			ctx.respond("You don't have a NSO token setup! Run /token to get started.")
+		if not nso.is_logged_in():
+			await ctx.respond("You don't have a NSO token setup! Run /token to get started.")
 			return
 
 		playerData = nso.s2.get_player_stats()
@@ -535,9 +535,14 @@ class nsoHandler():
 		await ctx.defer()
 
 		nso = await self.nsotoken.get_nso_client(ctx.user.id)
+		if not nso.is_logged_in():
+			await ctx.respond("You don't have a NSO token setup! Run /token to get started.")
+			return
+
 		srdata = nso.s2.get_sr_stats()
 		if srdata == None:
-			ctx.respond("You don't have a NSO token setup! Run /token to get started.")
+			print(f"NSOHANDLER: getSRStats call returned None: userid {ctx.user.id}")
+			await ctx.respond("Something went wrong! As this is new, please report this to my support guild.")
 			return
 
 		embed = discord.Embed(colour=0xFF9B00)
@@ -559,10 +564,16 @@ class nsoHandler():
 		await ctx.defer()
 
 		nso = await self.nsotoken.get_nso_client(ctx.user.id)
-		ranks = nso.s2.get_ranks()
-		if ranks == None:
+		if not nso.is_logged_in():
 			await ctx.respond("You don't have a NSO token setup! Run /token to get started.")
 			return
+
+		ranks = nso.s2.get_ranks()
+		if ranks == None:
+			print(f"NSOHANDLER: getRanks call returned None: userid {ctx.user.id}")
+			await ctx.respond("Something went wrong! As this is new, please report this to my support guild.")
+			return
+
 
 		embed = discord.Embed(colour=0xFF7800)
 		embed.title = f"{ranks['name']}'s Ranks"
@@ -599,9 +610,8 @@ class nsoHandler():
 
 		nso = await self.nsotoken.get_nso_client(ctx.user.id)
 		
-		if not nso.ensure_api_tokens():
-			#The error check for being called by view is not needed, only shows button if tokens are present
-			ctx.respond("You don't have a NSO token setup! Run /token to get started.")
+		if not nso.is_logged_in():
+			await ctx.respond("You don't have a NSO token setup! Run /token to get started.")
 			return
 		elif args != None:
 			if len(args) == 0:
@@ -854,9 +864,14 @@ class nsoHandler():
 		await ctx.defer()
 
 		nso = await self.nsotoken.get_nso_client(ctx.user.id)
+		if not nso.is_logged_in():
+			await ctx.respond("You don't have a NSO token setup! Run /token to get started.")
+			return
+
 		recordjson = nso.s2.do_records_request()
 		if recordjson == None:
-			ctx.respond("You don't have a NSO token setup! Run /token to get started.")
+			print(f"NSOHANDLER: battleParser call returned None: userid {ctx.user.id}")
+			await ctx.respond("Something went wrong! As this is new, please report this to my support guild.")
 			return
 
 		embed = discord.Embed(colour=0x0004FF)

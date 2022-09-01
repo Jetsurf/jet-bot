@@ -26,7 +26,7 @@ class tokenMenuView(discord.ui.View):
 	async def init(self, ctx):
 		self.ctx = ctx
 		self.nso = await self.nsotoken.get_nso_client(ctx.user.id)
-		self.isDupe = True if self.nso.session_token != None else False
+		self.isDupe = self.nso.is_logged_in()
 		cancel = discord.ui.Button(label="Close", style=discord.ButtonStyle.red)
 		cancel.callback = self.cancelButton
 		self.add_item(cancel)
@@ -88,6 +88,32 @@ class Nsotoken():
 		self.scheduler.add_job(self.nso_client_cleanup, 'cron', hour="0", minute='0', second='0', timezone='UTC')
 		self.imink = IMink("Jet-bot/1.0.0 (discord=jetsurf#8514)")  # TODO: Figure out bot owner automatically
 		self.nso_clients = {}
+
+	async def migrate_tokens_if_needed(self):
+		cur = await self.sqlBroker.connect()
+
+		if not await self.sqlBroker.hasTable(cur, 'tokens'):
+			return  # No such table
+
+		await cur.execute("SELECT clientid, session_token FROM tokens")
+		rows = await cur.fetchall()
+
+		for row in rows:
+			clientid = row[0]
+			session_token_ciphertext = row[1]
+
+			print(f"MIGRATE user {clientid}")
+
+			client = await self.get_nso_client(clientid)
+			if client.is_logged_in():
+				print("  Already has new-style tokens, not migrating...")
+				continue
+
+			session_token = self.stringCrypt.decryptString(session_token_ciphertext)
+			client.set_session_token(session_token)
+			await self.nso_client_save_keys(clientid)
+
+		await cur.execute("DROP TABLE tokens")
 
 	# Given a userid, returns an NSO client for that user.
 	async def get_nso_client(self, userid):
@@ -198,25 +224,9 @@ class Nsotoken():
 		await self.sqlBroker.commit(cur)
 		return
 
-	async def getGameKeys(self, clientid):
-		cur = await self.sqlBroker.connect()
-		await cur.execute("SELECT game_keys FROM tokens WHERE (clientid = %s) LIMIT 1", (str(clientid),))
-		row = await cur.fetchone()
-		await self.sqlBroker.commit(cur)
-
-		if (row == None) or (row[0] == None):
-			return {}  # No keys
-
-		ciphertext = row[0]
-		plaintext = self.stringCrypt.decryptString(ciphertext)
-		#print(f"getGameKeys: {ciphertext} -> {plaintext}")
-		keys = json.loads(plaintext)
-		return keys
-
 	async def deleteTokens(self, interaction):
 		cur = await self.sqlBroker.connect()
 		print("Deleting token and nso client")
-		#self.nso_clients[interaction.user.id] = None
 		stmt = "DELETE FROM nso_client_keys WHERE (clientid = %s)"
 		instmt = (interaction.user.id,)
 		await cur.execute(stmt, instmt)

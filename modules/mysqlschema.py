@@ -114,22 +114,6 @@ class MysqlSchema():
 				await cur.execute("RENAME TABLE tokens TO tokens_migrate")
 				await self.sqlBroker.c_commit(cur)
 
-		if not await self.sqlBroker.hasTable(cur, 'tokens'):
-			print("Creating table 'tokens'...")
-			await cur.execute(
-			"""
-			CREATE TABLE tokens (
-			clientid bigint unsigned NOT NULL,
-			session_time datetime NOT NULL,
-			session_token TEXT NOT NULL,
-			game_keys TEXT NULL,
-			game_keys_time DATETIME NULL,
-			PRIMARY KEY(`clientid`)
-			) ENGINE=InnoDB
-			"""
-			)
-			await self.sqlBroker.c_commit(cur)
-
 		if not await self.sqlBroker.hasTable(cur, 'nso_client_keys'):
 			print("Creating table 'nso_client_keys'...")
 			await cur.execute(

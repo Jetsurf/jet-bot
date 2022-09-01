@@ -17,7 +17,7 @@ class acHandler():
 		await ctx.defer()
 
 		nso = await self.nsotoken.get_nso_client(ctx.user.id)		
-		if nso == None:
+		if not nso.is_logged_in():
 			await ctx.respond("You don't have a NSO token setup! Run /token to get started.")
 			return
 
@@ -62,7 +62,7 @@ class acHandler():
 		await ctx.defer()
 
 		nso = await self.nsotoken.get_nso_client(ctx.user.id)
-		if nso == None:
+		if not nso.is_logged_in():
 			await ctx.respond("You don't have a NSO token setup! Run /token to get started.")
 			return
 		
@@ -86,7 +86,7 @@ class acHandler():
 		await ctx.defer()
 
 		nso = await self.nsotoken.get_nso_client(ctx.user.id)
-		if nso == None:
+		if not nso.is_logged_in():
 			await ctx.respond("You don't have a NSO token setup! Run /token to get started.")
 			return
 
@@ -111,7 +111,7 @@ class acHandler():
 		await ctx.defer()
 
 		nso = await self.nsotoken.get_nso_client(ctx.user.id)
-		if nso == None:
+		if not nso.is_logged_in():
 			await ctx.respond("You don't have a NSO token setup! Run /token to get started.")
 			return
 		
