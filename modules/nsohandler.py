@@ -606,7 +606,7 @@ class nsoHandler():
 		return embed
 
 	async def orderGearCommand(self, ctx, args=None, override=False):
-		if view == None:
+		if not isinstance(ctx, discord.Interaction):
 			await ctx.defer()
 
 		nso = await self.nsotoken.get_nso_client(ctx.user.id)

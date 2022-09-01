@@ -14,7 +14,6 @@ ytdl_format_options = {
     'format': 'bestaudio/best',
     'outtmpl': '%(extractor)s-%(id)s-%(title)s.%(ext)s',
     'restrictfilenames': True,
-    'noplaylist': True,
     'nocheckcertificate': True,
     'ignoreerrors': False,
     'logtostderr': False,
@@ -22,7 +21,6 @@ ytdl_format_options = {
     'no_warnings': True,
     'default_search': 'auto',
     'source_address': '0.0.0.0',
-    'playlistend' : '5',
 }
 
 ffmpeg_options = {
@@ -211,7 +209,9 @@ class voiceServer():
 			await ctx.respond("Not connected to voice")
 			return
 
-		if 'https://' in args[0]:
+		await ctx.defer()
+
+		if args[0].startswith('https://') or args[0].startswith('http://'):
 			try:
 				tempPlayer = await YTDLSource.from_url(args[0])
 				self.ytQueue.put(tempPlayer)
@@ -327,6 +327,7 @@ class voiceServer():
 				tempPlayer = await YTDLSource.from_url(x[numToPlay - 1][0])
 			except Exception as e:
 				print(f"ERROR: Failure on song {x[numToPlay - 1][0]} {str(e)}")
+				traceback.print_exception(*sys.exc_info())
 				sys.stdout.flush()
 				continue
 
