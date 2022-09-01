@@ -113,8 +113,7 @@ class Nsotoken():
 			client.set_session_token(session_token)
 			await self.nso_client_save_keys(clientid)
 
-		# TODO: If everything works, we can eventually drop the old table
-		#await cur.execute("DROP TABLE tokens")
+		await cur.execute("DROP TABLE tokens")
 
 	# Given a userid, returns an NSO client for that user.
 	async def get_nso_client(self, userid):
