@@ -119,7 +119,7 @@ async def cmdFcGet(ctx):
 	# No friend code in the DB, but perhaps they have a token set up?
 	nso = await nsoTokens.get_nso_client(ctx.user.id)
 	if not nso.is_logged_in():
-		await ctx.respond("You have no known friend code! You can set one using `/fc set`.", ephemeral = True)
+		await ctx.respond("You have no known friend code! You can set one using `/fc set`, or connect to your Nintendo account using `/token`.", ephemeral = True)
 		return
 
 	print(f"No friend code in DB, pulling from NSO for user {ctx.user.id}")
