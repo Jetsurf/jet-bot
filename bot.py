@@ -14,6 +14,7 @@ import urllib, urllib.request, requests, pymysql
 import nsotoken, commandparser, serverconfig, splatinfo, ownercmds, messagecontext
 import vserver, mysqlhandler, mysqlschema, serverutils, nsohandler, achandler
 import stringcrypt
+import groups
 
 configData = None
 stringCrypt = stringcrypt.StringCrypt()
@@ -46,6 +47,7 @@ store = SlashCommandGroup('store', 'Commands related to the Splatoon 2 store')
 stats = SlashCommandGroup('stats', 'Commands related to Splatoon 2 gameplay stats')
 acnh = SlashCommandGroup('acnh', "Commands related to Animal Crossing New Horizons")
 owner = SlashCommandGroup('owner', "Commands that are owner only")
+groupCmd = SlashCommandGroup('group', 'Commands related to finding a group of players')
 dm = admin.create_subgroup(name='dm', description="Admin commands related to DM's on users leaving")
 feed = admin.create_subgroup(name='feed', description='Admin commands related to SplatNet rotation feeds')
 announce = admin.create_subgroup(name='announcements', description='Admin commands related to developer annoucenments')
@@ -590,6 +592,21 @@ async def cmdPlaylistAdd(ctx, url: Option(str, "URL to add to my playlist", requ
 	else:
 		await ctx.respond("You aren't a guild administrator", ephemeral=True)
 
+@groupCmd.command(name = 'create', description = 'Create a group')
+async def cmdGroupCreate(ctx):
+	await groups.GroupCmds.create(ctx)
+
+@groupCmd.command(name = 'disband', description = 'Disband your group')
+async def cmdGroupDisband(ctx):
+	await groups.GroupCmds.disband(ctx)
+
+@groupCmd.command(name = 'channel', description = 'Set group channel')
+async def cmdGroupChannel(ctx, channel: discord.Option(discord.SlashCommandOptionType.channel)):
+	if (not ctx.user in owners) and (not ctx.user.guild_permissions.administrator):
+		await ctx.respond("You're not allowed to do that.", ephemeral = True)
+	else:
+		await groups.GroupCmds.channel(ctx, channel)
+
 async def checkIfAdmin(ctx):
 	if ctx.guild.get_member(ctx.user.id) == None:
 		await client.get_guild(ctx.guild.id).chunk()
@@ -810,6 +827,7 @@ client.add_application_command(stats)
 client.add_application_command(voice)
 client.add_application_command(admin)
 client.add_application_command(acnh)
+client.add_application_command(groupCmd)
 
 sys.stdout.flush()
 sys.stderr.flush()
