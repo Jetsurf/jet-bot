@@ -1,0 +1,5 @@
+*Misc Commands
+**Various commands that do not fit in other categories
+`/fc get` : Shows your Nintendo Switch friend code.
+`/fc set` : Sets a Nintendo Switch friend code for you without running `/token`
+`/token` : Displays a menu to setup a token from Nintendo for use with other commands.

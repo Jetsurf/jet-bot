@@ -1,5 +1,5 @@
 *Splatoon 2 Splatnet Commands
-**Gets stats from your Splatnet account. Requires you to DM me with !token
+**Gets stats from your Splatnet account. Requires `/token` to be ran.
 `/stats battle NUM` : Gets stats from NUM battle (last/1 is latest, up to 50)
 `/stats rank` : Shows your ranks in the ranked gamemodes
 `/stats multi` : Shows various stats from your gameplay
