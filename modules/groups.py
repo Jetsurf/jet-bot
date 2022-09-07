@@ -21,7 +21,12 @@ class Group:
 		self.creator     = creator
 		self.messageTime = None  # Time of last embed update
 		self.message     = None
+		self.friendCodes = {}  # Maps member ids to friend codes
 		self.members     = []  # discord.Member objects for each user
+
+	async def findFriendCode(self, user):
+		print(f"Finding friend code for {user.id}")
+		self.friendCodes[user.id] = await friendCodes.getFriendCode(user.id)
 
 	def addMember(self, user):
 		if not self.hasMember(user):
@@ -49,7 +54,20 @@ class Group:
 		channel = GroupUtils.getServerChannel(self.guild_id)
 
 		if len(self.members):
-			memberList = "\n".join([discord.utils.escape_markdown(x.name) for x in self.members])
+			lines = []
+			for m in self.members:
+				line = discord.utils.escape_markdown(m.name)
+
+				if m.id == self.creator.id:
+					line += " \U0001F451"  # Crown for group owner
+
+				fc = self.friendCodes.get(m.id)
+				if not fc is None:
+					line += f" \u2023 SW-{fc}"
+
+				lines.append(line)
+
+			memberList = "\n".join(lines)
 		else:
 			memberList = "(empty)"
 
@@ -151,6 +169,7 @@ class GroupView(discord.ui.View):
 			await interaction.response.send_message("You're already in that group", ephemeral = True)
 		else:
 			self.group.addMember(interaction.user)
+			await self.group.findFriendCode(interaction.user)
 			await self.group.updateMessage()
 			#await interaction.response.send_message("You joined!", ephemeral = True)
 			await interaction.response.send_message("User %s joined group '%s'!" % (discord.utils.escape_markdown(interaction.user.name), discord.utils.escape_markdown(self.group.gameType)), delete_after = 3)
@@ -235,7 +254,7 @@ class Groups:
 					print(f"Expiring group '{g.gameType}'")
 					await g.disband()
 				elif g.messageTime and (g.messageTime < (now - 55)):
-					print(f"Updating group message for '{g.gameType}'")
+					#print(f"Updating group message for '{g.gameType}'")
 					await g.updateMessage()
 
 	@classmethod
@@ -293,6 +312,7 @@ class GroupCmds:
 		serverGroups[interaction.guild_id].append(g)
 
 		g.addMember(interaction.user)
+		await g.findFriendCode(interaction.user)
 		await g.updateMessage()
 
 		link = g.getMessageLink()
