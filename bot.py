@@ -15,6 +15,9 @@ import nsotoken, commandparser, serverconfig, splatinfo, ownercmds, messageconte
 import vserver, mysqlhandler, mysqlschema, serverutils, nsohandler, achandler
 import stringcrypt
 import groups
+import logging
+
+#logging.basicConfig(level=logging.DEBUG)
 
 configData = None
 stringCrypt = stringcrypt.StringCrypt()
@@ -595,6 +598,10 @@ async def cmdPlaylistAdd(ctx, url: Option(str, "URL to add to my playlist", requ
 @groupCmd.command(name = 'create', description = 'Create a group')
 async def cmdGroupCreate(ctx):
 	await groups.GroupCmds.create(ctx)
+
+@groupCmd.command(name = 'edit', description = 'Edit group settings')
+async def cmdGroupEdit(ctx):
+	await groups.GroupCmds.edit(ctx)
 
 @groupCmd.command(name = 'disband', description = 'Disband your group')
 async def cmdGroupDisband(ctx):
