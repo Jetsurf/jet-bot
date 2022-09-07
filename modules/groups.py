@@ -1,4 +1,4 @@
-import discord, re, sys, time, asyncio
+import discord, re, sys, time, asyncio, aiomysql, json
 from discord.enums import ComponentType, InputTextStyle
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
@@ -12,12 +12,13 @@ sqlBroker   = None
 friendCodes = None
 
 class Group:
-	def __init__(self, startTime, duration, playerCount, gameType, guild_id, creator):
+	def __init__(self, startTime, duration, playerCount, gameType, guildid, creator):
+		self.groupid     = None
 		self.startTime   = startTime
 		self.duration    = duration
 		self.playerCount = playerCount
 		self.gameType    = gameType
-		self.guild_id    = guild_id
+		self.guildid     = guildid
 		self.creator     = creator
 		self.messageTime = None  # Time of last embed update
 		self.message     = None
@@ -25,15 +26,18 @@ class Group:
 		self.members     = []  # discord.Member objects for each user
 
 	async def findFriendCode(self, user):
-		print(f"Finding friend code for {user.id}")
 		self.friendCodes[user.id] = await friendCodes.getFriendCode(user.id)
 
-	def addMember(self, user):
+	async def addMember(self, user):
 		if not self.hasMember(user):
 			self.members.append(user)
 
-	def removeMember(self, user):
+		await GroupDB.saveGroup(self)
+
+	async def removeMember(self, user):
 		self.members = [x for x in self.members if x.id != user.id]
+
+		await GroupDB.saveGroup(self)
 
 	def hasMember(self, user):
 		return user.id in [x.id for x in self.members]
@@ -42,16 +46,18 @@ class Group:
 		return len(self.members)
 
 	async def disband(self):
-		groups = serverGroups.get(self.guild_id, [])
-		serverGroups[self.guild_id] = [x for x in groups if x is not self]
+		groups = serverGroups.get(self.guildid, [])
+		serverGroups[self.guildid] = [x for x in groups if x is not self]
 
 		self.members = []
 
 		if self.message:
 			await self.message.delete()
 
+		await GroupDB.deleteGroup(self)
+
 	async def updateMessage(self):
-		channel = GroupUtils.getServerChannel(self.guild_id)
+		channel = GroupUtils.getServerChannel(self.guildid)
 
 		if len(self.members):
 			lines = []
@@ -89,12 +95,80 @@ class Group:
 
 		self.messageTime = time.time()
 
+		await GroupDB.saveGroup(self)  # Update the message id (can it actually change?)
+
 	def getMessageLink(self):
 		if self.message is None:
 			return None
 		else:
 			return self.message.jump_url
 
+class GroupDB:
+	@classmethod
+	async def saveGroup(cls, group):
+		memberjson = json.dumps([x.id for x in group.members])
+		sqltime = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(group.startTime))
+		messageid = group.message.id if group.message else None
+
+		cur = await sqlBroker.connect()
+
+		if group.groupid is None:
+			await cur.execute("INSERT INTO groups (guildid, ownerid, starttime, duration, playercount, gametype, members, messageid) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)", (group.guildid, group.creator.id, sqltime, group.duration, group.playerCount, group.gameType, memberjson, messageid))
+			group.groupid = cur.lastrowid
+		else:
+			await cur.execute("UPDATE groups SET starttime = %s, duration = %s, playercount = %s, gametype = %s, members = %s, messageid = %s WHERE (groupid = %s)", (sqltime, group.duration, group.playerCount, group.gameType, memberjson, messageid, group.groupid))
+		await sqlBroker.commit(cur)
+
+	@classmethod
+	async def loadGroups(cls):
+		cur = await sqlBroker.connect(aiomysql.DictCursor)
+		await cur.execute("SELECT * FROM groups")
+		rows = await cur.fetchall()
+		for row in rows:
+			print(repr(row))
+
+			channel = GroupUtils.getServerChannel(int(row['guildid']))
+
+			#startTime = time.mktime(time.strptime(row['starttime'], '%Y-%m-%d %H:%M:%S'))
+			startTime = row['starttime'].timestamp()
+			creator = client.get_user(row['ownerid'])
+			duration = int(row['duration'])
+			playerCount = int(row['playercount'])
+
+			if creator is None:
+				print(f"loadGroups(): Can't find group owner by id {row['ownerid']}, discarding group with id {row['groupid']}")
+				await cur.execute("DELETE FROM groups WHERE (groupid = %s)", (row['groupid'],))
+				continue
+
+			memberids = json.loads(row['members'])
+			members = [client.get_user(id) for id in memberids]
+			members = [x for x in members if not (x is None)]
+
+			message = (await channel.fetch_message(row['messageid'])) if row['messageid'] else None
+
+			print(repr(row), repr(members), repr(message))
+			g = Group(startTime, duration, playerCount, row['gametype'], int(row['guildid']), creator)
+			g.groupid   = int(row['groupid'])
+			g.message   = message
+			g.members   = members
+
+			for m in members:
+				await g.findFriendCode(m)
+
+			await g.updateMessage()
+
+			if g.memberCount == 0:
+				await g.disband()
+
+		await sqlBroker.commit(cur)
+
+	@classmethod
+	async def deleteGroup(cls, group):
+		if group.groupid is None:
+			return
+		cur = await sqlBroker.connect()
+		await cur.execute("DELETE FROM groups WHERE (groupid = %s)", (group.groupid,))
+		await sqlBroker.commit(cur)
 
 class GroupSettingsModal(discord.ui.Modal):
 	def __init__(self, *args, **kwargs):
@@ -168,7 +242,7 @@ class GroupView(discord.ui.View):
 		if self.group.hasMember(interaction.user):
 			await interaction.response.send_message("You're already in that group", ephemeral = True)
 		else:
-			self.group.addMember(interaction.user)
+			await self.group.addMember(interaction.user)
 			await self.group.findFriendCode(interaction.user)
 			await self.group.updateMessage()
 			#await interaction.response.send_message("You joined!", ephemeral = True)
@@ -180,7 +254,7 @@ class GroupView(discord.ui.View):
 		if not self.group.hasMember(interaction.user):
 			await interaction.response.send_message("You're not in that group", ephemeral = True)
 		else:
-			self.group.removeMember(interaction.user)
+			await self.group.removeMember(interaction.user)
 			await self.group.updateMessage()
 			#await interaction.response.send_message("You left!", ephemeral = True)
 
@@ -224,21 +298,21 @@ class GroupUtils:
 		return None
 
 	@classmethod
-	def getServerChannel(cls, guild_id):
-		return serverChannels.get(guild_id)
+	def getServerChannel(cls, guildid):
+		return serverChannels.get(guildid)
 
 class Groups:
 	@classmethod
-	def findGroupWithMember(cls, guild_id, user):
-		groups = serverGroups.get(guild_id, [])
+	def findGroupWithMember(cls, guildid, user):
+		groups = serverGroups.get(guildid, [])
 		for g in groups:
 			if g.hasMember(user):
 				return g
 		return None
 
 	@classmethod
-	def findGroupWithCreator(cls, guild_id, user):
-		groups = serverGroups.get(guild_id, [])
+	def findGroupWithCreator(cls, guildid, user):
+		groups = serverGroups.get(guildid, [])
 		for g in groups:
 			if g.creator.id == user.id:
 				return g
@@ -247,8 +321,8 @@ class Groups:
 	@classmethod
 	async def update(cls):
 		now = int(time.time())
-		for guild_id in serverGroups.keys():
-			groups = serverGroups[guild_id]
+		for guildid in serverGroups.keys():
+			groups = serverGroups[guildid]
 			for g in groups:
 				if g.startTime + g.duration < now:
 					print(f"Expiring group '{g.gameType}'")
@@ -290,8 +364,8 @@ class Groups:
 
 	@classmethod
 	async def startup(cls):
-		print("Groups startup")
 		await cls.loadServerChannels()
+		await GroupDB.loadGroups()
 
 class GroupCmds:
 	def __init__(self):
@@ -311,7 +385,7 @@ class GroupCmds:
 			serverGroups[interaction.guild_id] = []
 		serverGroups[interaction.guild_id].append(g)
 
-		g.addMember(interaction.user)
+		await g.addMember(interaction.user)
 		await g.findFriendCode(interaction.user)
 		await g.updateMessage()
 

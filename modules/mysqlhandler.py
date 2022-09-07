@@ -14,9 +14,9 @@ class mysqlHandler():
 		self.pool = await aiomysql.create_pool(host=self.__host, port=3306, user=self.__user, password=self.__pw, db=self.__db, maxsize=25)
 		print("MYSQL: Created connection pool")
 
-	async def connect(self):
+	async def connect(self, *args):
 		con = await self.pool.acquire()
-		cur = await con.cursor()
+		cur = await con.cursor(*args)
 		self.cons[hash(cur)] = con
 		return cur
 
