@@ -701,6 +701,9 @@ async def on_ready():
 		friendCodes = friendcodes.FriendCodes(mysqlHandler, stringCrypt)
 		await nsoTokens.migrate_tokens_if_needed()
 
+		groups.Groups.setFriendObjects(client, mysqlHandler, friendCodes)
+		await groups.Groups.startup()
+
 		await nsoHandler.updateS2JSON()
 		await nsoTokens.updateAppVersion()
 		print('Done\n------')

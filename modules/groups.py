@@ -7,6 +7,10 @@ serverChannels = {}
 
 scheduler = AsyncIOScheduler()
 
+client      = None
+sqlBroker   = None
+friendCodes = None
+
 class Group:
 	def __init__(self, startTime, duration, playerCount, gameType, guild_id, creator):
 		self.startTime   = startTime
@@ -231,8 +235,44 @@ class Groups:
 					print(f"Expiring group '{g.gameType}'")
 					await g.disband()
 				elif g.messageTime and (g.messageTime < (now - 55)):
-					print("update group")
+					print(f"Updating group message for '{g.gameType}'")
 					await g.updateMessage()
+
+	@classmethod
+	async def setServerChannel(cls, guildid, channel):
+		serverChannels[guildid] = channel
+		cur = await sqlBroker.connect()
+		await cur.execute("DELETE FROM group_channels WHERE (guildid = %s)", (guildid,))
+		await cur.execute("INSERT INTO group_channels (guildid, channelid) VALUES (%s, %s)", (guildid, channel.id))
+		await sqlBroker.commit(cur)
+
+	@classmethod
+	async def loadServerChannels(cls):
+		cur = await sqlBroker.connect()
+		await cur.execute("SELECT guildid, channelid FROM group_channels")
+		rows = await cur.fetchall()
+		await sqlBroker.commit(cur)
+		for row in rows:
+			(guildid, channelid) = row
+
+			channel = client.get_channel(channelid)
+			if channel is None:
+				continue  # Channel was probably deleted
+
+			#print(f"  Groups channel for guild {guildid} is '{channel.name}'")
+			serverChannels[guildid] = channel
+
+	@classmethod
+	def setFriendObjects(cls, _client, _sqlBroker, _friendCodes):
+		global client, sqlBroker, friendCodes
+		client      = _client
+		sqlBroker   = _sqlBroker
+		friendCodes = _friendCodes
+
+	@classmethod
+	async def startup(cls):
+		print("Groups startup")
+		await cls.loadServerChannels()
 
 class GroupCmds:
 	def __init__(self):
@@ -334,7 +374,7 @@ class GroupCmds:
 	async def channel(cls, ctx, channel):
 		if not ctx.guild_id:
 			await ctx.respond("You can only use this command on a server, not in a DM.", ephemeral = True)
-		serverChannels[ctx.guild_id] = channel
+		await Groups.setServerChannel(ctx.guild_id, channel)
 		await ctx.respond("Okay, set groups channel to '%s'" % (discord.utils.escape_markdown(channel.name)), ephemeral = True)
 
 scheduler.add_job(Groups.update, 'cron', minute='*', timezone='UTC')
