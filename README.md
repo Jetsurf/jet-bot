@@ -97,7 +97,8 @@ The following commands require you to run `/token` and follow the instructions. 
 
 ### Misc Commands
 
- - `/fc` : Displays your NSO friend code, if you have a token setup
+ - `/fc get` : Displays your Nintendo Switch friend code from NSO. Can bet set manually with /fc set
+ - `/fc set` : Sets a Friend Code so you don't need to run `/token`.
  - `/token` : Used to setup a NSO token. Required for specific commands
 
 ### Bot Info Commands

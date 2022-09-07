@@ -16,7 +16,9 @@ import vserver, mysqlhandler, mysqlschema, serverutils, nsohandler, achandler
 import stringcrypt
 import groups
 import logging
+import friendcodes
 
+# Uncomment for verbose logging from pycord
 #logging.basicConfig(level=logging.DEBUG)
 
 configData = None
@@ -34,6 +36,7 @@ ownerCmds = None
 serverVoices = {}
 serverUtils = None
 acHandler = None
+friendCodes = None
 doneStartup = False
 owners = []
 dev = True
@@ -51,6 +54,7 @@ stats = SlashCommandGroup('stats', 'Commands related to Splatoon 2 gameplay stat
 acnh = SlashCommandGroup('acnh', "Commands related to Animal Crossing New Horizons")
 owner = SlashCommandGroup('owner', "Commands that are owner only")
 groupCmd = SlashCommandGroup('group', 'Commands related to finding a group of players')
+fcCmds = SlashCommandGroup('fc', 'Commands for friend codes')
 dm = admin.create_subgroup(name='dm', description="Admin commands related to DM's on users leaving")
 feed = admin.create_subgroup(name='feed', description='Admin commands related to SplatNet rotation feeds')
 announce = admin.create_subgroup(name='announcements', description='Admin commands related to developer annoucenments')
@@ -109,20 +113,41 @@ async def cmdToken(ctx):
 
 	await ctx.respond(embed=embed, view=view, ephemeral=True)
 
-@client.slash_command(name="fc", description="Shares your Nintendo Switch Friend Code (requires /token)")
-async def cmdFC(ctx):
-	nso = await nsoTokens.get_nso_client(ctx.user.id)
-	if nso == None:
-		await ctx.respond("No token setup! Run /token to get started.")
+@fcCmds.command(name = "get", description = "Shares your Nintendo Switch friend code")
+async def cmdFcGet(ctx):
+	await serverUtils.increment_cmd(ctx, 'fc')
+
+	fc = await friendCodes.getFriendCode(ctx.user.id)
+	if not fc is None:
+		await ctx.respond(f"Nintendo Switch friend code is: SW-{fc}")
 		return
 
-	await serverUtils.increment_cmd(ctx, 'fc')
-	fc = nso.get_friend_code()
-	if fc == None:
-		await ctx.respond("Something went wrong! Please let my owners in my support guild know this broke!")
-		print(f"NSO FC call returned nothing: userid {ctx.user.id}")
-	else:
-		await ctx.respond(f" Nintendo Switch friend code is: SW-{fc}")
+	# No friend code in the DB, but perhaps they have a token set up?
+	nso = await nsoTokens.get_nso_client(ctx.user.id)
+	if not nso.is_logged_in():
+		await ctx.respond("You have no known friend code! You can set one using `/fc set`, or connect to your Nintendo account using `/token`.", ephemeral = True)
+		return
+
+	print(f"No friend code in DB, pulling from NSO for user {ctx.user.id}")
+	user = nso.account.get_user_self()
+	if user is None:
+		await ctx.respond("Something went wrong! Please let my owners in my support guild know this broke!", ephemeral = True)
+		print(f"NSO call for friend code failed: userid {ctx.user.id}")
+		return
+
+	fc = user['links']['friendCode']['id']
+	await friendCodes.setFriendCode(ctx.user.id, fc)
+	await ctx.respond(f"Nintendo Switch friend code is: SW-{fc}")
+
+@fcCmds.command(name = "set", description = "Set your Nintendo Switch friend code")
+async def cmdFcSet(ctx, friend_code: Option(str, "SW-xxxx-xxxx-xxxx")):
+	friend_code = friendCodes.formatFriendCode(friend_code)
+	if friend_code is None:
+		await ctx.respond("That's a strange looking friend code, try one that looks like: SW-xxxx-xxxx-xxxx", ephemeral = True)
+		return
+
+	await friendCodes.setFriendCode(ctx.user.id, friend_code)
+	await ctx.respond(f"Okay, I'll remember your friend code of SW-{friend_code}", ephemeral = True)
 
 @owner.command(name="emotes", description="Sets Emotes for use in Embeds (Custom emotes only)", default_permission=False)
 @commands.is_owner()
@@ -624,6 +649,7 @@ async def checkIfAdmin(ctx):
 async def on_ready():
 	global client, mysqlHandler, serverUtils, serverVoices, splatInfo, configData, ownerCmds, pynso
 	global nsoHandler, nsoTokens, head, dev, owners, commandParser, doneStartup, acHandler, stringCrypt
+	global friendCodes
 
 	if not doneStartup:
 		print('Logged in as,', client.user.name, client.user.id)
@@ -672,6 +698,7 @@ async def on_ready():
 		await mysqlHandler.startUp()
 		mysqlSchema = mysqlschema.MysqlSchema(mysqlHandler)
 		await mysqlSchema.update()
+		friendCodes = friendcodes.FriendCodes(mysqlHandler, stringCrypt)
 		await nsoTokens.migrate_tokens_if_needed()
 
 		await nsoHandler.updateS2JSON()
@@ -835,6 +862,7 @@ client.add_application_command(voice)
 client.add_application_command(admin)
 client.add_application_command(acnh)
 client.add_application_command(groupCmd)
+client.add_application_command(fcCmds)
 
 sys.stdout.flush()
 sys.stderr.flush()

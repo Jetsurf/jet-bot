@@ -147,9 +147,18 @@ class MysqlSchema():
 			)
 			await self.sqlBroker.c_commit(cur)
 
-		if await self.sqlBroker.hasTable(cur, 'blacklist'):
-			print("Removing table 'blacklist'...")
-			await cur.execute("DROP TABLE blacklist")
+		if not await self.sqlBroker.hasTable(cur, 'friend_codes'):
+			print("Creating table 'friend_codes'...")
+			await cur.execute(
+			"""
+			CREATE TABLE friend_codes (
+			userid                BIGINT UNSIGNED NOT NULL,
+			updatetime            DATETIME NOT NULL,
+			encrypted_friend_code TEXT NOT NULL,
+			PRIMARY KEY(userid)
+			) ENGINE=InnoDB
+			"""
+			)
 			await self.sqlBroker.c_commit(cur)
 
 		await self.sqlBroker.close(cur)
