@@ -161,5 +161,38 @@ class MysqlSchema():
 			)
 			await self.sqlBroker.c_commit(cur)
 
+		if not await self.sqlBroker.hasTable(cur, 'group_channels'):
+			print("Creating table 'group_channels'...")
+			await cur.execute(
+			"""
+			CREATE TABLE group_channels (
+			guildid BIGINT UNSIGNED NOT NULL,
+			channelid BIGINT UNSIGNED NOT NULL,
+			PRIMARY KEY(guildid)
+			) ENGINE = InnoDB
+			"""
+			)
+			await self.sqlBroker.c_commit(cur)
+
+		if not await self.sqlBroker.hasTable(cur, 'groups'):
+			print("Creating table 'groups'...")
+			await cur.execute(
+			"""
+			CREATE TABLE groups (
+			groupid     INT AUTO_INCREMENT NOT NULL,
+			guildid     BIGINT UNSIGNED NOT NULL,
+			ownerid     BIGINT UNSIGNED NOT NULL,
+			messageid   BIGINT UNSIGNED NULL,
+			starttime   DATETIME NOT NULL,
+			duration    INT NOT NULL,
+			playercount INT NOT NULL,
+			gametype    VARCHAR(64) NOT NULL,
+			members     TEXT NOT NULL,
+			PRIMARY KEY(groupid)
+			) ENGINE = InnoDB
+			"""
+			)
+			await self.sqlBroker.c_commit(cur)
+
 		await self.sqlBroker.close(cur)
 		return

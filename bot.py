@@ -14,7 +14,12 @@ import urllib, urllib.request, requests, pymysql
 import nsotoken, commandparser, serverconfig, splatinfo, ownercmds, messagecontext
 import vserver, mysqlhandler, mysqlschema, serverutils, nsohandler, achandler
 import stringcrypt
+import groups
+import logging
 import friendcodes
+
+# Uncomment for verbose logging from pycord
+#logging.basicConfig(level=logging.DEBUG)
 
 configData = None
 stringCrypt = stringcrypt.StringCrypt()
@@ -48,6 +53,7 @@ store = SlashCommandGroup('store', 'Commands related to the Splatoon 2 store')
 stats = SlashCommandGroup('stats', 'Commands related to Splatoon 2 gameplay stats')
 acnh = SlashCommandGroup('acnh', "Commands related to Animal Crossing New Horizons")
 owner = SlashCommandGroup('owner', "Commands that are owner only")
+groupCmds = SlashCommandGroup('group', 'Commands related to finding a group of players')
 fcCmds = SlashCommandGroup('fc', 'Commands for friend codes')
 dm = admin.create_subgroup(name='dm', description="Admin commands related to DM's on users leaving")
 feed = admin.create_subgroup(name='feed', description='Admin commands related to SplatNet rotation feeds')
@@ -614,6 +620,25 @@ async def cmdPlaylistAdd(ctx, url: Option(str, "URL to add to my playlist", requ
 	else:
 		await ctx.respond("You aren't a guild administrator", ephemeral=True)
 
+@groupCmds.command(name = 'create', description = 'Create a group')
+async def cmdGroupCreate(ctx):
+	await groups.GroupCmds.create(ctx)
+
+@groupCmds.command(name = 'edit', description = 'Edit group settings')
+async def cmdGroupEdit(ctx):
+	await groups.GroupCmds.edit(ctx)
+
+@groupCmds.command(name = 'disband', description = 'Disband your group')
+async def cmdGroupDisband(ctx):
+	await groups.GroupCmds.disband(ctx)
+
+@groupCmds.command(name = 'channel', description = 'Set group channel')
+async def cmdGroupChannel(ctx, channel: discord.Option(discord.SlashCommandOptionType.channel)):
+	if (not ctx.user in owners) and (not ctx.user.guild_permissions.administrator):
+		await ctx.respond("You're not allowed to do that.", ephemeral = True)
+	else:
+		await groups.GroupCmds.channel(ctx, channel)
+
 async def checkIfAdmin(ctx):
 	if ctx.guild.get_member(ctx.user.id) == None:
 		await client.get_guild(ctx.guild.id).chunk()
@@ -675,6 +700,9 @@ async def on_ready():
 		await mysqlSchema.update()
 		friendCodes = friendcodes.FriendCodes(mysqlHandler, stringCrypt)
 		await nsoTokens.migrate_tokens_if_needed()
+
+		groups.Groups.setFriendObjects(client, mysqlHandler, friendCodes)
+		await groups.Groups.startup()
 
 		await nsoHandler.updateS2JSON()
 		await nsoTokens.updateAppVersion()
@@ -836,6 +864,7 @@ client.add_application_command(stats)
 client.add_application_command(voice)
 client.add_application_command(admin)
 client.add_application_command(acnh)
+client.add_application_command(groupCmds)
 client.add_application_command(fcCmds)
 
 sys.stdout.flush()
