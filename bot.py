@@ -53,7 +53,7 @@ store = SlashCommandGroup('store', 'Commands related to the Splatoon 2 store')
 stats = SlashCommandGroup('stats', 'Commands related to Splatoon 2 gameplay stats')
 acnh = SlashCommandGroup('acnh', "Commands related to Animal Crossing New Horizons")
 owner = SlashCommandGroup('owner', "Commands that are owner only")
-groupCmd = SlashCommandGroup('group', 'Commands related to finding a group of players')
+groupCmds = SlashCommandGroup('group', 'Commands related to finding a group of players')
 fcCmds = SlashCommandGroup('fc', 'Commands for friend codes')
 dm = admin.create_subgroup(name='dm', description="Admin commands related to DM's on users leaving")
 feed = admin.create_subgroup(name='feed', description='Admin commands related to SplatNet rotation feeds')
@@ -620,19 +620,19 @@ async def cmdPlaylistAdd(ctx, url: Option(str, "URL to add to my playlist", requ
 	else:
 		await ctx.respond("You aren't a guild administrator", ephemeral=True)
 
-@groupCmd.command(name = 'create', description = 'Create a group')
+@groupCmds.command(name = 'create', description = 'Create a group')
 async def cmdGroupCreate(ctx):
 	await groups.GroupCmds.create(ctx)
 
-@groupCmd.command(name = 'edit', description = 'Edit group settings')
+@groupCmds.command(name = 'edit', description = 'Edit group settings')
 async def cmdGroupEdit(ctx):
 	await groups.GroupCmds.edit(ctx)
 
-@groupCmd.command(name = 'disband', description = 'Disband your group')
+@groupCmds.command(name = 'disband', description = 'Disband your group')
 async def cmdGroupDisband(ctx):
 	await groups.GroupCmds.disband(ctx)
 
-@groupCmd.command(name = 'channel', description = 'Set group channel')
+@groupCmds.command(name = 'channel', description = 'Set group channel')
 async def cmdGroupChannel(ctx, channel: discord.Option(discord.SlashCommandOptionType.channel)):
 	if (not ctx.user in owners) and (not ctx.user.guild_permissions.administrator):
 		await ctx.respond("You're not allowed to do that.", ephemeral = True)
@@ -864,7 +864,7 @@ client.add_application_command(stats)
 client.add_application_command(voice)
 client.add_application_command(admin)
 client.add_application_command(acnh)
-client.add_application_command(groupCmd)
+client.add_application_command(groupCmds)
 client.add_application_command(fcCmds)
 
 sys.stdout.flush()
