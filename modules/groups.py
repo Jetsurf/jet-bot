@@ -113,16 +113,16 @@ class GroupDB:
 		cur = await sqlBroker.connect()
 
 		if group.groupid is None:
-			await cur.execute("INSERT INTO groups (guildid, ownerid, starttime, duration, playercount, gametype, members, messageid) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)", (group.guildid, group.creator.id, sqltime, group.duration, group.playerCount, group.gameType, memberjson, messageid))
+			await cur.execute("INSERT INTO group_games (guildid, ownerid, starttime, duration, playercount, gametype, members, messageid) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)", (group.guildid, group.creator.id, sqltime, group.duration, group.playerCount, group.gameType, memberjson, messageid))
 			group.groupid = cur.lastrowid
 		else:
-			await cur.execute("UPDATE groups SET starttime = %s, duration = %s, playercount = %s, gametype = %s, members = %s, messageid = %s WHERE (groupid = %s)", (sqltime, group.duration, group.playerCount, group.gameType, memberjson, messageid, group.groupid))
+			await cur.execute("UPDATE group_games SET starttime = %s, duration = %s, playercount = %s, gametype = %s, members = %s, messageid = %s WHERE (groupid = %s)", (sqltime, group.duration, group.playerCount, group.gameType, memberjson, messageid, group.groupid))
 		await sqlBroker.commit(cur)
 
 	@classmethod
 	async def loadGroups(cls):
 		cur = await sqlBroker.connect(aiomysql.DictCursor)
-		await cur.execute("SELECT * FROM groups")
+		await cur.execute("SELECT * FROM group_games")
 		rows = await cur.fetchall()
 		for row in rows:
 			print(repr(row))
@@ -137,7 +137,7 @@ class GroupDB:
 
 			if creator is None:
 				print(f"loadGroups(): Can't find group owner by id {row['ownerid']}, discarding group with id {row['groupid']}")
-				await cur.execute("DELETE FROM groups WHERE (groupid = %s)", (row['groupid'],))
+				await cur.execute("DELETE FROM group_games WHERE (groupid = %s)", (row['groupid'],))
 				continue
 
 			memberids = json.loads(row['members'])
@@ -167,7 +167,7 @@ class GroupDB:
 		if group.groupid is None:
 			return
 		cur = await sqlBroker.connect()
-		await cur.execute("DELETE FROM groups WHERE (groupid = %s)", (group.groupid,))
+		await cur.execute("DELETE FROM group_games WHERE (groupid = %s)", (group.groupid,))
 		await sqlBroker.commit(cur)
 
 class GroupSettingsModal(discord.ui.Modal):

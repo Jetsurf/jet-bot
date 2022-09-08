@@ -174,11 +174,11 @@ class MysqlSchema():
 			)
 			await self.sqlBroker.c_commit(cur)
 
-		if not await self.sqlBroker.hasTable(cur, 'groups'):
-			print("Creating table 'groups'...")
+		if not await self.sqlBroker.hasTable(cur, 'group_games'):
+			print("Creating table 'group_games'...")
 			await cur.execute(
 			"""
-			CREATE TABLE groups (
+			CREATE TABLE group_games (
 			groupid     INT AUTO_INCREMENT NOT NULL,
 			guildid     BIGINT UNSIGNED NOT NULL,
 			ownerid     BIGINT UNSIGNED NOT NULL,
