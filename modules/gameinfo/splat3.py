@@ -171,7 +171,7 @@ class Splat3():
 			Splat3WeaponType("Brella",    "Brellas",    ["bre", "u", "umbrella", "brolly"]),
 			Splat3WeaponType("Brush",     "Brushes",    ["bru"]),
 			Splat3WeaponType("Stringer",  "Stringers",  ["str", "bow"]),
-			Splat3WeaponType("Splatana",  "Splatanas",  ["sna", "saber"])
+			Splat3WeaponType("Splatana",  "Splatanas",  ["sna", "saber", "sword"])
                 ])
 
 	def initWeapons(self):
@@ -187,4 +187,4 @@ class Splat3():
 			price   = w[7]
 			specpts = w[8]
 			abbrevs = []  # TODO
-			self.weapons.append(Splat3Weapon(id, name, abbrevs, self.weaponTypes.getItemByName(type), sub, special, specpts, price, level))
+			self.weapons.append(Splat3Weapon(id, name, abbrevs, self.weaponTypes.getItemByName(type), self.subweapons.getItemByName(sub), self.specials.getItemByName(special), specpts, price, level))
