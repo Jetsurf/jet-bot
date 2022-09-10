@@ -452,6 +452,10 @@ async def cmdS3WeaponSpecial(ctx, special: Option(str, "Name of the special to g
 async def cmdS3WeaponSub(ctx, special: Option(str, "Name of the subweapon to get matching weapons for", choices = splat3info.getSubweaponNames(), required=True)):
 	await s3Handler.cmdWeaponSub(ctx, str(special))
 
+@s3Cmds.command(name = 'scrim', description = 'Generate a list of Splatoon 3 maps and modes')
+async def cmdS3Scrim(ctx, num: Option(int, "Number of battles (1..20)", required = True), modes: Option(str, "Comma-separated list of modes (default: RM,TC,SZ,CB)", required = True, default = "RM,TC,SZ,CB")):
+	await s3Handler.cmdScrim(ctx, num, modes)
+
 @s3StatsCmds.command(name = 'battle', description = 'Get stats from a battle (1-50)')
 async def cmdS3StatsBattle(ctx, battlenum: Option(int, "Battle Number, 1 being latest, 50 max", required=True, default=1)):
 	if battlenum >= 50 or battlenum < 0:

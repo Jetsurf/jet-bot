@@ -1,6 +1,6 @@
 import discord, asyncio
 import mysqlhandler, nsotoken
-import time, requests
+import re, time, requests, random
 
 class S3Utils():
 	@classmethod
@@ -76,7 +76,7 @@ class S3Handler():
 	async def cmdWeaponSub(self, ctx, name):
 		match = self.splat3info.subweapons.matchItem(name)
 		if not match.isValid():
-			await ctx.respond("Can't find subweapon: {match.errorMessage()}", ephemeral = True)
+			await ctx.respond(f"Can't find subweapon: {match.errorMessage()}", ephemeral = True)
 			return
 
 		subweapon = match.get()
@@ -85,6 +85,35 @@ class S3Handler():
 		embed.title = f"Weapons with Subweapon: {subweapon.name()}"
 		for w in weapons:
 			embed.add_field(name=w.name(), value=f"Special: {w.special().name()}\nPts for Special: {str(w.specpts())}\nLevel To Purchase: {str(w.level())}", inline=True)
+		await ctx.respond(embed=embed)
+
+	async def cmdScrim(self, ctx, num, modelist):
+		if (num < 0) or (num > 20):
+			await ctx.respond("Please supply a number of battles between 1 and 20", ephemeral = True)
+			return
+
+		# Parse list of modes into objects
+		modes = []
+		modeNames = re.split("[,; ]", modelist)
+		for mn in modeNames:
+			match = self.splat3info.modes.matchItem(mn)
+			if not match.isValid():
+				await ctx.respond(f"Unknown mode: {match.errorMessage()}", ephemeral = True)
+				return
+			modes.append(match.get())
+
+		# Generate list
+		battles = []
+		for i in range(num):
+			map = self.splat3info.maps.getRandomItem()
+			mode = random.choice(modes)
+			battles.append(f"Game {i + 1}: {mode.name()} on {map.name()}")
+
+		# Create embed
+		embed = discord.Embed(colour=0x0004FF)
+		embed.title = "Scrim battle list"
+		embed.add_field(name = f"{num} battles", value = "\n".join(battles))
+
 		await ctx.respond(embed=embed)
 
 	async def cmdStatsBattle(self, ctx, battlenum):
