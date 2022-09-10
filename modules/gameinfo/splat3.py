@@ -188,3 +188,15 @@ class Splat3():
 			specpts = w[8]
 			abbrevs = []  # TODO
 			self.weapons.append(Splat3Weapon(id, name, abbrevs, self.weaponTypes.getItemByName(type), self.subweapons.getItemByName(sub), self.specials.getItemByName(special), specpts, price, level))
+
+	def getSpecialNames(self):
+		return [ s.name() for s in self.specials.getAllItems() ]
+
+	def getSubweaponNames(self):
+		return [ s.name() for s in self.subweapons.getAllItems() ]
+
+	def getWeaponsBySpecial(self, special):
+		return list(filter(lambda w: w.special() == special, self.weapons.getAllItems()))
+
+	def getWeaponsBySubweapon(self, subweapon):
+		return list(filter(lambda w: w.sub() == subweapon, self.weapons.getAllItems()))

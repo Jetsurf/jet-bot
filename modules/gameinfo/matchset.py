@@ -79,7 +79,7 @@ class MatchSet():
 	def append(self, item):
 		self.items.append(item)
 
-	def matchItems(self, query):
+	def matchItem(self, query):
 		if len(query) == 0:
 			return MatchResult(self.name, query, [])
 
@@ -106,3 +106,6 @@ class MatchSet():
 
 	def getRandomItem(self):
 		return random.choice(self.items)
+
+	def getAllItems(self):
+		return self.items

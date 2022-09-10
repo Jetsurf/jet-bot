@@ -18,6 +18,7 @@ import stringcrypt
 import groups
 import logging
 import friendcodes
+import gameinfo.splat3
 
 # Uncomment for verbose logging from pycord
 #logging.basicConfig(level=logging.DEBUG)
@@ -25,6 +26,7 @@ import friendcodes
 configData = None
 stringCrypt = stringcrypt.StringCrypt()
 splatInfo = splatinfo.SplatInfo()
+splat3info = gameinfo.splat3.Splat3()
 intents = discord.Intents.default()
 intents.members = True
 client = discord.AutoShardedBot(intents=intents, chunk_guilds_at_startup=False)
@@ -441,6 +443,14 @@ async def cmdBattle(ctx, battlenum: Option(int, "Battle Number, 1 being latest, 
 async def cmdS3WeaponInfo(ctx, name: Option(str, "Name of the weapon to get info for", required=True)):
 	await s3Handler.cmdWeaponInfo(ctx, str(name))
 
+@s3WeaponCmds.command(name='special', description='Lists all Splatoon 3 weapons a given special weapon')
+async def cmdS3WeaponSpecial(ctx, special: Option(str, "Name of the special to get matching weapons for", choices = splat3info.getSpecialNames(), required=True)):
+	await s3Handler.cmdWeaponSpecial(ctx, str(special))
+
+@s3WeaponCmds.command(name='sub', description='Lists all Splatoon 3 weapons a given subweapon')
+async def cmdS3WeaponSub(ctx, special: Option(str, "Name of the subweapon to get matching weapons for", choices = splat3info.getSubweaponNames(), required=True)):
+	await s3Handler.cmdWeaponSub(ctx, str(special))
+
 @owner.command(name='eval', description="Eval a code block (Owners only)", default_permission=False)
 @commands.is_owner()
 async def cmdEval(ctx):
@@ -709,7 +719,7 @@ async def on_ready():
 		serverUtils = serverutils.serverUtils(client, mysqlHandler, serverConfig, configData['help'])
 		nsoTokens = nsotoken.Nsotoken(client, mysqlHandler, configData.get('hosted_url'), stringCrypt)
 		nsoHandler = nsohandler.nsoHandler(client, mysqlHandler, nsoTokens, splatInfo, configData.get('hosted_url'))
-		s3Handler = s3handler.S3Handler(client, mysqlHandler, nsoTokens, configData)
+		s3Handler = s3handler.S3Handler(client, mysqlHandler, nsoTokens, splat3info, configData)
 		acHandler = achandler.acHandler(client, mysqlHandler, nsoTokens, configData)
 		await mysqlHandler.startUp()
 		mysqlSchema = mysqlschema.MysqlSchema(mysqlHandler)
