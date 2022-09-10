@@ -113,3 +113,38 @@ class S3Handler():
 
 		embed = S3Utils.createBattleDetailsEmbed(details)
 		await ctx.respond(embed=embed)
+
+	async def cmdStats(self, ctx):
+		await ctx.defer()
+
+		nso = await self.nsotoken.get_nso_client(ctx.user.id)
+		if not nso.is_logged_in():
+			await ctx.respond("You don't have a NSO token setup! Run /token to get started.")
+			return
+
+		stats = nso.s3.get_player_stats()
+		if stats is None:
+			await ctx.respond(f"Failed to retrieve stats.")
+			print(f"get_player_stats returned none for user {ctx.user.id}")
+			return
+
+		await ctx.respond(f"Stuff happened ```{str(stats)}```")
+
+	async def cmdSRStats(self, ctx):
+		await ctx.defer()
+
+		nso = await self.nsotoken.get_nso_client(ctx.user.id)
+		if not nso.is_logged_in():
+			await ctx.respond("You don't have a NSO token setup! Run /token to get started.")
+			return
+
+		srstats = nso.s3.get_salmon_run_stats()
+		if srstats is None:
+			await ctx.respond(f"Failed to retrieve stats.")
+			print(f"get_salmon_run_stats returned none for user {ctx.user.id}")
+			return
+
+		await ctx.respond(f"Stuff happened")
+		print(f"SR STATS: {srstats}")
+
+
