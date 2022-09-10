@@ -40,6 +40,19 @@ class S3Utils():
 				stats.append("%s \u2014 %d(%d)/%d/%d" % (discord.utils.escape_markdown(p['name']), result['kill'], result['assist'], result['death'], result['special']))
 		embed.add_field(name = name, value = "\n".join(stats))
 
+	@classmethod
+	def createSalmonRunResultsEmbed(cls, results):
+		embed = discord.Embed(colour=0x0004FF)
+		historyGroups = results['data']['coopResult']['historyGroups']['nodes']
+		if len(historyGroups) == 0:
+			embed.add_field(name = "History empty", value = "Go play some Salmon Run!")
+
+		historyDetails = historyGroups[0]['historyDetails']['nodes']
+		lastGameDetails = historyDetails[0]
+		embed.title = f"Your Salmon Run rank"
+		embed.add_field(name = "Rank", value = lastGameDetails['afterGrade']['name'])
+		return embed
+
 class S3Handler():
 	def __init__(self, client, mysqlHandler, nsotoken, splat3info, configData):
 		self.client = client
@@ -173,7 +186,7 @@ class S3Handler():
 			print(f"get_salmon_run_stats returned none for user {ctx.user.id}")
 			return
 
-		await ctx.respond(f"Stuff happened")
-		print(f"SR STATS: {srstats}")
+		embed = S3Utils.createSalmonRunResultsEmbed(srstats)
+		await ctx.respond(embed = embed)
 
 
