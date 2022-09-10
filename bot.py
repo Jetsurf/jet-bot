@@ -67,6 +67,7 @@ storedm = store.create_subgroup('dm', description="Commands related to DM'ing on
 
 s3Cmds = SlashCommandGroup('s3', 'Commands related to Splatoon 3')
 s3WeaponCmds = s3Cmds.create_subgroup('weapon', 'Commands related to weapons in Splatoon 3')
+s3StatsCmds = s3Cmds.create_subgroup('stats', 'Commands related to Splatoon 3 gameplay stats')
 
 def loadConfig():
 	global configData, helpfldr, mysqlHandler, dev, head, pynso
@@ -450,6 +451,13 @@ async def cmdS3WeaponSpecial(ctx, special: Option(str, "Name of the special to g
 @s3WeaponCmds.command(name='sub', description='Lists all Splatoon 3 weapons a given subweapon')
 async def cmdS3WeaponSub(ctx, special: Option(str, "Name of the subweapon to get matching weapons for", choices = splat3info.getSubweaponNames(), required=True)):
 	await s3Handler.cmdWeaponSub(ctx, str(special))
+
+@s3StatsCmds.command(name = 'battle', description = 'Get stats from a battle (1-50)')
+async def cmdS3StatsBattle(ctx, battlenum: Option(int, "Battle Number, 1 being latest, 50 max", required=True, default=1)):
+	if battlenum >= 50 or battlenum < 0:
+		await ctx.respond("Battlenum needs to be between 1-50!")
+		return
+	await s3Handler.cmdStatsBattle(ctx, battlenum)
 
 @owner.command(name='eval', description="Eval a code block (Owners only)", default_permission=False)
 @commands.is_owner()
