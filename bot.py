@@ -12,11 +12,13 @@ from discord.ext import commands
 import urllib, urllib.request, requests, pymysql
 #Our Classes
 import nsotoken, commandparser, serverconfig, splatinfo, ownercmds, messagecontext
-import vserver, mysqlhandler, mysqlschema, serverutils, nsohandler, achandler
+import vserver, mysqlhandler, mysqlschema, serverutils
+import nsohandler, achandler, s3handler
 import stringcrypt
 import groups
 import logging
 import friendcodes
+import gameinfo.splat3
 
 # Uncomment for verbose logging from pycord
 #logging.basicConfig(level=logging.DEBUG)
@@ -24,6 +26,7 @@ import friendcodes
 configData = None
 stringCrypt = stringcrypt.StringCrypt()
 splatInfo = splatinfo.SplatInfo()
+splat3info = gameinfo.splat3.Splat3()
 intents = discord.Intents.default()
 intents.members = True
 client = discord.AutoShardedBot(intents=intents, chunk_guilds_at_startup=False)
@@ -31,6 +34,7 @@ commandParser = None
 serverConfig = None
 mysqlHandler = None
 nsoHandler = None
+s3Handler = None
 nsoTokens = None
 ownerCmds = None
 serverVoices = {}
@@ -46,7 +50,7 @@ keyPath = './config/db-secret-key.hex'
 #SubCommand Groups
 cmdGroups = {}
 maps = SlashCommandGroup('maps', 'Commands related to maps for Splatoon 2')
-weapon = SlashCommandGroup('weapons', 'Commands realted to weapons for Splatoon 2')
+weapon = SlashCommandGroup('weapons', 'Commands related to weapons for Splatoon 2')
 admin = SlashCommandGroup('admin', 'Commands that require guild admin privledges to run')
 voice = SlashCommandGroup('voice', 'Commands related to voice functions')
 store = SlashCommandGroup('store', 'Commands related to the Splatoon 2 store')
@@ -58,8 +62,12 @@ fcCmds = SlashCommandGroup('fc', 'Commands for friend codes')
 dm = admin.create_subgroup(name='dm', description="Admin commands related to DM's on users leaving")
 feed = admin.create_subgroup(name='feed', description='Admin commands related to SplatNet rotation feeds')
 announce = admin.create_subgroup(name='announcements', description='Admin commands related to developer annoucenments')
-play = voice.create_subgroup(name='play', description='Commands realted to playing audio')
+play = voice.create_subgroup(name='play', description='Commands related to playing audio')
 storedm = store.create_subgroup('dm', description="Commands related to DM'ing on store changes")
+
+s3Cmds = SlashCommandGroup('s3', 'Commands related to Splatoon 3')
+s3WeaponCmds = s3Cmds.create_subgroup('weapon', 'Commands related to weapons in Splatoon 3')
+s3StatsCmds = s3Cmds.create_subgroup('stats', 'Commands related to Splatoon 3 gameplay stats')
 
 def loadConfig():
 	global configData, helpfldr, mysqlHandler, dev, head, pynso
@@ -156,6 +164,8 @@ async def emotePicker(ctx, turfwar: Option(str, "Emote to use for turfwar"), ran
 	
 	opts = [ turfwar, ranked, league, badge100k, badge500k, badge1m, badge10m ]
 	await ownerCmds.emotePicker(ctx, opts)
+
+# --- ACNH commands ---
 
 @acnh.command(name='passport', description="Posts your ACNH Passport")
 async def cmdACNHPassport(ctx):
@@ -316,6 +326,8 @@ async def cmdDMAdd(ctx):
 	else:
 		await ctx.respond("You aren't a guild administrator", ephemeral=True)
 
+# --- Splatoon 2 commands ---
+
 @maps.command(name='current', description='Shows current map rotation for Turf War/Ranked/League')
 async def cmdCurrentMaps(ctx):
 	await serverUtils.increment_cmd(ctx, 'currentmaps')
@@ -397,7 +409,7 @@ async def cmdWeapStats(ctx, name: Option(str, "Name of the weapon to get stats f
 
 	await nsoHandler.cmdWeaps(ctx, args=[ 'stats', str(name) ])
 
-@weapon.command(name='sub', description='Gets Splatoon 2all weapons with sub type')
+@weapon.command(name='sub', description='Gets all Splatoon 2 weapons with sub type')
 async def cmdWeapSub(ctx, sub: Option(str, "Name of the sub to get matching weapons for", choices=[ weap.name() for weap in splatInfo.getAllSubweapons() ], required=True)):
 	await serverUtils.increment_cmd(ctx, 'weapons')
 
@@ -425,6 +437,39 @@ async def cmdBattle(ctx, battlenum: Option(int, "Battle Number, 1 being latest, 
 		return
 	await serverUtils.increment_cmd(ctx, 'battle')
 	await nsoHandler.battleParser(ctx, battlenum)
+
+# --- S3 commands ---
+
+@s3WeaponCmds.command(name='info', description='Gets info on a weapon in Splatoon 3')
+async def cmdS3WeaponInfo(ctx, name: Option(str, "Name of the weapon to get info for", required=True)):
+	await s3Handler.cmdWeaponInfo(ctx, str(name))
+
+@s3WeaponCmds.command(name='special', description='Lists all Splatoon 3 weapons a given special weapon')
+async def cmdS3WeaponSpecial(ctx, special: Option(str, "Name of the special to get matching weapons for", choices = splat3info.getSpecialNames(), required=True)):
+	await s3Handler.cmdWeaponSpecial(ctx, str(special))
+
+@s3WeaponCmds.command(name='sub', description='Lists all Splatoon 3 weapons a given subweapon')
+async def cmdS3WeaponSub(ctx, special: Option(str, "Name of the subweapon to get matching weapons for", choices = splat3info.getSubweaponNames(), required=True)):
+	await s3Handler.cmdWeaponSub(ctx, str(special))
+
+@s3Cmds.command(name = 'scrim', description = 'Generate a list of Splatoon 3 maps and modes')
+async def cmdS3Scrim(ctx, num: Option(int, "Number of battles (1..20)", required = True), modes: Option(str, "Comma-separated list of modes (default: RM,TC,SZ,CB)", required = True, default = "RM,TC,SZ,CB")):
+	await s3Handler.cmdScrim(ctx, num, modes)
+
+@s3StatsCmds.command(name = 'battle', description = 'Get stats from a battle (1-50)')
+async def cmdS3StatsBattle(ctx, battlenum: Option(int, "Battle Number, 1 being latest, 50 max", required=True, default=1)):
+	if battlenum >= 50 or battlenum < 0:
+		await ctx.respond("Battlenum needs to be between 1-50!")
+		return
+	await s3Handler.cmdStatsBattle(ctx, battlenum)
+
+#@s3StatsCmds.command(name = 'multi', description = 'Get your Splatoon 3 multiplayer stats')
+#async def cmdS3Stats(ctx):
+#	await s3Handler.cmdStats(ctx)
+
+#@s3StatsCmds.command(name = 'sr', description = 'Get your Splatoon 3 Salmon Run stats')
+#async def cmdS3Stats(ctx):#
+#	await s3Handler.cmdSRStats(ctx)
 
 @owner.command(name='eval', description="Eval a code block (Owners only)", default_permission=False)
 @commands.is_owner()
@@ -649,7 +694,7 @@ async def checkIfAdmin(ctx):
 async def on_ready():
 	global client, mysqlHandler, serverUtils, serverVoices, splatInfo, configData, ownerCmds, pynso
 	global nsoHandler, nsoTokens, head, dev, owners, commandParser, doneStartup, acHandler, stringCrypt
-	global friendCodes
+	global friendCodes, s3Handler
 
 	if not doneStartup:
 		print('Logged in as,', client.user.name, client.user.id)
@@ -694,6 +739,7 @@ async def on_ready():
 		serverUtils = serverutils.serverUtils(client, mysqlHandler, serverConfig, configData['help'])
 		nsoTokens = nsotoken.Nsotoken(client, mysqlHandler, configData.get('hosted_url'), stringCrypt)
 		nsoHandler = nsohandler.nsoHandler(client, mysqlHandler, nsoTokens, splatInfo, configData.get('hosted_url'))
+		s3Handler = s3handler.S3Handler(client, mysqlHandler, nsoTokens, splat3info, configData)
 		acHandler = achandler.acHandler(client, mysqlHandler, nsoTokens, configData)
 		await mysqlHandler.startUp()
 		mysqlSchema = mysqlschema.MysqlSchema(mysqlHandler)
@@ -866,6 +912,7 @@ client.add_application_command(admin)
 client.add_application_command(acnh)
 client.add_application_command(groupCmds)
 client.add_application_command(fcCmds)
+client.add_application_command(s3Cmds)
 
 sys.stdout.flush()
 sys.stderr.flush()

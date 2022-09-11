@@ -89,7 +89,36 @@ specialData = [
 	['Zipcaster'       , 'SpSuperHook'     , ['zc', 'spiderman', 'superhook', 'hook']],
 ]
 
+mapsData = [
+	['Scorch Gorge',         ['sg']],
+	['Eeltail Alley',        ['ea', 'eta']],
+	['Undertow Spillway',    ['us', 'uts']],
+	['Mincemeat Metalworks', ['mmm']],
+	['Hagglefish Market',    ['hm', 'hfm']],
+	['Museum d\'Alfonsino',  ['ma', 'mda']],
+	['Hammerhead Bridge',    ['hhb']],
+	['Mahi-Mahi Resort',     ['mmr']],
+	['Inkblot Art Academy',  ['iaa']],
+	['Sturgeon Shipyard',    ['ss']],
+	['MakoMart',             ['mm']],
+	['Wahoo World',          ['ww']]
+]
+
+modesData = [
+	["Splat Zones",   ['sz']],
+	["Rainmaker",     ['rm']],
+	["Tower Control", ['tc']],
+	["Clam Blitz",    ['cb']],
+	["Turf War",      ['tw']]
+]
+
 import gameinfo.matchset
+
+class Splat3Map(gameinfo.matchset.MatchItem):
+	pass
+
+class Splat3Mode(gameinfo.matchset.MatchItem):
+	pass
 
 class Splat3Subweapon(gameinfo.matchset.MatchItem):
 	pass
@@ -140,10 +169,26 @@ class Splat3Weapon(gameinfo.matchset.MatchItem):
 
 class Splat3():
 	def __init__(self):
+		self.initMaps()
+		self.initModes()
 		self.initSubweapons()
 		self.initSpecials()
 		self.initWeaponTypes()
 		self.initWeapons()
+
+	def initMaps(self):
+		self.maps = gameinfo.matchset.MatchSet('map', [])
+		for m in mapsData:
+			name    = m[0]
+			abbrevs = m[1]
+			self.maps.append(Splat3Map(name, abbrevs))
+
+	def initModes(self):
+		self.modes = gameinfo.matchset.MatchSet('mode', [])
+		for m in modesData:
+			name    = m[0]
+			abbrevs = m[1]
+			self.modes.append(Splat3Mode(name, abbrevs))
 
 	def initSubweapons(self):
 		self.subweapons = gameinfo.matchset.MatchSet('subweapon', [])
@@ -171,7 +216,7 @@ class Splat3():
 			Splat3WeaponType("Brella",    "Brellas",    ["bre", "u", "umbrella", "brolly"]),
 			Splat3WeaponType("Brush",     "Brushes",    ["bru"]),
 			Splat3WeaponType("Stringer",  "Stringers",  ["str", "bow"]),
-			Splat3WeaponType("Splatana",  "Splatanas",  ["sna", "saber"])
+			Splat3WeaponType("Splatana",  "Splatanas",  ["sna", "saber", "sword"])
                 ])
 
 	def initWeapons(self):
@@ -187,4 +232,16 @@ class Splat3():
 			price   = w[7]
 			specpts = w[8]
 			abbrevs = []  # TODO
-			self.weapons.append(Splat3Weapon(id, name, abbrevs, self.weaponTypes.getItemByName(type), sub, special, specpts, price, level))
+			self.weapons.append(Splat3Weapon(id, name, abbrevs, self.weaponTypes.getItemByName(type), self.subweapons.getItemByName(sub), self.specials.getItemByName(special), specpts, price, level))
+
+	def getSpecialNames(self):
+		return [ s.name() for s in self.specials.getAllItems() ]
+
+	def getSubweaponNames(self):
+		return [ s.name() for s in self.subweapons.getAllItems() ]
+
+	def getWeaponsBySpecial(self, special):
+		return list(filter(lambda w: w.special() == special, self.weapons.getAllItems()))
+
+	def getWeaponsBySubweapon(self, subweapon):
+		return list(filter(lambda w: w.sub() == subweapon, self.weapons.getAllItems()))
