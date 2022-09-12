@@ -253,7 +253,7 @@ class S3Handler():
 		embed = S3Utils.createMultiplayerStatsEmbed(statssimple, statsfull, species)
 		if self.webDir and self.hostedUrl:
 			imgUrl = S3Utils.createNamePlateImage(statsfull, self.hostedUrl, self.webDir)
-			embed.set_thumbnail(url=imgUrl)
+			embed.set_thumbnail(url=f"{imgUrl}?{str(time.time() % 1)}")
 
 		await ctx.respond(embed = embed)
 
