@@ -1,15 +1,22 @@
 #!/usr/bin/env python3
 from pynso.nso_api import NSO_API
 from pynso.imink import IMink
+
 import os, sys, re
-sys.path.append('./modules')
+
+# Figure out bot directory
+dirname = os.path.dirname(sys.argv[0])
+sys.path.append(f"{dirname}/modules")
+
 #Base Stuffs
 import discord, asyncio, subprocess, json, time, itertools
 from discord.commands import *
 from discord.ui import InputText, Modal
 from discord.ext import commands
+
 #DBL Posting
 import urllib, urllib.request, requests, pymysql
+
 #Our Classes
 import nsotoken, commandparser, serverconfig, splatinfo, ownercmds, messagecontext
 import vserver, mysqlhandler, mysqlschema, serverutils
@@ -45,7 +52,7 @@ doneStartup = False
 owners = []
 dev = True
 head = {}
-keyPath = './config/db-secret-key.hex'
+keyPath = f"{dirname}/config/db-secret-key.hex"
 
 #SubCommand Groups
 cmdGroups = {}
@@ -72,7 +79,7 @@ s3StatsCmds = s3Cmds.create_subgroup('stats', 'Commands related to Splatoon 3 ga
 def loadConfig():
 	global configData, helpfldr, mysqlHandler, dev, head, pynso
 	try:
-		with open('./config/discordbot.json', 'r') as json_config:
+		with open(f"{dirname}/config/discordbot.json", 'r') as json_config:
 			configData = json.load(json_config)
 
 		try:
@@ -891,9 +898,9 @@ async def on_message(message):
 #Setup
 loadConfig()
 if configData.get('output_to_log'):
-	os.makedirs('./logs', exist_ok=True)
-	sys.stdout = open('./logs/discordbot.log', 'a')
-	sys.stderr = open('./logs/discordbot.err', 'a')
+	os.makedirs(f"{dirname}/logs", exist_ok=True)
+	sys.stdout = open("{dirname}/logs/discordbot.log", 'a')
+	sys.stderr = open("{dirname}/logs/discordbot.err", 'a')
 
 ensureEncryptionKey()
 
