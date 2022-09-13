@@ -100,7 +100,8 @@ class S3Utils():
 		
 		s2FontSmall = ImageFont.truetype('/home/dbot/s2.otf', size=24)
 		s2FontMed = ImageFont.truetype('/home/dbot/s2.otf', size=36)
-		s2FontLarge = ImageFont.truetype('/home/dbot/s2.otf', size=64)
+		s1FontLarge = ImageFont.truetype('/home/dbot/s1.otf', size=64)
+
 
 		MAXW, MAXH = 700, 200
 		size = (72, 72)
@@ -120,7 +121,7 @@ class S3Utils():
 
 		imgEdit.text((10,10), playerJson['data']['currentPlayer']['byname'], (255, 255, 255), font=s2FontMed, anchor='lt')
 		imgEdit.text((10,175), f"#{playerJson['data']['currentPlayer']['nameId']}", (255, 255, 255), font=s2FontSmall, anchor='lt')
-		imgEdit.text((MAXW/2, MAXH/2), playerJson['data']['currentPlayer']['name'], (255, 255, 255), font=s2FontLarge, anchor='mm')
+		imgEdit.text((MAXW/2, MAXH/2), playerJson['data']['currentPlayer']['name'], (255, 255, 255), font=s1FontLarge, anchor='mm')
 
 		imgName = f"{playerJson['data']['currentPlayer']['name']}{playerJson['data']['currentPlayer']['nameId']}.png"
 		imgUrl = f"{hostedUrl}/s3/nameplates/{imgName}"
