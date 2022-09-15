@@ -5,7 +5,7 @@ from pynso.imink import IMink
 import os, sys, re
 
 # Figure out bot directory
-dirname = os.path.dirname(sys.argv[0])
+dirname = os.path.dirname(sys.argv[0]) or '.'
 sys.path.append(f"{dirname}/modules")
 
 #Base Stuffs
