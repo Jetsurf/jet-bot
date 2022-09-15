@@ -478,6 +478,10 @@ async def cmdS3Stats(ctx):
 #async def cmdS3Stats(ctx):#
 #	await s3Handler.cmdSRStats(ctx)
 
+@s3StatsCmds.command(name = 'fit', description = 'Posts your current gear loadout')
+async def cmdS3Fit(ctx):
+	await s3Handler.cmdFit(ctx)
+
 @owner.command(name='eval', description="Eval a code block (Owners only)", default_permission=False)
 @commands.is_owner()
 async def cmdEval(ctx):

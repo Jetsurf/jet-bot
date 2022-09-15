@@ -102,7 +102,6 @@ class S3Utils():
 		s2FontMed = ImageFont.truetype('/home/dbot/s2.otf', size=36)
 		s1FontLarge = ImageFont.truetype('/home/dbot/s1.otf', size=64)
 
-
 		MAXW, MAXH = 700, 200
 		size = (72, 72)
 		i = 3 #Max badges is 3
@@ -113,7 +112,6 @@ class S3Utils():
 				badgeRes = requests.get(badge['image']['url'])
 				badgeImg = Image.open(BytesIO(badgeRes.content)).convert("RGBA")
 				badgeImg.thumbnail(size, Image.ANTIALIAS)
-				badgeImg.save('/home/dbot/test.png')
 				npImage.paste(badgeImg, (MAXW-(i*size[0]), MAXH-size[1]), badgeImg)
 				i-=1
 
@@ -129,6 +127,49 @@ class S3Utils():
 
 		npImage.save(imgPath, "PNG")
 		return imgUrl
+
+	@classmethod
+	def createFitImage(self, statsjson, hostedUrl, webDir):
+		gear = { 'weapon' : statsjson['data']['currentPlayer']['weapon'], 'head' : statsjson['data']['currentPlayer']['headGear'],
+				'clothes' : statsjson['data']['currentPlayer']['clothingGear'], 'shoes' : statsjson['data']['currentPlayer']['shoesGear'] }
+		MAXW, MAXH = 800, 250
+		GHW = 200
+		SUBHW = 50
+		retImage = Image.new("RGBA", (MAXW, MAXH), (0, 0, 0, 0))
+		retDraw = ImageDraw.Draw(retImage)
+		i = 4
+		for k, v in gear.items():
+			res = requests.get(v['image']['url'])
+			gimg = Image.open(BytesIO(res.content)).convert("RGBA")
+			gimg.thumbnail((GHW, GHW), Image.ANTIALIAS)
+			retImage.paste(gimg, (MAXW-(i*GHW), 0), gimg)
+			if k == 'weapon':
+				reqSub = requests.get(v['subWeapon']['image']['url'])
+				reqSpec = requests.get(v['specialWeapon']['image']['url'])
+				subImg = Image.open(BytesIO(reqSub.content)).convert("RGBA")
+				subImg.thumbnail((SUBHW, SUBHW), Image.ANTIALIAS)
+				specImg = Image.open(BytesIO(reqSpec.content)).convert("RGBA")
+				specImg.thumbnail((SUBHW, SUBHW), Image.ANTIALIAS)
+				center = (int(MAXW-(i*GHW) + (GHW/2)), GHW)
+				retImage.paste(subImg, (center[0]-SUBHW, center[1]))
+				retImage.paste(specImg, center)
+			else:
+				maReq = requests.get(v["primaryGearPower"]['image']['url'])
+				maImg = Image.open(BytesIO(maReq.content)).convert("RGBA")
+				maImg.thumbnail((SUBHW, SUBHW), Image.ANTIALIAS)
+				retImage.paste(maImg, (MAXW-(i*GHW), GHW))
+				j = 1
+				for ability in v['additionalGearPowers']:
+					abilReq = requests.get(ability['image']['url'])
+					abilImg = Image.open(BytesIO(abilReq.content)).convert("RGBA")
+					abilImg.thumbnail((SUBHW, SUBHW), Image.ANTIALIAS)
+					retImage.paste(abilImg, (MAXW - (i * GHW) + (j*SUBHW),GHW))
+					j+=1
+			i-=1
+
+		imgName = f"{statsjson['data']['currentPlayer']['name']}-{statsjson['data']['currentPlayer']['nameId']}.png"
+		retImage.save(f"{webDir}/s3/fits/{imgName}", "PNG")
+		return f"{hostedUrl}/s3/fits/{imgName}"	
 
 class S3Handler():
 	def __init__(self, client, mysqlHandler, nsotoken, splat3info, configData):
@@ -244,7 +285,7 @@ class S3Handler():
 		statssimple = nso.s3.get_player_stats_simple()
 		if statssimple is None:
 			await ctx.respond(f"Failed to retrieve stats.")
-			print(f"get_player_stats returned none for user {ctx.user.id}")
+			print(f"cmdStats: get_player_stats returned none for user {ctx.user.id}")
 			return
 
 		statsfull = nso.s3.get_player_stats_full()
@@ -275,4 +316,19 @@ class S3Handler():
 		embed = S3Utils.createSalmonRunResultsEmbed(srstats)
 		await ctx.respond(embed = embed)
 
+	async def cmdFit(self, ctx):
+		await ctx.defer()
 
+		nso = await self.nsotoken.get_nso_client(ctx.user.id)
+		if not nso.is_logged_in():
+			await ctx.respond("You don't have a NSO token setup! Run /token to get started.")
+			return
+
+		statsfull = nso.s3.get_player_stats_full()
+		if statsfull is None:
+			await ctx.respond("Failed to retrieve stats.")
+			print(f"cmdFit: get_player_stats_full returned none for {ctx.user.id}")
+			return
+
+		url = S3Utils.createFitImage(statsfull, self.hostedUrl, self.webDir)
+		await ctx.respond(f"{url}?{str(time.time() % 1)}")
