@@ -19,7 +19,7 @@ class S3Utils():
 		judgement = details['data']['vsHistoryDetail']['judgement']
 		playerId = details['data']['vsHistoryDetail']['player']['id']
 
-		typeNames = {"BANKARA": "Anarchy Battle", "FEST": "Splatfest", "X": "X", "LEAGUE": "League"}
+		typeNames = {"BANKARA": "Anarchy Battle", "FEST": "Splatfest", "X": "X", "LEAGUE": "League", "PRIVATE": "Private Battle"}
 		judgementNames = {"WIN": "Win", "LOSS": "Loss", "DEEMED_LOSE": "Loss due to early disconnect", "DRAW": "Draw"}
 
 		myTeam = details['data']['vsHistoryDetail']['myTeam']
