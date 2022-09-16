@@ -5,6 +5,9 @@ import re, time, requests, random
 #Image Editing
 from PIL import Image, ImageFont, ImageDraw 
 from io import BytesIO
+import base64
+import datetime
+import dateutil.parser
 
 class S3Utils():
 	@classmethod
@@ -43,6 +46,31 @@ class S3Utils():
 			else:
 				stats.append("%s \u2014 %d(%d)/%d/%d" % (discord.utils.escape_markdown(p['name']), result['kill'], result['assist'], result['death'], result['special']))
 		embed.add_field(name = name, value = "\n".join(stats))
+
+	@classmethod
+	def createSplatfestEmbed(cls, splatfest):
+		now = datetime.datetime.now(datetime.timezone.utc)
+
+		starttime = dateutil.parser.isoparse(splatfest['startTime'])
+		endtime   = dateutil.parser.isoparse(splatfest['endTime'])
+
+		if starttime > now:
+			whenstr = f"Starts at <t:{int(starttime.timestamp())}> (<t:{int(starttime.timestamp())}:R>)"
+		elif endtime > now:
+			whenstr = f"Ends at <t:{int(endtime.timestamp())}> (<t:{int(endtime.timestamp())}:R>)"
+		else:
+			whenstr = f"Ended at <t:{int(endtime.timestamp())}>>"
+
+		embed = discord.Embed(colour=0x0004FF, description = whenstr)
+		embed.title = splatfest['title']
+		embed.set_image(url = splatfest['image']['url'])
+
+		for t in splatfest['teams']:
+			id = base64.b64decode(t['id']).decode("utf-8")
+			which = re.sub('^.*:', '', id)
+			embed.add_field(name = f'Team {which}', value = t['teamName'])
+
+		return embed
 
 	@classmethod
 	def createSalmonRunResultsEmbed(cls, results):
@@ -332,3 +360,21 @@ class S3Handler():
 
 		url = S3Utils.createFitImage(statsfull, self.hostedUrl, self.webDir)
 		await ctx.respond(f"{url}?{str(time.time() % 1)}")
+
+	async def cmdFest(self, ctx):
+		await ctx.defer()
+
+		# TODO: Use bot owner account so user does not need /token
+		nso = await self.nsotoken.get_nso_client(ctx.user.id)
+		if not nso.is_logged_in():
+			await ctx.respond("You don't have a NSO token set up! Run /token to get started.")
+			return
+
+		festinfo = nso.s3.get_splatfest_list()
+		if festinfo is None:
+			await ctx.respond(f"Failed to retrieve stats.")
+			print(f"get_splatfest_list returned none for user {ctx.user.id}")
+			return
+
+		embed = S3Utils.createSplatfestEmbed(festinfo['data']['festRecords']['nodes'][0])
+		await ctx.respond(embed = embed)
