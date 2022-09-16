@@ -42,10 +42,10 @@ class S3Utils():
 			result = p['result']
 
 			if result is None:
-				stats.append("%s \u2014 (disconnect)" % (discord.utils.escape_markdown(p['name']),))
+				stats.append("%s \u2014 %s \u2014 (disconnect)" % (p['weapon']['name'], discord.utils.escape_markdown(p['name']),))
 			else:
-				stats.append("%s \u2014 %d(%d)/%d/%d paint %d" % (discord.utils.escape_markdown(p['name']), result['kill'], result['assist'], result['death'], result['special'], p['paint']))
-		embed.add_field(name = name, value = "\n".join(stats))
+				stats.append("%s \u2014 %s \u2014 %d(%d)/%d/%d paint %d" % (p['weapon']['name'], discord.utils.escape_markdown(p['name']), result['kill'], result['assist'], result['death'], result['special'], p['paint']))
+		embed.add_field(name = name, value = "\n".join(stats), inline = False)
 
 	@classmethod
 	def createSplatfestEmbed(cls, splatfest):
