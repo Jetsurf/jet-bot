@@ -160,8 +160,11 @@ class S3Utils():
 	def createFitImage(self, statsjson, hostedUrl, webDir):
 		gear = { 'weapon' : statsjson['data']['currentPlayer']['weapon'], 'head' : statsjson['data']['currentPlayer']['headGear'],
 				'clothes' : statsjson['data']['currentPlayer']['clothingGear'], 'shoes' : statsjson['data']['currentPlayer']['shoesGear'] }
-		MAXW, MAXH = 800, 250
-		GHW = 200
+		s2FontSmall = ImageFont.truetype('/home/dbot/s2.otf', size=24)
+		MAXW, MAXH = 860, 294
+		TEXTBUF = 24
+		GHW = 220
+		MAINHW = 70
 		SUBHW = 50
 		retImage = Image.new("RGBA", (MAXW, MAXH), (0, 0, 0, 0))
 		retDraw = ImageDraw.Draw(retImage)
@@ -170,7 +173,8 @@ class S3Utils():
 			res = requests.get(v['image']['url'])
 			gimg = Image.open(BytesIO(res.content)).convert("RGBA")
 			gimg.thumbnail((GHW, GHW), Image.ANTIALIAS)
-			retImage.paste(gimg, (MAXW-(i*GHW), 0), gimg)
+			retImage.paste(gimg, (MAXW - (i * GHW)-int((MAINHW - SUBHW) / 2), TEXTBUF))
+			retDraw.text((MAXW - (i * GHW) + int(GHW / 2) - (MAINHW - SUBHW), 0), f"{v['name']}", (255, 255, 255), font=s2FontSmall, anchor='mt')
 			if k == 'weapon':
 				reqSub = requests.get(v['subWeapon']['image']['url'])
 				reqSpec = requests.get(v['specialWeapon']['image']['url'])
@@ -178,22 +182,23 @@ class S3Utils():
 				subImg.thumbnail((SUBHW, SUBHW), Image.ANTIALIAS)
 				specImg = Image.open(BytesIO(reqSpec.content)).convert("RGBA")
 				specImg.thumbnail((SUBHW, SUBHW), Image.ANTIALIAS)
-				center = (int(MAXW-(i*GHW) + (GHW/2)), GHW)
+				center = (int(MAXW - (i * GHW) + (GHW / 2) - ((MAINHW - SUBHW) / 2)), GHW+TEXTBUF)
 				retImage.paste(subImg, (center[0]-SUBHW, center[1]))
 				retImage.paste(specImg, center)
 			else:
 				maReq = requests.get(v["primaryGearPower"]['image']['url'])
 				maImg = Image.open(BytesIO(maReq.content)).convert("RGBA")
-				maImg.thumbnail((SUBHW, SUBHW), Image.ANTIALIAS)
-				retImage.paste(maImg, (MAXW-(i*GHW), GHW))
+				maImg.thumbnail((MAINHW, MAINHW), Image.ANTIALIAS)
+				retImage.paste(maImg, (MAXW - (i * GHW) - (MAINHW - SUBHW), GHW - (MAINHW - SUBHW) + TEXTBUF))
 				j = 1
 				for ability in v['additionalGearPowers']:
 					abilReq = requests.get(ability['image']['url'])
 					abilImg = Image.open(BytesIO(abilReq.content)).convert("RGBA")
 					abilImg.thumbnail((SUBHW, SUBHW), Image.ANTIALIAS)
-					retImage.paste(abilImg, (MAXW - (i * GHW) + (j*SUBHW),GHW))
-					j+=1
-			i-=1
+					retImage.paste(abilImg, (MAXW - (i * GHW) + (j * SUBHW),GHW + TEXTBUF))
+					j += 1
+				retDraw.line([((MAXW-(i * GHW)-(MAINHW - SUBHW), 0)), ((MAXW - (i * GHW) - (MAINHW - SUBHW), MAXH))], fill="black", width=3)
+			i -= 1
 
 		imgName = f"{statsjson['data']['currentPlayer']['name']}-{statsjson['data']['currentPlayer']['nameId']}.png"
 		retImage.save(f"{webDir}/s3/fits/{imgName}", "PNG")
