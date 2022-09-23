@@ -478,9 +478,9 @@ async def cmdS3StatsBattle(ctx, battlenum: Option(int, "Battle Number, 1 being l
 async def cmdS3Stats(ctx):
 	await s3Handler.cmdStats(ctx)
 
-#@s3StatsCmds.command(name = 'sr', description = 'Get your Splatoon 3 Salmon Run stats')
-#async def cmdS3Stats(ctx):#
-#	await s3Handler.cmdSRStats(ctx)
+@s3StatsCmds.command(name = 'sr', description = 'Get your Splatoon 3 Salmon Run stats')
+async def cmdS3Stats(ctx):#
+	await s3Handler.cmdSRStats(ctx)
 
 @s3StatsCmds.command(name = 'fit', description = 'Posts your current gear loadout')
 async def cmdS3Fit(ctx):

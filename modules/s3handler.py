@@ -76,13 +76,40 @@ class S3Utils():
 	def createSalmonRunResultsEmbed(cls, results):
 		embed = discord.Embed(colour=0x0004FF)
 		historyGroups = results['data']['coopResult']['historyGroups']['nodes']
+		stats = results['data']['coopResult']
+		pointCard = results['data']['coopResult']['pointCard']
 		if len(historyGroups) == 0:
 			embed.add_field(name = "History empty", value = "Go play some Salmon Run!")
 
 		historyDetails = historyGroups[0]['historyDetails']['nodes']
 		lastGameDetails = historyDetails[0]
-		embed.title = f"Your Salmon Run rank"
-		embed.add_field(name = "Rank", value = lastGameDetails['afterGrade']['name'])
+		embed.title = f"{lastGameDetails['afterGrade']['name']} - {stats['regularGradePoint']}"
+		embed.add_field(name = "Totals", value = f"Shifts Worked: {pointCard['playCount']}\nPower Eggs: {pointCard['deliverCount']}\nGolden Eggs: {pointCard['goldenDeliverCount']}\nTotal Points: {pointCard['totalPoint']}\nKing Salmonoid Kills: {pointCard['defeatBossCount']}", inline = True)
+		embed.add_field(name = "Scales", value = f"Bronze: {stats['scale']['bronze']}\nSilver: {stats['scale']['silver']}\nGold:{stats['scale']['gold']}", inline = True)
+		
+		bossSeen = 0
+		bossDowns = 0
+		clears = 0
+		pwrEggTotal = 0
+		gldEggTotal = 0
+		matches = 0
+		for group in historyGroups:
+			#Here for checking highest results
+			for match in group['historyDetails']['nodes']:
+				if match['bossResult'] != None:
+					bossSeen += 1
+					if match['bossResult']['hasDefeatBoss']:
+						bossDowns += 1
+
+				pwrEggTotal += match['myResult']['deliverCount']
+				gldEggTotal += match['myResult']['goldenDeliverCount']
+				if match['gradePointDiff'] is 'UP':
+					clears += 1
+				matches += 1
+
+		embed.add_field(name = f"Average Stats (Last {matches})", value = "STUFF", inline = True)
+		embed.add_field(name = f"Total Stats (Last {matches})", value = f"King Salmonoids Seen: {bossSeen}\nKing Salmonids Clears: {bossDowns}\nGolden Eggs: {gldEggTotal}\nPower Eggs: {pwrEggTotal}", inline = True)
+
 		return embed
 
 	@classmethod
@@ -157,6 +184,15 @@ class S3Utils():
 		return imgUrl
 
 	@classmethod
+	def addCircleToImage(self, image, HW, BUF):
+		circleImg = Image.new("RGBA", (HW, HW), (255, 255, 255 ,0))
+		circDraw = ImageDraw.Draw(circleImg)
+		bounds = (0, 0, HW-2, HW-2)
+		circDraw.ellipse(bounds, fill="black")
+		circleImg.paste(image, (0 + int(BUF/2),0 + int(BUF/2)), image)
+		return circleImg
+
+	@classmethod
 	def createFitImage(self, statsjson, hostedUrl, webDir):
 		gear = { 'weapon' : statsjson['data']['currentPlayer']['weapon'], 'head' : statsjson['data']['currentPlayer']['headGear'],
 				'clothes' : statsjson['data']['currentPlayer']['clothingGear'], 'shoes' : statsjson['data']['currentPlayer']['shoesGear'] }
@@ -166,6 +202,8 @@ class S3Utils():
 		GHW = 220
 		MAINHW = 70
 		SUBHW = 50
+		BUF = 5
+		TEXTCOLOR = (0, 150, 150, 255)
 		retImage = Image.new("RGBA", (MAXW, MAXH), (0, 0, 0, 0))
 		retDraw = ImageDraw.Draw(retImage)
 		i = 4
@@ -173,33 +211,40 @@ class S3Utils():
 			res = requests.get(v['image']['url'])
 			gimg = Image.open(BytesIO(res.content)).convert("RGBA")
 			gimg.thumbnail((GHW, GHW), Image.ANTIALIAS)
-			retImage.paste(gimg, (MAXW - (i * GHW)-int((MAINHW - SUBHW) / 2), TEXTBUF))
-			retDraw.text((MAXW - (i * GHW) + int(GHW / 2) - (MAINHW - SUBHW), 0), f"{v['name']}", (255, 255, 255), font=s2FontSmall, anchor='mt')
 			if k == 'weapon':
+				retDraw.text((MAXW - (i * GHW) + int(GHW / 2), 0 + 3), f"{v['name']}", TEXTCOLOR, font=s2FontSmall, anchor='mt')
+				retImage.paste(gimg, (MAXW - (i * GHW) + int((MAINHW - SUBHW) / 2), TEXTBUF), gimg)
 				reqSub = requests.get(v['subWeapon']['image']['url'])
 				reqSpec = requests.get(v['specialWeapon']['image']['url'])
 				subImg = Image.open(BytesIO(reqSub.content)).convert("RGBA")
-				subImg.thumbnail((SUBHW, SUBHW), Image.ANTIALIAS)
+				subImg.thumbnail((SUBHW-BUF, SUBHW-BUF), Image.ANTIALIAS)
 				specImg = Image.open(BytesIO(reqSpec.content)).convert("RGBA")
-				specImg.thumbnail((SUBHW, SUBHW), Image.ANTIALIAS)
-				center = (int(MAXW - (i * GHW) + (GHW / 2) - ((MAINHW - SUBHW) / 2)), GHW+TEXTBUF)
-				retImage.paste(subImg, (center[0]-SUBHW, center[1]))
-				retImage.paste(specImg, center)
+				specImg.thumbnail((SUBHW - BUF, SUBHW - BUF), Image.ANTIALIAS)
+				center = (int(MAXW - (i * GHW) + (GHW / 2)), GHW + TEXTBUF)
+				subImg = self.addCircleToImage(subImg, SUBHW, BUF)
+				specImg = self.addCircleToImage(specImg, SUBHW, BUF)
+				retImage.paste(subImg, (center[0]-SUBHW, center[1]), subImg)
+				retImage.paste(specImg, center, specImg)
 			else:
+				retDraw.text((MAXW - (i * GHW) + int(GHW / 2) - (MAINHW - SUBHW), 0 + 3), f"{v['name']}", TEXTCOLOR, font=s2FontSmall, anchor='mt')
+				retImage.paste(gimg, (MAXW - (i * GHW) - int((MAINHW - SUBHW) / 2), TEXTBUF), gimg)
 				maReq = requests.get(v["primaryGearPower"]['image']['url'])
 				maImg = Image.open(BytesIO(maReq.content)).convert("RGBA")
-				maImg.thumbnail((MAINHW, MAINHW), Image.ANTIALIAS)
-				retImage.paste(maImg, (MAXW - (i * GHW) - (MAINHW - SUBHW), GHW - (MAINHW - SUBHW) + TEXTBUF))
+				maImg.thumbnail((MAINHW-BUF, MAINHW-BUF), Image.ANTIALIAS)
+				maImg = self.addCircleToImage(maImg, MAINHW, BUF)
+				retImage.paste(maImg, (MAXW - (i * GHW) - (MAINHW - SUBHW), GHW - (MAINHW - SUBHW) + TEXTBUF), maImg)
 				j = 1
 				for ability in v['additionalGearPowers']:
 					abilReq = requests.get(ability['image']['url'])
 					abilImg = Image.open(BytesIO(abilReq.content)).convert("RGBA")
-					abilImg.thumbnail((SUBHW, SUBHW), Image.ANTIALIAS)
-					retImage.paste(abilImg, (MAXW - (i * GHW) + (j * SUBHW),GHW + TEXTBUF))
+					abilImg.thumbnail((SUBHW-BUF, SUBHW-BUF), Image.ANTIALIAS)
+					abilImg = self.addCircleToImage(abilImg, SUBHW, BUF)
+					retImage.paste(abilImg, (MAXW - (i * GHW) + (j * SUBHW),GHW + TEXTBUF), abilImg)
 					j += 1
-				retDraw.line([((MAXW-(i * GHW)-(MAINHW - SUBHW), 0)), ((MAXW - (i * GHW) - (MAINHW - SUBHW), MAXH))], fill="black", width=3)
+				retDraw.line([((MAXW - (i * GHW) - (MAINHW - SUBHW), 0)), ((MAXW - (i * GHW) - (MAINHW - SUBHW), MAXH))], fill="black", width=3)
 			i -= 1
 
+		retDraw.rectangle((0, 0, MAXW - 1, MAXH - 1), outline="black", width=3)
 		imgName = f"{statsjson['data']['currentPlayer']['name']}-{statsjson['data']['currentPlayer']['nameId']}.png"
 		retImage.save(f"{webDir}/s3/fits/{imgName}", "PNG")
 		return f"{hostedUrl}/s3/fits/{imgName}"	
@@ -212,6 +257,7 @@ class S3Handler():
 		self.splat3info = splat3info
 		self.hostedUrl = configData.get('hosted_url')
 		self.webDir = configData.get('web_dir')
+		#self.ownerToken = self.nsotoken.get_nso_client(ownerTokenId)
 
 	async def cmdWeaponInfo(self, ctx, name):
 		match = self.splat3info.weapons.matchItem(name)
