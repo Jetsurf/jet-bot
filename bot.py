@@ -54,27 +54,34 @@ dev = True
 head = {}
 keyPath = f"{dirname}/config/db-secret-key.hex"
 
-#SubCommand Groups
-cmdGroups = {}
-maps = SlashCommandGroup('maps', 'Commands related to maps for Splatoon 2')
-weapon = SlashCommandGroup('weapons', 'Commands related to weapons for Splatoon 2')
-admin = SlashCommandGroup('admin', 'Commands that require guild admin privledges to run')
-voice = SlashCommandGroup('voice', 'Commands related to voice functions')
-store = SlashCommandGroup('store', 'Commands related to the Splatoon 2 store')
-stats = SlashCommandGroup('stats', 'Commands related to Splatoon 2 gameplay stats')
-acnh = SlashCommandGroup('acnh', "Commands related to Animal Crossing New Horizons")
-owner = SlashCommandGroup('owner', "Commands that are owner only")
-groupCmds = SlashCommandGroup('group', 'Commands related to finding a group of players')
-fcCmds = SlashCommandGroup('fc', 'Commands for friend codes')
-dm = admin.create_subgroup(name='dm', description="Admin commands related to DM's on users leaving")
-feed = admin.create_subgroup(name='feed', description='Admin commands related to SplatNet rotation feeds')
-announce = admin.create_subgroup(name='announcements', description='Admin commands related to developer annoucenments')
-play = voice.create_subgroup(name='play', description='Commands related to playing audio')
-storedm = store.create_subgroup('dm', description="Commands related to DM'ing on store changes")
+# S2
+s2Cmds = SlashCommandGroup('s2', 'Splatoon 2')
+s2MapCmds = s2Cmds.create_subgroup('maps', 'Splatoon 2 maps')
+s2WeaponCmds = s2Cmds.create_subgroup('weapons', 'Splatoon 2 Weapons')
+s2StoreCmds = s2Cmds.create_subgroup('store', 'Splatnet 2 store')
+s2StoredmCmds = s2Cmds.create_subgroup('storedm', description="Gear DM notifications")
+s2StatsCmds = s2Cmds.create_subgroup('stats', 'Gameplay stats')
 
+# S3
 s3Cmds = SlashCommandGroup('s3', 'Commands related to Splatoon 3')
 s3WeaponCmds = s3Cmds.create_subgroup('weapon', 'Commands related to weapons in Splatoon 3')
 s3StatsCmds = s3Cmds.create_subgroup('stats', 'Commands related to Splatoon 3 gameplay stats')
+
+# ACNH
+acnhCmds = SlashCommandGroup('acnh', "Commands related to Animal Crossing New Horizons")
+
+# Admin
+adminCmds = SlashCommandGroup('admin', 'Commands that require guild admin privledges to run')
+adminS2feedCmds = adminCmds.create_subgroup(name='s2feed', description='Admin commands related to SplatNet 2 rotation feeds')
+adminDmCmds = adminCmds.create_subgroup(name='dm', description="Admin commands related to DM's on users leaving")
+adminAnnounceCmds = adminCmds.create_subgroup(name='announcements', description='Admin commands related to developer announcements')
+
+# Other
+voice = SlashCommandGroup('voice', 'Commands related to voice functions')
+owner = SlashCommandGroup('owner', "Commands that are owner only")
+groupCmds = SlashCommandGroup('group', 'Commands related to finding a group of players')
+fcCmds = SlashCommandGroup('fc', 'Commands for friend codes')
+play = voice.create_subgroup(name='play', description='Commands related to playing audio')
 
 def loadConfig():
 	global configData, helpfldr, mysqlHandler, dev, head, pynso
@@ -172,65 +179,6 @@ async def emotePicker(ctx, turfwar: Option(str, "Emote to use for turfwar"), ran
 	opts = [ turfwar, ranked, league, badge100k, badge500k, badge1m, badge10m ]
 	await ownerCmds.emotePicker(ctx, opts)
 
-# --- ACNH commands ---
-
-@acnh.command(name='passport', description="Posts your ACNH Passport")
-async def cmdACNHPassport(ctx):
-	await serverUtils.increment_cmd(ctx, 'passport')
-	await acHandler.passport(ctx)
-
-@acnh.command(name='emote', description="Makes your ACNH character do an emote.")
-async def cmdACNHEmote(ctx, emote: Option(str, "The emote to do")):
-	await serverUtils.increment_cmd(ctx, 'emote')
-	await acHandler.ac_emote(ctx, emote)
-
-@acnh.command(name='getemotes', description="Gets available emotes for your ACNH character to do")
-async def cmdACNHGetEmotes(ctx):
-	await serverUtils.increment_cmd(ctx, 'getemotes')
-	await acHandler.get_ac_emotes(ctx)
-
-@acnh.command(name='message', description="What to make your ACNH character say.")
-async def cmdACNHEmote(ctx, message: Option(str, "The message to send")):
-	await serverUtils.increment_cmd(ctx, 'message')
-	await acHandler.ac_message(ctx, message)
-
-@store.command(name='currentgear', description="See the current gear on the SplatNet store")
-async def cmdStoreCurrent(ctx):
-	await serverUtils.increment_cmd(ctx, 'splatnetgear')
-	await nsoHandler.gearParser(ctx)
-
-@store.command(name='order', description='Orders gear from the SplatNet store')
-async def cmdOrder(ctx, order: Option(str, "ID or NAME of the gear to order from the store (get both from /store currentgear)", required=True), override: Option(bool, "Override if you have an item already on order", required=False)):
-	print(f"Ordering gear for user: {ctx.user.name} and id {str(ctx.user.id)}")
-	await serverUtils.increment_cmd(ctx, 'order')
-	await nsoHandler.orderGearCommand(ctx, args=[str(order)], override=override if override != None else False)
-
-@storedm.command(name='add', description='Sends a DM when gear with ABILITY/BRAND/GEAR appears in the store')
-async def cmdStoreDMAbilty(ctx, flag: Option(str, "ABILITY/BRAND/GEAR to DM you with when it appears in the store", required=True)):
-	if ctx.guild == None:
-		await ctx.respond("Can't DM me with this command.")
-		return
-	await serverUtils.increment_cmd(ctx, 'storedm')
-	await nsoHandler.addStoreDM(ctx, [ str(flag) ])
-
-@storedm.command(name='list', description='Shows you everything you are set to recieve a DM for')
-async def cmdStoreDMAbilty(ctx):
-	if ctx.guild == None:
-		await ctx.respond("Can't DM me with this command.")
-		return
-
-	await serverUtils.increment_cmd(ctx, 'storedm')
-	await nsoHandler.listStoreDM(ctx)
-
-@storedm.command(name='remove', description='Removes you from being DMed when gear with FLAG appears in the storer')
-async def cmdStoreDMAbilty(ctx, flag: Option(str, "ABILITY/BRAND/GEAR to stop DMing you with when it appears in the store", required=True)):
-	if ctx.guild == None:
-		await ctx.respond("Can't DM me with this command.")
-		return
-
-	await serverUtils.increment_cmd(ctx, 'storedm')
-	await nsoHandler.removeStoreDM(ctx, [ str(flag) ])
-
 @client.slash_command(name='support', description='Sends a discord invite to my support guild.')
 async def cmdSupport(ctx):
 	await serverUtils.increment_cmd(ctx, 'support')
@@ -246,7 +194,7 @@ async def cmdHelp(ctx):
 	await serverUtils.increment_cmd(ctx, 'help')
 	await ctx.respond("Help Menu:", view=serverutils.HelpMenuView(configData['help']))
 
-@announce.command(name='set', description="Sets a chat channel to receive announcements from my developers")
+@adminAnnounceCmds.command(name='set', description="Sets a chat channel to receive announcements from my developers")
 async def cmdAnnounceAdd(ctx, channel: Option(discord.TextChannel, "Channel to set to receive announcements", required=True)):
 	if ctx.guild == None:
 		await ctx.respond("Can't DM me with this command.")
@@ -257,7 +205,7 @@ async def cmdAnnounceAdd(ctx, channel: Option(discord.TextChannel, "Channel to s
 	else:
 		await ctx.respond("You aren't a guild administrator", ephemeral=True)
 
-@announce.command(name='get', description="Gets the channel that is set to receive annoucements")
+@adminAnnounceCmds.command(name='get', description="Gets the channel that is set to receive annoucements")
 async def cmdAnnounceGet(ctx):
 	if ctx.guild == None:
 		await ctx.respond("Can't DM me with this command.")
@@ -272,7 +220,7 @@ async def cmdAnnounceGet(ctx):
 	else:
 		await ctx.respond("You aren't a guild administrator", ephemeral=True)
 
-@announce.command(name='remove', description="Removes you from being DM'ed on users leaving")
+@adminAnnounceCmds.command(name='remove', description="Removes you from being DM'ed on users leaving")
 async def cmdDMRemove(ctx):
 	if ctx.guild == None:
 		await ctx.respond("Can't DM me with this command.")
@@ -283,7 +231,7 @@ async def cmdDMRemove(ctx):
 	else:
 		await ctx.respond("You aren't a guild administrator")
 
-@feed.command(name='create', description="Sets up a Splatoon 2 rotation feed for a channel")
+@adminS2feedCmds.command(name='create', description="Sets up a Splatoon 2 rotation feed for a channel")
 async def cmdAdminFeed(ctx, map: Option(bool, "Enable maps in the feed?", required=True), sr: Option(bool, "Enable Salmon Run in the feed?", required=True), gear: Option(bool, "Enable gear in the feed?", required=True), recreate: Option(bool, "Recreate feed if one is already present.", required=False)):
 	args = [ map, sr, gear, recreate ]
 
@@ -299,7 +247,7 @@ async def cmdAdminFeed(ctx, map: Option(bool, "Enable maps in the feed?", requir
 	else:
 		await ctx.respond("You aren't a guild administrator", ephemeral=True)
 
-@feed.command(name='delete', description="Deletes a feed from a channel")
+@adminS2feedCmds.command(name='delete', description="Deletes a feed from a channel")
 async def cmdAdminDeleteFeed(ctx):
 	if ctx.guild == None:
 		await ctx.respond("Can't DM me with this command.")
@@ -311,7 +259,7 @@ async def cmdAdminDeleteFeed(ctx):
 	else:
 		await ctx.respond("You aren't a guild administrator", ephemeral=True)
 
-@dm.command(name='remove', description="Removes you from being DM'ed on users leaving")
+@adminDmCmds.command(name='remove', description="Removes you from being DM'ed on users leaving")
 async def cmdDMRemove(ctx):
 	if ctx.guild == None:
 		await ctx.respond("Can't DM me with this command.")
@@ -322,7 +270,7 @@ async def cmdDMRemove(ctx):
 	else:
 		await ctx.respond("You aren't a guild administrator", ephemeral=True)
 
-@dm.command(name='add', description="Adds you to DM's on users leaving")
+@adminDmCmds.command(name='add', description="Adds you to DM's on users leaving")
 async def cmdDMAdd(ctx):
 	if ctx.guild == None:
 		await ctx.respond("Can't DM me with this command.")
@@ -333,14 +281,36 @@ async def cmdDMAdd(ctx):
 	else:
 		await ctx.respond("You aren't a guild administrator", ephemeral=True)
 
+# --- ACNH commands ---
+
+@acnhCmds.command(name='passport', description="Posts your ACNH Passport")
+async def cmdACNHPassport(ctx):
+	await serverUtils.increment_cmd(ctx, 'passport')
+	await acHandler.passport(ctx)
+
+@acnhCmds.command(name='emote', description="Makes your ACNH character do an emote.")
+async def cmdACNHEmote(ctx, emote: Option(str, "The emote to do")):
+	await serverUtils.increment_cmd(ctx, 'emote')
+	await acHandler.ac_emote(ctx, emote)
+
+@acnhCmds.command(name='getemotes', description="Gets available emotes for your ACNH character to do")
+async def cmdACNHGetEmotes(ctx):
+	await serverUtils.increment_cmd(ctx, 'getemotes')
+	await acHandler.get_ac_emotes(ctx)
+
+@acnhCmds.command(name='message', description="What to make your ACNH character say.")
+async def cmdACNHEmote(ctx, message: Option(str, "The message to send")):
+	await serverUtils.increment_cmd(ctx, 'message')
+	await acHandler.ac_message(ctx, message)
+
 # --- Splatoon 2 commands ---
 
-@maps.command(name='current', description='Shows current map rotation for Turf War/Ranked/League')
+@s2MapCmds.command(name='current', description='Shows current map rotation')
 async def cmdCurrentMaps(ctx):
 	await serverUtils.increment_cmd(ctx, 'currentmaps')
 	await ctx.respond(embed=await nsoHandler.mapsEmbed())
 
-@maps.command(name='next', description='Shows the next maps in rotation for Turf War/Ranked/League')
+@s2MapCmds.command(name='next', description='Shows the next maps in rotation')
 async def cmdNextMaps(ctx, rotation: Option(int, "Map Rotations ahead to show, max of 11 ahead", required=False, default=1)):
 	await serverUtils.increment_cmd(ctx, 'nextmaps')
 	if rotation < 0 or rotation > 11:
@@ -351,31 +321,26 @@ async def cmdNextMaps(ctx, rotation: Option(int, "Map Rotations ahead to show, m
 
 	await ctx.respond(embed=await nsoHandler.mapsEmbed(rotation))
 
-@maps.command(name='nextsr', description='Shows map/weapons for the next Salmon Run rotation')
+@s2MapCmds.command(name='nextsr', description='Shows the next Salmon Run rotation')
 async def cmdNextSR(ctx):
 	await serverUtils.increment_cmd(ctx, 'nextsr')
 	await ctx.respond(embed=nsoHandler.srEmbed(getNext=True))
 
-@maps.command(name='currentsr', description='Shows map/weapons for the current Salmon Run rotation')
+@s2MapCmds.command(name='currentsr', description='Shows the current Salmon Run rotation')
 async def cmdCurrentSR(ctx):
 	await serverUtils.increment_cmd(ctx, 'currentsr')
 	await ctx.respond(embed=nsoHandler.srEmbed(getNext=False))
 
-@maps.command(name='callout', description="Shows callout locations for a Splatoon 2 map")
+@s2MapCmds.command(name='callout', description="View callout locations for a map")
 async def cmdMapsCallout(ctx, map: Option(str, "Map to show callout locations for", choices=[ themap.name() for themap in splatInfo.getAllMaps() ] ,required=True)):
 	await nsoHandler.cmdMaps(ctx, args=[ 'callout', str(map) ])
 
-@maps.command(name='list', description="Shows all Splatoon 2 maps")
+@s2MapCmds.command(name='list', description="Shows all Splatoon 2 maps")
 async def cmdMapsStats(ctx):
 	await serverUtils.increment_cmd(ctx, 'maps')
 	await nsoHandler.cmdMaps(ctx, args=[ 'list' ])
 
-@stats.command(name='maps', description="Shows Splatoon 2 gameplay stats for a map")
-async def cmdMapsStats(ctx, map: Option(str, "Map to show stats for", choices=[ themap.name() for themap in splatInfo.getAllMaps() ] ,required=True)):
-	await serverUtils.increment_cmd(ctx, 'maps')
-	await nsoHandler.cmdMaps(ctx, args=[ 'stats', str(map)])
-
-@maps.command(name='random', description="Generates a random list of Splatoon 2 maps")
+@s2MapCmds.command(name='random', description="Generates a random list of maps")
 async def cmdMapsRandom(ctx, num: Option(int, "Number of maps to include in the list (1-10)", required=True)):
 	await serverUtils.increment_cmd(ctx, 'maps')
 	if num < 1 or num > 10:
@@ -383,19 +348,47 @@ async def cmdMapsRandom(ctx, num: Option(int, "Number of maps to include in the 
 	else:
 		await nsoHandler.cmdMaps(ctx, args=[ 'random', str(num)])
 
-@weapon.command(name='info', description='Gets info on a weapon in Splatoon 2')
+@s2StatsCmds.command(name='maps', description="Shows gameplay stats for a map")
+async def cmdMapsStats(ctx, map: Option(str, "Map to show stats for", choices=[ themap.name() for themap in splatInfo.getAllMaps() ] ,required=True)):
+	await serverUtils.increment_cmd(ctx, 'maps')
+	await nsoHandler.cmdMaps(ctx, args=[ 'stats', str(map)])
+
+@s2StatsCmds.command(name='ranks', description='Get your ranks in ranked mode from S2 SplatNet')
+async def cmdRanks(ctx):
+	await serverUtils.increment_cmd(ctx, 'rank')
+	await nsoHandler.getRanks(ctx)
+
+@s2StatsCmds.command(name='sr', description='Get your Salmon Run stats from S2 SplatNet')
+async def cmdSRStats(ctx):
+	await serverUtils.increment_cmd(ctx, 'srstats')
+	await nsoHandler.getSRStats(ctx)
+
+@s2StatsCmds.command(name='multi', description='Get your multiplayer stats from S2 SplatNet')
+async def cmdStats(ctx):
+	await serverUtils.increment_cmd(ctx, 'stats')
+	await nsoHandler.getStats(ctx)
+
+@s2StatsCmds.command(name='battle', description='Get stats from a battle (1-50)')
+async def cmdBattle(ctx, battlenum: Option(int, "Battle Number, 1 being latest, 50 max", required=True, default=1)):
+	if battlenum >= 50 or battlenum < 0:
+		await ctx.respond("Battlenum needs to be between 1-50!")
+		return
+	await serverUtils.increment_cmd(ctx, 'battle')
+	await nsoHandler.battleParser(ctx, battlenum)
+
+@s2WeaponCmds.command(name='info', description='Gets info on a weapon')
 async def cmdWeapInfo(ctx, name: Option(str, "Name of the weapon to get info for", required=True)):
 	await serverUtils.increment_cmd(ctx, 'weapons')
 
 	await nsoHandler.cmdWeaps(ctx, args=[ 'info', str(name) ])
 
-@weapon.command(name='list', description='Gets a list of weapons by type in Splatoon 2')
+@s2WeaponCmds.command(name='list', description='Gets a list of weapons by type')
 async def cmdWeapList(ctx, weaptype: Option(str, "Type of weapon to generate a list for", required=True, choices=[ weaptype.name() for weaptype in splatInfo.getAllWeaponTypes() ])):
 	await serverUtils.increment_cmd(ctx, 'weapons')
 
 	await nsoHandler.cmdWeaps(ctx, args=[ 'list', str(weaptype) ])
 
-@weapon.command(name='random', description='Generates a random list of weapons')
+@s2WeaponCmds.command(name='random', description='Generates a random list of weapons')
 async def cmdWeapRandom(ctx, num: Option(int, "Number of weapons to include in the list (1-10)", required=True)):
 	await serverUtils.increment_cmd(ctx, 'weapons')
 	if num < 0 or num > 10:
@@ -404,46 +397,60 @@ async def cmdWeapRandom(ctx, num: Option(int, "Number of weapons to include in t
 
 	await nsoHandler.cmdWeaps(ctx, args=[ 'random', str(num) ])
 
-@weapon.command(name='special', description='Gets all Splatoon 2 weapons with special type')
+@s2WeaponCmds.command(name='special', description='Gets all weapons with special type')
 async def cmdWeapSpecial(ctx, special: Option(str, "Name of the special to get matching weapons for", choices=[ weap.name() for weap in splatInfo.getAllSpecials() ], required=True)):
 	await serverUtils.increment_cmd(ctx, 'weapons')
 
 	await nsoHandler.cmdWeaps(ctx, args=[ 'special', str(special) ])
 
-@weapon.command(name='stats', description='Gets stats from a weapon in Splatoon 2')
+@s2WeaponCmds.command(name='stats', description='Gets stats from a weapon')
 async def cmdWeapStats(ctx, name: Option(str, "Name of the weapon to get stats for", required=True)):
 	await serverUtils.increment_cmd(ctx, 'weapons')
 
 	await nsoHandler.cmdWeaps(ctx, args=[ 'stats', str(name) ])
 
-@weapon.command(name='sub', description='Gets all Splatoon 2 weapons with sub type')
+@s2WeaponCmds.command(name='sub', description='Gets all weapons with sub type')
 async def cmdWeapSub(ctx, sub: Option(str, "Name of the sub to get matching weapons for", choices=[ weap.name() for weap in splatInfo.getAllSubweapons() ], required=True)):
 	await serverUtils.increment_cmd(ctx, 'weapons')
 
 	await nsoHandler.cmdWeaps(ctx, args=[ 'sub', str(sub) ])
 
-@stats.command(name='ranks', description='Get your ranks in ranked mode from S2 SplatNet')
-async def cmdRanks(ctx):
-	await serverUtils.increment_cmd(ctx, 'rank')
-	await nsoHandler.getRanks(ctx)
+@s2StoreCmds.command(name='currentgear', description="See the current gear on the SplatNet store")
+async def cmdStoreCurrent(ctx):
+	await serverUtils.increment_cmd(ctx, 'splatnetgear')
+	await nsoHandler.gearParser(ctx)
 
-@stats.command(name='sr', description='Get your Salmon Run stats from S2 SplatNet')
-async def cmdSRStats(ctx):
-	await serverUtils.increment_cmd(ctx, 'srstats')
-	await nsoHandler.getSRStats(ctx)
+@s2StoreCmds.command(name='order', description='Orders gear from the SplatNet store')
+async def cmdOrder(ctx, order: Option(str, "ID or NAME of the gear to order from the store (get both from /store currentgear)", required=True), override: Option(bool, "Override if you have an item already on order", required=False)):
+	print(f"Ordering gear for user: {ctx.user.name} and id {str(ctx.user.id)}")
+	await serverUtils.increment_cmd(ctx, 'order')
+	await nsoHandler.orderGearCommand(ctx, args=[str(order)], override=override if override != None else False)
 
-@stats.command(name='multi', description='Get your multiplayer stats from S2 SplatNet ')
-async def cmdStats(ctx):
-	await serverUtils.increment_cmd(ctx, 'stats')
-	await nsoHandler.getStats(ctx)
-
-@stats.command(name='battle', description='Get stats from a battle (1-50)')
-async def cmdBattle(ctx, battlenum: Option(int, "Battle Number, 1 being latest, 50 max", required=True, default=1)):
-	if battlenum >= 50 or battlenum < 0:
-		await ctx.respond("Battlenum needs to be between 1-50!")
+@s2StoredmCmds.command(name='add', description='Sends a DM when gear with ABILITY/BRAND/GEAR appears in the store')
+async def cmdStoreDMAbilty(ctx, flag: Option(str, "ABILITY/BRAND/GEAR to DM you with when it appears in the store", required=True)):
+	if ctx.guild == None:
+		await ctx.respond("Can't DM me with this command.")
 		return
-	await serverUtils.increment_cmd(ctx, 'battle')
-	await nsoHandler.battleParser(ctx, battlenum)
+	await serverUtils.increment_cmd(ctx, 'storedm')
+	await nsoHandler.addStoreDM(ctx, [ str(flag) ])
+
+@s2StoredmCmds.command(name='list', description='Shows you everything you are set to recieve a DM for')
+async def cmdStoreDMAbilty(ctx):
+	if ctx.guild == None:
+		await ctx.respond("Can't DM me with this command.")
+		return
+
+	await serverUtils.increment_cmd(ctx, 'storedm')
+	await nsoHandler.listStoreDM(ctx)
+
+@s2StoredmCmds.command(name='remove', description='Removes you from being DMed when gear with FLAG appears in the store')
+async def cmdStoreDMAbilty(ctx, flag: Option(str, "ABILITY/BRAND/GEAR to stop DMing you with when it appears in the store", required=True)):
+	if ctx.guild == None:
+		await ctx.respond("Can't DM me with this command.")
+		return
+
+	await serverUtils.increment_cmd(ctx, 'storedm')
+	await nsoHandler.removeStoreDM(ctx, [ str(flag) ])
 
 # --- S3 commands ---
 
@@ -669,7 +676,7 @@ async def cmdVoicePlaySound(ctx, sound: Option(str, "Sound clip to play, get wit
 		await ctx.respond(f"Attempting to play: {sound}", ephemeral=True)
 		await serverVoices[ctx.guild.id].playSound(sound)
 
-@admin.command(name='playlist', description="Adds a URL or the current video to my playlist for /voice play random")
+@adminCmds.command(name='playlist', description="Adds a URL or the current video to my playlist for /voice play random")
 async def cmdPlaylistAdd(ctx, url: Option(str, "URL to add to my playlist", required=True)):
 	if ctx.guild == None:
 		await ctx.respond("Can't DM me with this command.")
@@ -752,7 +759,7 @@ async def on_ready():
 		commandParser = commandparser.CommandParser(serverConfig, client.user.id)
 		ownerCmds = ownercmds.ownerCmds(client, mysqlHandler, commandParser, owners)
 		serverUtils = serverutils.serverUtils(client, mysqlHandler, serverConfig, configData['help'])
-		nsoTokens = nsotoken.Nsotoken(client, mysqlHandler, configData.get('hosted_url'), stringCrypt)
+		nsoTokens = nsotoken.Nsotoken(client, configData, mysqlHandler, stringCrypt)
 		nsoHandler = nsohandler.nsoHandler(client, mysqlHandler, nsoTokens, splatInfo, configData.get('hosted_url'))
 		s3Handler = s3handler.S3Handler(client, mysqlHandler, nsoTokens, splat3info, configData)
 		acHandler = achandler.acHandler(client, mysqlHandler, nsoTokens, configData)
@@ -918,16 +925,13 @@ if dev:
 print('**********NEW SESSION**********')
 print('Logging into discord')
 
-client.add_application_command(store)
-client.add_application_command(maps)
-client.add_application_command(weapon)
-client.add_application_command(stats)
 client.add_application_command(voice)
-client.add_application_command(admin)
-client.add_application_command(acnh)
+client.add_application_command(adminCmds)
 client.add_application_command(groupCmds)
 client.add_application_command(fcCmds)
+client.add_application_command(s2Cmds)
 client.add_application_command(s3Cmds)
+client.add_application_command(acnhCmds)
 
 sys.stdout.flush()
 sys.stderr.flush()

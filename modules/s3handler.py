@@ -415,10 +415,12 @@ class S3Handler():
 	async def cmdFest(self, ctx):
 		await ctx.defer()
 
-		# TODO: Use bot owner account so user does not need /token
-		nso = await self.nsotoken.get_nso_client(ctx.user.id)
+		nso = await self.nsotoken.get_bot_nso_client()
+		if not nso:
+			await ctx.respond("Sorry, this bot is not configured to allow this.")
+			return
 		if not nso.is_logged_in():
-			await ctx.respond("You don't have a NSO token set up! Run /token to get started.")
+			await ctx.respond("Sorry, unavailable at this time.")
 			return
 
 		festinfo = nso.s3.get_splatfest_list()
