@@ -1,18 +1,18 @@
 *Splatoon General Info Commands
 **Commands to get info from Splatnet
-`/maps current` : Displays the current Splatoon 2 Gamemodes/Maps
-`/maps next NUM` : Displays the upcoming Splatoon 2 Gamemodes/Maps NUM rotations in the future (1-11)
-`/maps currentsr` : Displays the current Splatoon 2 Salmon Run Map/Weapons
-`/maps nextsr` : Displays the next Splatoon 2 Salmon Run Map/Weapons
-`/maps random NUM` : Generates a list of random maps (1-10, NUM is optional for just 1 random map
-`/maps callout MAP` : Provides a map with callout locations
-`/maps list` : Shows all Splatoon 2 maps w/ abbreviations
-`/store currentgear` : Gets all of the current gear for sale on SplatNet
-`/store dm add FLAG` : DM's you when a piece of gear with FLAG (Ability/Brand/Gear Name) appears in the SplatNet store. Can't DM the bot with this.
-`/store dm list` : Shows you all FLAGS you are subscribed to for when gear with FLAG appears in the store. Can't DM the bot with this.
-`/store dm remove FLAG` : Removes you from DM's when a piece of gear with FLAG (Ability/Brand/Gear Name) appears in the SplatNet store. Can't DM the bot with this.
-`/weapons random NUM` : Generates a list of random weapons (1-10) NUM is optional for just 1 random weapon
-`/weapons info WEAP` : Gets Sub/Special/Level/Points for special for WEAP
-`/weapons sub SUB` : Gets all weapons with the subweapon SUB
-`/weapons special SPECIAL` : Gets all weapons with the special SPECIAL
-`/weapons list TYPE` : Gets all weapons of the type TYPE
+`/s2 maps current` : Displays the current Splatoon 2 Gamemodes/Maps
+`/s2 maps next NUM` : Displays the upcoming Splatoon 2 Gamemodes/Maps NUM rotations in the future (1-11)
+`/s2 maps currentsr` : Displays the current Splatoon 2 Salmon Run Map/Weapons
+`/s2 maps nextsr` : Displays the next Splatoon 2 Salmon Run Map/Weapons
+`/s2 maps random NUM` : Generates a list of random maps (1-10, NUM is optional for just 1 random map
+`/s2 maps callout MAP` : Provides a map with callout locations
+`/s2 maps list` : Shows all Splatoon 2 maps w/ abbreviations
+`/s2 store currentgear` : Gets all of the current gear for sale on SplatNet
+`/s2 storedm add FLAG` : DM's you when a piece of gear with FLAG (Ability/Brand/Gear Name) appears in the SplatNet store. Can't DM the bot with this.
+`/s2 storedm list` : Shows you all FLAGS you are subscribed to for when gear with FLAG appears in the store. Can't DM the bot with this.
+`/s2 storedm remove FLAG` : Removes you from DM's when a piece of gear with FLAG (Ability/Brand/Gear Name) appears in the SplatNet store. Can't DM the bot with this.
+`/s2 weapons random NUM` : Generates a list of random weapons (1-10) NUM is optional for just 1 random weapon
+`/s2 weapons info WEAP` : Gets Sub/Special/Level/Points for special for WEAP
+`/s2 weapons sub SUB` : Gets all weapons with the subweapon SUB
+`/s2 weapons special SPECIAL` : Gets all weapons with the special SPECIAL
+`/s2 weapons list TYPE` : Gets all weapons of the type TYPE
