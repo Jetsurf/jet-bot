@@ -39,6 +39,19 @@ There are a few admin commands to configure the bot. To run these commands, you 
  - `/admin feed create` : Create (or change) feed for rotation updates (maps/sr/gear)
  - `/admin feed delete` : Deletes feed for a channel
 
+### Splatoon 3 Commands
+
+Commands to get info from SplatNet 3 - These commands are largely beta. Feedback is welcome.
+
+`/s3 stats sr` : Displays your stats from Salmon Run
+`/s3 stats battle NUM` : Displays the results of a previous battle (1-50)
+`/s3 fit` : Posts your current gear loadout
+`/s3 fest` : Shows if there is an announced SplatFest
+`/s3 scrim` : Generate a list of Splatoon 3 maps and modes
+`/s3 weapons info WEAP` : Gets Sub/Special/Level/Points for special for WEAP
+`/s3 weapons sub SUB` : Gets all weapons with the subweapon SUB
+`/s3 weapons special SPECIAL` : Gets all weapons with the special SPECIAL
+
 ### Music Commands
 
 These commands cannot be used in DM's.

@@ -103,11 +103,11 @@ class S3Utils():
 
 				pwrEggTotal += match['myResult']['deliverCount']
 				gldEggTotal += match['myResult']['goldenDeliverCount']
-				if match['gradePointDiff'] is 'UP':
+				if match['gradePointDiff'] == 'UP':
 					clears += 1
 				matches += 1
 
-		embed.add_field(name = f"Average Stats (Last {matches})", value = "STUFF", inline = True)
+		#embed.add_field(name = f"Average Stats (Last {matches})", value = "STUFF", inline = True)
 		embed.add_field(name = f"Total Stats (Last {matches})", value = f"King Salmonoids Seen: {bossSeen}\nKing Salmonids Clears: {bossDowns}\nGolden Eggs: {gldEggTotal}\nPower Eggs: {pwrEggTotal}", inline = True)
 
 		return embed
