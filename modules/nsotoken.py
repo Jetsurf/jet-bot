@@ -77,12 +77,12 @@ class tokenHandler(Modal):
 			self.stop()
 
 class Nsotoken():
-	def __init__(self, client, mysqlhandler, hostedUrl, stringCrypt):
+	def __init__(self, client, config, mysqlhandler, stringCrypt):
 		self.client = client
+		self.config = config
 		self.session = requests.Session()
 		self.sqlBroker = mysqlhandler
 		self.scheduler = AsyncIOScheduler()
-		self.hostedUrl = hostedUrl
 		self.stringCrypt = stringCrypt
 		self.scheduler.add_job(self.updateAppVersion, 'cron', hour="3", minute='0', second='35', timezone='UTC')
 		self.scheduler.add_job(self.nso_client_cleanup, 'cron', hour="0", minute='0', second='0', timezone='UTC')
@@ -114,6 +114,22 @@ class Nsotoken():
 			await self.nso_client_save_keys(clientid)
 
 		await cur.execute("DROP TABLE tokens")
+
+	# Returns NSO client for the bot account, or None if there was a problem.
+	async def get_bot_nso_client(self):
+		if not self.config.get('nso_userid'):
+			print("No nso_userid configured, can't get bot NSO client")
+			return None
+
+		nso = await self.get_nso_client(self.config['nso_userid'])
+		if not nso.is_logged_in():
+			print("Someone wants to use the bot NSO client, but it's not logged in!")
+			# TODO: Warn bot owners?
+			# Don't return None because we want to be able to give
+			#  different messages if it's set up and not working
+			#  or not set up.
+
+		return nso
 
 	# Given a userid, returns an NSO client for that user.
 	async def get_nso_client(self, userid):
