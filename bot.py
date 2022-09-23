@@ -966,13 +966,9 @@ client.add_application_command(voice)
 client.add_application_command(adminCmds)
 client.add_application_command(groupCmds)
 client.add_application_command(fcCmds)
-<<<<<<< HEAD
 client.add_application_command(s2Cmds)
 client.add_application_command(s3Cmds)
 client.add_application_command(acnhCmds)
-=======
-client.add_application_command(s3Cmds)
->>>>>>> master
 
 sys.stdout.flush()
 sys.stderr.flush()
