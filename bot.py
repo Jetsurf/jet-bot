@@ -83,6 +83,10 @@ groupCmds = SlashCommandGroup('group', 'Commands related to finding a group of p
 fcCmds = SlashCommandGroup('fc', 'Commands for friend codes')
 play = voice.create_subgroup(name='play', description='Commands related to playing audio')
 
+s3Cmds = SlashCommandGroup('s3', 'Commands related to Splatoon 3')
+s3WeaponCmds = s3Cmds.create_subgroup('weapon', 'Commands related to weapons in Splatoon 3')
+s3StatsCmds = s3Cmds.create_subgroup('stats', 'Commands related to Splatoon 3 gameplay stats')
+
 def loadConfig():
 	global configData, helpfldr, mysqlHandler, dev, head, pynso
 	try:
@@ -492,6 +496,39 @@ async def cmdS3Stats(ctx):#
 @s3Cmds.command(name = 'fit', description = 'Posts your current gear loadout')
 async def cmdS3Fit(ctx):
 	await s3Handler.cmdFit(ctx)
+
+# --- S3 commands ---
+
+@s3WeaponCmds.command(name='info', description='Gets info on a weapon in Splatoon 3')
+async def cmdS3WeaponInfo(ctx, name: Option(str, "Name of the weapon to get info for", required=True)):
+	await s3Handler.cmdWeaponInfo(ctx, str(name))
+
+@s3WeaponCmds.command(name='special', description='Lists all Splatoon 3 weapons a given special weapon')
+async def cmdS3WeaponSpecial(ctx, special: Option(str, "Name of the special to get matching weapons for", choices = splat3info.getSpecialNames(), required=True)):
+	await s3Handler.cmdWeaponSpecial(ctx, str(special))
+
+@s3WeaponCmds.command(name='sub', description='Lists all Splatoon 3 weapons a given subweapon')
+async def cmdS3WeaponSub(ctx, special: Option(str, "Name of the subweapon to get matching weapons for", choices = splat3info.getSubweaponNames(), required=True)):
+	await s3Handler.cmdWeaponSub(ctx, str(special))
+
+@s3Cmds.command(name = 'scrim', description = 'Generate a list of Splatoon 3 maps and modes')
+async def cmdS3Scrim(ctx, num: Option(int, "Number of battles (1..20)", required = True), modes: Option(str, "Comma-separated list of modes (default: RM,TC,SZ,CB)", required = True, default = "RM,TC,SZ,CB")):
+	await s3Handler.cmdScrim(ctx, num, modes)
+
+@s3StatsCmds.command(name = 'battle', description = 'Get stats from a battle (1-50)')
+async def cmdS3StatsBattle(ctx, battlenum: Option(int, "Battle Number, 1 being latest, 50 max", required=True, default=1)):
+	if battlenum >= 50 or battlenum < 0:
+		await ctx.respond("Battlenum needs to be between 1-50!")
+		return
+	await s3Handler.cmdStatsBattle(ctx, battlenum)
+
+#@s3StatsCmds.command(name = 'multi', description = 'Get your Splatoon 3 multiplayer stats')
+#async def cmdS3Stats(ctx):
+#	await s3Handler.cmdStats(ctx)
+
+#@s3StatsCmds.command(name = 'sr', description = 'Get your Splatoon 3 Salmon Run stats')
+#async def cmdS3Stats(ctx):#
+#	await s3Handler.cmdSRStats(ctx)
 
 @owner.command(name='eval', description="Eval a code block (Owners only)", default_permission=False)
 @commands.is_owner()
@@ -929,9 +966,13 @@ client.add_application_command(voice)
 client.add_application_command(adminCmds)
 client.add_application_command(groupCmds)
 client.add_application_command(fcCmds)
+<<<<<<< HEAD
 client.add_application_command(s2Cmds)
 client.add_application_command(s3Cmds)
 client.add_application_command(acnhCmds)
+=======
+client.add_application_command(s3Cmds)
+>>>>>>> master
 
 sys.stdout.flush()
 sys.stderr.flush()

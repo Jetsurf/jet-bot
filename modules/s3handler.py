@@ -19,6 +19,7 @@ class S3Utils():
 		judgement = details['data']['vsHistoryDetail']['judgement']
 		playerId = details['data']['vsHistoryDetail']['player']['id']
 
+
 		typeNames = {"BANKARA": "Anarchy Battle", "FEST": "Splatfest", "X": "X", "LEAGUE": "League", "PRIVATE": "Private Battle"}
 		judgementNames = {"WIN": "Win", "LOSS": "Loss", "DEEMED_LOSE": "Loss due to early disconnect", "DRAW": "Draw"}
 
@@ -72,17 +73,13 @@ class S3Utils():
 
 		return embed
 
+
 	@classmethod
 	def createSalmonRunResultsEmbed(cls, results):
 		embed = discord.Embed(colour=0x0004FF)
 		historyGroups = results['data']['coopResult']['historyGroups']['nodes']
 		stats = results['data']['coopResult']
 		pointCard = results['data']['coopResult']['pointCard']
-		if len(historyGroups) == 0:
-			embed.add_field(name = "History empty", value = "Go play some Salmon Run!")
-
-		historyDetails = historyGroups[0]['historyDetails']['nodes']
-		lastGameDetails = historyDetails[0]
 		embed.title = f"{lastGameDetails['afterGrade']['name']} - {stats['regularGradePoint']}"
 		embed.add_field(name = "Totals", value = f"Shifts Worked: {pointCard['playCount']}\nPower Eggs: {pointCard['deliverCount']}\nGolden Eggs: {pointCard['goldenDeliverCount']}\nTotal Points: {pointCard['totalPoint']}\nKing Salmonoid Kills: {pointCard['defeatBossCount']}", inline = True)
 		embed.add_field(name = "Scales", value = f"Bronze: {stats['scale']['bronze']}\nSilver: {stats['scale']['silver']}\nGold:{stats['scale']['gold']}", inline = True)
@@ -257,7 +254,6 @@ class S3Handler():
 		self.splat3info = splat3info
 		self.hostedUrl = configData.get('hosted_url')
 		self.webDir = configData.get('web_dir')
-		#self.ownerToken = self.nsotoken.get_nso_client(ownerTokenId)
 
 	async def cmdWeaponInfo(self, ctx, name):
 		match = self.splat3info.weapons.matchItem(name)
