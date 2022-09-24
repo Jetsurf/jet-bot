@@ -1,6 +1,7 @@
 import discord, asyncio
 import mysqlhandler, nsotoken
 import re, time, requests, random
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 #Image Editing
 from PIL import Image, ImageFont, ImageDraw 
@@ -8,6 +9,91 @@ from io import BytesIO
 import base64
 import datetime
 import dateutil.parser
+
+class S3Schedule():
+	def __init__(self, nsotoken, sqlBroker):
+		self.nsotoken = nsotoken
+		self.sqlBroker = sqlBroker
+		self.updatetime = None
+		self.fest_schedule = []
+
+		# Schedule updates every hour
+		self.scheduler = AsyncIOScheduler()
+		self.scheduler.add_job(self.update, 'interval', minutes = 60)
+		self.scheduler.start()
+
+		# Update shortly after bot startup
+		asyncio.create_task(self.update())
+
+	def is_update_needed(self):
+		if self.updatetime is None:
+			return True
+
+		if time.time() - self.updatetime > (30 * 60):  # At least 30 minutes
+			return True
+
+		return False
+
+	def get_fest_schedule(self, count = 1):
+		now = time.time()
+		for i in range(len(self.fest_schedule)):
+			if self.fest_schedule[i]['starttime'] < now:
+				index = i
+				break
+
+		return self.fest_schedule[index:index + count]
+
+	# Given 'vsStages' object, returns a list of maps
+	def parse_maps(self, data):
+		maps = []
+		for vs in data:
+			map = {}
+			map['image']   = vs['image']['url']
+			map['name']    = vs['name']
+			map['stageid'] = vs['vsStageId']
+			maps.append(map)
+		return maps
+
+	def update_fest_schedule(self, data):
+		if not data or not data.get('nodes'):
+			self.fest_schedule = []  # Empty
+			return
+
+		nodes = data.get('nodes')
+
+		recs = []
+		for node in nodes:
+			rec = {}
+			rec['starttime'] = dateutil.parser.isoparse(node['startTime']).timestamp()
+			rec['endtime']   = dateutil.parser.isoparse(node['endTime']).timestamp()
+			rec['mode']      = node['festMatchSetting']['vsRule']['name']
+			rec['maps']      = self.parse_maps(node['festMatchSetting']['vsStages'])
+			recs.append(rec)
+
+		self.fest_schedule = recs
+
+	async def update(self):
+		if not self.is_update_needed():
+			return
+
+		await self.sqlBroker.wait_for_startup()
+
+		nso = await self.nsotoken.get_bot_nso_client()
+		if not nso:
+			return  # No bot account configured
+		elif not nso.is_logged_in():
+			print("S3Schedule.update(): Time to update but the bot account is not logged in")
+			return
+
+		print("S3Schedule.update(): Updating schedule")
+		data = nso.s3.get_stage_schedule()
+		if data is None:
+			print("S3Schedule.update(): Failed to retrieve schedule")
+			return
+
+		self.update_fest_schedule(data['data'].get('festSchedules'))
+
+		self.updatetime = time.time()
 
 class S3Utils():
 	@classmethod
@@ -60,7 +146,7 @@ class S3Utils():
 		description = ""
 		if state == 'FIRST_HALF':
 			description += "Currently in first half.\n"
-		elsif state = 'SECOND_HALF':
+		elif state == 'SECOND_HALF':
 			description += "Currently in second half.\n"
 
 		if starttime > now:
@@ -294,6 +380,7 @@ class S3Handler():
 		self.configData = configData
 		self.hostedUrl = configData.get('hosted_url')
 		self.webDir = configData.get('web_dir')
+		self.schedule = S3Schedule(nsotoken, mysqlHandler)
 
 	async def cmdWeaponInfo(self, ctx, name):
 		match = self.splat3info.weapons.matchItem(name)
@@ -466,4 +553,31 @@ class S3Handler():
 			return
 
 		embed = S3Utils.createSplatfestEmbed(festinfo['data']['festRecords']['nodes'][0])
+		await ctx.respond(embed = embed)
+
+	async def cmdSchedule(self, ctx):
+		await ctx.defer()
+		sched = self.schedule.get_fest_schedule(2)
+
+		now = time.time()
+
+		embed = discord.Embed(colour=0x0004FF)
+		embed.title = f"Splatfest schedule"
+
+		for rot in sched:
+			title = rot['mode']
+
+			if rot['endtime'] < now:
+				title += f"\u2014 Ended"
+			elif rot['starttime'] <= now and rot['endtime'] > now:
+				title += f"\u2014 Runs until <t:{int(rot['endtime'])}>"
+			else:
+				title += f"\u2014 Upcoming at <t:{int(rot['starttime'])}>"
+
+			map_names = map(lambda m: m['name'], rot['maps'])
+
+			text = "\n".join(map_names)
+
+			embed.add_field(name = title, value = text, inline = False)
+
 		await ctx.respond(embed = embed)

@@ -494,6 +494,10 @@ async def cmdS3Stats(ctx):
 async def cmdS3Stats(ctx):#
 	await s3Handler.cmdSRStats(ctx)
 
+@s3Cmds.command(name = 'schedule', description = 'Show schedule')
+async def cmdS3Schedule(ctx):
+	await s3Handler.cmdSchedule(ctx)
+
 @s3Cmds.command(name = 'fit', description = 'Posts your current gear loadout')
 async def cmdS3Fit(ctx):
 	await s3Handler.cmdFit(ctx)
