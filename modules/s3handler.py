@@ -55,14 +55,22 @@ class S3Utils():
 		starttime = dateutil.parser.isoparse(splatfest['startTime'])
 		endtime   = dateutil.parser.isoparse(splatfest['endTime'])
 
-		if starttime > now:
-			whenstr = f"Starts at <t:{int(starttime.timestamp())}> (<t:{int(starttime.timestamp())}:R>)"
-		elif endtime > now:
-			whenstr = f"Ends at <t:{int(endtime.timestamp())}> (<t:{int(endtime.timestamp())}:R>)"
-		else:
-			whenstr = f"Ended at <t:{int(endtime.timestamp())}>>"
+		state = splatfest.get('state')
 
-		embed = discord.Embed(colour=0x0004FF, description = whenstr)
+		description = ""
+		if state == 'FIRST_HALF':
+			description += "Currently in first half.\n"
+		elsif state = 'SECOND_HALF':
+			description += "Currently in second half.\n"
+
+		if starttime > now:
+			description += f"Starts at <t:{int(starttime.timestamp())}> (<t:{int(starttime.timestamp())}:R>)\n"
+		elif endtime > now:
+			description += f"Ends at <t:{int(endtime.timestamp())}> (<t:{int(endtime.timestamp())}:R>)\n"
+		else:
+			description += f"Ended at <t:{int(endtime.timestamp())}>>\n"
+
+		embed = discord.Embed(colour=0x0004FF, description = description)
 		embed.title = splatfest['title']
 		embed.set_image(url = splatfest['image']['url'])
 
