@@ -66,6 +66,7 @@ s2StatsCmds = s2Cmds.create_subgroup('stats', 'Gameplay stats')
 s3Cmds = SlashCommandGroup('s3', 'Commands related to Splatoon 3')
 s3WeaponCmds = s3Cmds.create_subgroup('weapon', 'Commands related to weapons in Splatoon 3')
 s3StatsCmds = s3Cmds.create_subgroup('stats', 'Commands related to Splatoon 3 gameplay stats')
+s3StoreDmCmds = s3Cmds.create_subgroup('storedm', 'Commands related to Splatnet 3 gear notifications')
 
 # ACNH
 acnhCmds = SlashCommandGroup('acnh', "Commands related to Animal Crossing New Horizons")
@@ -485,9 +486,9 @@ async def cmdS3StatsBattle(ctx, battlenum: Option(int, "Battle Number, 1 being l
 		return
 	await s3Handler.cmdStatsBattle(ctx, battlenum)
 
-#@s3StatsCmds.command(name = 'multi', description = 'Get your Splatoon 3 multiplayer stats')
-#async def cmdS3Stats(ctx):
-#	await s3Handler.cmdStats(ctx)
+@s3StatsCmds.command(name = 'multi', description = 'Get your Splatoon 3 multiplayer stats')
+async def cmdS3Stats(ctx):
+	await s3Handler.cmdStats(ctx)
 
 @s3StatsCmds.command(name = 'sr', description = 'Get your Splatoon 3 Salmon Run stats')
 async def cmdS3Stats(ctx):#
@@ -496,6 +497,9 @@ async def cmdS3Stats(ctx):#
 @s3Cmds.command(name = 'fit', description = 'Posts your current gear loadout')
 async def cmdS3Fit(ctx):
 	await s3Handler.cmdFit(ctx)
+
+#@s3StoreDmCmds.command("")
+#async def cmdS3AddStore
 
 @owner.command(name='eval', description="Eval a code block (Owners only)", default_permission=False)
 @commands.is_owner()

@@ -9,5 +9,8 @@
 	"mysql_db"		: "",
 	"home_server"	: "",
 	"hosted_url"	: "https://db-files.crmea.de",
-	"web_dir"		: ""
+	"web_dir"		: "",
+	"nso_userid"    : "",
+	"fonts_dir"     : ""
+
 }

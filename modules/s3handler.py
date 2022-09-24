@@ -146,13 +146,13 @@ class S3Utils():
 
 	#Ensure you have 'hosted_url' AND 'web_dir' both set before calling this!
 	@classmethod
-	def createNamePlateImage(cls, playerJson, hostedUrl, webDir):
+	def createNamePlateImage(cls, playerJson, configData):
 		imgResponse = requests.get(playerJson['data']['currentPlayer']['nameplate']['background']['image']['url'])
 		npImage = Image.open(BytesIO(imgResponse.content)).convert("RGBA")
 		
-		s2FontSmall = ImageFont.truetype('/home/dbot/s2.otf', size=24)
-		s2FontMed = ImageFont.truetype('/home/dbot/s2.otf', size=36)
-		s1FontLarge = ImageFont.truetype('/home/dbot/s1.otf', size=64)
+		s2FontSmall = ImageFont.truetype(f"{configData['fonts_dir']}/s2.otf", size=24)
+		s2FontMed = ImageFont.truetype(f"{configData['fonts_dir']}/s2.otf", size=36)
+		s1FontLarge = ImageFont.truetype(f"{configData['fonts_dir']}/s1.otf", size=64)
 
 		MAXW, MAXH = 700, 200
 		size = (72, 72)
@@ -174,8 +174,8 @@ class S3Utils():
 		imgEdit.text((MAXW/2, MAXH/2), playerJson['data']['currentPlayer']['name'], (255, 255, 255), font=s1FontLarge, anchor='mm')
 
 		imgName = f"{playerJson['data']['currentPlayer']['name']}{playerJson['data']['currentPlayer']['nameId']}.png"
-		imgUrl = f"{hostedUrl}/s3/nameplates/{imgName}"
-		imgPath = f"{webDir}/s3/nameplates/{imgName}"
+		imgUrl = f"{configData['hosted_url']}/s3/nameplates/{imgName}"
+		imgPath = f"{configData['web_dir']}/s3/nameplates/{imgName}"
 
 		npImage.save(imgPath, "PNG")
 		return imgUrl
@@ -190,10 +190,10 @@ class S3Utils():
 		return circleImg
 
 	@classmethod
-	def createFitImage(self, statsjson, hostedUrl, webDir):
+	def createFitImage(self, statsjson, configData):
 		gear = { 'weapon' : statsjson['data']['currentPlayer']['weapon'], 'head' : statsjson['data']['currentPlayer']['headGear'],
 				'clothes' : statsjson['data']['currentPlayer']['clothingGear'], 'shoes' : statsjson['data']['currentPlayer']['shoesGear'] }
-		s2FontSmall = ImageFont.truetype('/home/dbot/s2.otf', size=24)
+		s2FontSmall = ImageFont.truetype(f"{configData['fonts_dir']}/s2.otf", size=24)
 		MAXW, MAXH = 860, 294
 		TEXTBUF = 24
 		GHW = 220
@@ -243,8 +243,39 @@ class S3Utils():
 
 		retDraw.rectangle((0, 0, MAXW - 1, MAXH - 1), outline="black", width=3)
 		imgName = f"{statsjson['data']['currentPlayer']['name']}-{statsjson['data']['currentPlayer']['nameId']}.png"
-		retImage.save(f"{webDir}/s3/fits/{imgName}", "PNG")
-		return f"{hostedUrl}/s3/fits/{imgName}"	
+		retImage.save(f"{configData['web_dir']}/s3/fits/{imgName}", "PNG")
+		return f"{configData['hosted_url']}/s3/fits/{imgName}"	
+
+class S3StoreHandler():
+	def __init__(self, client, nsoToken, splat3info, mysqlHandler):
+		self.client = client
+		self.sqlBroker = mysqlHandler
+		self.nsotoken = nsoToken
+		self.splat3info = splat3info
+		self.scheduler.add_job(self.doStoreRegularDM, 'cron', hour="*/2", minute='1', timezone='UTC') 
+		self.scheduler.add_job(self.doSotreDailyDropDM, 'cron', hour="0", minute='1', timezone='UTC')
+		self.scheduler.add_job(self.cacheS3JSON, 'cron', hour="*/2", minute='0', second='15', timezone='UTC')
+		self.storecache = None
+		self.cacheS3JSON()
+
+	async def doStoreDailyDropDM(self):
+		return
+
+	async def doStoreRegularDM(self):
+		return
+
+	async def cacheS3JSON(self):
+		print("Updating cached S3 json...")
+		nso = await self.nsotoken.get_bot_nso_client()
+
+		storejson = nso.s3.get_store_items()
+		if storejson is None:
+			print("Failed to update store cache for rotation")
+			return
+
+		print("Got store cache for this rotation")
+		self.storecache = storejson
+
 
 class S3Handler():
 	def __init__(self, client, mysqlHandler, nsotoken, splat3info, configData):
@@ -252,6 +283,7 @@ class S3Handler():
 		self.sqlBroker = mysqlHandler
 		self.nsotoken = nsotoken
 		self.splat3info = splat3info
+		self.configData = configData
 		self.hostedUrl = configData.get('hosted_url')
 		self.webDir = configData.get('web_dir')
 
@@ -369,7 +401,7 @@ class S3Handler():
 
 		embed = S3Utils.createMultiplayerStatsEmbed(statssimple, statsfull, species)
 		if self.webDir and self.hostedUrl:
-			imgUrl = S3Utils.createNamePlateImage(statsfull, self.hostedUrl, self.webDir)
+			imgUrl = S3Utils.createNamePlateImage(statsfull, self.configData)
 			embed.set_thumbnail(url=f"{imgUrl}?{str(time.time() % 1)}")
 
 		await ctx.respond(embed = embed)
@@ -405,7 +437,7 @@ class S3Handler():
 			print(f"cmdFit: get_player_stats_full returned none for {ctx.user.id}")
 			return
 
-		url = S3Utils.createFitImage(statsfull, self.hostedUrl, self.webDir)
+		url = S3Utils.createFitImage(statsfull, self.configData)
 		await ctx.respond(f"{url}?{str(time.time() % 1)}")
 
 	async def cmdFest(self, ctx):
