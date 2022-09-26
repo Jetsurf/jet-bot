@@ -1,6 +1,6 @@
 import discord, asyncio
 import mysqlhandler, nsotoken
-import re, time, requests, random
+import json, sys, re, time, requests, random
 
 #Image Editing
 from PIL import Image, ImageFont, ImageDraw 
@@ -8,6 +8,8 @@ from io import BytesIO
 import base64
 import datetime
 import dateutil.parser
+
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 class S3Utils():
 	@classmethod
@@ -60,7 +62,7 @@ class S3Utils():
 		description = ""
 		if state == 'FIRST_HALF':
 			description += "Currently in first half.\n"
-		elsif state = 'SECOND_HALF':
+		elif state == 'SECOND_HALF':
 			description += "Currently in second half.\n"
 
 		if starttime > now:
@@ -254,23 +256,102 @@ class S3Utils():
 		retImage.save(f"{configData['web_dir']}/s3/fits/{imgName}", "PNG")
 		return f"{configData['hosted_url']}/s3/fits/{imgName}"	
 
+class s3OrderView(discord.ui.View):
+	def __init__(self, s3handler, nsotoken, user):
+		super().__init__()
+		self.nsoToken = nsotoken
+		self.s3Handler = s3handler
+		self.user = user
+		self.confirm = False
+		self.timeout = 6900.0
+
+	async def initView(self):
+		orderBut = discord.ui.Button(label="Order Item")
+		nso = await self.nsoToken.get_nso_client(self.user.id)
+		if nso.is_logged_in():
+			orderBut.callback = self.orderItem
+		else:
+			self.stop()
+			return None
+		self.add_item(orderBut)
+
+	async def orderItem(self, interaction: discord.Interaction):
+		if self.confirm:
+			await self.nsoHandler.orderGearCommand(interaction, args=['5'], override=True)
+			if self.user != None:
+				self.clear_items()
+				self.stop()
+		else:
+			await self.nsoHandler.orderGearCommand(interaction, args=['5'])
+			self.confirm=True
+
 class S3StoreHandler():
 	def __init__(self, client, nsoToken, splat3info, mysqlHandler):
 		self.client = client
 		self.sqlBroker = mysqlHandler
 		self.nsotoken = nsoToken
 		self.splat3info = splat3info
-		self.scheduler.add_job(self.doStoreRegularDM, 'cron', hour="*/2", minute='1', timezone='UTC') 
-		self.scheduler.add_job(self.doSotreDailyDropDM, 'cron', hour="0", minute='1', timezone='UTC')
+		self.scheduler = AsyncIOScheduler()
+		self.scheduler.add_job(self.doStoreRegularDM, 'cron', second="0")#hour="*/2", minute='1', timezone='UTC') 
+		self.scheduler.add_job(self.doStoreDailyDropDM, 'cron', hour="0", minute='1', timezone='UTC')
 		self.scheduler.add_job(self.cacheS3JSON, 'cron', hour="*/2", minute='0', second='15', timezone='UTC')
 		self.storecache = None
-		self.cacheS3JSON()
+		self.cacheState = False
+		self.scheduler.start()
+
+	##Trigger Keys: gearname brand mability
+	#{ 'gearnames' : ['Gear One', "Two" ], 'brands': ['Toni-Kensa', 'Forge'], 'mabilities' : ['Ink Saver (Main)'] }
+
+	def checkToDM(self, gear, triggers):
+		brand = gear['brand']['name']
+		mability = gear['primaryGearPower']['name']
+		gearname = gear['name']
+
+		for trigger in triggers.values():
+			if brand in trigger:
+				return True
+			if mability in trigger:
+				return True
+			if gearname in trigger:
+				return True
+			
+		return False
 
 	async def doStoreDailyDropDM(self):
 		return
 
-	async def doStoreRegularDM(self):
+	async def handleDM(self, user, gear):
 		return
+
+	async def doStoreRegularDM(self):
+		if not self.cacheState:
+			print("Cache was not updated... skipping this rotation...")
+			return
+
+		theGear = self.storecache['limitedGears'][5]['gear']
+		brand = theGear['brand']['name']
+		mability = theGear['primaryGearPower']['name']
+		gearname = theGear['name']
+		cur = await self.sqlBroker.connect()
+
+		print(f"Doing S3 Store DM. Checking {gearname} Brand: {brand} Ability: {mability}")
+
+		stmt = "SELECT * FROM s3storedms"
+		await cur.execute(stmt)
+		toDM = await cur.fetchall()
+		await self.sqlBroker.close(cur)
+		for id in range(len(toDM)):
+			servid = toDM[id][0]
+			memid = toDM[id][1]
+			triggers = json.loads(toDM[id][2])
+			server = self.client.get_guild(int(servid))
+
+			await server.chunk()
+			theMem = server.get_member(int(memid))
+			if theMem is None:
+				continue
+			elif self.checkToDM(theGear, triggers):
+				asyncio.ensure_future(self.handleDM(theMem, theGear))
 
 	async def cacheS3JSON(self):
 		print("Updating cached S3 json...")
@@ -278,12 +359,17 @@ class S3StoreHandler():
 
 		storejson = nso.s3.get_store_items()
 		if storejson is None:
-			print("Failed to update store cache for rotation")
-			return
+			print("Failure on store cache refresh. Trying again...")
+			time.sleep(3) #Give it a bit to try again...
+			storejson = nso.s3.get_store_items() #Done 2nd time for 9403 errors w/ token generation
+			if storejson is None:
+				print("Failed to update store cache for rotation")
+				self.cacheState = False
+				return
 
 		print("Got store cache for this rotation")
-		self.storecache = storejson
-
+		self.storecache = storejson['data']['gesotown']
+		self.cacheState = True
 
 class S3Handler():
 	def __init__(self, client, mysqlHandler, nsotoken, splat3info, configData):
@@ -294,6 +380,7 @@ class S3Handler():
 		self.configData = configData
 		self.hostedUrl = configData.get('hosted_url')
 		self.webDir = configData.get('web_dir')
+		self.storedm = S3StoreHandler(client, nsotoken, splat3info, mysqlHandler)
 
 	async def cmdWeaponInfo(self, ctx, name):
 		match = self.splat3info.weapons.matchItem(name)
