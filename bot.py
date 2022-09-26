@@ -495,8 +495,8 @@ async def cmdS3Stats(ctx):#
 	await s3Handler.cmdSRStats(ctx)
 
 @s3Cmds.command(name = 'schedule', description = 'Show schedule')
-async def cmdS3Schedule(ctx):
-	await s3Handler.cmdSchedule(ctx)
+async def cmdS3Schedule(ctx, which: Option(str, "Schedule type", choices = s3handler.S3Schedule.schedule_choices)):
+	await s3Handler.cmdSchedule(ctx, which)
 
 @s3Cmds.command(name = 'fit', description = 'Posts your current gear loadout')
 async def cmdS3Fit(ctx):

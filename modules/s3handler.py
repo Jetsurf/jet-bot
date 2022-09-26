@@ -11,11 +11,36 @@ import datetime
 import dateutil.parser
 
 class S3Schedule():
+	schedule_choices = [
+		discord.OptionChoice('Turf War', 'TW'),
+		discord.OptionChoice('Splatfest', 'SF'),
+		discord.OptionChoice('Anarchy Open', 'AO'),
+		discord.OptionChoice('Anarchy Series', 'AS'),
+	]
+
+	schedule_properties = {
+		'TW': 'turf_war_schedule',
+		'SF': 'splatfest_schedule',
+		'AO': 'anarchy_open_schedule',
+		'AS': 'anarchy_series_schedule',
+	}
+
+	schedule_names = {
+		'TW': 'Turf War',
+		'SF': 'Splatfest',
+		'AO': 'Anarchy Open',
+		'AS': 'Anarchy Series',
+	}
+
 	def __init__(self, nsotoken, sqlBroker):
 		self.nsotoken = nsotoken
 		self.sqlBroker = sqlBroker
 		self.updatetime = None
-		self.fest_schedule = []
+
+		self.turf_war_schedule       = []
+		self.splatfest_schedule      = []
+		self.anarchy_open_schedule   = []
+		self.anarchy_series_schedule = []
 
 		# Schedule updates every hour
 		self.scheduler = AsyncIOScheduler()
@@ -34,14 +59,35 @@ class S3Schedule():
 
 		return False
 
-	def get_fest_schedule(self, count = 1):
-		now = time.time()
-		for i in range(len(self.fest_schedule)):
-			if self.fest_schedule[i]['starttime'] < now:
+	def get_schedule(self, name, checktime = None, count = 1):
+		property = self.schedule_properties[name]
+		schedule = getattr(self, self.schedule_properties[name])
+
+		if checktime == None:
+			checktime = time.time()
+
+		index = None
+		for i in range(len(schedule)):
+			if schedule[i]['starttime'] < checktime:
 				index = i
 				break
 
-		return self.fest_schedule[index:index + count]
+		if index is None:
+			return []  # None found
+
+		return schedule[index:index + count]
+
+#	def get_turf_schedule(self, checktime = None, count = 1):
+#		return self.get_schedule('TW', *kwargs)
+#
+#	def get_fest_schedule(self, checktime = None, count = 1):
+#		return self.get_schedule('SF', *kwargs)
+#
+#	def get_anarchy_open_schedule(self, checktime = None, count = 1):
+#		return self.get_schedule('AO', *kwargs)
+#
+#	def get_anarchy_series_schedule(self, checktime = None, count = 1):
+#		return self.get_schedule('AS', *kwargs)
 
 	# Given 'vsStages' object, returns a list of maps
 	def parse_maps(self, data):
@@ -54,23 +100,42 @@ class S3Schedule():
 			maps.append(map)
 		return maps
 
-	def update_fest_schedule(self, data):
+	def parse_schedule_turf(self, settings, rec):
+		rec['mode'] = settings['vsRule']['name']
+		rec['maps'] = self.parse_maps(settings['vsStages'])
+
+	def parse_schedule_fest(self, settings, rec):
+		rec['mode'] = settings['vsRule']['name']
+		rec['maps'] = self.parse_maps(settings['vsStages'])
+
+	def parse_schedule_anarchy_open(self, settings, rec):
+		settings = [ s for s in settings if s['mode'] == 'OPEN' ][0]
+		rec['mode'] = settings['vsRule']['name']
+		rec['maps'] = self.parse_maps(settings['vsStages'])
+
+	def parse_schedule_anarchy_series(self, settings, rec):
+		settings = [ s for s in settings if s['mode'] == 'CHALLENGE' ][0]
+		rec['mode'] = settings['vsRule']['name']
+		rec['maps'] = self.parse_maps(settings['vsStages'])
+
+	def parse_schedule(self, data, key, sub):
 		if not data or not data.get('nodes'):
-			self.fest_schedule = []  # Empty
-			return
+			return []  # Empty
 
 		nodes = data.get('nodes')
 
 		recs = []
 		for node in nodes:
+			if node[key] is None:
+				continue  # Nothing scheduled in this timeslot
+
 			rec = {}
 			rec['starttime'] = dateutil.parser.isoparse(node['startTime']).timestamp()
 			rec['endtime']   = dateutil.parser.isoparse(node['endTime']).timestamp()
-			rec['mode']      = node['festMatchSetting']['vsRule']['name']
-			rec['maps']      = self.parse_maps(node['festMatchSetting']['vsStages'])
+			sub(node[key], rec)
 			recs.append(rec)
 
-		self.fest_schedule = recs
+		return recs
 
 	async def update(self):
 		if not self.is_update_needed():
@@ -91,7 +156,10 @@ class S3Schedule():
 			print("S3Schedule.update(): Failed to retrieve schedule")
 			return
 
-		self.update_fest_schedule(data['data'].get('festSchedules'))
+		self.turf_war_schedule       = self.parse_schedule(data['data'].get('regularSchedules'), 'regularMatchSetting', self.parse_schedule_turf)
+		self.splatfest_schedule      = self.parse_schedule(data['data'].get('festSchedules'), 'festMatchSetting', self.parse_schedule_fest)
+		self.anarchy_open_schedule   = self.parse_schedule(data['data'].get('bankaraSchedules'), 'bankaraMatchSettings', self.parse_schedule_anarchy_open)
+		self.anarchy_series_schedule = self.parse_schedule(data['data'].get('bankaraSchedules'), 'bankaraMatchSettings', self.parse_schedule_anarchy_series)
 
 		self.updatetime = time.time()
 
@@ -555,24 +623,30 @@ class S3Handler():
 		embed = S3Utils.createSplatfestEmbed(festinfo['data']['festRecords']['nodes'][0])
 		await ctx.respond(embed = embed)
 
-	async def cmdSchedule(self, ctx):
+	async def cmdSchedule(self, ctx, which):
 		await ctx.defer()
-		sched = self.schedule.get_fest_schedule(2)
+
+		name = self.schedule.schedule_names[which]
+
+		sched = self.schedule.get_schedule(which, count = 2)
+		if len(sched) == 0:
+			await ctx.respond(f"That schedule is empty.", ephemeral = True)
+			return
 
 		now = time.time()
 
 		embed = discord.Embed(colour=0x0004FF)
-		embed.title = f"Splatfest schedule"
+		embed.title = f"{name} Schedule"
 
 		for rot in sched:
 			title = rot['mode']
 
 			if rot['endtime'] < now:
-				title += f"\u2014 Ended"
+				title += f" \u2014 Ended"
 			elif rot['starttime'] <= now and rot['endtime'] > now:
-				title += f"\u2014 Runs until <t:{int(rot['endtime'])}>"
+				title += f" \u2014 Started at <t:{int(rot['starttime'])}>"
 			else:
-				title += f"\u2014 Upcoming at <t:{int(rot['starttime'])}>"
+				title += f" \u2014 Upcoming at <t:{int(rot['starttime'])}>"
 
 			map_names = map(lambda m: m['name'], rot['maps'])
 
