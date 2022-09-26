@@ -2,6 +2,8 @@ import discord, asyncio
 import mysqlhandler, nsotoken
 import json, sys, re, time, requests, random
 
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+
 #Image Editing
 from PIL import Image, ImageFont, ImageDraw 
 from io import BytesIO
@@ -9,7 +11,158 @@ import base64
 import datetime
 import dateutil.parser
 
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
+class S3Schedule():
+	schedule_choices = [
+		discord.OptionChoice('Turf War', 'TW'),
+		discord.OptionChoice('Splatfest', 'SF'),
+		discord.OptionChoice('Anarchy Open', 'AO'),
+		discord.OptionChoice('Anarchy Series', 'AS'),
+	]
+
+	schedule_properties = {
+		'TW': 'turf_war_schedule',
+		'SF': 'splatfest_schedule',
+		'AO': 'anarchy_open_schedule',
+		'AS': 'anarchy_series_schedule',
+	}
+
+	schedule_names = {
+		'TW': 'Turf War',
+		'SF': 'Splatfest',
+		'AO': 'Anarchy Open',
+		'AS': 'Anarchy Series',
+	}
+
+	def __init__(self, nsotoken, sqlBroker):
+		self.nsotoken = nsotoken
+		self.sqlBroker = sqlBroker
+		self.updatetime = None
+
+		self.turf_war_schedule       = []
+		self.splatfest_schedule      = []
+		self.anarchy_open_schedule   = []
+		self.anarchy_series_schedule = []
+
+		# Schedule updates every hour
+		self.scheduler = AsyncIOScheduler()
+		self.scheduler.add_job(self.update, 'interval', minutes = 60)
+		self.scheduler.start()
+
+		# Update shortly after bot startup
+		asyncio.create_task(self.update())
+
+	def is_update_needed(self):
+		if self.updatetime is None:
+			return True
+
+		if time.time() - self.updatetime > (30 * 60):  # At least 30 minutes
+			return True
+
+		return False
+
+	def get_schedule(self, name, checktime = None, count = 1):
+		property = self.schedule_properties[name]
+		schedule = getattr(self, self.schedule_properties[name])
+
+		if checktime == None:
+			checktime = time.time()
+
+		index = None
+		for i in range(len(schedule)):
+			if schedule[i]['starttime'] < checktime:
+				index = i
+				break
+
+		if index is None:
+			return []  # None found
+
+		return schedule[index:index + count]
+
+#	def get_turf_schedule(self, checktime = None, count = 1):
+#		return self.get_schedule('TW', *kwargs)
+#
+#	def get_fest_schedule(self, checktime = None, count = 1):
+#		return self.get_schedule('SF', *kwargs)
+#
+#	def get_anarchy_open_schedule(self, checktime = None, count = 1):
+#		return self.get_schedule('AO', *kwargs)
+#
+#	def get_anarchy_series_schedule(self, checktime = None, count = 1):
+#		return self.get_schedule('AS', *kwargs)
+
+	# Given 'vsStages' object, returns a list of maps
+	def parse_maps(self, data):
+		maps = []
+		for vs in data:
+			map = {}
+			map['image']   = vs['image']['url']
+			map['name']    = vs['name']
+			map['stageid'] = vs['vsStageId']
+			maps.append(map)
+		return maps
+
+	def parse_schedule_turf(self, settings, rec):
+		rec['mode'] = settings['vsRule']['name']
+		rec['maps'] = self.parse_maps(settings['vsStages'])
+
+	def parse_schedule_fest(self, settings, rec):
+		rec['mode'] = settings['vsRule']['name']
+		rec['maps'] = self.parse_maps(settings['vsStages'])
+
+	def parse_schedule_anarchy_open(self, settings, rec):
+		settings = [ s for s in settings if s['mode'] == 'OPEN' ][0]
+		rec['mode'] = settings['vsRule']['name']
+		rec['maps'] = self.parse_maps(settings['vsStages'])
+
+	def parse_schedule_anarchy_series(self, settings, rec):
+		settings = [ s for s in settings if s['mode'] == 'CHALLENGE' ][0]
+		rec['mode'] = settings['vsRule']['name']
+		rec['maps'] = self.parse_maps(settings['vsStages'])
+
+	def parse_schedule(self, data, key, sub):
+		if not data or not data.get('nodes'):
+			return []  # Empty
+
+		nodes = data.get('nodes')
+
+		recs = []
+		for node in nodes:
+			if node[key] is None:
+				continue  # Nothing scheduled in this timeslot
+
+			rec = {}
+			rec['starttime'] = dateutil.parser.isoparse(node['startTime']).timestamp()
+			rec['endtime']   = dateutil.parser.isoparse(node['endTime']).timestamp()
+			sub(node[key], rec)
+			recs.append(rec)
+
+		return recs
+
+	async def update(self):
+		if not self.is_update_needed():
+			return
+
+		await self.sqlBroker.wait_for_startup()
+
+		nso = await self.nsotoken.get_bot_nso_client()
+		if not nso:
+			return  # No bot account configured
+		elif not nso.is_logged_in():
+			print("S3Schedule.update(): Time to update but the bot account is not logged in")
+			return
+
+		print("S3Schedule.update(): Updating schedule")
+		data = nso.s3.get_stage_schedule()
+		if data is None:
+			print("S3Schedule.update(): Failed to retrieve schedule")
+			return
+
+		self.turf_war_schedule       = self.parse_schedule(data['data'].get('regularSchedules'), 'regularMatchSetting', self.parse_schedule_turf)
+		self.splatfest_schedule      = self.parse_schedule(data['data'].get('festSchedules'), 'festMatchSetting', self.parse_schedule_fest)
+		self.anarchy_open_schedule   = self.parse_schedule(data['data'].get('bankaraSchedules'), 'bankaraMatchSettings', self.parse_schedule_anarchy_open)
+		self.anarchy_series_schedule = self.parse_schedule(data['data'].get('bankaraSchedules'), 'bankaraMatchSettings', self.parse_schedule_anarchy_series)
+
+		self.updatetime = time.time()
 
 class S3Utils():
 	@classmethod
@@ -381,6 +534,7 @@ class S3Handler():
 		self.hostedUrl = configData.get('hosted_url')
 		self.webDir = configData.get('web_dir')
 		self.storedm = S3StoreHandler(client, nsotoken, splat3info, mysqlHandler)
+		self.schedule = S3Schedule(nsotoken, mysqlHandler)
 
 	async def cmdWeaponInfo(self, ctx, name):
 		match = self.splat3info.weapons.matchItem(name)
@@ -419,6 +573,10 @@ class S3Handler():
 		for w in weapons:
 			embed.add_field(name=w.name(), value=f"Special: {w.special().name()}\nPts for Special: {str(w.specpts())}\nLevel To Purchase: {str(w.level())}", inline=True)
 		await ctx.respond(embed=embed)
+
+	async def cmdWeaponRandom(self, ctx):
+		weapon = self.splat3info.weapons.getRandomItem()
+		await ctx.respond(f"Random weapon: **{weapon.name()}** (subweapon **{weapon.sub().name()}**/special **{weapon.special().name()}**)")
 
 	async def cmdScrim(self, ctx, num, modelist):
 		if (num < 0) or (num > 20):
@@ -553,4 +711,37 @@ class S3Handler():
 			return
 
 		embed = S3Utils.createSplatfestEmbed(festinfo['data']['festRecords']['nodes'][0])
+		await ctx.respond(embed = embed)
+
+	async def cmdSchedule(self, ctx, which):
+		await ctx.defer()
+
+		name = self.schedule.schedule_names[which]
+
+		sched = self.schedule.get_schedule(which, count = 2)
+		if len(sched) == 0:
+			await ctx.respond(f"That schedule is empty.", ephemeral = True)
+			return
+
+		now = time.time()
+
+		embed = discord.Embed(colour=0x0004FF)
+		embed.title = f"{name} Schedule"
+
+		for rot in sched:
+			title = rot['mode']
+
+			if rot['endtime'] < now:
+				title += f" \u2014 Ended"
+			elif rot['starttime'] <= now and rot['endtime'] > now:
+				title += f" \u2014 Started at <t:{int(rot['starttime'])}>"
+			else:
+				title += f" \u2014 Upcoming at <t:{int(rot['starttime'])}>"
+
+			map_names = map(lambda m: m['name'], rot['maps'])
+
+			text = "\n".join(map_names)
+
+			embed.add_field(name = title, value = text, inline = False)
+
 		await ctx.respond(embed = embed)
