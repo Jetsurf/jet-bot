@@ -488,6 +488,10 @@ class S3Handler():
 			embed.add_field(name=w.name(), value=f"Special: {w.special().name()}\nPts for Special: {str(w.specpts())}\nLevel To Purchase: {str(w.level())}", inline=True)
 		await ctx.respond(embed=embed)
 
+	async def cmdWeaponRandom(self, ctx):
+		weapon = self.splat3info.weapons.getRandomItem()
+		await ctx.respond(f"Random weapon: **{weapon.name()}** (subweapon **{weapon.sub().name()}**/special **{weapon.special().name()}**)")
+
 	async def cmdScrim(self, ctx, num, modelist):
 		if (num < 0) or (num > 20):
 			await ctx.respond("Please supply a number of battles between 1 and 20", ephemeral = True)
