@@ -18,13 +18,14 @@ from discord.ext import commands
 import urllib, urllib.request, requests, pymysql
 
 #Our Classes
-import nsotoken, commandparser, serverconfig, splatinfo, ownercmds, messagecontext
+import nsotoken, commandparser, serverconfig, ownercmds, messagecontext
 import vserver, mysqlhandler, mysqlschema, serverutils
 import nsohandler, achandler, s3handler
 import stringcrypt
 import groups
 import logging
 import friendcodes
+import gameinfo.splat2
 import gameinfo.splat3
 
 # Uncomment for verbose logging from pycord
@@ -32,7 +33,7 @@ import gameinfo.splat3
 
 configData = None
 stringCrypt = stringcrypt.StringCrypt()
-splatInfo = splatinfo.SplatInfo()
+splat2info = gameinfo.splat2.Splat2()
 splat3info = gameinfo.splat3.Splat3()
 intents = discord.Intents.default()
 intents.members = True
@@ -337,7 +338,7 @@ async def cmdCurrentSR(ctx):
 	await ctx.respond(embed=nsoHandler.srEmbed(getNext=False))
 
 @s2MapCmds.command(name='callout', description="View callout locations for a map")
-async def cmdMapsCallout(ctx, map: Option(str, "Map to show callout locations for", choices=[ themap.name() for themap in splatInfo.getAllMaps() ] ,required=True)):
+async def cmdMapsCallout(ctx, map: Option(str, "Map to show callout locations for", choices=[ themap.name() for themap in splat2info.getAllMaps() ] ,required=True)):
 	await nsoHandler.cmdMaps(ctx, args=[ 'callout', str(map) ])
 
 @s2MapCmds.command(name='list', description="Shows all Splatoon 2 maps")
@@ -354,7 +355,7 @@ async def cmdMapsRandom(ctx, num: Option(int, "Number of maps to include in the 
 		await nsoHandler.cmdMaps(ctx, args=[ 'random', str(num)])
 
 @s2StatsCmds.command(name='maps', description="Shows gameplay stats for a map")
-async def cmdMapsStats(ctx, map: Option(str, "Map to show stats for", choices=[ themap.name() for themap in splatInfo.getAllMaps() ] ,required=True)):
+async def cmdMapsStats(ctx, map: Option(str, "Map to show stats for", choices=[ themap.name() for themap in splat2info.getAllMaps() ] ,required=True)):
 	await serverUtils.increment_cmd(ctx, 'maps')
 	await nsoHandler.cmdMaps(ctx, args=[ 'stats', str(map)])
 
@@ -388,7 +389,7 @@ async def cmdWeapInfo(ctx, name: Option(str, "Name of the weapon to get info for
 	await nsoHandler.cmdWeaps(ctx, args=[ 'info', str(name) ])
 
 @s2WeaponCmds.command(name='list', description='Gets a list of weapons by type')
-async def cmdWeapList(ctx, weaptype: Option(str, "Type of weapon to generate a list for", required=True, choices=[ weaptype.name() for weaptype in splatInfo.getAllWeaponTypes() ])):
+async def cmdWeapList(ctx, weaptype: Option(str, "Type of weapon to generate a list for", required=True, choices=[ weaptype.name() for weaptype in splat2info.getAllWeaponTypes() ])):
 	await serverUtils.increment_cmd(ctx, 'weapons')
 
 	await nsoHandler.cmdWeaps(ctx, args=[ 'list', str(weaptype) ])
@@ -403,7 +404,7 @@ async def cmdWeapRandom(ctx, num: Option(int, "Number of weapons to include in t
 	await nsoHandler.cmdWeaps(ctx, args=[ 'random', str(num) ])
 
 @s2WeaponCmds.command(name='special', description='Gets all weapons with special type')
-async def cmdWeapSpecial(ctx, special: Option(str, "Name of the special to get matching weapons for", choices=[ weap.name() for weap in splatInfo.getAllSpecials() ], required=True)):
+async def cmdWeapSpecial(ctx, special: Option(str, "Name of the special to get matching weapons for", choices=[ weap.name() for weap in splat2info.getAllSpecials() ], required=True)):
 	await serverUtils.increment_cmd(ctx, 'weapons')
 
 	await nsoHandler.cmdWeaps(ctx, args=[ 'special', str(special) ])
@@ -415,7 +416,7 @@ async def cmdWeapStats(ctx, name: Option(str, "Name of the weapon to get stats f
 	await nsoHandler.cmdWeaps(ctx, args=[ 'stats', str(name) ])
 
 @s2WeaponCmds.command(name='sub', description='Gets all weapons with sub type')
-async def cmdWeapSub(ctx, sub: Option(str, "Name of the sub to get matching weapons for", choices=[ weap.name() for weap in splatInfo.getAllSubweapons() ], required=True)):
+async def cmdWeapSub(ctx, sub: Option(str, "Name of the sub to get matching weapons for", choices=[ weap.name() for weap in splat2info.getAllSubweapons() ], required=True)):
 	await serverUtils.increment_cmd(ctx, 'weapons')
 
 	await nsoHandler.cmdWeaps(ctx, args=[ 'sub', str(sub) ])
@@ -730,7 +731,7 @@ async def checkIfAdmin(ctx):
 
 @client.event
 async def on_ready():
-	global client, mysqlHandler, serverUtils, serverVoices, splatInfo, configData, ownerCmds, pynso
+	global client, mysqlHandler, serverUtils, serverVoices, splat2info, configData, ownerCmds, pynso
 	global nsoHandler, nsoTokens, head, dev, owners, commandParser, doneStartup, acHandler, stringCrypt
 	global friendCodes, s3Handler
 
@@ -776,7 +777,7 @@ async def on_ready():
 		ownerCmds = ownercmds.ownerCmds(client, mysqlHandler, commandParser, owners)
 		serverUtils = serverutils.serverUtils(client, mysqlHandler, serverConfig, configData['help'])
 		nsoTokens = nsotoken.Nsotoken(client, configData, mysqlHandler, stringCrypt)
-		nsoHandler = nsohandler.nsoHandler(client, mysqlHandler, nsoTokens, splatInfo, configData.get('hosted_url'))
+		nsoHandler = nsohandler.nsoHandler(client, mysqlHandler, nsoTokens, splat2info, configData.get('hosted_url'))
 		s3Handler = s3handler.S3Handler(client, mysqlHandler, nsoTokens, splat3info, configData)
 		acHandler = achandler.acHandler(client, mysqlHandler, nsoTokens, configData)
 		await mysqlHandler.startUp()
