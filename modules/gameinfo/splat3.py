@@ -452,6 +452,30 @@ class Splat3Subweapon(gameinfo.matchset.MatchItem):
 class Splat3Special(gameinfo.matchset.MatchItem):
 	pass
 
+class Splat3Ability(gameinfo.matchset.MatchItem):
+	def __init__(self, id, name, abbrevs):
+		self._id   = id
+		super().__init__(name, abbrevs)
+
+	def id(self):
+		return self._id
+
+class Splat3Brand(gameinfo.matchset.MatchItem):
+	def __init__(self, id, name, common, uncommon):
+		self._id       = id
+		self._common   = common
+		self._uncommon = uncommon
+		super().__init__(name, [])
+
+	def id(self):
+		return self._id
+
+	def commonAbility(self):
+		return self._common
+
+	def uncommonAbility(self):
+		return self._uncommon
+
 class Splat3WeaponType(gameinfo.matchset.MatchItem):
 	def __init__(self, name, pluralName, abbrevs):
 		self._pluralname = pluralName
@@ -501,6 +525,8 @@ class Splat3():
 		self.initSpecials()
 		self.initWeaponTypes()
 		self.initWeapons()
+		self.initAbilities()
+		self.initBrands()
 
 	def initMaps(self):
 		self.maps = gameinfo.matchset.MatchSet('map', [])
@@ -559,6 +585,23 @@ class Splat3():
 			specpts = w[8]
 			abbrevs = []  # TODO
 			self.weapons.append(Splat3Weapon(id, name, abbrevs, self.weaponTypes.getItemByName(type), self.subweapons.getItemByName(sub), self.specials.getItemByName(special), specpts, price, level))
+
+	def initAbilities(self):
+		self.abilities = gameinfo.matchset.MatchSet('ability', [])
+		for a in abilitiesData:
+			name    = a[0]
+			id      = a[1]
+			abbrevs = []  # TODO
+			self.abilities.append(Splat3Ability(id, name, abbrevs))
+
+	def initBrands(self):
+		self.brands = gameinfo.matchset.MatchSet('brand', [])
+		for b in brandsData:
+			name     = b[0]
+			id       = b[1]
+			common   = b[2]
+			uncommon = b[3]
+			self.brands.append(Splat3Brand(id, name, self.abilities.getItemByName(common), self.abilities.getItemByName(uncommon)))
 
 	def getSpecialNames(self):
 		return [ s.name() for s in self.specials.getAllItems() ]
