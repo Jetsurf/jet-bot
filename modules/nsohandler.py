@@ -4,7 +4,6 @@ import mysqlhandler, nsotoken
 import time, requests
 import json, os
 import urllib, urllib.request
-import splatinfo
 import messagecontext
 import io
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
