@@ -407,21 +407,41 @@ class S3Utils():
 		retDraw.rectangle((0, 0, MAXW - 1, MAXH - 1), outline="black", width=3)
 		imgName = f"{statsjson['data']['currentPlayer']['name']}-{statsjson['data']['currentPlayer']['nameId']}.png"
 		retImage.save(f"{configData['web_dir']}/s3/fits/{imgName}", "PNG")
-		return f"{configData['hosted_url']}/s3/fits/{imgName}"	
+		return f"{configData['hosted_url']}/s3/fits/{imgName}"
+
+	@classmethod
+	def createStoreEmbed(self, gear, brand, title, instructions=None):
+		embed = discord.Embed(colour=0xF9FC5F)
+		embed.set_thumbnail(url=gear['gear']['image']['url'])
+		embed.title = title
+		embed.add_field(name = "Brand", value = gear['gear']['brand']['name'], inline = True)
+		embed.add_field(name = "Gear Name", value = gear['gear']['name'], inline = True)
+		embed.add_field(name = "Type", value = gear['gear']['__typename'].replace("Gear", ""), inline = True)
+		embed.add_field(name = "Main Ability", value = gear['gear']['primaryGearPower']['name'], inline = True)
+		embed.add_field(name = "Sub Slots", value = len(gear['gear']['additionalGearPowers']), inline = True)
+		embed.add_field(name = "Common Ability", value = brand.get().commonAbility(), inline = True)
+		embed.add_field(name = "Price", value = gear['price'], inline = True)
+
+		if instructions != None:
+			embed.add_field(name = "Instuctions", value = instructions, inline = False)
+
+		return embed
 
 class s3OrderView(discord.ui.View):
-	def __init__(self, s3handler, nsotoken, user):
+	def __init__(self, gear, s3handler, nsotoken, user, splat3info):
 		super().__init__()
 		self.nsoToken = nsotoken
 		self.s3Handler = s3handler
 		self.user = user
 		self.confirm = False
 		self.timeout = 6900.0
+		self.gear = gear
+		self.splat3info = splat3info
 
 	async def initView(self):
 		orderBut = discord.ui.Button(label="Order Item")
-		nso = await self.nsoToken.get_nso_client(self.user.id)
-		if nso.is_logged_in():
+		self.nso = await self.nsoToken.get_nso_client(self.user.id)
+		if self.nso.is_logged_in():
 			orderBut.callback = self.orderItem
 		else:
 			self.stop()
@@ -429,14 +449,17 @@ class s3OrderView(discord.ui.View):
 		self.add_item(orderBut)
 
 	async def orderItem(self, interaction: discord.Interaction):
-		if self.confirm:
-			await self.nsoHandler.orderGearCommand(interaction, args=['5'], override=True)
-			if self.user != None:
-				self.clear_items()
-				self.stop()
+		req = self.nso.s3.do_store_order(self.gear['id'], self.confirm)
+		if req['data']['orderGesotownGear']['userErrors'] == None:
+			await interaction.response.send_message("Ordered!")
+			self.clear_items()
+			self.stop()
+		elif req['data']['orderGesotownGear']['userErrors'][0]['code'] == "GESOTOWN_ALREADY_ORDERED":
+			await interaction.response.send_message("You already have an item on order, hit order again to cancel that item and order this one.")
+			self.confirm = True
 		else:
-			await self.nsoHandler.orderGearCommand(interaction, args=['5'])
-			self.confirm=True
+			#TODO Update this
+			await interaction.response.send_message("Something went wrong.")
 
 class S3StoreHandler():
 	def __init__(self, client, nsoToken, splat3info, mysqlHandler):
@@ -456,9 +479,9 @@ class S3StoreHandler():
 	#{ 'gearnames' : ['Gear One', "Two" ], 'brands': ['Toni-Kensa', 'Forge'], 'mabilities' : ['Ink Saver (Main)'] }
 
 	def checkToDM(self, gear, triggers):
-		brand = gear['brand']['name']
-		mability = gear['primaryGearPower']['name']
-		gearname = gear['name']
+		brand = gear['gear']['brand']['name']
+		mability = gear['gear']['primaryGearPower']['name']
+		gearname = gear['gear']['name']
 
 		for trigger in triggers.values():
 			if brand in trigger:
@@ -474,17 +497,22 @@ class S3StoreHandler():
 		return
 
 	async def handleDM(self, user, gear):
-		return
+		brand = self.splat3info.brands.matchItem(gear['gear']['brand']['name'])
+
+		view = s3OrderView(gear, self, self.nsotoken, user, self.splat3info)
+		await view.initView()
+		embed = S3Utils.createStoreEmbed(gear, brand, "Gear you wanted to be notified about has appeared in the Splatnet 3 shop!")
+		await user.send(embed = embed, view = view)
 
 	async def doStoreRegularDM(self):
 		if not self.cacheState:
 			print("Cache was not updated... skipping this rotation...")
 			return
 
-		theGear = self.storecache['limitedGears'][5]['gear']
-		brand = theGear['brand']['name']
-		mability = theGear['primaryGearPower']['name']
-		gearname = theGear['name']
+		theGear = self.storecache['limitedGears'][5]
+		brand = theGear['gear']['brand']['name']
+		mability = theGear['gear']['primaryGearPower']['name']
+		gearname = theGear['gear']['name']
 		cur = await self.sqlBroker.connect()
 
 		print(f"Doing S3 Store DM. Checking {gearname} Brand: {brand} Ability: {mability}")

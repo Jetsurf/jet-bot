@@ -493,6 +493,22 @@ class Splat3Weapon(gameinfo.matchset.MatchItem):
 	def level(self):
 		return self._level
 
+class Splat3Brand(gameinfo.matchset.MatchItem):
+	def __init__(self, name, id, common, uncommon):
+		self._id = id
+		self._common = common
+		self._uncommon = uncommon
+		super().__init__(name, None)
+
+	def id(self):
+		return self._id
+
+	def commonAbility(self):
+		return self._common
+
+	def uncommonAbility(self):
+		return self._uncommon
+
 class Splat3():
 	def __init__(self):
 		self.initMaps()
@@ -501,6 +517,13 @@ class Splat3():
 		self.initSpecials()
 		self.initWeaponTypes()
 		self.initWeapons()
+		self.initBrands()
+
+	def initBrands(self):
+		self.brands = gameinfo.matchset.MatchSet('brand', [])
+		for b in brandsData:
+			name = b[0]
+			self.brands.append(Splat3Brand(name, b[1], b[2], b[3]))
 
 	def initMaps(self):
 		self.maps = gameinfo.matchset.MatchSet('map', [])
