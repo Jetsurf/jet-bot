@@ -67,7 +67,7 @@ s2StatsCmds = s2Cmds.create_subgroup('stats', 'Gameplay stats')
 s3Cmds = SlashCommandGroup('s3', 'Commands related to Splatoon 3')
 s3WeaponCmds = s3Cmds.create_subgroup('weapon', 'Commands related to weapons in Splatoon 3')
 s3StatsCmds = s3Cmds.create_subgroup('stats', 'Commands related to Splatoon 3 gameplay stats')
-s3StoreDmCmds = s3Cmds.create_subgroup('storedm', 'Commands related to Splatnet 3 gear notifications')
+s3StoreDmCmds = s3Cmds.create_subgroup('storedm', 'Splatoon 3 Store gear DMs')
 
 # ACNH
 acnhCmds = SlashCommandGroup('acnh', "Commands related to Animal Crossing New Horizons")
@@ -84,10 +84,6 @@ owner = SlashCommandGroup('owner', "Commands that are owner only")
 groupCmds = SlashCommandGroup('group', 'Commands related to finding a group of players')
 fcCmds = SlashCommandGroup('fc', 'Commands for friend codes')
 play = voice.create_subgroup(name='play', description='Commands related to playing audio')
-
-s3Cmds = SlashCommandGroup('s3', 'Commands related to Splatoon 3')
-s3WeaponCmds = s3Cmds.create_subgroup('weapon', 'Commands related to weapons in Splatoon 3')
-s3StatsCmds = s3Cmds.create_subgroup('stats', 'Commands related to Splatoon 3 gameplay stats')
 
 def loadConfig():
 	global configData, helpfldr, mysqlHandler, dev, head, pynso
@@ -176,14 +172,6 @@ async def cmdFcSet(ctx, friend_code: Option(str, "SW-xxxx-xxxx-xxxx")):
 
 	await friendCodes.setFriendCode(ctx.user.id, friend_code)
 	await ctx.respond(f"Okay, I'll remember your friend code of SW-{friend_code}", ephemeral = True)
-
-@owner.command(name="emotes", description="Sets Emotes for use in Embeds (Custom emotes only)", default_permission=False)
-@commands.is_owner()
-async def emotePicker(ctx, turfwar: Option(str, "Emote to use for turfwar"), ranked: Option(str, "Emote to use for ranked"), league: Option(str, "Emote to use for league"), badge100k: Option(str, "Emote to use for the 100k inked badge"),
-	badge500k: Option(str, "Emote to use for the 500k inked badge"), badge1m: Option(str, "Emote to use for the 1m inked badge"), badge10m: Option(str, "Emote to use for the 10m inked badge")):
-	
-	opts = [ turfwar, ranked, league, badge100k, badge500k, badge1m, badge10m ]
-	await ownerCmds.emotePicker(ctx, opts)
 
 @client.slash_command(name='support', description='Sends a discord invite to my support guild.')
 async def cmdSupport(ctx):
@@ -460,6 +448,8 @@ async def cmdStoreDMAbilty(ctx, flag: Option(str, "ABILITY/BRAND/GEAR to stop DM
 
 # --- S3 commands ---
 
+#TODO: Need cmd reporting increments
+
 @s3WeaponCmds.command(name='info', description='Gets info on a weapon in Splatoon 3')
 async def cmdS3WeaponInfo(ctx, name: Option(str, "Name of the weapon to get info for", required=True)):
 	await s3Handler.cmdWeaponInfo(ctx, str(name))
@@ -476,14 +466,6 @@ async def cmdS3WeaponSub(ctx, special: Option(str, "Name of the subweapon to get
 async def cmdS3WeaponRandom(ctx):
 	await s3Handler.cmdWeaponRandom(ctx)
 
-@s3Cmds.command(name = 'scrim', description = 'Generate a list of Splatoon 3 maps and modes')
-async def cmdS3Scrim(ctx, num: Option(int, "Number of battles (1..20)", required = True), modes: Option(str, "Comma-separated list of modes (default: RM,TC,SZ,CB)", required = True, default = "RM,TC,SZ,CB")):
-	await s3Handler.cmdScrim(ctx, num, modes)
-
-@s3Cmds.command(name = 'fest', description = 'Show Splatfest information')
-async def cmdS3Fest(ctx):
-	await s3Handler.cmdFest(ctx)
-
 @s3StatsCmds.command(name = 'battle', description = 'Get stats from a battle (1-50)')
 async def cmdS3StatsBattle(ctx, battlenum: Option(int, "Battle Number, 1 being latest, 50 max", required=True, default=1)):
 	if battlenum >= 50 or battlenum < 0:
@@ -496,8 +478,24 @@ async def cmdS3Stats(ctx):
 	await s3Handler.cmdStats(ctx)
 
 @s3StatsCmds.command(name = 'sr', description = 'Get your Splatoon 3 Salmon Run stats')
-async def cmdS3Stats(ctx):#
+async def cmdS3Stats(ctx):
 	await s3Handler.cmdSRStats(ctx)
+
+@s3StoreDmCmds.command(name = "list", description = 'Gets Splatoon 3 Store DM triggers')
+async def cmdS3ListS3StoreDm(ctx):
+	await s3Handler.storedm.listS3StoreDm(ctx)
+
+@s3StoreDmCmds.command(name = "add", description = 'Add trigger for when gear appears in the Splatnet 3 Store')
+async def cmdS3AddStoreDm(ctx, trigger: Option(str, "Trigger for a DM (Gear Name/Brand/Main Ability)", required = True)):
+	await s3Handler.storedm.addS3StoreDm(ctx, trigger)
+
+@s3Cmds.command(name = 'scrim', description = 'Generate a list of Splatoon 3 maps and modes')
+async def cmdS3Scrim(ctx, num: Option(int, "Number of battles (1..20)", required = True), modes: Option(str, "Comma-separated list of modes (default: RM,TC,SZ,CB)", required = True, default = "RM,TC,SZ,CB")):
+	await s3Handler.cmdScrim(ctx, num, modes)
+
+@s3Cmds.command(name = 'fest', description = 'Show Splatfest information')
+async def cmdS3Fest(ctx):
+	await s3Handler.cmdFest(ctx)
 
 @s3Cmds.command(name = 'schedule', description = 'Show schedule')
 async def cmdS3Schedule(ctx, which: Option(str, "Schedule type", choices = s3handler.S3Schedule.schedule_choices)):
@@ -507,13 +505,22 @@ async def cmdS3Schedule(ctx, which: Option(str, "Schedule type", choices = s3han
 async def cmdS3Fit(ctx):
 	await s3Handler.cmdFit(ctx)
 
-#@s3StoreDmCmds.command("")
-#async def cmdS3AddStore
+# --- Owner Commands ---
 
 @owner.command(name='eval', description="Eval a code block (Owners only)", default_permission=False)
 @commands.is_owner()
 async def cmdEval(ctx):
 	await ctx.send_modal(ownercmds.evalModal(ownerCmds, title="Eval"))
+
+@owner.command(name="emotes", description="Sets Emotes for use in Embeds (Custom emotes only)", default_permission=False)
+@commands.is_owner()
+async def emotePicker(ctx, turfwar: Option(str, "Emote to use for turfwar"), ranked: Option(str, "Emote to use for ranked"), league: Option(str, "Emote to use for league"), badge100k: Option(str, "Emote to use for the 100k inked badge"),
+	badge500k: Option(str, "Emote to use for the 500k inked badge"), badge1m: Option(str, "Emote to use for the 1m inked badge"), badge10m: Option(str, "Emote to use for the 10m inked badge")):
+	
+	opts = [ turfwar, ranked, league, badge100k, badge500k, badge1m, badge10m ]
+	await ownerCmds.emotePicker(ctx, opts)
+
+# --- Voice Commands ---
 
 @voice.command(name='join', description='Join a voice chat channel')
 async def cmdVoiceJoin(ctx, channel: Option(discord.VoiceChannel, "Voice Channel to join", required=False)):

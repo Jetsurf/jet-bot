@@ -419,7 +419,7 @@ class S3Utils():
 		embed.add_field(name = "Type", value = gear['gear']['__typename'].replace("Gear", ""), inline = True)
 		embed.add_field(name = "Main Ability", value = gear['gear']['primaryGearPower']['name'], inline = True)
 		embed.add_field(name = "Sub Slots", value = len(gear['gear']['additionalGearPowers']), inline = True)
-		embed.add_field(name = "Common Ability", value = brand.get().commonAbility(), inline = True)
+		embed.add_field(name = "Common Ability", value = brand.commonAbility().name(), inline = True)
 		embed.add_field(name = "Price", value = gear['price'], inline = True)
 
 		if instructions != None:
@@ -468,8 +468,8 @@ class S3StoreHandler():
 		self.nsotoken = nsoToken
 		self.splat3info = splat3info
 		self.scheduler = AsyncIOScheduler()
-		self.scheduler.add_job(self.doStoreRegularDM, 'cron', second="0")#hour="*/2", minute='1', timezone='UTC') 
-		self.scheduler.add_job(self.doStoreDailyDropDM, 'cron', hour="0", minute='1', timezone='UTC')
+		self.scheduler.add_job(self.doStoreRegularDM, 'cron', second = "0")#hour="*/2", minute='1', timezone='UTC') 
+		self.scheduler.add_job(self.doStoreDailyDropDM, 'cron', second = '0')#hour="0", minute='0', second = '30', timezone='UTC')
 		self.scheduler.add_job(self.cacheS3JSON, 'cron', hour="*/2", minute='0', second='15', timezone='UTC')
 		self.storecache = None
 		self.cacheState = False
@@ -494,10 +494,37 @@ class S3StoreHandler():
 		return False
 
 	async def doStoreDailyDropDM(self):
+		theDrop = self.storecache['pickupBrand']
+		theItems = self.storecache['pickupBrand']['brandGears']
+		
+		cur = await self.sqlBroker.connect()
+		await cur.execute("SELECT * from s3storedms")
+		toDM = await cur.fetchall()
+		await self.sqlBroker.close(cur)
+
+		print(f"Doing Daily Drop S3 Store DM. Checking:")
+
+		for gear in theItems:
+			print(f"Gear: {gear['gear']['name']} Brand: {gear['gear']['brand']['name']} Ability: {gear['gear']['primaryGearPower']['name']}")
+			for id in range(len(toDM)):
+				servid = toDM[id][0]
+				memid = toDM[id][1]
+				triggers = json.loads(toDM[id][2])
+				server = self.client.get_guild(int(servid))
+
+				await server.chunk()
+				theMem = server.get_member(int(memid))
+				if theMem is None:
+					continue
+				elif self.checkToDM(gear, triggers):
+					print(f"Messaging {theMem.name}")
+					asyncio.ensure_future(self.handleDM(theMem, gear))
+
 		return
 
 	async def handleDM(self, user, gear):
-		brand = self.splat3info.brands.matchItem(gear['gear']['brand']['name'])
+		print(f"?{gear['gear']['brand']['name']}")
+		brand = self.splat3info.brands.getItemByName(gear['gear']['brand']['name'])
 
 		view = s3OrderView(gear, self, self.nsotoken, user, self.splat3info)
 		await view.initView()
@@ -506,21 +533,18 @@ class S3StoreHandler():
 
 	async def doStoreRegularDM(self):
 		if not self.cacheState:
-			print("Cache was not updated... skipping this rotation...")
+			print("Cache was not updated... skipping this daily drop...")
 			return
 
 		theGear = self.storecache['limitedGears'][5]
-		brand = theGear['gear']['brand']['name']
-		mability = theGear['gear']['primaryGearPower']['name']
-		gearname = theGear['gear']['name']
 		cur = await self.sqlBroker.connect()
 
-		print(f"Doing S3 Store DM. Checking {gearname} Brand: {brand} Ability: {mability}")
-
-		stmt = "SELECT * FROM s3storedms"
-		await cur.execute(stmt)
+		print(f"Doing S3 Store DM. Checking {theGear['gear']['name']} Brand: {theGear['gear']['brand']['name']} Ability: {theGear['gear']['primaryGearPower']['name']}")
+		
+		await cur.execute("SELECT * FROM s3storedms")
 		toDM = await cur.fetchall()
 		await self.sqlBroker.close(cur)
+
 		for id in range(len(toDM)):
 			servid = toDM[id][0]
 			memid = toDM[id][1]
@@ -532,6 +556,7 @@ class S3StoreHandler():
 			if theMem is None:
 				continue
 			elif self.checkToDM(theGear, triggers):
+				print(f"Messaging {theMem.name}")
 				asyncio.ensure_future(self.handleDM(theMem, theGear))
 
 	async def cacheS3JSON(self):
@@ -551,6 +576,65 @@ class S3StoreHandler():
 		print("Got store cache for this rotation")
 		self.storecache = storejson['data']['gesotown']
 		self.cacheState = True
+
+	async def addS3StoreDm(self, ctx, trigger):
+		#await cursor.execute("REPLACE INTO server_config (serverid, config) VALUES (%s, %s)", (serverid, jsonconfig))
+		flag = False
+		cur = await self.sqlBroker.connect()
+		await cur.execute("SELECT dmtriggers FROM s3storedms WHERE clientid = %s AND serverid = %s", (ctx.user.id, ctx.guild.id,))
+		theTriggers = cur.fetchall()
+		theTriggers = json.loads(theTriggers[0])
+
+		if flag != True:
+			match1 = self.splatInfo.matchAbilities(trigger)
+			if match1.isValid():
+				flag = True
+				theTriggers['mabilities'].append(match1.get().name())
+
+		#Search brands
+		if flag != True:
+			match2 = self.splatInfo.matchBrands(trigger)
+			if match2.isValid():
+				flag = True
+				theTriggers['brands'].append(match2.get().name())
+
+		#Search Items
+		if flag != True:
+			match3 = self.splatInfo.matchGear(trigger)
+			if match3.isValid():
+				flag = True
+				theTriggers['gearnames'].append(match3.get().name())
+
+		if flag == True:
+
+		else:
+			if len(match1.items) + len(match2.items) + len(match3.items) < 1:
+				await ctx.respond("Didn't find any partial matches for you.")
+				return
+
+			embed = discord.Embed(colour=0xF9FC5F)
+			embed.title = "Did you mean?"
+
+			if len(match1.items) > 0:
+				embed.add_field(name="Abilities", value=", ".join(map(lambda item: item.name(), match1.items)), inline=False)
+			if len(match2.items) > 0:
+				embed.add_field(name="Brands", value=", ".join(map(lambda item: item.name(), match2.items)), inline=False)
+			if len(match3.items) > 0:
+				embed.add_field(name="Gear", value=", ".join(map(lambda item: item.name(), match3.items)), inline=False)
+
+			await ctx.respond(embed=embed)
+
+	async def removeS3StoreDm(self, ctx):
+		return
+
+	async def listS3StoreDm(self, ctx):
+		cur = await self.sqlBroker.connect()
+		await cur.execute("SELECT dmtriggers FROM s3storedms WHERE clientid = %s", (ctx.user.id,))
+		triggers = await cur.fetchall()
+
+		for guildTriggers in triggers:
+			guildTriggers = json.loads(guildTriggers[0])
+			await ctx.respond(f"```{guildTriggers}```")
 
 class S3Handler():
 	def __init__(self, client, mysqlHandler, nsotoken, splat3info, configData):

@@ -463,6 +463,7 @@ class Splat3Ability(gameinfo.matchset.MatchItem):
 class Splat3Brand(gameinfo.matchset.MatchItem):
 	def __init__(self, id, name, common, uncommon):
 		self._id       = id
+		self.name = name
 		self._common   = common
 		self._uncommon = uncommon
 		super().__init__(name, [])
