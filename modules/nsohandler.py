@@ -38,14 +38,18 @@ class orderView(discord.ui.View):
 			self.confirm=True
 
 class nsoHandler():
-	def __init__(self, client, mysqlHandler, nsotoken, splatInfo, hostedUrl):
+	def __init__(self, client, mysqlHandler, nsotoken, splatInfo, configData):
 		self.client = client
 		self.splatInfo = splatInfo
 		self.sqlBroker = mysqlHandler
-		self.hostedUrl = hostedUrl
+		self.hostedUrl = configData['hosted_url']
 		self.app_timezone_offset = str(int((time.mktime(time.gmtime()) - time.mktime(time.localtime()))/60))
 		self.scheduler = AsyncIOScheduler()
-		self.scheduler.add_job(self.doStoreDM, 'cron', hour="*/2", minute='5', timezone='UTC') 
+		if 'storedm_debug' in configData and configData['storedm_debug']:
+			self.scheduler.add_job(self.doStoreDM,'cron', second = '0', timezone = 'UTC')
+		else:
+			self.scheduler.add_job(self.doStoreDM, 'cron', hour="*/2", minute='5', timezone='UTC') 
+
 		self.scheduler.add_job(self.updateS2JSON, 'cron', hour="*/2", minute='0', second='15', timezone='UTC')
 		self.scheduler.add_job(self.doFeed, 'cron', hour="*/2", minute='0', second='25', timezone='UTC')
 		self.scheduler.start()

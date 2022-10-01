@@ -463,7 +463,6 @@ class Splat3Ability(gameinfo.matchset.MatchItem):
 class Splat3Brand(gameinfo.matchset.MatchItem):
 	def __init__(self, id, name, common, uncommon):
 		self._id       = id
-		self.name = name
 		self._common   = common
 		self._uncommon = uncommon
 		super().__init__(name, [])
@@ -518,21 +517,31 @@ class Splat3Weapon(gameinfo.matchset.MatchItem):
 	def level(self):
 		return self._level
 
-class Splat3Brand(gameinfo.matchset.MatchItem):
-	def __init__(self, name, id, common, uncommon):
-		self._id = id
-		self._common = common
-		self._uncommon = uncommon
-		super().__init__(name, None)
+class Splat3Gear(gameinfo.matchset.MatchItem):
+	def __init__(self, id, name, intName, price, brand, rarity, season, ability):
+		self._id		= id
+		self._intName	= intName
+		self._price		= price
+		self._brand		= brand
+		self._rarity	= rarity
+		self._season	= season
+		self._ability	= ability
+		super().__init__(name, [])
 
 	def id(self):
 		return self._id
 
-	def commonAbility(self):
-		return self._common
+	def price(self):
+		return self._price
 
-	def uncommonAbility(self):
-		return self._uncommon
+	def brand(self):
+		return self._brand
+
+	def rarity(self):
+		return self._rarity
+
+	def ability(self):
+		return self._ability
 
 class Splat3():
 	def __init__(self):
@@ -544,6 +553,7 @@ class Splat3():
 		self.initWeapons()
 		self.initAbilities()
 		self.initBrands()
+		self.initGear()
 
 	def initMaps(self):
 		self.maps = gameinfo.matchset.MatchSet('map', [])
@@ -619,6 +629,60 @@ class Splat3():
 			common   = b[2]
 			uncommon = b[3]
 			self.brands.append(Splat3Brand(id, name, self.abilities.getItemByName(common), self.abilities.getItemByName(uncommon)))
+
+	def initGear(self):
+		theGear = hatsData
+		theGear.extend(clothesData)
+		theGear.extend(shoesData)
+		self.hats = gameinfo.matchset.MatchSet('hats', [])
+		self.clothes = gameinfo.matchset.MatchSet('clothes', [])
+		self.shoes = gameinfo.matchset.MatchSet('shoes', [])
+		self.gear = gameinfo.matchset.MatchSet('gear', [])
+		#Nintendo's id number, name, internal name, price, brand, rarity, season, main ability
+		#[ 6004, 'Face Visor'              , 'VIS004', 10300, 'Toni Kensa'   ,  2,  0, 'Sub Resistance Up'],
+		for h in hatsData:
+			id		= h[0]
+			name	= h[1]
+			intName = h[2]
+			price	= h[3]
+			brand	= h[4]
+			rarity	= h[5]
+			season	= h[6]
+			ability	= h[7]
+			self.hats.append(Splat3Gear(id, name, intName, price, self.brands.getItemByName(brand), rarity, season, self.abilities.getItemByName(ability)))
+
+		for c in clothesData:
+			id		= c[0]
+			name	= c[1]
+			intName = c[2]
+			price	= c[3]
+			brand	= c[4]
+			rarity	= c[5]
+			season	= c[6]
+			ability	= c[7]
+			self.clothes.append(Splat3Gear(id, name, intName, price, self.brands.getItemByName(brand), rarity, season, self.abilities.getItemByName(ability)))
+
+		for s in shoesData:
+			id		= s[0]
+			name	= s[1]
+			intName = s[2]
+			price	= s[3]
+			brand	= s[4]
+			rarity	= s[5]
+			season	= s[6]
+			ability	= s[7]
+			self.shoes.append(Splat3Gear(id, name, intName, price, self.brands.getItemByName(brand), rarity, season, self.abilities.getItemByName(ability)))
+
+		for g in theGear:
+			id		= g[0]
+			name	= g[1]
+			intName = g[2]
+			price	= g[3]
+			brand	= g[4]
+			rarity	= g[5]
+			season	= g[6]
+			ability	= g[7]
+			self.gear.append(Splat3Gear(id, name, intName, price, self.brands.getItemByName(brand), rarity, season, self.abilities.getItemByName(ability)))
 
 	def getSpecialNames(self):
 		return [ s.name() for s in self.specials.getAllItems() ]

@@ -784,7 +784,7 @@ async def on_ready():
 		ownerCmds = ownercmds.ownerCmds(client, mysqlHandler, commandParser, owners)
 		serverUtils = serverutils.serverUtils(client, mysqlHandler, serverConfig, configData['help'])
 		nsoTokens = nsotoken.Nsotoken(client, configData, mysqlHandler, stringCrypt)
-		nsoHandler = nsohandler.nsoHandler(client, mysqlHandler, nsoTokens, splat2info, configData.get('hosted_url'))
+		nsoHandler = nsohandler.nsoHandler(client, mysqlHandler, nsoTokens, splat2info, configData)
 		s3Handler = s3handler.S3Handler(client, mysqlHandler, nsoTokens, splat3info, configData)
 		acHandler = achandler.acHandler(client, mysqlHandler, nsoTokens, configData)
 		await mysqlHandler.startUp()
@@ -939,8 +939,8 @@ async def on_message(message):
 loadConfig()
 if configData.get('output_to_log'):
 	os.makedirs(f"{dirname}/logs", exist_ok=True)
-	sys.stdout = open("{dirname}/logs/discordbot.log", 'a')
-	sys.stderr = open("{dirname}/logs/discordbot.err", 'a')
+	sys.stdout = open(f"{dirname}/logs/discordbot.log", 'a+')
+	sys.stderr = open(f"{dirname}/logs/discordbot.err", 'a+')
 
 ensureEncryptionKey()
 
