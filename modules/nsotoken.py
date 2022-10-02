@@ -82,12 +82,15 @@ class Nsotoken():
 		self.config = config
 		self.session = requests.Session()
 		self.sqlBroker = mysqlhandler
-		self.scheduler = AsyncIOScheduler()
 		self.stringCrypt = stringCrypt
-		self.scheduler.add_job(self.updateAppVersion, 'cron', hour="3", minute='0', second='35', timezone='UTC')
-		self.scheduler.add_job(self.nso_client_cleanup, 'cron', hour="0", minute='0', second='0', timezone='UTC')
 		self.imink = IMink("Jet-bot/1.0.0 (discord=jetsurf#8514)")  # TODO: Figure out bot owner automatically
 		self.nso_clients = {}
+
+		# Set up scheduled tasks
+		self.scheduler = AsyncIOScheduler()
+		self.scheduler.add_job(self.updateAppVersion, 'interval', hours = 24)
+		self.scheduler.add_job(self.nso_client_cleanup, 'interval', minutes = 5)
+		self.scheduler.start()
 
 	async def migrate_tokens_if_needed(self):
 		cur = await self.sqlBroker.connect()
