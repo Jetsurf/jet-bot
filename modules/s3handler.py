@@ -519,7 +519,7 @@ class S3Handler():
 			await ctx.respond("You don't have a NSO token set up! Run /token to get started.")
 			return
 
-		histories = nso.s3.get_battle_histories()
+		histories = nso.s3.get_battle_history_list()
 		if histories is None:
 			await ctx.respond("Failed to retrieve battle history")
 			return
