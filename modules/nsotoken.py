@@ -136,6 +136,8 @@ class Nsotoken():
 
 	# Given a userid, returns an NSO client for that user.
 	async def get_nso_client(self, userid):
+		userid = int(userid)
+
 		# If we already have a client for this user, just return it
 		if self.nso_clients.get(userid):
 			return self.nso_clients[userid]
@@ -155,13 +157,19 @@ class Nsotoken():
 		self.nso_clients[userid] = nso
 		return nso
 
+	async def remove_nso_client(self, userid):
+		userid = int(userid)
+
+		# Remove it
+		del self.nso_clients[userid]
+
 	async def nso_client_cleanup(self):
 		for userid in list(self.nso_clients):
 			client = self.nso_clients[userid]
 			idle_seconds = client.get_idle_seconds()
 			if idle_seconds > (4 * 3600):
 				print(f"NSO client for {userid} not used for {int(idle_seconds)} seconds. Deleting.")
-				del self.nso_clients[userid]
+				await self.remove_nso_client(userid)
 
 	# This is a callback which is called by pynso when a client object's
 	#  keys change.
