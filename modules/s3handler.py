@@ -224,7 +224,7 @@ class S3Utils():
 		elif endtime > now:
 			description += f"Ends at <t:{int(endtime.timestamp())}> (<t:{int(endtime.timestamp())}:R>)\n"
 		else:
-			description += f"Ended at <t:{int(endtime.timestamp())}>>\n"
+			description += f"Ended at <t:{int(endtime.timestamp())}>\n"
 
 		embed = discord.Embed(colour=0x0004FF, description = description)
 		embed.title = splatfest['title']
@@ -233,7 +233,12 @@ class S3Utils():
 		for t in splatfest['teams']:
 			id = base64.b64decode(t['id']).decode("utf-8")
 			which = re.sub('^.*:', '', id)
-			embed.add_field(name = f'Team {which}', value = t['teamName'])
+			winner = t.get('result', {}).get('isWinner')
+			text = t['teamName']
+			if winner:
+				text += "\n**Winner!**"
+
+			embed.add_field(name = f'Team {which}', value = text)
 
 		return embed
 
