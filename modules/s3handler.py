@@ -233,7 +233,9 @@ class S3Utils():
 		for t in splatfest['teams']:
 			id = base64.b64decode(t['id']).decode("utf-8")
 			which = re.sub('^.*:', '', id)
-			winner = t.get('result', {}).get('isWinner')
+			winner = False
+			if t.get('result'):
+				winner = t['result'].get('isWinner', False)
 			text = t['teamName']
 			if winner:
 				text += "\n**Winner!**"
