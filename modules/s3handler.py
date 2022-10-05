@@ -408,7 +408,7 @@ class S3Utils():
 		retDraw.rectangle((0, 0, MAXW - 1, MAXH - 1), outline="black", width=3)
 		imgName = f"{statsjson['data']['currentPlayer']['name']}-{statsjson['data']['currentPlayer']['nameId']}.png"
 		retImage.save(f"{configData['web_dir']}/s3/fits/{imgName}", "PNG")
-		return f"{configData['hosted_url']}/s3/fits/{imgName}"
+		return configData['hosted_url'] + requests.utils.quote(f"/s3/fits/{imgName}")
 
 	@classmethod
 	def createStoreEmbed(self, gear, brand, title, instructions=None):
