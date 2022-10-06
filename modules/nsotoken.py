@@ -77,17 +77,21 @@ class tokenHandler(Modal):
 			self.stop()
 
 class Nsotoken():
-	def __init__(self, client, config, mysqlhandler, stringCrypt):
+	def __init__(self, client, config, mysqlhandler, stringCrypt, friendCodes):
 		self.client = client
 		self.config = config
 		self.session = requests.Session()
 		self.sqlBroker = mysqlhandler
-		self.scheduler = AsyncIOScheduler()
 		self.stringCrypt = stringCrypt
-		self.scheduler.add_job(self.updateAppVersion, 'cron', hour="3", minute='0', second='35', timezone='UTC')
-		self.scheduler.add_job(self.nso_client_cleanup, 'cron', hour="0", minute='0', second='0', timezone='UTC')
+		self.friendCodes = friendCodes
 		self.imink = IMink("Jet-bot/1.0.0 (discord=jetsurf#8514)")  # TODO: Figure out bot owner automatically
 		self.nso_clients = {}
+
+		# Set up scheduled tasks
+		self.scheduler = AsyncIOScheduler()
+		self.scheduler.add_job(self.updateAppVersion, 'interval', hours = 24)
+		self.scheduler.add_job(self.nso_client_cleanup, 'interval', minutes = 5)
+		self.scheduler.start()
 
 	async def migrate_tokens_if_needed(self):
 		cur = await self.sqlBroker.connect()
@@ -133,6 +137,8 @@ class Nsotoken():
 
 	# Given a userid, returns an NSO client for that user.
 	async def get_nso_client(self, userid):
+		userid = int(userid)
+
 		# If we already have a client for this user, just return it
 		if self.nso_clients.get(userid):
 			return self.nso_clients[userid]
@@ -152,13 +158,26 @@ class Nsotoken():
 		self.nso_clients[userid] = nso
 		return nso
 
+	async def remove_nso_client(self, userid):
+		userid = int(userid)
+
+		# Record friend code from client object before deletion
+		client = self.nso_clients[userid]
+		if not client is None:
+			fc = client.get_cached_friend_code()
+			if not fc is None:
+				await self.friendCodes.setFriendCode(userid, fc)
+
+		# Remove it
+		del self.nso_clients[userid]
+
 	async def nso_client_cleanup(self):
 		for userid in list(self.nso_clients):
 			client = self.nso_clients[userid]
 			idle_seconds = client.get_idle_seconds()
 			if idle_seconds > (4 * 3600):
 				print(f"NSO client for {userid} not used for {int(idle_seconds)} seconds. Deleting.")
-				del self.nso_clients[userid]
+				await self.remove_nso_client(userid)
 
 	# This is a callback which is called by pynso when a client object's
 	#  keys change.
