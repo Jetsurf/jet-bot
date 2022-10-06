@@ -224,7 +224,7 @@ class S3Utils():
 		elif endtime > now:
 			description += f"Ends at <t:{int(endtime.timestamp())}> (<t:{int(endtime.timestamp())}:R>)\n"
 		else:
-			description += f"Ended at <t:{int(endtime.timestamp())}>>\n"
+			description += f"Ended at <t:{int(endtime.timestamp())}>\n"
 
 		embed = discord.Embed(colour=0x0004FF, description = description)
 		embed.title = splatfest['title']
@@ -233,7 +233,14 @@ class S3Utils():
 		for t in splatfest['teams']:
 			id = base64.b64decode(t['id']).decode("utf-8")
 			which = re.sub('^.*:', '', id)
-			embed.add_field(name = f'Team {which}', value = t['teamName'])
+			winner = False
+			if t.get('result'):
+				winner = t['result'].get('isWinner', False)
+			text = t['teamName']
+			if winner:
+				text += "\n**Winner!**"
+
+			embed.add_field(name = f'Team {which}', value = text)
 
 		return embed
 
@@ -348,62 +355,84 @@ class S3Utils():
 	def addCircleToImage(self, image, HW, BUF):
 		circleImg = Image.new("RGBA", (HW, HW), (255, 255, 255 ,0))
 		circDraw = ImageDraw.Draw(circleImg)
-		bounds = (0, 0, HW-2, HW-2)
+		bounds = (0, 0, HW - 1, HW - 1)
 		circDraw.ellipse(bounds, fill="black")
-		circleImg.paste(image, (0 + int(BUF/2),0 + int(BUF/2)), image)
+		circleImg.paste(image, (int(BUF/2), int(BUF/2)), image)
 		return circleImg
+
+	@classmethod
+	def createGearCard(self, gear):
+		IMGW, IMGH = 220, 290
+		MAHW, SUBHW, BUF = 70, 50, 5
+		img = Image.new("RGBA", (IMGW, IMGH), (0, 0, 0, 0))
+
+		gearReq = requests.get(gear['image']['url'])
+		gearImg = Image.open(BytesIO(gearReq.content)).convert("RGBA")
+		gearImg = gearImg.resize((IMGW, IMGW), Image.ANTIALIAS)
+		img.paste(gearImg, (0, 0), gearImg)
+
+		maReq = requests.get(gear["primaryGearPower"]['image']['url'])
+		maImg = Image.open(BytesIO(maReq.content)).convert("RGBA")
+		maImg = maImg.resize((MAHW - BUF, MAHW - BUF), Image.ANTIALIAS)
+		maImg = self.addCircleToImage(maImg, MAHW, BUF)
+		img.paste(maImg, (0, IMGW), maImg)
+
+		for i, ability in enumerate(gear['additionalGearPowers']):
+			abilReq = requests.get(ability['image']['url'])
+			abilImg = Image.open(BytesIO(abilReq.content)).convert("RGBA")
+			abilImg = abilImg.resize((SUBHW - BUF, SUBHW - BUF), Image.ANTIALIAS)
+			abilImg = self.addCircleToImage(abilImg, SUBHW, BUF)
+			img.paste(abilImg, (MAHW + (i * SUBHW), IMGH - SUBHW), abilImg)
+
+		return img
+
+	@classmethod
+	def createWeaponCard(self, weapon):
+		IMGW, IMGH = 220, 290
+		SHW, BUF = 70, 10
+		img = Image.new("RGBA", (IMGW, IMGH), (0, 0, 0, 0))
+
+		weapReq = requests.get(weapon['image']['url'])
+		weapImg = Image.open(BytesIO(weapReq.content)).convert("RGBA")
+		weapImg = weapImg.resize((IMGW, IMGW), Image.ANTIALIAS)
+		img.paste(weapImg, (10, 0), weapImg)
+
+		reqSub = requests.get(weapon['subWeapon']['image']['url'])
+		reqSpec = requests.get(weapon['specialWeapon']['image']['url'])
+		subImg = Image.open(BytesIO(reqSub.content)).convert("RGBA")
+		specImg = Image.open(BytesIO(reqSpec.content)).convert("RGBA")
+		subImg = subImg.resize((SHW - BUF, SHW - BUF), Image.ANTIALIAS)
+		specImg = specImg.resize((SHW - BUF, SHW - BUF), Image.ANTIALIAS)
+		subImg = self.addCircleToImage(subImg, SHW, BUF)
+		specImg = self.addCircleToImage(specImg, SHW, BUF)
+		img.paste(subImg, (int(IMGW/2) - SHW, IMGW), subImg)
+		img.paste(specImg, (int(IMGW/2), IMGW), specImg)
+
+		return img
 
 	@classmethod
 	def createFitImage(self, statsjson, configData):
 		gear = { 'weapon' : statsjson['data']['currentPlayer']['weapon'], 'head' : statsjson['data']['currentPlayer']['headGear'],
 				'clothes' : statsjson['data']['currentPlayer']['clothingGear'], 'shoes' : statsjson['data']['currentPlayer']['shoesGear'] }
 		s2FontSmall = ImageFont.truetype(f"{configData['fonts_dir']}/s2.otf", size=24)
-		MAXW, MAXH = 860, 294
+		MAXW, MAXH = 880, 314
 		TEXTBUF = 24
 		GHW = 220
-		MAINHW = 70
-		SUBHW = 50
-		BUF = 5
 		TEXTCOLOR = (0, 150, 150, 255)
 		retImage = Image.new("RGBA", (MAXW, MAXH), (0, 0, 0, 0))
 		retDraw = ImageDraw.Draw(retImage)
-		i = 4
+		i = 0
 		for k, v in gear.items():
-			res = requests.get(v['image']['url'])
-			gimg = Image.open(BytesIO(res.content)).convert("RGBA")
-			gimg.thumbnail((GHW, GHW), Image.ANTIALIAS)
 			if k == 'weapon':
-				retDraw.text((MAXW - (i * GHW) + int(GHW / 2), 0 + 3), f"{v['name']}", TEXTCOLOR, font=s2FontSmall, anchor='mt')
-				retImage.paste(gimg, (MAXW - (i * GHW) + int((MAINHW - SUBHW) / 2), TEXTBUF), gimg)
-				reqSub = requests.get(v['subWeapon']['image']['url'])
-				reqSpec = requests.get(v['specialWeapon']['image']['url'])
-				subImg = Image.open(BytesIO(reqSub.content)).convert("RGBA")
-				subImg.thumbnail((SUBHW-BUF, SUBHW-BUF), Image.ANTIALIAS)
-				specImg = Image.open(BytesIO(reqSpec.content)).convert("RGBA")
-				specImg.thumbnail((SUBHW - BUF, SUBHW - BUF), Image.ANTIALIAS)
-				center = (int(MAXW - (i * GHW) + (GHW / 2)), GHW + TEXTBUF)
-				subImg = self.addCircleToImage(subImg, SUBHW, BUF)
-				specImg = self.addCircleToImage(specImg, SUBHW, BUF)
-				retImage.paste(subImg, (center[0]-SUBHW, center[1]), subImg)
-				retImage.paste(specImg, center, specImg)
+				retDraw.text((i * GHW + int(GHW / 2), 3), f"{v['name']}", TEXTCOLOR, font=s2FontSmall, anchor='mt')
+				weaponCard = self.createWeaponCard(v)
+				retImage.paste(weaponCard, (0, TEXTBUF), weaponCard)
 			else:
-				retDraw.text((MAXW - (i * GHW) + int(GHW / 2) - (MAINHW - SUBHW), 0 + 3), f"{v['name']}", TEXTCOLOR, font=s2FontSmall, anchor='mt')
-				retImage.paste(gimg, (MAXW - (i * GHW) - int((MAINHW - SUBHW) / 2), TEXTBUF), gimg)
-				maReq = requests.get(v["primaryGearPower"]['image']['url'])
-				maImg = Image.open(BytesIO(maReq.content)).convert("RGBA")
-				maImg.thumbnail((MAINHW-BUF, MAINHW-BUF), Image.ANTIALIAS)
-				maImg = self.addCircleToImage(maImg, MAINHW, BUF)
-				retImage.paste(maImg, (MAXW - (i * GHW) - (MAINHW - SUBHW), GHW - (MAINHW - SUBHW) + TEXTBUF), maImg)
-				j = 1
-				for ability in v['additionalGearPowers']:
-					abilReq = requests.get(ability['image']['url'])
-					abilImg = Image.open(BytesIO(abilReq.content)).convert("RGBA")
-					abilImg.thumbnail((SUBHW-BUF, SUBHW-BUF), Image.ANTIALIAS)
-					abilImg = self.addCircleToImage(abilImg, SUBHW, BUF)
-					retImage.paste(abilImg, (MAXW - (i * GHW) + (j * SUBHW),GHW + TEXTBUF), abilImg)
-					j += 1
-				retDraw.line([((MAXW - (i * GHW) - (MAINHW - SUBHW), 0)), ((MAXW - (i * GHW) - (MAINHW - SUBHW), MAXH))], fill="black", width=3)
-			i -= 1
+				retDraw.text((i * GHW + int(GHW / 2), 3), f"{v['name']}", TEXTCOLOR, font=s2FontSmall, anchor='mt')
+				gearCard = self.createGearCard(v)
+				retImage.paste(gearCard, ((i * GHW), TEXTBUF), gearCard)
+				retDraw.line([(i * GHW, 0), (i * GHW, MAXH)], fill="black", width=3)
+			i += 1
 
 		retDraw.rectangle((0, 0, MAXW - 1, MAXH - 1), outline="black", width=3)
 		imgName = f"{statsjson['data']['currentPlayer']['name']}-{statsjson['data']['currentPlayer']['nameId']}.png"
@@ -411,7 +440,7 @@ class S3Utils():
 		return configData['hosted_url'] + requests.utils.quote(f"/s3/fits/{imgName}")
 
 	@classmethod
-	def createStoreEmbed(self, gear, brand, title, instructions=None):
+	def createStoreEmbed(self, gear, brand, title, instructions, configData):
 		embed = discord.Embed(colour=0xF9FC5F)
 		embed.set_thumbnail(url=gear['gear']['image']['url'])
 		embed.title = title
@@ -519,7 +548,7 @@ class S3Handler():
 			await ctx.respond("You don't have a NSO token set up! Run /token to get started.")
 			return
 
-		histories = nso.s3.get_battle_histories()
+		histories = nso.s3.get_battle_history_list()
 		if histories is None:
 			await ctx.respond("Failed to retrieve battle history")
 			return
