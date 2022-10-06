@@ -77,12 +77,13 @@ class tokenHandler(Modal):
 			self.stop()
 
 class Nsotoken():
-	def __init__(self, client, config, mysqlhandler, stringCrypt):
+	def __init__(self, client, config, mysqlhandler, stringCrypt, friendCodes):
 		self.client = client
 		self.config = config
 		self.session = requests.Session()
 		self.sqlBroker = mysqlhandler
 		self.stringCrypt = stringCrypt
+		self.friendCodes = friendCodes
 		self.imink = IMink("Jet-bot/1.0.0 (discord=jetsurf#8514)")  # TODO: Figure out bot owner automatically
 		self.nso_clients = {}
 
@@ -159,6 +160,13 @@ class Nsotoken():
 
 	async def remove_nso_client(self, userid):
 		userid = int(userid)
+
+		# Record friend code from client object before deletion
+		client = self.nso_clients[userid]
+		if not client is None:
+			fc = client.get_cached_friend_code()
+			if not fc is None:
+				await self.friendCodes.setFriendCode(userid, fc)
 
 		# Remove it
 		del self.nso_clients[userid]
