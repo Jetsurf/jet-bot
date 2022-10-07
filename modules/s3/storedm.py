@@ -201,7 +201,7 @@ class S3StoreHandler():
 			match3 = self.splat3info.gear.matchItem(trigger)
 			if match3.isValid():
 				flag = True
-				if match2.get().name() in theTriggers['brands']:
+				if match3.get().name() in theTriggers['brands']:
 					await self.sqlBroker.close(cur)
 					await ctx.respond(f"You're already recieving DM's when {match2.get().name()} appears in the store.")
 					return
@@ -220,7 +220,7 @@ class S3StoreHandler():
 			await cur.execute("REPLACE INTO s3storedms (clientid, serverid, dmtriggers) VALUES (%s, %s, %s)", (ctx.user.id, ctx.guild.id, json.dumps(theTriggers)))
 			await self.sqlBroker.commit(cur)
 
-			await ctx.respond(f"Added you to recieve a DM when gear with/named {trigger} appears in the Splatnet 3 store!")
+			await ctx.respond(f"Added you to recieve a DM when gear with/by/named {trigger} appears in the Splatnet 3 store!")
 		else:
 			await self.sqlBroker.close(cur)
 			if len(match1.items) + len(match2.items) + len(match3.items) < 1:
@@ -239,8 +239,78 @@ class S3StoreHandler():
 
 			await ctx.respond(embed=embed)
 
-	async def removeS3StoreDm(self, ctx):
-		return
+	async def removeS3StoreDm(self, ctx, trigger):
+		cur = await self.sqlBroker.connect()
+		await cur.execute("SELECT COUNT(*) FROM s3storedms WHERE clientid = %s", (ctx.user.id,))
+		count = await cur.fetchall()
+		count = count[0][0]
+		if count == 0:
+			await ctx.respond("You aren't set to recieve any DM's!")
+			return
+
+		await cur.execute("SELECT dmtriggers FROM s3storedms WHERE clientid = %s AND serverid = %s", (ctx.user.id, ctx.guild.id,))
+		theTriggers = await cur.fetchall()
+		theTriggers = json.loads(theTriggers[0][0])
+
+		flag = False		
+		#Search abilities
+		if flag != True:
+			match1 = self.splat3info.abilities.matchItem(trigger)
+			if match1.isValid():
+				flag = True
+				if match1.get().name() in theTriggers['mabilities']:
+					theTriggers['mabilities'].remove(match1.get().name())
+				else:
+					await self.sqlBroker.close(cur)
+					await ctx.respond(f"You aren't set to recieve DM's when gear with {match1.get().name()} appears in the store.")
+					return
+
+		#Search brands
+		if flag != True:
+			match2 = self.splat3info.brands.matchItem(trigger)
+			if match2.isValid():
+				flag = True
+				if match2.get().name() in theTriggers['brands']:
+					theTriggers['brands'].remove(match2.get().name())
+				else:
+					await self.sqlBroker.close(cur)
+					await ctx.respond(f"You aren't set to recieve DM's when gear by {match2.get().name()} appears in the store.")
+					return
+
+		#Search Items
+		if flag != True:
+			match3 = self.splat3info.gear.matchItem(trigger)
+			if match3.isValid():
+				flag = True
+				if match3.get().name() in theTriggers['gearnames']:
+					theTriggers['gearnames'].remove(match3.get().name())
+				else:
+					await self.sqlBroker.close(cur)
+					await ctx.respond(f"You aren't set to recieve DM's when {match3.get().name()} appears in the store.")
+					return
+
+		if flag == True:
+			await cur.execute("REPLACE INTO s3storedms (clientid, serverid, dmtriggers) VALUES (%s, %s, %s)", (ctx.user.id, ctx.guild.id, json.dumps(theTriggers)))
+			await self.sqlBroker.commit(cur)
+
+			await ctx.respond(f"Removed you from recieving a DM when gear with/by/named {trigger} appears in the Splatnet 3 store!")
+		else:
+			await self.sqlBroker.close(cur)
+			if len(match1.items) + len(match2.items) + len(match3.items) < 1:
+				await ctx.respond("Didn't find any partial matches for you.")
+				return
+
+			embed = discord.Embed(colour=0xF9FC5F)
+			embed.title = "Did you mean?"
+
+			if len(match1.items) > 0:
+				embed.add_field(name="Abilities", value=", ".join(map(lambda item: item.name(), match1.items)), inline=False)
+			if len(match2.items) > 0:
+				embed.add_field(name="Brands", value=", ".join(map(lambda item: item.name(), match2.items)), inline=False)
+			if len(match3.items) > 0:
+				embed.add_field(name="Gear", value=", ".join(map(lambda item: item.name(), match3.items)), inline=False)
+
+			await ctx.respond(embed=embed)
 
 	async def listS3StoreDm(self, ctx):
 		cur = await self.sqlBroker.connect()

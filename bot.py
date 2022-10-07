@@ -489,6 +489,10 @@ async def cmdS3ListS3StoreDm(ctx):
 async def cmdS3AddStoreDm(ctx, trigger: Option(str, "Trigger for a DM (Gear Name/Brand/Main Ability)", required = True)):
 	await s3Handler.storedm.addS3StoreDm(ctx, trigger)
 
+@s3StoreDmCmds.command(name = "remove", description = 'Remove trigger for when gear appears in the Splatnet 3 Store')
+async def cmdS3AddStoreDm(ctx, trigger: Option(str, "Trigger for a DM (Gear Name/Brand/Main Ability)", required = True)):
+	await s3Handler.storedm.removeS3StoreDm(ctx, trigger)
+
 @s3Cmds.command(name = 'scrim', description = 'Generate a list of Splatoon 3 maps and modes')
 async def cmdS3Scrim(ctx, num: Option(int, "Number of battles (1..20)", required = True), modes: Option(str, "Comma-separated list of modes (default: RM,TC,SZ,CB)", required = True, default = "RM,TC,SZ,CB")):
 	await s3Handler.cmdScrim(ctx, num, modes)
