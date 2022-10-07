@@ -45,6 +45,7 @@ class S3StoreHandler():
 		self.nsotoken = nsoToken
 		self.splat3info = splat3info
 		self.scheduler = AsyncIOScheduler()
+		self.configData = configData
 		if 'storedm_debug' in configData and configData['storedm_debug']:
 			self.scheduler.add_job(self.doStoreRegularDM, 'cron', second = "0", timezone = 'UTC') 
 			self.scheduler.add_job(self.doStoreDailyDropDM, 'cron', second = '0', timezone = 'UTC')
@@ -109,7 +110,7 @@ class S3StoreHandler():
 
 		view = s3OrderView(gear, self, self.nsotoken, user, self.splat3info)
 		await view.initView()
-		embed = s3handler.S3Utils.createStoreEmbed(gear, brand, "Gear you wanted to be notified about has appeared in the Splatnet 3 shop!")
+		embed = s3handler.S3Utils.createStoreEmbed(gear, brand, "Gear you wanted to be notified about has appeared in the Splatnet 3 shop!", self.configData)
 		await user.send(embed = embed, view = view)
 
 	async def doStoreRegularDM(self):
@@ -157,7 +158,6 @@ class S3StoreHandler():
 		print("Got store cache for this rotation")
 		self.storecache = storejson['data']['gesotown']
 		self.cacheState = True
-		await self.doStoreRegularDM()
 
 	async def addS3StoreDm(self, ctx, trigger):
 		cur = await self.sqlBroker.connect()

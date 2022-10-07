@@ -1,6 +1,6 @@
 import discord, asyncio
 import mysqlhandler, nsotoken
-import json, sys, re, time, requests, random
+import json, sys, re, time, requests, random, hashlib, os
 import s3.storedm
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -8,6 +8,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 #Image Editing
 from PIL import Image, ImageFont, ImageDraw 
 from io import BytesIO
+from os.path import exists
 import base64
 import datetime
 import dateutil.parser
@@ -440,9 +441,14 @@ class S3Utils():
 		return configData['hosted_url'] + requests.utils.quote(f"/s3/fits/{imgName}")
 
 	@classmethod
-	def createStoreEmbed(self, gear, brand, title, instructions, configData):
+	def createStoreEmbed(self, gear, brand, title, configData, instructions = None):
 		embed = discord.Embed(colour=0xF9FC5F)
-		embed.set_thumbnail(url=gear['gear']['image']['url'])
+		imgHash = hashlib.sha224(f"{gear['id']}{gear['gear']['primaryGearPower']['name']}".encode()).hexdigest()
+		if not os.path.exists(f"{configData['web_dir']}/s3/gearcards/{imgHash}.png"):
+			self.createGearCard(gear['gear']).save(f"{configData['web_dir']}/s3/gearcards/{imgHash}.png")
+
+		embed.set_thumbnail(url=f"{configData['hosted_url']}/s3/gearcards/{imgHash}.png")
+
 		embed.title = title
 		embed.add_field(name = "Brand", value = gear['gear']['brand']['name'], inline = True)
 		embed.add_field(name = "Gear Name", value = gear['gear']['name'], inline = True)
