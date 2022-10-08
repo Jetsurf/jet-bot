@@ -50,7 +50,7 @@ class S3StoreHandler():
 			self.scheduler.add_job(self.doStoreRegularDM, 'cron', second = "0", timezone = 'UTC') 
 			self.scheduler.add_job(self.doStoreDailyDropDM, 'cron', second = '0', timezone = 'UTC')
 		else:
-			#self.scheduler.add_job(self.doStoreRegularDM, 'cron', hour="*/4", minute='1', timezone = 'UTC') 
+			self.scheduler.add_job(self.doStoreRegularDM, 'cron', hour="*/4", minute='1', timezone = 'UTC') 
 			self.scheduler.add_job(self.doStoreDailyDropDM, 'cron', hour="0", minute='1', timezone='UTC')
 
 		self.scheduler.add_job(self.cacheS3JSON, 'cron', hour="*/4", minute='0', second='15', timezone='UTC')

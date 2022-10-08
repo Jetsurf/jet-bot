@@ -238,7 +238,7 @@ class Nsotoken():
 				return
 
 		scraper = AppStoreScraper()
-		nsogp = scraper.get_app_details(1234806557) #iOS App ID
+		nsogp = scraper.get_app_details(1234806557, country='us') #iOS App ID
 
 		newVersion = nsogp['version']
 		if newVersion == None:

@@ -800,9 +800,10 @@ async def on_ready():
 		groups.Groups.setFriendObjects(client, mysqlHandler, friendCodes)
 		await groups.Groups.startup()
 
+		await nsoTokens.updateAppVersion()
+
 		await nsoHandler.updateS2JSON()
 		await s3Handler.storedm.cacheS3JSON()
-		await nsoTokens.updateAppVersion()
 		print('Done\n------')
 		await client.change_presence(status=discord.Status.online, activity=discord.Game("Check /help for cmd info."))
 	else:
