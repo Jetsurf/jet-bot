@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-from pynso.nso_api import NSO_API
-from pynso.imink import IMink
+from nso_api.nso_api import NSO_API
+from nso_api.imink import IMink
 
 import os, sys, re
 
@@ -86,7 +86,7 @@ fcCmds = SlashCommandGroup('fc', 'Commands for friend codes')
 play = voice.create_subgroup(name='play', description='Commands related to playing audio')
 
 def loadConfig():
-	global configData, helpfldr, mysqlHandler, dev, head, pynso
+	global configData, helpfldr, mysqlHandler, dev, head
 	try:
 		with open(f"{dirname}/config/discordbot.json", 'r') as json_config:
 			configData = json.load(json_config)
@@ -742,7 +742,7 @@ async def checkIfAdmin(ctx):
 
 @client.event
 async def on_ready():
-	global client, mysqlHandler, serverUtils, serverVoices, splat2info, configData, ownerCmds, pynso
+	global client, mysqlHandler, serverUtils, serverVoices, splat2info, configData, ownerCmds
 	global nsoHandler, nsoTokens, head, dev, owners, commandParser, doneStartup, acHandler, stringCrypt
 	global friendCodes, s3Handler
 

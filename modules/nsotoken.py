@@ -1,11 +1,11 @@
 from __future__ import print_function
 import asyncio
 
-#PyNSO Specific
-import pynso
-from pynso.nso_api import NSO_API
-from pynso.imink import IMink
-from pynso.nso_api_s2 import NSO_API_S2
+# nso-api specific
+import nso_api
+from nso_api.nso_api import NSO_API
+from nso_api.imink import IMink
+from nso_api.nso_api_s2 import NSO_API_S2
 
 import mysqlhandler, discord
 import requests, json, re, sys, uuid, time
@@ -179,7 +179,7 @@ class Nsotoken():
 				print(f"NSO client for {userid} not used for {int(idle_seconds)} seconds. Deleting.")
 				await self.remove_nso_client(userid)
 
-	# This is a callback which is called by pynso when a client object's
+	# This is a callback which is called by nso-api when a client object's
 	#  keys change.
 	# This callback is not async, so we use asyncio.create_task to call
 	#  an async method later that does the actual work.
