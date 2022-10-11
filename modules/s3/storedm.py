@@ -11,7 +11,7 @@ class s3OrderView(discord.ui.View):
 		self.s3Handler = s3handler
 		self.user = user
 		self.confirm = False
-		self.timeout = 6900.0
+		self.timeout = 14300.0
 		self.gear = gear
 		self.splat3info = splat3info
 
@@ -317,6 +317,14 @@ class S3StoreHandler():
 		await cur.execute("SELECT dmtriggers FROM s3storedms WHERE clientid = %s", (ctx.user.id,))
 		triggers = await cur.fetchall()
 		await self.sqlBroker.close(cur)
-		for guildTriggers in triggers:
-			guildTriggers = json.loads(guildTriggers[0])
-			await ctx.respond(f"```{guildTriggers}```")
+
+		embed = discord.Embed(colour=0x0004FF)
+		embed.title = f"Splatoon 3 store dm triggers for {ctx.user.name}"
+
+		triggers = json.loads(triggers[0][0])
+
+		embed.add_field(name="Ability Triggers", value="\n".join(triggers['mabilities']) if triggers['mabilities'] else "None", inline=False)
+		embed.add_field(name="Brand Triggers", value="\n".join(triggers['brands']) if triggers['brands'] else "None", inline=False)
+		embed.add_field(name="Gear Triggers", value="\n".join(triggers['gearnames']) if triggers['gearnames'] else "None", inline=False)
+
+		await ctx.respond(embed=embed)
