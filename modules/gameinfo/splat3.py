@@ -1,3 +1,5 @@
+import json
+
 weaponData = [
 	[  50, '.52 Gal'             , 'Splash Wall'  , 'Killer Wail 5.1' , 'Shooter_Gravity_00'     , 'Shooter'  , 11,  9500, 200],
 	[  80, '.96 Gal'             , 'Sprinkler'    , 'Ink Vac'         , 'Shooter_Heavy_00'       , 'Shooter'  , 17, 12600, 200],
@@ -54,41 +56,6 @@ weaponData = [
 	[3010, 'Tri-Slosher'         , 'Toxic Mist'   , 'Inkjet'          , 'Slosher_Diffusion_00'   , 'Slosher'  , 10, 10200, 190],
 	[7010, 'Tri-Stringer'        , 'Toxic Mist'   , 'Killer Wail 5.1' , 'Stringer_Normal_00'     , 'Stringer' ,  4,  1000, 200],
 	[6020, 'Undercover Brella'   , 'Ink Mine'     , 'Reefslider'      , 'Shelter_Compact_00'     , 'Brella'   , 18,  9100, 180],
-]
-
-subweaponData = [
-	[12, 'Angle Shooter', 'LineMarker'   , ['as', 'marker']],
-	[ 7, 'Autobomb'     , 'Bomb_Robot'   , ['ab', 'aub', 'chicken', 'chickens', 'robot']],
-	[ 2, 'Burst Bomb'   , 'Bomb_Quick'   , ['bb', 'bub']],
-	[ 6, 'Curling Bomb' , 'Bomb_Curling' , ['cb', 'cub']],
-	[ 5, 'Fizzy Bomb'   , 'Bomb_Fizzy'   , ['fb', 'fib', 'soda']],
-	[10, 'Ink Mine'     , 'Trap'         , ['im', 'mines', 'trap']],
-	[ 9, 'Point Sensor' , 'PointSensor'  , ['ps']],
-	[ 4, 'Splash Wall'  , 'Shield'       , ['sw']],
-	[ 0, 'Splat Bomb'   , 'Bomb_Splash'  , ['spb', 'triangle']],
-	[ 3, 'Sprinkler'    , 'Sprinkler'    , ['sp']],
-	[ 8, 'Squid Beakon' , 'Beacon'       , ['sb', 'beacon']],
-	[ 1, 'Suction Bomb' , 'Bomb_Suction' , ['sub', 'suck', 'succ']],
-	[13, 'Torpedo'      , 'Bomb_Torpedo' , ['t']],
-	[11, 'Toxic Mist'   , 'PoisonMist'   , ['tm', 'fart', 'poison', 'disruptor']],
-]
-
-specialsData = [
-	['Big Bubbler'     , 'SpGreatBarrier'  , ['bub', 'boob', 'boobler', 'barrier']],
-	['Booyah Bomb'     , 'SpNiceBall'      , ['byb']],
-	['Crab Tank'       , 'SpChariot'       , ['ct', 'chariot']],
-	['Ink Storm'       , 'SpInkStorm'      , ['is', 'rain']],
-	['Ink Vac'         , 'SpBlower'        , ['iv', 'vacuum', 'blower']],
-	['Inkjet'          , 'SpJetpack'       , ['ij', 'jetpack']],
-	['Killer Wail 5.1' , 'SpMicroLaser'    , ['kw', 'kw51', 'kw5.1', 'microlaser']],
-	['Reefslider'      , 'SpSkewer'        , ['rs', 'shark', 'skewer']],
-	['Tacticooler'     , 'SpEnergyStand'   , ['tc', 'soda', 'drinks', 'energy']],
-	['Tenta Missiles'  , 'SpMultiMissile'  , ['tm']],
-	['Triple Inkstrike', 'SpTripleTornado' , ['ti', 'tis', '3i', '3is', 'tornado']],
-	['Trizooka'        , 'SpUltraShot'     , ['tz', '3z', 'ultrashot']],
-	['Ultra Stamp'     , 'SpUltraStamp'    , ['us', 'hammer', 'ultrastamp']],
-	['Wave Breaker'    , 'SpShockSonar'    , ['wb', 'shock', 'sonar']],
-	['Zipcaster'       , 'SpSuperHook'     , ['zc', 'spiderman', 'superhook', 'hook']],
 ]
 
 abilitiesData = [
@@ -544,16 +511,23 @@ class Splat3Gear(gameinfo.matchset.MatchItem):
 		return self._ability
 
 class Splat3():
-	def __init__(self):
+	def __init__(self, datadir):
+		data = self.loadJSON(datadir)
+
 		self.initMaps()
 		self.initModes()
-		self.initSubweapons()
-		self.initSpecials()
+		self.initSubweapons(data)
+		self.initSpecials(data)
 		self.initWeaponTypes()
 		self.initWeapons()
 		self.initAbilities()
 		self.initBrands()
 		self.initGear()
+
+	def loadJSON(self, datadir):
+		path = f"{datadir}/splat3.json"
+		with open(path, 'r') as f:
+	                return json.load(f)
 
 	def initMaps(self):
 		self.maps = gameinfo.matchset.MatchSet('map', [])
@@ -569,19 +543,15 @@ class Splat3():
 			abbrevs = m[1]
 			self.modes.append(Splat3Mode(name, abbrevs))
 
-	def initSubweapons(self):
+	def initSubweapons(self, data):
 		self.subweapons = gameinfo.matchset.MatchSet('subweapon', [])
-		for sw in subweaponData:
-			name    = sw[1]
-			abbrevs = sw[3]
-			self.subweapons.append(Splat3Subweapon(name, abbrevs))
+		for sw in data['subweapons']:
+			self.subweapons.append(Splat3Subweapon(sw['names'], sw['abbrevs']))
 
-	def initSpecials(self):
+	def initSpecials(self, data):
 		self.specials = gameinfo.matchset.MatchSet('special', [])
-		for s in specialsData:
-			name    = s[0]
-			abbrevs = s[2]
-			self.specials.append(Splat3Special(name, abbrevs))
+		for s in data['specials']:
+			self.specials.append(Splat3Special(s['names'], s['abbrevs']))
 
 	def initWeaponTypes(self):
 		self.weaponTypes = gameinfo.matchset.MatchSet('weapon type', [
@@ -684,11 +654,11 @@ class Splat3():
 			ability	= g[7]
 			self.gear.append(Splat3Gear(id, name, intName, price, self.brands.getItemByName(brand), rarity, season, self.abilities.getItemByName(ability)))
 
-	def getSpecialNames(self):
-		return [ s.name() for s in self.specials.getAllItems() ]
+	def getSpecialNames(self, language = "en-US"):
+		return [ s.name(language) for s in self.specials.getAllItems() ]
 
-	def getSubweaponNames(self):
-		return [ s.name() for s in self.subweapons.getAllItems() ]
+	def getSubweaponNames(self, language = "en-US"):
+		return [ s.name(language) for s in self.subweapons.getAllItems() ]
 
 	def getWeaponsBySpecial(self, special):
 		return list(filter(lambda w: w.special() == special, self.weapons.getAllItems()))

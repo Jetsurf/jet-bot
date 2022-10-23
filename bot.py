@@ -34,7 +34,7 @@ import gameinfo.splat3
 configData = None
 stringCrypt = stringcrypt.StringCrypt()
 splat2info = gameinfo.splat2.Splat2()
-splat3info = gameinfo.splat3.Splat3()
+splat3info = gameinfo.splat3.Splat3(f"{dirname}/data/")
 intents = discord.Intents.default()
 intents.members = True
 client = discord.AutoShardedBot(intents=intents, chunk_guilds_at_startup=False)

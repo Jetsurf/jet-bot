@@ -5,8 +5,11 @@ class MatchItem():
 		self._name      = name
 		self._abbrevs   = abbrevs or []
 
-	def name(self):
-		return self._name
+	def name(self, language = "en-US"):
+		if isinstance(self._name, dict):
+			return self._name.get(language, self._name.get("en-US"))
+		else:
+			return self._name
 
 	def abbrev(self):
 		return self._abbrevs[0] if len(self._abbrevs) else None
@@ -14,12 +17,12 @@ class MatchItem():
 	def abbrevs(self):
 		return self._abbrevs
 
-	def format(self):
+	def format(self, language = "en-US"):
 		abbrev = self.abbrev()
 		if abbrev:
-			return "__" + self._name + "__ (**" + abbrev + "**)"
+			return "__" + self.name(language) + "__ (**" + abbrev + "**)"
 		else:
-			return "__" + self._name + "__"
+			return "__" + self.name(language) + "__"
 
 	def hasAbbrev(self, a):
 		return a.lower() in self._abbrevs
@@ -79,7 +82,7 @@ class MatchSet():
 	def append(self, item):
 		self.items.append(item)
 
-	def matchItem(self, query):
+	def matchItem(self, query, language = "en-US"):
 		if len(query) == 0:
 			return MatchResult(self.name, query, [])
 
@@ -88,19 +91,19 @@ class MatchSet():
 
 		# Stage 1: Look for exact match on a name or abbreviation
 		for item in self.items:
-			if item.hasAbbrev(query) or (item.name().lower() == query):
+			if item.hasAbbrev(query) or (item.name(language).lower() == query):
 				return MatchResult(self.name, query, [item])
 
 		# Stage 2: Substring match of name
 		for item in self.items:
-			if item.name().lower().find(query) != -1:
+			if item.name(language).lower().find(query) != -1:
 				items.append(item)
 
 		return MatchResult(self.name, query, items)
 
-	def getItemByName(self, name):
+	def getItemByName(self, name, language = "en-US"):
 		for i in self.items:
-			if i.name() == name:
+			if i.name(language) == name:
 				return i
 		return None
 
