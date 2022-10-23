@@ -20,6 +20,8 @@ For self-hosting:
 
 [iMink](https://github.com/JoneWang/imink) - [@jonewang](https://twitter.com/JoneWang) - Built-in F-Token provider
 
+[Splatoon 3 database](https://leanny.github.io/splat3/database.html) -  [@leanyoshi](https://twitter.com/LeanYoshi) - Data mine
+
 ## NOTE
 
 Running /token and giving it the link it requests pulls your account sesion token from Nintendo to grant it access to game specific data. It is identical to logging into the NSO App on your phone.
