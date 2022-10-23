@@ -58,6 +58,24 @@ class S3StoreHandler():
 		self.cacheState = False
 		self.scheduler.start()
 
+	async def cacheS3JSON(self):
+		print("Updating cached S3 json...")
+		nso = await self.nsotoken.get_bot_nso_client()
+
+		storejson = nso.s3.get_store_items()
+		if storejson is None:
+			print("Failure on store cache refresh. Trying again...")
+			time.sleep(3) #Give it a bit to try again...
+			storejson = nso.s3.get_store_items() #Done 2nd time for 9403 errors w/ token generation
+			if storejson is None:
+				print("Failed to update store cache for rotation")
+				self.cacheState = False
+				return
+		
+		print("Got store cache for this rotation")
+		self.storecache = storejson['data']['gesotown']
+		self.cacheState = True
+
 	##Trigger Keys: gearname brand mability
 	#{ 'gearnames' : ['Gear One', "Two" ], 'brands': ['Toni-Kensa', 'Forge'], 'mabilities' : ['Ink Saver (Main)'] }
 
@@ -110,6 +128,7 @@ class S3StoreHandler():
 
 		view = s3OrderView(gear, self, self.nsotoken, user, self.splat3info)
 		await view.initView()
+		#def createStoreEmbed(self, gear, brand, title, configData, instructions = None):
 		embed = s3handler.S3Utils.createStoreEmbed(gear, brand, "Gear you wanted to be notified about has appeared in the Splatnet 3 shop!", self.configData)
 		await user.send(embed = embed, view = view)
 
@@ -140,24 +159,6 @@ class S3StoreHandler():
 			elif self.checkToDM(theGear, triggers):
 				print(f"Messaging {theMem.name}")
 				asyncio.ensure_future(self.handleDM(theMem, theGear))
-
-	async def cacheS3JSON(self):
-		print("Updating cached S3 json...")
-		nso = await self.nsotoken.get_bot_nso_client()
-
-		storejson = nso.s3.get_store_items()
-		if storejson is None:
-			print("Failure on store cache refresh. Trying again...")
-			time.sleep(3) #Give it a bit to try again...
-			storejson = nso.s3.get_store_items() #Done 2nd time for 9403 errors w/ token generation
-			if storejson is None:
-				print("Failed to update store cache for rotation")
-				self.cacheState = False
-				return
-		
-		print("Got store cache for this rotation")
-		self.storecache = storejson['data']['gesotown']
-		self.cacheState = True
 
 	async def addS3StoreDm(self, ctx, trigger):
 		cur = await self.sqlBroker.connect()

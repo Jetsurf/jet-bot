@@ -68,6 +68,7 @@ s3Cmds = SlashCommandGroup('s3', 'Commands related to Splatoon 3')
 s3WeaponCmds = s3Cmds.create_subgroup('weapon', 'Commands related to weapons in Splatoon 3')
 s3StatsCmds = s3Cmds.create_subgroup('stats', 'Commands related to Splatoon 3 gameplay stats')
 s3StoreDmCmds = s3Cmds.create_subgroup('storedm', 'Splatoon 3 Store gear DMs')
+s3StoreCmds = s3Cmds.create_subgroup('store', 'Splatoon 3 store cmds')
 
 # ACNH
 acnhCmds = SlashCommandGroup('acnh', "Commands related to Animal Crossing New Horizons")
@@ -504,6 +505,10 @@ async def cmdS3Fest(ctx):
 @s3Cmds.command(name = 'schedule', description = 'Show schedule')
 async def cmdS3Schedule(ctx, which: Option(str, "Schedule type", choices = s3handler.S3Schedule.schedule_choices)):
 	await s3Handler.cmdSchedule(ctx, which)
+
+@s3StoreCmds.command(name = "list", description = "Show current items in the store")
+async def cmdS3StoreList(ctx):
+	await s3Handler.cmdStoreList(ctx)
 
 @s3Cmds.command(name = 'fit', description = 'Posts your current gear loadout')
 async def cmdS3Fit(ctx):

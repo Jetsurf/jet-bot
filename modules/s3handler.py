@@ -441,7 +441,7 @@ class S3Utils():
 		return configData['hosted_url'] + requests.utils.quote(f"/s3/fits/{imgName}")
 
 	@classmethod
-	def createStoreEmbed(self, gear, brand, title, configData, instructions = None):
+	def createStoreEmbed(self, gear, brand, title, configData):
 		embed = discord.Embed(colour=0xF9FC5F)
 		imgHash = hashlib.sha224(f"{gear['id']}{gear['gear']['primaryGearPower']['name']}".encode()).hexdigest()
 		if not os.path.exists(f"{configData['web_dir']}/s3/gearcards/{imgHash}.png"):
@@ -458,9 +458,48 @@ class S3Utils():
 		embed.add_field(name = "Common Ability", value = brand.commonAbility().name(), inline = True)
 		embed.add_field(name = "Price", value = gear['price'], inline = True)
 
-		if instructions != None:
-			embed.add_field(name = "Instuctions", value = instructions, inline = False)
+		return embed
 
+	@classmethod
+	def createStoreCanvas(self, gearJson, configData):
+		MAXW, MAXH = 660, 1062
+		CARDW, CARDH = 220, 290
+		TEXTH = 24
+		TEXTCOLOR = (0, 150, 150, 255)
+		s2FontSmall = ImageFont.truetype(f"{configData['fonts_dir']}/s2.otf", size=TEXTH)
+		img = Image.new("RGBA", (MAXW, MAXH), (0, 0, 0, 0))
+		draw = ImageDraw.Draw(img)
+
+		#Daily Drops
+		draw.text((int(MAXW/2), 0), f"The Daily Drop: {gearJson['pickupBrand']['brand']['name']}", TEXTCOLOR, font=s2FontSmall, anchor="mt")
+		#draw.line([(0, TEXTH), (MAXW, TEXTH)], fill='black', width=3) - Don't know if lines are going to be good
+		for i, gear in enumerate(gearJson['pickupBrand']['brandGears']):
+			draw.text((i * CARDW + int(CARDW/2), TEXTH), gear['gear']['name'], TEXTCOLOR, font=s2FontSmall, anchor='mt')
+			draw.text((i * CARDW + int(CARDW/2), TEXTH * 2), f"Price: {gear['price']}", TEXTCOLOR, font=s2FontSmall, anchor="mt")
+			gearImg = self.createGearCard(gear['gear'])
+			img.paste(gearImg, (i * CARDW, TEXTH*3), gearImg)
+
+		#draw.line([(0, CARDH + (TEXTH * 3)), (MAXW, CARDH + (TEXTH * 2))], fill="black", width=3)
+		draw.text((int(MAXW/2), CARDH + (TEXTH*3)), "Normal gear on sale", TEXTCOLOR, font=s2FontSmall, anchor="mt")
+		#draw.line([(0, CARDH + (TEXTH * 4)), (MAXW, CARDH + (TEXTH * 3))], fill="black", width=3)
+		for i, gears in enumerate([gearJson['limitedGears'][i * 3:(i + 1) * 3] for i in range((len(gearJson['limitedGears']) + 3 - 1) // 3 )]):
+			for j, gear in enumerate(gears):
+				draw.text((j * CARDW + int(CARDW/2), (i+1) * CARDH + ((4+i) * TEXTH + i * TEXTH)), gear['gear']['name'], TEXTCOLOR, font=s2FontSmall, anchor="mt")
+				draw.text((j * CARDW + int(CARDW/2), (i+1) * CARDH + ((5+i) * TEXTH + i * TEXTH)), f"Price: {gear['price']}", TEXTCOLOR, font=s2FontSmall, anchor="mt")
+				gearImg = self.createGearCard(gear['gear'])
+				img.paste(gearImg, (j * CARDW, (i+1) * CARDH + ((6+i) * TEXTH)), gearImg)
+
+		img.save(f"{configData['web_dir']}/s3/store.png", "PNG")
+
+		return f"{configData['hosted_url']}/s3/store.png?{str(time.time())}"
+
+	@classmethod
+	def createStoreListingEmbed(self, gearJson, configData):
+		embed = discord.Embed(colour=0xF9FC5F)
+		embed.title = "Splatoon 3 Splatnet Store Gear"
+		url = S3Utils.createStoreCanvas(gearJson, configData)
+		#print(f"URL: {url}")
+		embed.set_image(url=url)
 		return embed
 
 class S3Handler():
@@ -684,3 +723,10 @@ class S3Handler():
 			embed.add_field(name = title, value = text, inline = False)
 
 		await ctx.respond(embed = embed)
+
+	async def cmdStoreList(self, ctx):
+		if self.storedm.cacheState:
+			await ctx.respond(embed=S3Utils.createStoreListingEmbed(self.storedm.storecache, self.configData))
+		else:
+			#TODO...
+			await ctx.respond("Somethings up with NSO bruh, better look at that!")
