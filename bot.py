@@ -918,8 +918,8 @@ async def on_message(message):
 loadConfig()
 if configData.get('output_to_log'):
 	os.makedirs(f"{dirname}/logs", exist_ok=True)
-	sys.stdout = open("{dirname}/logs/discordbot.log", 'a')
-	sys.stderr = open("{dirname}/logs/discordbot.err", 'a')
+	sys.stdout = open(f"{dirname}/logs/discordbot.log", 'a')
+	sys.stderr = open(f"{dirname}/logs/discordbot.err", 'a')
 
 ensureEncryptionKey()
 
