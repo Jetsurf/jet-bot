@@ -23,6 +23,7 @@ import vserver, mysqlhandler, mysqlschema, serverutils
 import nsohandler, achandler, s3handler
 import stringcrypt
 import fonts
+import cachemanager
 import groups
 import logging
 import friendcodes
@@ -35,6 +36,7 @@ import gameinfo.splat3
 configData = None
 stringCrypt = stringcrypt.StringCrypt()
 fonts = fonts.Fonts(f"{dirname}/fonts/")
+cachemanager = cachemanager.CacheManager(f"{dirname}/var/cache")
 splat2info = gameinfo.splat2.Splat2()
 splat3info = gameinfo.splat3.Splat3(f"{dirname}/data/")
 intents = discord.Intents.default()
@@ -797,7 +799,7 @@ async def on_ready():
 		friendCodes = friendcodes.FriendCodes(mysqlHandler, stringCrypt)
 		nsoTokens = nsotoken.Nsotoken(client, configData, mysqlHandler, stringCrypt, friendCodes)
 		nsoHandler = nsohandler.nsoHandler(client, mysqlHandler, nsoTokens, splat2info, configData)
-		s3Handler = s3handler.S3Handler(client, mysqlHandler, nsoTokens, splat3info, configData, fonts)
+		s3Handler = s3handler.S3Handler(client, mysqlHandler, nsoTokens, splat3info, configData, fonts, cachemanager)
 		acHandler = achandler.acHandler(client, mysqlHandler, nsoTokens, configData)
 		await mysqlHandler.startUp()
 		mysqlSchema = mysqlschema.MysqlSchema(mysqlHandler)

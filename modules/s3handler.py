@@ -35,10 +35,11 @@ class S3Schedule():
 		'AS': 'Anarchy Series',
 	}
 
-	def __init__(self, nsotoken, sqlBroker):
+	def __init__(self, nsotoken, sqlBroker, cachemanager):
 		self.nsotoken = nsotoken
 		self.sqlBroker = sqlBroker
 		self.updatetime = None
+		self.image_cache_small = cachemanager.open("s3.maps.small", (3600 * 24 * 90))  # Cache for 90 days
 
 		self.turf_war_schedule       = []
 		self.splatfest_schedule      = []
@@ -164,7 +165,27 @@ class S3Schedule():
 		self.anarchy_open_schedule   = self.parse_schedule(data['data'].get('bankaraSchedules'), 'bankaraMatchSettings', self.parse_schedule_anarchy_open)
 		self.anarchy_series_schedule = self.parse_schedule(data['data'].get('bankaraSchedules'), 'bankaraMatchSettings', self.parse_schedule_anarchy_series)
 
+		self.cache_map_images()
+
 		self.updatetime = time.time()
+
+	def cache_map_images(self):
+		for rec in [*self.turf_war_schedule, *self.splatfest_schedule, *self.anarchy_open_schedule, *self.anarchy_series_schedule]:
+			for map in rec['maps']:
+				if (not map['stageid']) or (not map['image']):
+					continue  # Missing required fields
+
+				key = f"stage-{map['stageid']}.png"
+				if self.image_cache_small.has(key):
+					continue  # Already cached
+
+				print(f"Caching map image stageid {map['stageid']} name '{map['name']}' image-url {map['image']}")
+				response = requests.get(map['image'], stream=True)
+				if not response.ok:
+					print(f"  Error reading map image: {response.status_code} {response.reason}")
+					continue
+
+				self.image_cache_small.add_http_response(key, response)
 
 class S3Utils():
 	@classmethod
@@ -506,7 +527,7 @@ class S3Utils():
 		return embed
 
 class S3Handler():
-	def __init__(self, client, mysqlHandler, nsotoken, splat3info, configData, fonts):
+	def __init__(self, client, mysqlHandler, nsotoken, splat3info, configData, fonts, cachemanager):
 		self.client = client
 		self.sqlBroker = mysqlHandler
 		self.nsotoken = nsotoken
@@ -514,9 +535,10 @@ class S3Handler():
 		self.configData = configData
 		self.hostedUrl = configData.get('hosted_url')
 		self.webDir = configData.get('web_dir')
-		self.schedule = S3Schedule(nsotoken, mysqlHandler)
+		self.schedule = S3Schedule(nsotoken, mysqlHandler, cachemanager)
 		self.storedm = s3.storedm.S3StoreHandler(client, nsotoken, splat3info, mysqlHandler, configData)
 		self.fonts = fonts
+		self.cachemanager = cachemanager
 
 	async def cmdWeaponInfo(self, ctx, name):
 		match = self.splat3info.weapons.matchItem(name)
