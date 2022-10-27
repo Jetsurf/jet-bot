@@ -1,6 +1,6 @@
 import discord, asyncio
 import mysqlhandler, nsotoken
-import json, sys, re, time, requests, random, hashlib, os
+import json, sys, re, time, requests, random, hashlib, os, io
 import s3.storedm
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -318,13 +318,13 @@ class S3Utils():
 
 	#Ensure you have 'hosted_url' AND 'web_dir' both set before calling this!
 	@classmethod
-	def createNamePlateImage(cls, playerJson, configData):
+	def createNamePlateImage(cls, playerJson, fonts, configData):
 		imgResponse = requests.get(playerJson['data']['currentPlayer']['nameplate']['background']['image']['url'])
 		npImage = Image.open(BytesIO(imgResponse.content)).convert("RGBA")
 		
-		s2FontSmall = ImageFont.truetype(f"{configData['fonts_dir']}/s2.otf", size=24)
-		s2FontMed = ImageFont.truetype(f"{configData['fonts_dir']}/s2.otf", size=36)
-		s1FontLarge = ImageFont.truetype(f"{configData['fonts_dir']}/s1.otf", size=64)
+		s2FontSmall = fonts.truetype("s2.otf", size=24)
+		s2FontMed = fonts.truetype("s2.otf", size=36)
+		s1FontLarge = fonts.truetype("s1.otf", size=64)
 
 		MAXW, MAXH = 700, 200
 		size = (72, 72)
@@ -412,10 +412,10 @@ class S3Utils():
 		return img
 
 	@classmethod
-	def createFitImage(self, statsjson, configData):
+	def createFitImage(self, statsjson, fonts, configData):
 		gear = { 'weapon' : statsjson['data']['currentPlayer']['weapon'], 'head' : statsjson['data']['currentPlayer']['headGear'],
 				'clothes' : statsjson['data']['currentPlayer']['clothingGear'], 'shoes' : statsjson['data']['currentPlayer']['shoesGear'] }
-		s2FontSmall = ImageFont.truetype(f"{configData['fonts_dir']}/s2.otf", size=24)
+		s2FontSmall = fonts.truetype("s2.otf", size=24)
 		MAXW, MAXH = 880, 314
 		TEXTBUF = 24
 		GHW = 220
@@ -437,8 +437,11 @@ class S3Utils():
 
 		retDraw.rectangle((0, 0, MAXW - 1, MAXH - 1), outline="black", width=3)
 		imgName = f"{statsjson['data']['currentPlayer']['name']}-{statsjson['data']['currentPlayer']['nameId']}.png"
-		retImage.save(f"{configData['web_dir']}/s3/fits/{imgName}", "PNG")
-		return configData['hosted_url'] + requests.utils.quote(f"/s3/fits/{imgName}")
+
+		img = io.BytesIO()
+		retImage.save(img, 'PNG')
+		img.seek(0)
+		return img
 
 	@classmethod
 	def createStoreEmbed(self, gear, brand, title, configData):
@@ -461,12 +464,12 @@ class S3Utils():
 		return embed
 
 	@classmethod
-	def createStoreCanvas(self, gearJson, configData):
+	def createStoreCanvas(self, gearJson, fonts, configData):
 		MAXW, MAXH = 660, 1062
 		CARDW, CARDH = 220, 290
 		TEXTH = 24
 		TEXTCOLOR = (0, 150, 150, 255)
-		s2FontSmall = ImageFont.truetype(f"{configData['fonts_dir']}/s2.otf", size=TEXTH)
+		s2FontSmall = fonts.truetype("s2.otf", size=TEXTH)
 		img = Image.new("RGBA", (MAXW, MAXH), (0, 0, 0, 0))
 		draw = ImageDraw.Draw(img)
 
@@ -494,16 +497,16 @@ class S3Utils():
 		return f"{configData['hosted_url']}/s3/store.png?{str(time.time())}"
 
 	@classmethod
-	def createStoreListingEmbed(self, gearJson, configData):
+	def createStoreListingEmbed(self, gearJson, fonts, configData):
 		embed = discord.Embed(colour=0xF9FC5F)
 		embed.title = "Splatoon 3 Splatnet Store Gear"
-		url = S3Utils.createStoreCanvas(gearJson, configData)
+		url = S3Utils.createStoreCanvas(gearJson, fonts, configData)
 		#print(f"URL: {url}")
 		embed.set_image(url=url)
 		return embed
 
 class S3Handler():
-	def __init__(self, client, mysqlHandler, nsotoken, splat3info, configData):
+	def __init__(self, client, mysqlHandler, nsotoken, splat3info, configData, fonts):
 		self.client = client
 		self.sqlBroker = mysqlHandler
 		self.nsotoken = nsotoken
@@ -513,6 +516,7 @@ class S3Handler():
 		self.webDir = configData.get('web_dir')
 		self.schedule = S3Schedule(nsotoken, mysqlHandler)
 		self.storedm = s3.storedm.S3StoreHandler(client, nsotoken, splat3info, mysqlHandler, configData)
+		self.fonts = fonts
 
 	async def cmdWeaponInfo(self, ctx, name):
 		match = self.splat3info.weapons.matchItem(name)
@@ -632,7 +636,7 @@ class S3Handler():
 
 		embed = S3Utils.createMultiplayerStatsEmbed(statssimple, statsfull, species)
 		if self.webDir and self.hostedUrl:
-			imgUrl = S3Utils.createNamePlateImage(statsfull, self.configData)
+			imgUrl = S3Utils.createNamePlateImage(statsfull, self.fonts, self.configData)
 			embed.set_thumbnail(url=f"{imgUrl}?{str(time.time() % 1)}")
 
 		await ctx.respond(embed = embed)
@@ -668,8 +672,8 @@ class S3Handler():
 			print(f"cmdFit: get_player_stats_full returned none for {ctx.user.id}")
 			return
 
-		url = S3Utils.createFitImage(statsfull, self.configData)
-		await ctx.respond(f"{url}?{str(time.time() % 1)}")
+		img = S3Utils.createFitImage(statsfull, self.fonts, self.configData)
+		await ctx.respond(file = discord.File(img, filename = "fit.png", description = "Fit image"))
 
 	async def cmdFest(self, ctx):
 		await ctx.defer()
@@ -726,7 +730,7 @@ class S3Handler():
 
 	async def cmdStoreList(self, ctx):
 		if self.storedm.cacheState:
-			await ctx.respond(embed=S3Utils.createStoreListingEmbed(self.storedm.storecache, self.configData))
+			await ctx.respond(embed=S3Utils.createStoreListingEmbed(self.storedm.storecache, self.fonts, self.configData))
 		else:
 			#TODO...
 			await ctx.respond("Somethings up with NSO bruh, better look at that!")
