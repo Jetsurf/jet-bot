@@ -472,16 +472,15 @@ class S3Utils():
 
 		#Daily Drops
 		draw.text((int(MAXW/2), 0), f"The Daily Drop: {gearJson['pickupBrand']['brand']['name']}", TEXTCOLOR, font=s2FontSmall, anchor="mt")
-		#draw.line([(0, TEXTH), (MAXW, TEXTH)], fill='black', width=3) - Don't know if lines are going to be good
+		draw.line([(0, TEXTH), (MAXW, TEXTH)], fill='black', width=3) #Don't know if lines are going to be good
 		for i, gear in enumerate(gearJson['pickupBrand']['brandGears']):
 			draw.text((i * CARDW + int(CARDW/2), TEXTH), gear['gear']['name'], TEXTCOLOR, font=s2FontSmall, anchor='mt')
 			draw.text((i * CARDW + int(CARDW/2), TEXTH * 2), f"Price: {gear['price']}", TEXTCOLOR, font=s2FontSmall, anchor="mt")
 			gearImg = self.createGearCard(gear['gear'])
 			img.paste(gearImg, (i * CARDW, TEXTH*3), gearImg)
 
-		#draw.line([(0, CARDH + (TEXTH * 3)), (MAXW, CARDH + (TEXTH * 2))], fill="black", width=3)
+		#Normal gear rotation
 		draw.text((int(MAXW/2), CARDH + (TEXTH*3)), "Normal gear on sale", TEXTCOLOR, font=s2FontSmall, anchor="mt")
-		#draw.line([(0, CARDH + (TEXTH * 4)), (MAXW, CARDH + (TEXTH * 3))], fill="black", width=3)
 		for i, gears in enumerate([gearJson['limitedGears'][i * 3:(i + 1) * 3] for i in range((len(gearJson['limitedGears']) + 3 - 1) // 3 )]):
 			for j, gear in enumerate(gears):
 				draw.text((j * CARDW + int(CARDW/2), (i+1) * CARDH + ((4+i) * TEXTH + i * TEXTH)), gear['gear']['name'], TEXTCOLOR, font=s2FontSmall, anchor="mt")
