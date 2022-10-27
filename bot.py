@@ -514,6 +514,10 @@ async def cmdS3Schedule(ctx, which: Option(str, "Schedule type", choices = s3han
 async def cmdS3StoreList(ctx):
 	await s3Handler.cmdStoreList(ctx)
 
+@s3StoreCmds.command(name = "order", description = "Orders gear from Splatnet")
+async def cmdS3StoreOrder(ctx, item: Option(str, "Name of gear to order", required = True), override: Option(bool, "Overrides an existing item on order", default = False)):
+	await s3Handler.cmdS3StoreOrder(ctx, item, override)
+
 @s3Cmds.command(name = 'fit', description = 'Posts your current gear loadout')
 async def cmdS3Fit(ctx):
 	await s3Handler.cmdFit(ctx)

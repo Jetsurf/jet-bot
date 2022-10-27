@@ -521,8 +521,8 @@ class S3Utils():
 		embed = discord.Embed(colour=0xF9FC5F)
 		embed.title = "Splatoon 3 Splatnet Store Gear"
 		url = S3Utils.createStoreCanvas(gearJson, fonts, configData)
-		#print(f"URL: {url}")
 		embed.set_image(url=url)
+		embed.set_footer("To order gear, run `/s3 order")
 		return embed
 
 class S3Handler():
@@ -754,4 +754,52 @@ class S3Handler():
 			await ctx.respond(embed=S3Utils.createStoreListingEmbed(self.storedm.storecache, self.fonts, self.configData))
 		else:
 			#TODO...
-			await ctx.respond("Somethings up with NSO bruh, better look at that!")
+			await ctx.respond("I can't fetch the current store listing, please try again later")
+
+	async def cmdS3StoreOrder(self, ctx, item, override):
+		await ctx.defer()
+
+		nso = await self.nsotoken.get_nso_client(ctx.user.id)
+		if not nso.is_logged_in():
+			await ctx.respond("You don't have a NSO token setup! Run /token to get started.")
+			return
+
+		match = self.splat3info.gear.matchItem(item)
+		if match.isValid():
+			store = nso.s3.get_store_items()
+			theItem = None
+			for item in store['data']['gesotown']['limitedGears']:
+				if item['gear']['name'] == match.get().name():
+					theItem = item
+					break
+			if theItem == None:
+				for item in store['data']['gesotown']['pickupBrand']['brandGears']:
+					if item['gear']['name'] == match.get().name():
+						theItem = item
+						break
+
+			if theItem == None:
+				await ctx.respond(f"{match.get().name()} isn't in the store right now.")
+				return
+			else:
+				ret = nso.s3.do_store_order(theItem['id'], override)
+				if ret['data']['orderGesotownGear']['userErrors'] == None:
+					#createStoreEmbed(self, gear, brand, title, configData):
+					await ctx.respond(embed = S3Utils.createStoreEmbed(theItem, self.splat3info.brands.getItemByName(theItem['gear']['brand']['name']), "Ordered! Talk to Murch in game to get it!", self.configData))
+				elif ret['data']['orderGesotownGear']['userErrors'][0]['code'] == "GESOTOWN_ALREADY_ORDERED":
+					await ctx.respond("You already have an item on order! If you still want to order this, run this command again with Override set to True.")
+				else:
+					#TODO Update this
+					await interaction.response.send_message("Something went wrong.")
+
+				return
+		else:
+			if len(match.items) < 1:
+				await ctx.respond(f"Can't find any gear with the name {item}")
+				return
+			else:
+				embed = discord.Embed(colour=0xF9FC5F)
+				embed.title = "Did you mean?"
+				embed.add_field(name="Gear", value=", ".join(map(lambda item: item.name(), match3.items)), inline=False)
+				await ctx.respond(embed = embed)
+				return
