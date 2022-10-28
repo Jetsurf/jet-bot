@@ -767,11 +767,16 @@ class S3Handler():
 		match = self.splat3info.gear.matchItem(item)
 		if match.isValid():
 			store = nso.s3.get_store_items()
+			if store == None:
+				await ctx.respond("Something went wrong!")
+				return
+
 			theItem = None
 			for item in store['data']['gesotown']['limitedGears']:
 				if item['gear']['name'] == match.get().name():
 					theItem = item
 					break
+
 			if theItem == None:
 				for item in store['data']['gesotown']['pickupBrand']['brandGears']:
 					if item['gear']['name'] == match.get().name():
@@ -785,12 +790,12 @@ class S3Handler():
 				ret = nso.s3.do_store_order(theItem['id'], override)
 				if ret['data']['orderGesotownGear']['userErrors'] == None:
 					#createStoreEmbed(self, gear, brand, title, configData):
-					await ctx.respond(embed = S3Utils.createStoreEmbed(theItem, self.splat3info.brands.getItemByName(theItem['gear']['brand']['name']), "Ordered! Talk to Murch in game to get it!", self.configData))
+					brand = self.splat3info.brands.getItemByName(theItem['gear']['brand']['name'])
+					await ctx.respond(embed = S3Utils.createStoreEmbed(theItem, brand, "Ordered! Talk to Murch in game to get it!", self.configData))
 				elif ret['data']['orderGesotownGear']['userErrors'][0]['code'] == "GESOTOWN_ALREADY_ORDERED":
 					await ctx.respond("You already have an item on order! If you still want to order this, run this command again with Override set to True.")
 				else:
-					#TODO Update this
-					await interaction.response.send_message("Something went wrong.")
+					await ctx.respond("Something went wrong.")
 
 				return
 		else:
@@ -800,6 +805,53 @@ class S3Handler():
 			else:
 				embed = discord.Embed(colour=0xF9FC5F)
 				embed.title = "Did you mean?"
-				embed.add_field(name="Gear", value=", ".join(map(lambda item: item.name(), match3.items)), inline=False)
+				embed.add_field(name="Gear", value=", ".join(map(lambda item: item.name(), match.items)), inline=False)
+				await ctx.respond(embed = embed)
+				return
+
+	async def cmdWeaponStats(self, ctx, weapon):
+		await ctx.defer()
+
+		nso = await self.nsotoken.get_nso_client(ctx.user.id)
+		if not nso.is_logged_in():
+			await ctx.respond("You don't have a NSO token setup! Run /token to get started.")
+			return
+
+		match = self.splat3info.weapons.matchItem(weapon)
+		if match.isValid():
+			weapons = nso.s3.get_weapons_stats()
+			if weapons == None:
+				await ctx.respond("Something went wrong!")
+				return
+
+			theWeapon = None
+			for node in weapons['data']['weaponRecords']['nodes']:
+				if match.get().name() == node['name']:
+					theWeapon = node
+					break
+
+			if theWeapon == None:
+				await ctx.respond(f"It looks like you haven't used {match.get().name()} yet. Go try it out!")
+				return
+			else:
+				embed = discord.Embed(colour=0xF9FC5F)
+				embed.title = f"{theWeapon['name']} Stats"
+				img = S3Utils.createWeaponCard(theWeapon)
+				#embed.set_thumbnail(discord.File(img, filename = "weapon.png", description = "Weapon image"))
+				embed.add_field(name = "Turf Inked", value = f"{theWeapon['stats']['paint']}", inline = True)
+				embed.add_field(name = "Freshness", value = f"{theWeapon['stats']['vibes']}", inline = True)
+				embed.add_field(name = "Wins", value = f"{theWeapon['stats']['win']}", inline = True)
+				embed.add_field(name = "Level", value = f"{theWeapon['stats']['level']}", inline = True)
+				embed.add_field(name = "EXP till next level", value = f"{theWeapon['stats']['paint']}", inline = True)
+
+				await ctx.respond(embed = embed)
+		else:
+			if len(match.items) < 1:
+				await ctx.respond(f"Can't find any gear with the name {weapon}")
+				return
+			else:
+				embed = discord.Embed(colour=0xF9FC5F)
+				embed.title = "Did you mean?"
+				embed.add_field(name="Weapon", value=", ".join(map(lambda item: item.name(), match.items)), inline=False)
 				await ctx.respond(embed = embed)
 				return

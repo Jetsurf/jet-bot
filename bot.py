@@ -471,6 +471,10 @@ async def cmdS3WeaponSub(ctx, special: Option(str, "Name of the subweapon to get
 async def cmdS3WeaponRandom(ctx):
 	await s3Handler.cmdWeaponRandom(ctx)
 
+@s3WeaponCmds.command(name='stats', description="Gets stats for a weapon")
+async def cmdS3WeaponStats(ctx, weapon: Option(str, "Name of the weapon to get stats for", required=True)):
+	await s3Handler.cmdWeaponStats(ctx, weapon)
+
 @s3StatsCmds.command(name = 'battle', description = 'Get stats from a battle (1-50)')
 async def cmdS3StatsBattle(ctx, battlenum: Option(int, "Battle Number, 1 being latest, 50 max", required=True, default=1)):
 	if battlenum >= 50 or battlenum < 0:
