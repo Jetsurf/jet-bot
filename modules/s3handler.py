@@ -310,7 +310,7 @@ class S3Utils():
 		if (font_name == 'Splatoon1') or (font_name == 'Splatoon2'):
 			text = "\uE063 %d:%02d" % (int(duration / 60), duration % 60)  # Use clock symbol from PUA
 		else:
-			text = "\U0001F552 %d:%02d" % (int(duration / 60), duration % 60)  # Use standard clock symbol
+			text = "Duration %d:%02d" % (int(duration / 60), duration % 60)
 		draw.text((image.width / 2, yposition), text, font = fonts['s1'], anchor = 'mt')
 		bbox = draw.textbbox((image.width / 2, yposition), text, font = fonts['s1'], anchor = 'mt')
 		yposition = bbox[3]
