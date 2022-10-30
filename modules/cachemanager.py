@@ -85,6 +85,10 @@ class Cache():
 	# Takes a requests.Response object. It's best to create it using stream = True:
 	# response = requests.get(url, stream=True)
 	def add_http_response(self, key, response):
+		if not response.ok:
+			print(f"Tried to cache unsuccessful HTTP response: {response.status_code} {response.reason} url '{response.url}'")
+			return
+
 		path = self.key_path(key)
 		tmppath = path + ".part"
 

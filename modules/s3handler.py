@@ -181,50 +181,212 @@ class S3Schedule():
 
 				print(f"Caching map image stageid {map['stageid']} name '{map['name']}' image-url {map['image']}")
 				response = requests.get(map['image'], stream=True)
-				if not response.ok:
-					print(f"  Error reading map image: {response.status_code} {response.reason}")
-					continue
-
 				self.image_cache_small.add_http_response(key, response)
 
 class S3Utils():
 	@classmethod
-	def createBattleDetailsEmbed(cls, details):
-		embed = discord.Embed(colour=0x0004FF)
+	def createBattleDetailsImage(cls, details, weapon_thumbnail_cache, font_broker):
+		typeNames = {"BANKARA": "Anarchy", "FEST": "Splatfest", "X": "X Rank", "LEAGUE": "League", "PRIVATE": "Private Battle"}
+		anarchyTypeNames = {"OPEN": "Open", "SERIES": "Series"}
+		festTypeNames = {"NORMAL": "Normal", "DECUPLE": "10x", "DRAGON": "100x", "DOUBLE_DRAGON": "333x"}
+		judgementNames = {"WIN": "Victory", "LOSE": "Defeat", "EXEMPTED_LOSE": "Early disconnect with no penalty", "DEEMED_LOSE": "Loss due to early disconnect", "DRAW": "No contest"}
+		modeNames = {"TURF_WAR": "Turf War", "GOAL": "Rainmaker", "LOFT": "Tower Control", "CLAM": "Clam Blitz", "AREA": "Splat Zones"}
+
 		playerName = details['data']['vsHistoryDetail']['player']['name']
 		type = details['data']['vsHistoryDetail']['vsMode']['mode']
-		mode = details['data']['vsHistoryDetail']['vsRule']['name']
+		mode = details['data']['vsHistoryDetail']['vsRule']['rule']
+		map = details['data']['vsHistoryDetail']['vsStage']['name']
 		judgement = details['data']['vsHistoryDetail']['judgement']
 		playerId = details['data']['vsHistoryDetail']['player']['id']
+		duration = details['data']['vsHistoryDetail']['duration']
 
+		anarchy_type = None
+		if (type == 'BANKARA') and (details['data']['vsHistoryDetail'].get('bankaraMatch')):
+			anarchy_type = details['data']['vsHistoryDetail']['bankaraMatch'].get('mode')
 
-		typeNames = {"BANKARA": "Anarchy Battle", "FEST": "Splatfest", "X": "X", "LEAGUE": "League", "PRIVATE": "Private Battle"}
-		judgementNames = {"WIN": "Win", "LOSS": "Loss", "DEEMED_LOSE": "Loss due to early disconnect", "DRAW": "Draw"}
+		fest_type = None
+		if (type == 'FEST') and (details['data']['vsHistoryDetail'].get('festMatch')):
+			fest_type = details['data']['vsHistoryDetail']['festMatch'].get('dragonMatchType')
+
+		# Gather all teams
+		all_teams = [details['data']['vsHistoryDetail']['myTeam'], *details['data']['vsHistoryDetail']['otherTeams']]
+
+		# Cache weapon thumbnails
+		for t in all_teams:
+			for p in t['players']:
+				if (weapon := p.get('weapon')) and (weapon.get('image2dThumbnail')):
+					key = base64.b64decode(weapon['id']).decode("utf-8") + ".png"
+					url = weapon['image2dThumbnail']['url']
+					if weapon_thumbnail_cache.has(key):
+						continue  # Already cached
+
+					print(f"Caching weapon thumbnail key '{key}' image-url {url}")
+					response = requests.get(url, stream=True)
+					weapon_thumbnail_cache.add_http_response(key, response)
+
+		fonts = {}
+		fonts['s2'] = font_broker.truetype("s2.otf", size=24)
+		fonts['s1'] = font_broker.truetype("s1.otf", size=24)
 
 		myTeam = details['data']['vsHistoryDetail']['myTeam']
 		otherTeams = details['data']['vsHistoryDetail']['otherTeams']
 
-		embed.title = f"Stats for {playerName}'s last battle - {typeNames.get(type, type)} - {mode} (Kills(Assists)/Deaths/Specials)"
+		text_color = (255, 255, 255)
 
-		cls.createBattleDetailsTeamEmbed(embed, "My Team", myTeam)
+		image = Image.new('RGB', (500, 600), (0, 0, 0))
+		draw = ImageDraw.Draw(image)
 
-		for t in otherTeams:
-			cls.createBattleDetailsTeamEmbed(embed, "Opposing Team", t)
+		yposition = 5
 
-		embed.set_footer(text=f"Judgement {judgementNames.get(judgement, judgement)}")
-		return embed
+		# Game type
+		if anarchy_type:
+			text = f"{typeNames.get(type, type)} \u2022 {anarchyTypeNames.get(anarchy_type, anarchy_type)}"
+		elif fest_type:
+			text = f"{typeNames.get(type, type)} \u2022 {festTypeNames.get(fest_type, fest_type)}"
+		else:
+			text = f"{typeNames.get(type, type)}"
+		draw.text((image.width / 2, yposition), text, text_color, font = fonts['s1'], anchor='mt')
+		bbox = draw.textbbox((image.width / 2, yposition), text, font = fonts['s1'], anchor='mt')
+		yposition = bbox[3]
+
+		# Mode and map
+		text = f"{modeNames.get(mode, mode)} \u2022 {map}"
+		draw.text((image.width / 2, yposition), text, text_color, font = fonts['s1'], anchor='mt')
+		bbox = draw.textbbox((image.width / 2, yposition), text, font = fonts['s1'], anchor='mt')
+		yposition = bbox[3]
+
+		# Score bar
+		if not myTeam['result'] is None:  # May be null if game was a draw
+			if mode == 'TURF_WAR':
+				ratios = [*[t['result'].get('paintRatio', 0) for t in all_teams]]
+				labels = [("%0.1f" % (r)) for r in ratios]
+				print(repr(ratios))
+			else:
+				#scores = [myTeam['result'].get('score', 0), *[t['result'].get('score', 0) for t in otherTeams]]
+				scores = [*[t['result'].get('score', 0) for t in all_teams]]
+				labels = [str(s) for s in scores]
+				total = sum(scores)
+				if total == 0:
+					ratios = [0 for s in scores]
+				else:
+					ratios = [(s / total) for s in scores]
+
+			if len(all_teams) == 3:
+				positions = [5, int(image.width / 2), image.width - 5]
+				anchors = ['lt', 'mt', 'rt']
+			else:
+				positions = [5, image.width - 5]
+				anchors = ['lt', 'rt']
+
+			colors = [(int(t['color']['r'] * 255), int(t['color']['g'] * 255), int(t['color']['b'] * 255)) for t in all_teams]
+			widths = [int((r * image.width) + 0.5) for r in ratios]
+
+			x = 0
+			for i in range(len(all_teams)):
+				draw.rectangle([(x, yposition), (x + widths[i], yposition + 24)], fill = colors[i])
+				x += widths[i]
+
+				draw.text((positions[i] + 1, yposition + 1), labels[i], (0, 0, 0), font = fonts['s1'], anchor = anchors[i])
+				draw.text((positions[i], yposition), labels[i], (255, 255, 255), font = fonts['s1'], anchor = anchors[i])
+
+			yposition += fonts['s1'].size
+
+		# Outcome
+		text = f"{judgementNames.get(judgement, judgement)}"
+		draw.text((image.width / 2, yposition), text, font = fonts['s1'], anchor = 'mt')
+		bbox = draw.textbbox((image.width / 2, yposition), text, font = fonts['s1'], anchor = 'mt')
+		yposition = bbox[3]
+
+		if judgement == 'WIN':
+			yposition = cls.createBattleDetailsImageTeam(image, draw, yposition, "My Team", fonts, weapon_thumbnail_cache, myTeam)
+			for t in otherTeams:
+				yposition = cls.createBattleDetailsImageTeam(image, draw, yposition, "Opposing Team", fonts, weapon_thumbnail_cache, t)
+		else:
+			for t in otherTeams:
+				yposition = cls.createBattleDetailsImageTeam(image, draw, yposition, "Opposing Team", fonts, weapon_thumbnail_cache, t)
+			yposition = cls.createBattleDetailsImageTeam(image, draw, yposition, "My Team", fonts, weapon_thumbnail_cache, myTeam)
+
+		font_name = fonts['s1'].getname()[0]
+		if (font_name == 'Splatoon1') or (font_name == 'Splatoon2'):
+			text = "\uE063 %d:%02d" % (int(duration / 60), duration % 60)  # Use clock symbol from PUA
+		else:
+			text = "\U0001F552 %d:%02d" % (int(duration / 60), duration % 60)  # Use standard clock symbol
+		draw.text((image.width / 2, yposition), text, font = fonts['s1'], anchor = 'mt')
+		bbox = draw.textbbox((image.width / 2, yposition), text, font = fonts['s1'], anchor = 'mt')
+		yposition = bbox[3]
+
+		# Crop to used height
+		image = image.crop((0, 0, image.width, yposition))
+
+		image_io = io.BytesIO()
+		image.save(image_io, 'PNG')
+		image_io.seek(0)
+		return image_io
 
 	@classmethod
-	def createBattleDetailsTeamEmbed(cls, embed, name, team):
+	def createBattleDetailsImageTeam(cls, image, draw, yposition, name, fonts, weapon_thumbnail_cache, team):
+		margin = 5
+		titleheight = 40
+		rowheight = 30
+		thumbnail_size = 28
+		height = titleheight + (len(team['players']) * rowheight) + (margin * 2)
+
+		rect = [(margin, yposition), (image.width - margin, yposition + height)]
+		color = (int(team['color']['r'] * 255), int(team['color']['g'] * 255), int(team['color']['b'] * 255))
+		draw.rounded_rectangle(rect, 7, color)
+
+		yposition += margin
+
+		draw.text((margin * 2 + 1, yposition + 1), name, fill = (0, 0, 0), font = fonts['s2'], anchor = 'lt')
+		draw.text((margin * 2, yposition), name, font = fonts['s2'], anchor = 'lt')
+
+		draw.text((int(image.width * 0.60) + 1, yposition + 1), "paint", fill = (0, 0, 0), font = fonts['s2'], anchor = 'rt')
+		draw.text((int(image.width * 0.60), yposition), "paint", font = fonts['s2'], anchor = 'rt')
+
+		draw.text((image.width - (margin * 2) + 1, yposition + 1), "K+A(A)/D/S", fill = (0, 0, 0), font = fonts['s2'], anchor = 'rt')
+		draw.text((image.width - (margin * 2), yposition), "K+A(A)/D/S", font = fonts['s2'], anchor = 'rt')
+
+		draw.line([margin * 2, yposition + titleheight - 8, image.width - margin * 2, yposition + titleheight - 8], fill = (255, 255, 255), width = 3)
+		yposition += titleheight
+
 		stats = []
 		for p in team['players']:
 			result = p['result']
+			weapon = p['weapon']
 
+			# Add arrow indicator for player
+			if p.get('isMyself'):
+				draw.text((margin * 2, yposition + int(rowheight / 2) - 1), "\u2192", font = fonts['s1'], anchor = 'lm')
+
+			# Add weapon thumbnail
+			weapon_key = base64.b64decode(weapon['id']).decode("utf-8") + ".png"
+			if thumbnail_io := weapon_thumbnail_cache.get_io(weapon_key):
+				thumbnail_image = Image.open(thumbnail_io).convert("RGBA")
+				thumbnail_image.thumbnail((thumbnail_size, thumbnail_size), Image.ANTIALIAS)
+				draw.ellipse([margin * 2 + thumbnail_size, yposition, margin * 2 + thumbnail_size * 2, yposition + thumbnail_size], fill = (0,0,0))
+				image.paste(thumbnail_image, (margin * 2 + thumbnail_size, yposition), thumbnail_image)
+
+			pos = (margin * 3 + thumbnail_size * 2, yposition)
+			draw.text((pos[0] + 1, pos[1] + 1), p['name'], fill = (0, 0, 0), font = fonts['s2'], anchor = 'lt')
+			draw.text(pos, p['name'], font = fonts['s2'], anchor = 'lt')
+
+			pos = (int(image.width * 0.60), yposition)
+			draw.text((pos[0] + 1, pos[1] + 1), f"{p['paint']}p", fill = (0, 0, 0), font = fonts['s2'], anchor = 'rt')
+			draw.text(pos, f"{p['paint']}p", font = fonts['s2'], anchor = 'rt')
+
+			pos = (int(image.width - (margin * 2)), yposition)
 			if result is None:
-				stats.append("%s \u2014 %s \u2014 (disconnect)" % (p['weapon']['name'], discord.utils.escape_markdown(p['name']),))
+				stats = '(disconnect)'
 			else:
-				stats.append("%s \u2014 %s \u2014 %d(%d)/%d/%d paint %d" % (p['weapon']['name'], discord.utils.escape_markdown(p['name']), result['kill'], result['assist'], result['death'], result['special'], p['paint']))
-		embed.add_field(name = name, value = "\n".join(stats), inline = False)
+				stats = "%d(%d)/%d/%d" % (result['kill'], result['assist'], result['death'], result['special'])
+			draw.text((pos[0] + 1, pos[1] + 1), stats, fill = (0, 0, 0), font = fonts['s2'], anchor = 'rt')
+			draw.text(pos, stats, font = fonts['s2'], anchor = 'rt')
+
+			yposition += rowheight
+
+		yposition += margin * 2
+
+		return yposition
 
 	@classmethod
 	def createSplatfestEmbed(cls, splatfest):
@@ -634,8 +796,10 @@ class S3Handler():
 			await ctx.respond("Failed to retrieve battle details")
 			return
 
-		embed = S3Utils.createBattleDetailsEmbed(details)
-		await ctx.respond(embed=embed)
+		weapon_thumbnail_cache = self.cachemanager.open("s3.weapons.small-2d", (3600 * 24 * 90))  # Cache for 90 days
+
+		image_io = S3Utils.createBattleDetailsImage(details, weapon_thumbnail_cache, self.fonts)
+		await ctx.respond(file = discord.File(image_io, filename = "battle.png", description = "Battle details"))
 
 	async def cmdStats(self, ctx):
 		await ctx.defer()
@@ -693,8 +857,8 @@ class S3Handler():
 			print(f"cmdFit: get_player_stats_full returned none for {ctx.user.id}")
 			return
 
-		img = S3Utils.createFitImage(statsfull, self.fonts, self.configData)
-		await ctx.respond(file = discord.File(img, filename = "fit.png", description = "Fit image"))
+		image_io = S3Utils.createFitImage(statsfull, self.fonts, self.configData)
+		await ctx.respond(file = discord.File(image_io, filename = "fit.png", description = "Fit image"))
 
 	async def cmdFest(self, ctx):
 		await ctx.defer()
