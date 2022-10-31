@@ -1,0 +1,8 @@
+*pycache*
+*secret*
+discordbot.json
+discordbot.log
+discordbot.err
+._*
+fonts
+var/*
