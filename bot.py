@@ -533,7 +533,7 @@ async def cmdVoiceLeave(ctx):
 		await ctx.respond("Not connected to voice", ephemeral=True)
 
 @voice.command(name='volume', description='Changes the volume while in voice chat')
-async def cmdVoiceVolume(ctx, vol: Option(int, "What to change the volume to 1-60% (7\% is default)", required=True)):
+async def cmdVoiceVolume(ctx, vol: Option(int, "What to change the volume to 1-60% (7% is default)", required=True)):
 	if ctx.guild == None:
 		await ctx.respond("Can't DM me with this command.")
 		return
