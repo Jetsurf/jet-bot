@@ -145,8 +145,6 @@ async def cmdToken(ctx):
 
 @fcCmds.command(name = "get", description = "Shares your Nintendo Switch friend code")
 async def cmdFcGet(ctx):
-	await serverUtils.increment_cmd(ctx, 'fc')
-
 	fc = await friendCodes.getFriendCode(ctx.user.id)
 	if not fc is None:
 		await ctx.respond(f"Nintendo Switch friend code is: SW-{fc}")
@@ -181,17 +179,14 @@ async def cmdFcSet(ctx, friend_code: Option(str, "SW-xxxx-xxxx-xxxx")):
 
 @client.slash_command(name='support', description='Sends a discord invite to my support guild.')
 async def cmdSupport(ctx):
-	await serverUtils.increment_cmd(ctx, 'support')
 	await ctx.respond('Here is a link to my support server: https://discord.gg/TcZgtP5', ephemeral=True)
 
 @client.slash_command(name='github', description='Sends a link to my github page')
 async def cmdGithub(ctx):
-	await serverUtils.increment_cmd(ctx, 'github')
 	await ctx.respond('Here is my github page! : https://github.com/Jetsurf/jet-bot', ephemeral=True)
 
 @client.slash_command(name='help', description='Displays the help menu')
 async def cmdHelp(ctx):
-	await serverUtils.increment_cmd(ctx, 'help')
 	await ctx.respond("Help Menu:", view=serverutils.HelpMenuView(configData['help']))
 
 @adminAnnounceCmds.command(name='set', description="Sets a chat channel to receive announcements from my developers")
@@ -285,34 +280,28 @@ async def cmdDMAdd(ctx):
 
 @acnhCmds.command(name='passport', description="Posts your ACNH Passport")
 async def cmdACNHPassport(ctx):
-	await serverUtils.increment_cmd(ctx, 'passport')
 	await acHandler.passport(ctx)
 
 @acnhCmds.command(name='emote', description="Makes your ACNH character do an emote.")
 async def cmdACNHEmote(ctx, emote: Option(str, "The emote to do")):
-	await serverUtils.increment_cmd(ctx, 'emote')
 	await acHandler.ac_emote(ctx, emote)
 
 @acnhCmds.command(name='getemotes', description="Gets available emotes for your ACNH character to do")
 async def cmdACNHGetEmotes(ctx):
-	await serverUtils.increment_cmd(ctx, 'getemotes')
 	await acHandler.get_ac_emotes(ctx)
 
 @acnhCmds.command(name='message', description="What to make your ACNH character say.")
 async def cmdACNHEmote(ctx, message: Option(str, "The message to send")):
-	await serverUtils.increment_cmd(ctx, 'message')
 	await acHandler.ac_message(ctx, message)
 
 # --- Splatoon 2 commands ---
 
 @s2MapCmds.command(name='current', description='Shows current map rotation')
 async def cmdCurrentMaps(ctx):
-	await serverUtils.increment_cmd(ctx, 'currentmaps')
 	await ctx.respond(embed=await nsoHandler.mapsEmbed())
 
 @s2MapCmds.command(name='next', description='Shows the next maps in rotation')
 async def cmdNextMaps(ctx, rotation: Option(int, "Map Rotations ahead to show, max of 11 ahead", required=False, default=1)):
-	await serverUtils.increment_cmd(ctx, 'nextmaps')
 	if rotation < 0 or rotation > 11:
 		await ctx.respond("Rotation must be between 1-11")
 		return
@@ -323,12 +312,10 @@ async def cmdNextMaps(ctx, rotation: Option(int, "Map Rotations ahead to show, m
 
 @s2MapCmds.command(name='nextsr', description='Shows the next Salmon Run rotation')
 async def cmdNextSR(ctx):
-	await serverUtils.increment_cmd(ctx, 'nextsr')
 	await ctx.respond(embed=nsoHandler.srEmbed(getNext=True))
 
 @s2MapCmds.command(name='currentsr', description='Shows the current Salmon Run rotation')
 async def cmdCurrentSR(ctx):
-	await serverUtils.increment_cmd(ctx, 'currentsr')
 	await ctx.respond(embed=nsoHandler.srEmbed(getNext=False))
 
 @s2MapCmds.command(name='callout', description="View callout locations for a map")
@@ -337,12 +324,10 @@ async def cmdMapsCallout(ctx, map: Option(str, "Map to show callout locations fo
 
 @s2MapCmds.command(name='list', description="Shows all Splatoon 2 maps")
 async def cmdMapsStats(ctx):
-	await serverUtils.increment_cmd(ctx, 'maps')
 	await nsoHandler.cmdMaps(ctx, args=[ 'list' ])
 
 @s2MapCmds.command(name='random', description="Generates a random list of maps")
 async def cmdMapsRandom(ctx, num: Option(int, "Number of maps to include in the list (1-10)", required=True)):
-	await serverUtils.increment_cmd(ctx, 'maps')
 	if num < 1 or num > 10:
 		await ctx.respond("Num needs to be between 1-10")
 	else:
@@ -350,22 +335,18 @@ async def cmdMapsRandom(ctx, num: Option(int, "Number of maps to include in the 
 
 @s2StatsCmds.command(name='maps', description="Shows gameplay stats for a map")
 async def cmdMapsStats(ctx, map: Option(str, "Map to show stats for", choices=[ themap.name() for themap in splat2info.getAllMaps() ] ,required=True)):
-	await serverUtils.increment_cmd(ctx, 'maps')
 	await nsoHandler.cmdMaps(ctx, args=[ 'stats', str(map)])
 
 @s2StatsCmds.command(name='ranks', description='Get your ranks in ranked mode from S2 SplatNet')
 async def cmdRanks(ctx):
-	await serverUtils.increment_cmd(ctx, 'rank')
 	await nsoHandler.getRanks(ctx)
 
 @s2StatsCmds.command(name='sr', description='Get your Salmon Run stats from S2 SplatNet')
 async def cmdSRStats(ctx):
-	await serverUtils.increment_cmd(ctx, 'srstats')
 	await nsoHandler.getSRStats(ctx)
 
 @s2StatsCmds.command(name='multi', description='Get your multiplayer stats from S2 SplatNet')
 async def cmdStats(ctx):
-	await serverUtils.increment_cmd(ctx, 'stats')
 	await nsoHandler.getStats(ctx)
 
 @s2StatsCmds.command(name='battle', description='Get stats from a battle (1-50)')
@@ -373,24 +354,18 @@ async def cmdBattle(ctx, battlenum: Option(int, "Battle Number, 1 being latest, 
 	if battlenum >= 50 or battlenum < 0:
 		await ctx.respond("Battlenum needs to be between 1-50!")
 		return
-	await serverUtils.increment_cmd(ctx, 'battle')
 	await nsoHandler.battleParser(ctx, battlenum)
 
 @s2WeaponCmds.command(name='info', description='Gets info on a weapon')
 async def cmdWeapInfo(ctx, name: Option(str, "Name of the weapon to get info for", required=True)):
-	await serverUtils.increment_cmd(ctx, 'weapons')
-
 	await nsoHandler.cmdWeaps(ctx, args=[ 'info', str(name) ])
 
 @s2WeaponCmds.command(name='list', description='Gets a list of weapons by type')
 async def cmdWeapList(ctx, weaptype: Option(str, "Type of weapon to generate a list for", required=True, choices=[ weaptype.name() for weaptype in splat2info.getAllWeaponTypes() ])):
-	await serverUtils.increment_cmd(ctx, 'weapons')
-
 	await nsoHandler.cmdWeaps(ctx, args=[ 'list', str(weaptype) ])
 
 @s2WeaponCmds.command(name='random', description='Generates a random list of weapons')
 async def cmdWeapRandom(ctx, num: Option(int, "Number of weapons to include in the list (1-10)", required=True)):
-	await serverUtils.increment_cmd(ctx, 'weapons')
 	if num < 0 or num > 10:
 		await ctx.respond("Num must be between 1-10!")
 		return
@@ -399,31 +374,23 @@ async def cmdWeapRandom(ctx, num: Option(int, "Number of weapons to include in t
 
 @s2WeaponCmds.command(name='special', description='Gets all weapons with special type')
 async def cmdWeapSpecial(ctx, special: Option(str, "Name of the special to get matching weapons for", choices=[ weap.name() for weap in splat2info.getAllSpecials() ], required=True)):
-	await serverUtils.increment_cmd(ctx, 'weapons')
-
 	await nsoHandler.cmdWeaps(ctx, args=[ 'special', str(special) ])
 
 @s2WeaponCmds.command(name='stats', description='Gets stats from a weapon')
 async def cmdWeapStats(ctx, name: Option(str, "Name of the weapon to get stats for", required=True)):
-	await serverUtils.increment_cmd(ctx, 'weapons')
-
 	await nsoHandler.cmdWeaps(ctx, args=[ 'stats', str(name) ])
 
 @s2WeaponCmds.command(name='sub', description='Gets all weapons with sub type')
 async def cmdWeapSub(ctx, sub: Option(str, "Name of the sub to get matching weapons for", choices=[ weap.name() for weap in splat2info.getAllSubweapons() ], required=True)):
-	await serverUtils.increment_cmd(ctx, 'weapons')
-
 	await nsoHandler.cmdWeaps(ctx, args=[ 'sub', str(sub) ])
 
 @s2StoreCmds.command(name='currentgear', description="See the current gear on the SplatNet store")
 async def cmdStoreCurrent(ctx):
-	await serverUtils.increment_cmd(ctx, 'splatnetgear')
 	await nsoHandler.gearParser(ctx)
 
 @s2StoreCmds.command(name='order', description='Orders gear from the SplatNet store')
 async def cmdOrder(ctx, order: Option(str, "ID or NAME of the gear to order from the store (get both from /store currentgear)", required=True), override: Option(bool, "Override if you have an item already on order", required=False)):
 	print(f"Ordering gear for user: {ctx.user.name} and id {str(ctx.user.id)}")
-	await serverUtils.increment_cmd(ctx, 'order')
 	await nsoHandler.orderGearCommand(ctx, args=[str(order)], override=override if override != None else False)
 
 @s2StoredmCmds.command(name='add', description='Sends a DM when gear with ABILITY/BRAND/GEAR appears in the store')
@@ -431,7 +398,7 @@ async def cmdStoreDMAbilty(ctx, flag: Option(str, "ABILITY/BRAND/GEAR to DM you 
 	if ctx.guild == None:
 		await ctx.respond("Can't DM me with this command.")
 		return
-	await serverUtils.increment_cmd(ctx, 'storedm')
+
 	await nsoHandler.addStoreDM(ctx, [ str(flag) ])
 
 @s2StoredmCmds.command(name='list', description='Shows you everything you are set to recieve a DM for')
@@ -440,7 +407,6 @@ async def cmdStoreDMAbilty(ctx):
 		await ctx.respond("Can't DM me with this command.")
 		return
 
-	await serverUtils.increment_cmd(ctx, 'storedm')
 	await nsoHandler.listStoreDM(ctx)
 
 @s2StoredmCmds.command(name='remove', description='Removes you from being DMed when gear with FLAG appears in the store')
@@ -449,7 +415,6 @@ async def cmdStoreDMAbilty(ctx, flag: Option(str, "ABILITY/BRAND/GEAR to stop DM
 		await ctx.respond("Can't DM me with this command.")
 		return
 
-	await serverUtils.increment_cmd(ctx, 'storedm')
 	await nsoHandler.removeStoreDM(ctx, [ str(flag) ])
 
 # --- S3 commands ---
@@ -550,7 +515,6 @@ async def cmdVoiceJoin(ctx, channel: Option(discord.VoiceChannel, "Voice Channel
 		await ctx.respond("Can't DM me with this command.")
 		return
 
-	await serverUtils.increment_cmd(ctx, 'join')
 	if channel == None:
 		await serverVoices[ctx.guild.id].joinVoiceChannel(ctx, [])
 	else:
@@ -562,7 +526,6 @@ async def cmdVoiceLeave(ctx):
 		await ctx.respond("Can't DM me with this command.")
 		return
 
-	await serverUtils.increment_cmd(ctx, 'leavevoice')
 	if serverVoices[ctx.guild.id] != None:
 		await serverVoices[ctx.guild.id].vclient.disconnect()
 		await ctx.respond("Disconnected from voice")
@@ -575,7 +538,6 @@ async def cmdVoiceVolume(ctx, vol: Option(int, "What to change the volume to 1-6
 		await ctx.respond("Can't DM me with this command.")
 		return
 
-	await serverUtils.increment_cmd(ctx, 'volume')
 	if serverVoices[ctx.guild.id].vclient != None:
 		if vol > 60:
 			vol = 60
@@ -593,7 +555,6 @@ async def cmdVoicePlayUrl(ctx, url: Option(str, "URL of the video to play")):
 		await ctx.respond("Can't DM me with this command.")
 		return
 
-	await serverUtils.increment_cmd(ctx, 'play')
 	if serverVoices[ctx.guild.id].vclient is not None:
 		await serverVoices[ctx.guild.id].setupPlay(ctx, [ str(url) ])
 	else:
@@ -605,7 +566,6 @@ async def cmdVoicePlaySearch(ctx, source: Option(str, "Source to search", choice
 		await ctx.respond("Can't DM me with this command.")
 		return
 
-	await serverUtils.increment_cmd(ctx, 'play')
 	if serverVoices[ctx.guild.id].vclient is not None:
 		theList = []
 		for i in itertools.chain([ source ], search.split()):
@@ -621,7 +581,6 @@ async def cmdVoiceSkip(ctx):
 		await ctx.respond("Can't DM me with this command.")
 		return
 
-	await serverUtils.increment_cmd(ctx, 'skip')
 	if serverVoices[ctx.guild.id].vclient is not None:
 		if serverVoices[ctx.guild.id].source is not None:
 			await serverVoices[ctx.guild.id].stop(ctx)
@@ -636,7 +595,6 @@ async def cmdVoiceEnd(ctx):
 		await ctx.respond("Can't DM me with this command.")
 		return
 
-	await serverUtils.increment_cmd(ctx, 'stop')
 	if serverVoices[ctx.guild.id].vclient is not None:
 		if serverVoices[ctx.guild.id].source is not None:
 			serverVoices[ctx.guild.id].end()
@@ -652,7 +610,6 @@ async def cmdVoicePlayRandom(ctx, num: Option(int, "Number of videos to queue up
 		await ctx.respond("Can't DM me with this command.")
 		return
 
-	await serverUtils.increment_cmd(ctx, 'playrandom')
 	if num < 0:
 		await ctx.respond("Num needs to be greater than 0.", ephemeral=True)
 	else:
@@ -667,7 +624,6 @@ async def cmdVoiceCurrent(ctx):
 		await ctx.respond("Can't DM me with this command.")
 		return
 
-	await serverUtils.increment_cmd(ctx, 'currentsong')
 	if serverVoices[ctx.guild.id].vclient is not None:
 		if serverVoices[ctx.guild.id].source is not None:
 			await ctx.respond(f"Currently Playing Video: {serverVoices[ctx.guild.id].source.yturl}")
@@ -682,7 +638,6 @@ async def cmdVoiceQueue(ctx):
 		await ctx.respond("Can't DM me with this command.")
 		return
 
-	await serverUtils.increment_cmd(ctx, 'queue')
 	if serverVoices[ctx.guild.id].vclient is not None:
 		await serverVoices[ctx.guild.id].printQueue(ctx)
 	else:
@@ -694,7 +649,6 @@ async def cmdVoiceDisconnect(ctx):
 		await ctx.respond("Can't DM me with this command.")
 		return
 
-	await serverUtils.increment_cmd(ctx, 'leavevoice')
 	if serverVoices[ctx.guild.id] != None:
 		await serverVoices[ctx.guild.id].vclient.disconnect()
 		serverVoices[ctx.guild.id].vclient = None
@@ -707,8 +661,6 @@ async def cmdVoiceSounds(ctx):
 	if ctx.guild == None:
 		await ctx.respond("Can't DM me with this command.")
 		return
-
-	await serverUtils.increment_cmd(ctx, 'sounds')
 
 	await ctx.respond(embed=serverVoices[ctx.guild.id].createSoundsEmbed())
 
@@ -822,6 +774,7 @@ async def on_ready():
 
 		await nsoHandler.updateS2JSON()
 		await s3Handler.storedm.cacheS3JSON()
+		client.before_invoke(serverUtils.contextIncrementCmd)
 		print('Done\n------')
 		await client.change_presence(status=discord.Status.online, activity=discord.Game("Check /help for cmd info."))
 	else:
