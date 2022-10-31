@@ -29,6 +29,7 @@ import logging
 import friendcodes
 import gameinfo.splat2
 import gameinfo.splat3
+import s3.schedule
 
 # Uncomment for verbose logging from pycord
 #logging.basicConfig(level=logging.DEBUG)
@@ -511,7 +512,7 @@ async def cmdS3Fest(ctx):
 	await s3Handler.cmdFest(ctx)
 
 @s3Cmds.command(name = 'schedule', description = 'Show schedule')
-async def cmdS3Schedule(ctx, which: Option(str, "Schedule type", choices = s3handler.S3Schedule.schedule_choices)):
+async def cmdS3Schedule(ctx, which: Option(str, "Schedule type", choices = s3.schedule.S3Schedule.schedule_choices)):
 	await s3Handler.cmdSchedule(ctx, which)
 
 @s3StoreCmds.command(name = "list", description = "Show current items in the store")
