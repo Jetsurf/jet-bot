@@ -218,28 +218,14 @@ class serverUtils():
 		else:
 			return False
 
-	async def report_cmd_totals(self, message):
-		embed = discord.Embed(colour=0x00FFF3)
-		embed.title = "Command Totals"
-		cur = await self.sqlBroker.connect()
-
-		for cmd_set in self.valid_commands:
-			theString = ""
-			for cmd in self.valid_commands[cmd_set]:
-				stmt = "SELECT IFNULL(SUM(count), 0) FROM commandcounts WHERE (command = %s)"
-				await cur.execute(stmt, (cmd,))
-				count = await cur.fetchone()
-				theString = f"{theString} **{cmd}** : {str(count[0])}\n"
-			embed.add_field(name=f"**{cmd_set}**", value=theString, inline=True)
-		await self.sqlBroker.close(cur)
-		await message.channel.send(embed=embed)
+	#TODO: Readd cmd report. Old one is way to dumb, new data will help determine how it's presented
 
 	async def contextIncrementCmd(self, ctx):
 		try:
 			cur = await self.sqlBroker.connect()
 			stmt = "INSERT INTO commandcounts (serverid, command, count) VALUES (%s, %s, 1) ON DUPLICATE KEY UPDATE count = count + 1;"
 			if ctx.guild == None:
-				await cur.execute(stmt, ('0', cmd,))
+				await cur.execute(stmt, ('0', ctx.command.qualified_name,))
 			else:
 				await cur.execute(stmt, (ctx.guild.id, ctx.command.qualified_name,))
 			await self.sqlBroker.commit(cur)
