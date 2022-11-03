@@ -2,7 +2,6 @@
 	"token"			: "",
 	"output_to_log" : true,
 	"soundsdir"		: "",
-	"help"			: "",
 	"mysql_host"	: "",
 	"mysql_user"	: "",
 	"mysql_pw"		: "",

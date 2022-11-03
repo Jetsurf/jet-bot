@@ -187,7 +187,7 @@ async def cmdGithub(ctx):
 
 @client.slash_command(name='help', description='Displays the help menu')
 async def cmdHelp(ctx):
-	await ctx.respond("Help Menu:", view=serverutils.HelpMenuView(configData['help']))
+	await ctx.respond("Help Menu:", view=serverutils.HelpMenuView(f"{dirname}/help"))
 
 @adminAnnounceCmds.command(name='set', description="Sets a chat channel to receive announcements from my developers")
 async def cmdAnnounceAdd(ctx, channel: Option(discord.TextChannel, "Channel to set to receive announcements", required=True)):
