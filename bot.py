@@ -92,7 +92,7 @@ fcCmds = SlashCommandGroup('fc', 'Commands for friend codes')
 play = voice.create_subgroup(name='play', description='Commands related to playing audio')
 
 def loadConfig():
-	global configData, helpfldr, mysqlHandler, dev, head
+	global configData, mysqlHandler, dev, head
 	try:
 		with open(f"{dirname}/config/discordbot.json", 'r') as json_config:
 			configData = json.load(json_config)
@@ -756,7 +756,7 @@ async def on_ready():
 		serverConfig = serverconfig.ServerConfig(mysqlHandler)
 		commandParser = commandparser.CommandParser(serverConfig, client.user.id)
 		ownerCmds = ownercmds.ownerCmds(client, mysqlHandler, commandParser, owners)
-		serverUtils = serverutils.serverUtils(client, mysqlHandler, serverConfig, configData['help'])
+		serverUtils = serverutils.serverUtils(client, mysqlHandler, serverConfig)
 		friendCodes = friendcodes.FriendCodes(mysqlHandler, stringCrypt)
 		nsoTokens = nsotoken.Nsotoken(client, configData, mysqlHandler, stringCrypt, friendCodes)
 		nsoHandler = nsohandler.nsoHandler(client, mysqlHandler, nsoTokens, splat2info, configData)

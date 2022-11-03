@@ -69,9 +69,8 @@ class HelpMenuView(discord.ui.View):
 		self.add_item(HelpDropDown(helpdir))
 
 class serverUtils():
-	def __init__(self, client, mysqlhandler, serverconfig, helpfldr):
+	def __init__(self, client, mysqlhandler, serverconfig):
 		self.sqlBroker = mysqlhandler
-		self.helpfldr = helpfldr
 		self.serverConfig = serverconfig
 		self.client = client
 		self.statusnum = 1
