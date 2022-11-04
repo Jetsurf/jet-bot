@@ -419,17 +419,15 @@ async def cmdStoreDMAbilty(ctx, flag: Option(str, "ABILITY/BRAND/GEAR to stop DM
 
 # --- S3 commands ---
 
-#TODO: Need cmd reporting increments
-
 @s3WeaponCmds.command(name='info', description='Gets info on a weapon in Splatoon 3')
 async def cmdS3WeaponInfo(ctx, name: Option(str, "Name of the weapon to get info for", required=True)):
 	await s3Handler.cmdWeaponInfo(ctx, str(name))
 
-@s3WeaponCmds.command(name='special', description='Lists all Splatoon 3 weapons a given special weapon')
+@s3WeaponCmds.command(name='special', description='Lists all Splatoon 3 weapons with a given special weapon')
 async def cmdS3WeaponSpecial(ctx, special: Option(str, "Name of the special to get matching weapons for", choices = splat3info.getSpecialNames(), required=True)):
 	await s3Handler.cmdWeaponSpecial(ctx, str(special))
 
-@s3WeaponCmds.command(name='sub', description='Lists all Splatoon 3 weapons a given subweapon')
+@s3WeaponCmds.command(name='sub', description='Lists all Splatoon 3 weapons with a given subweapon')
 async def cmdS3WeaponSub(ctx, special: Option(str, "Name of the subweapon to get matching weapons for", choices = splat3info.getSubweaponNames(), required=True)):
 	await s3Handler.cmdWeaponSub(ctx, str(special))
 
