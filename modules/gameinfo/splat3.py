@@ -114,13 +114,12 @@ class Splat3Brand(gameinfo.matchset.MatchItem):
 		return self._uncommon
 
 class Splat3WeaponType(gameinfo.matchset.MatchItem):
-	def __init__(self, name, pluralName, abbrevs):
-		self._pluralname = pluralName
-
+	def __init__(self, name, internalName, abbrevs):
+		self._internalName = internalName
 		super().__init__(name, abbrevs)
 
-	def pluralname(self):
-		return self._pluralName
+	def internalName(self):
+		return self._internalName
 
 class Splat3Weapon(gameinfo.matchset.MatchItem):
 	def __init__(self, id, name, abbrevs, type, sub, special, specpts, price, level):
@@ -188,7 +187,7 @@ class Splat3():
 		self.initModes()
 		self.initSubweapons(data)
 		self.initSpecials(data)
-		self.initWeaponTypes()
+		self.initWeaponTypes(data)
 		self.initWeapons(data)
 		self.initAbilities()
 		self.initBrands()
@@ -223,25 +222,15 @@ class Splat3():
 		for s in data['specials']:
 			self.specials.append(Splat3Special(s['names'], s['abbrevs']))
 
-	def initWeaponTypes(self):
-		self.weaponTypes = gameinfo.matchset.MatchSet('weapon type', [
-			Splat3WeaponType("Shooter",   "Shooters",   ["s"]),
-			Splat3WeaponType("Blaster",   "Blasters",   ["bl"]),
-			Splat3WeaponType("Roller",    "Rollers",    ["r"]),
-			Splat3WeaponType("Charger",   "Chargers",   ["c", "sniper"]),
-			Splat3WeaponType("Slosher",   "Sloshers",   ["sl", "bucket"]),
-			Splat3WeaponType("Splatling", "Splatlings", ["sp", "gatling"]),
-			Splat3WeaponType("Dualies",   "Dualies",    ["d"]),
-			Splat3WeaponType("Brella",    "Brellas",    ["bre", "u", "umbrella", "brolly"]),
-			Splat3WeaponType("Brush",     "Brushes",    ["bru"]),
-			Splat3WeaponType("Stringer",  "Stringers",  ["str", "bow"]),
-			Splat3WeaponType("Splatana",  "Splatanas",  ["sna", "saber", "sword"])
-                ])
+	def initWeaponTypes(self, data):
+		self.weaponTypes = gameinfo.matchset.MatchSet('weapon type', [])
+		for t in data['weaponTypes']:
+			self.weaponTypes.append(Splat3WeaponType(t['names'], t['internalName'], t['abbrevs']))
 
 	def initWeapons(self, data):
 		self.weapons = gameinfo.matchset.MatchSet('weapon', [])
 		for w in data['weapons']:
-			type = self.weaponTypes.getItemByName(w['type'])
+			type = self.getWeaponTypeByInternalName(w['type'])
 			if type is None:
 				raise Exception(f"No such weapon type '{w['type']}'")
 
@@ -307,6 +296,12 @@ class Splat3():
 
 	def getWeaponsBySubweapon(self, subweapon):
 		return list(filter(lambda w: w.sub() == subweapon, self.weapons.getAllItems()))
+
+	def getWeaponTypeByInternalName(self, internalName):
+		found = list(filter(lambda t: t.internalName() == internalName, self.weaponTypes.getAllItems()))
+		if len(found):
+			return found[0]
+		return None
 
 	def getBrandById(self, id):
 		return list(filter(lambda b: b.id() == id, self.brands.getAllItems()))
