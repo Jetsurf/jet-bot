@@ -102,6 +102,19 @@ class Cache():
 		file.close()
 		os.rename(tmppath, path)
 
+	# Takes a byte string object.
+	def add_bytes(self, key, bytes):
+		path = self.key_path(key)
+		tmppath = path + ".part"
+
+		file = self.create_file_exclusive(tmppath)
+		if file is None:
+			return  # Couldn't create file
+
+		file.write(bytes)
+		file.close()
+		os.rename(tmppath, path)
+
 class CacheManager():
 	@classmethod
 	def cache_name_part_valid(cls, part):
