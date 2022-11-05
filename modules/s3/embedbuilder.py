@@ -147,5 +147,5 @@ class S3EmbedBuilder():
 		embed.title = "Splatoon 3 Splatnet Store Gear"
 		url = S3ImageBuilder.createStoreCanvas(gearJson, fonts, configData)
 		embed.set_image(url=url)
-		embed.set_footer("To order gear, run `/s3 order")
+		embed.set_footer(text="To order gear, run /s3 order GEARNAME")
 		return embed
