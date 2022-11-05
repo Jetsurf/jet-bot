@@ -8537,6 +8537,259 @@
       }
     }
   ],
+  "weaponTypes": [
+    {
+      "abbrevs": [
+        "bl"
+      ],
+      "internalName": "Blaster",
+      "names": {
+        "de-DE": "Blaster",
+        "en-GB": "Blasters",
+        "en-US": "Blasters",
+        "es-ES": "Devastadores",
+        "es-MX": "Lanzamotas",
+        "fr-CA": "Blasteurs",
+        "fr-FR": "Blasters",
+        "it-IT": "Blaster",
+        "ja-JP": "\u30d6\u30e9\u30b9\u30bf\u30fc",
+        "ko-KR": "\ube14\ub798\uc2a4\ud130",
+        "nl-NL": "Blasters",
+        "ru-RU": "\u0411\u043b\u0430\u0441\u0442\u0435\u0440\u044b",
+        "zh-CN": "\u7206\u7834\u67aa",
+        "zh-TW": "\u7206\u7834\u69cd"
+      }
+    },
+    {
+      "abbrevs": [
+        "bru"
+      ],
+      "internalName": "Brush",
+      "names": {
+        "de-DE": "Pinsel",
+        "en-GB": "Brushes",
+        "en-US": "Brushes",
+        "es-ES": "Pinceles",
+        "es-MX": "Pinceles",
+        "fr-CA": "Pinceaux",
+        "fr-FR": "Pinceaux",
+        "it-IT": "Pennelli",
+        "ja-JP": "\u30d5\u30c7",
+        "ko-KR": "\ubd93",
+        "nl-NL": "Kwasten",
+        "ru-RU": "\u041a\u0438\u0441\u0442\u0438",
+        "zh-CN": "\u753b\u7b14",
+        "zh-TW": "\u756b\u7b46"
+      }
+    },
+    {
+      "abbrevs": [
+        "c",
+        "sniper"
+      ],
+      "internalName": "Charger",
+      "names": {
+        "de-DE": "Konzentratoren",
+        "en-GB": "Chargers",
+        "en-US": "Chargers",
+        "es-ES": "Cargatintas",
+        "es-MX": "Cargatintas",
+        "fr-CA": "Fusils",
+        "fr-FR": "Fusils",
+        "it-IT": "Armi a carica",
+        "ja-JP": "\u30c1\u30e3\u30fc\u30b8\u30e3\u30fc",
+        "ko-KR": "\ucc28\uc800",
+        "nl-NL": "Laders",
+        "ru-RU": "\u041d\u0430\u0433\u043d\u0435\u0442\u0430\u0442\u0435\u043b\u0438",
+        "zh-CN": "\u84c4\u529b\u72d9\u51fb\u67aa",
+        "zh-TW": "\u84c4\u529b\u72d9\u64ca\u69cd"
+      }
+    },
+    {
+      "abbrevs": [
+        "d"
+      ],
+      "internalName": "Maneuver",
+      "names": {
+        "de-DE": "Doppler",
+        "en-GB": "Dualies",
+        "en-US": "Dualies",
+        "es-ES": "Armas duales",
+        "es-MX": "Armas duales",
+        "fr-CA": "Armes doubles",
+        "fr-FR": "Armes doubles",
+        "it-IT": "Repolper",
+        "ja-JP": "\u30de\u30cb\u30e5\u30fc\u30d0\u30fc",
+        "ko-KR": "\uba38\ub204\ubc84",
+        "nl-NL": "Dubbelknallers",
+        "ru-RU": "\u0421\u043f\u0443\u0440\u0442\u043e\u043c\u0435\u0442\u044b",
+        "zh-CN": "\u673a\u52a8\u67aa",
+        "zh-TW": "\u6a5f\u52d5\u69cd"
+      }
+    },
+    {
+      "abbrevs": [
+        "r"
+      ],
+      "internalName": "Roller",
+      "names": {
+        "de-DE": "Roller",
+        "en-GB": "Rollers",
+        "en-US": "Rollers",
+        "es-ES": "Rodillos",
+        "es-MX": "Rodillos",
+        "fr-CA": "Rouleaux",
+        "fr-FR": "Rouleaux",
+        "it-IT": "Rulli",
+        "ja-JP": "\u30ed\u30fc\u30e9\u30fc",
+        "ko-KR": "\ub864\ub7ec",
+        "nl-NL": "Rollers",
+        "ru-RU": "\u0412\u0430\u043b\u0438\u043a\u0438",
+        "zh-CN": "\u6eda\u7b52",
+        "zh-TW": "\u6efe\u7b52"
+      }
+    },
+    {
+      "abbrevs": [
+        "sna",
+        "saber",
+        "sword"
+      ],
+      "internalName": "Saber",
+      "names": {
+        "de-DE": "Splatanas",
+        "en-GB": "Splatanas",
+        "en-US": "Splatanas",
+        "es-ES": "Azotintadores",
+        "es-MX": "Azotintadores",
+        "fr-CA": "\u00c9clatanas",
+        "fr-FR": "\u00c9clatanas",
+        "it-IT": "Lame",
+        "ja-JP": "\u30ef\u30a4\u30d1\u30fc",
+        "ko-KR": "\uc640\uc774\ud37c",
+        "nl-NL": "Zwiepers",
+        "ru-RU": "\u0421\u043f\u043b\u0430\u0442-\u043a\u0430\u0442\u0430\u043d\u044b",
+        "zh-CN": "\u522e\u6c34\u5200",
+        "zh-TW": "\u522e\u6c34\u5200"
+      }
+    },
+    {
+      "abbrevs": [
+        "bre",
+        "u",
+        "umbrella",
+        "brolly"
+      ],
+      "internalName": "Shelter",
+      "names": {
+        "de-DE": "Pluviatoren",
+        "en-GB": "Brellas",
+        "en-US": "Brellas",
+        "es-ES": "Paratintas",
+        "es-MX": "Paratintas",
+        "fr-CA": "Para-encres",
+        "fr-FR": "Para-encres",
+        "it-IT": "Sparasole",
+        "ja-JP": "\u30b7\u30a7\u30eb\u30bf\u30fc",
+        "ko-KR": "\uc178\ud130",
+        "nl-NL": "Plenzers",
+        "ru-RU": "\u0421\u043f\u043b\u0430\u0442-\u0437\u043e\u043d\u0442\u044b",
+        "zh-CN": "\u9632\u7a7a\u4f1e",
+        "zh-TW": "\u9632\u7a7a\u5098"
+      }
+    },
+    {
+      "abbrevs": [
+        "s"
+      ],
+      "internalName": "Shooter",
+      "names": {
+        "de-DE": "Kleckser",
+        "en-GB": "Shooters",
+        "en-US": "Shooters",
+        "es-ES": "Lanzatintas",
+        "es-MX": "Rociadores",
+        "fr-CA": "Lanceurs",
+        "fr-FR": "Lanceurs",
+        "it-IT": "Armi a ripetizione",
+        "ja-JP": "\u30b7\u30e5\u30fc\u30bf\u30fc",
+        "ko-KR": "\uc288\ud130",
+        "nl-NL": "Spetters",
+        "ru-RU": "\u041a\u0440\u0430\u0441\u043a\u043e\u043c\u0430\u0442\u044b",
+        "zh-CN": "\u5c04\u51fb\u67aa",
+        "zh-TW": "\u5c04\u64ca\u69cd"
+      }
+    },
+    {
+      "abbrevs": [
+        "sl",
+        "bucket"
+      ],
+      "internalName": "Slosher",
+      "names": {
+        "de-DE": "Schwapper",
+        "en-GB": "Sloshers",
+        "en-US": "Sloshers",
+        "es-ES": "Derramatic",
+        "es-MX": "Derramatic",
+        "fr-CA": "Seaux",
+        "fr-FR": "Seaux",
+        "it-IT": "Secchiostri",
+        "ja-JP": "\u30b9\u30ed\u30c3\u30b7\u30e3\u30fc",
+        "ko-KR": "\uc2ac\ub85c\uc154",
+        "nl-NL": "Morsers",
+        "ru-RU": "\u0412\u0435\u0434\u0440\u043e\u0433\u0430\u043d\u044b",
+        "zh-CN": "\u6cfc\u6876",
+        "zh-TW": "\u6f51\u6876"
+      }
+    },
+    {
+      "abbrevs": [
+        "sp",
+        "gatling"
+      ],
+      "internalName": "Spinner",
+      "names": {
+        "de-DE": "Splatlings",
+        "en-GB": "Splatlings",
+        "en-US": "Splatlings",
+        "es-ES": "Tintralladoras",
+        "es-MX": "Garabateadores",
+        "fr-CA": "Badigeonneurs",
+        "fr-FR": "Badigeonneurs",
+        "it-IT": "Splatling",
+        "ja-JP": "\u30b9\u30d4\u30ca\u30fc",
+        "ko-KR": "\uc2a4\ud53c\ub108",
+        "nl-NL": "Spetlingen",
+        "ru-RU": "\u0411\u0440\u044b\u0437\u0433\u043e\u043c\u0435\u0442\u044b",
+        "zh-CN": "\u65cb\u8f6c\u67aa",
+        "zh-TW": "\u65cb\u8f49\u69cd"
+      }
+    },
+    {
+      "abbrevs": [
+        "str",
+        "bow"
+      ],
+      "internalName": "Stringer",
+      "names": {
+        "de-DE": "Stringer",
+        "en-GB": "Stringers",
+        "en-US": "Stringers",
+        "es-ES": "Arcromatizadores",
+        "es-MX": "Arcromatizadores",
+        "fr-CA": "Transperceurs",
+        "fr-FR": "Transperceurs",
+        "it-IT": "Calamarchi",
+        "ja-JP": "\u30b9\u30c8\u30ea\u30f3\u30ac\u30fc",
+        "ko-KR": "\uc2a4\ud2b8\ub9c1\uac70",
+        "nl-NL": "Spanners",
+        "ru-RU": "\u0422\u0435\u0442\u0438\u0432\u0430\u0442\u043e\u0440\u044b",
+        "zh-CN": "\u730e\u9c7c\u5f13",
+        "zh-TW": "\u7375\u9b5a\u5f13"
+      }
+    }
+  ],
   "weapons": [
     {
       "id": 0,
@@ -9550,7 +9803,7 @@
       "special": "Ultra Stamp",
       "specialPoints": 180,
       "sub": "Burst Bomb",
-      "type": "Splatling"
+      "type": "Spinner"
     },
     {
       "id": 4010,
@@ -9576,7 +9829,7 @@
       "special": "Wave Breaker",
       "specialPoints": 200,
       "sub": "Sprinkler",
-      "type": "Splatling"
+      "type": "Spinner"
     },
     {
       "id": 4020,
@@ -9602,7 +9855,7 @@
       "special": "Booyah Bomb",
       "specialPoints": 190,
       "sub": "Autobomb",
-      "type": "Splatling"
+      "type": "Spinner"
     },
     {
       "id": 4030,
@@ -9628,7 +9881,7 @@
       "special": "Inkjet",
       "specialPoints": 200,
       "sub": "Fizzy Bomb",
-      "type": "Splatling"
+      "type": "Spinner"
     },
     {
       "id": 4040,
@@ -9654,7 +9907,7 @@
       "special": "Ink Storm",
       "specialPoints": 190,
       "sub": "Point Sensor",
-      "type": "Splatling"
+      "type": "Spinner"
     },
     {
       "id": 5000,
@@ -9680,7 +9933,7 @@
       "special": "Tacticooler",
       "specialPoints": 180,
       "sub": "Squid Beakon",
-      "type": "Dualies"
+      "type": "Maneuver"
     },
     {
       "id": 5010,
@@ -9706,7 +9959,7 @@
       "special": "Crab Tank",
       "specialPoints": 200,
       "sub": "Suction Bomb",
-      "type": "Dualies"
+      "type": "Maneuver"
     },
     {
       "id": 5020,
@@ -9732,7 +9985,7 @@
       "special": "Booyah Bomb",
       "specialPoints": 180,
       "sub": "Splash Wall",
-      "type": "Dualies"
+      "type": "Maneuver"
     },
     {
       "id": 5030,
@@ -9758,7 +10011,7 @@
       "special": "Wave Breaker",
       "specialPoints": 200,
       "sub": "Splat Bomb",
-      "type": "Dualies"
+      "type": "Maneuver"
     },
     {
       "id": 5040,
@@ -9784,7 +10037,7 @@
       "special": "Reefslider",
       "specialPoints": 200,
       "sub": "Autobomb",
-      "type": "Dualies"
+      "type": "Maneuver"
     },
     {
       "id": 6000,
@@ -9810,7 +10063,7 @@
       "special": "Triple Inkstrike",
       "specialPoints": 200,
       "sub": "Sprinkler",
-      "type": "Brella"
+      "type": "Shelter"
     },
     {
       "id": 6010,
@@ -9836,7 +10089,7 @@
       "special": "Ink Vac",
       "specialPoints": 190,
       "sub": "Squid Beakon",
-      "type": "Brella"
+      "type": "Shelter"
     },
     {
       "id": 6020,
@@ -9862,7 +10115,7 @@
       "special": "Reefslider",
       "specialPoints": 180,
       "sub": "Ink Mine",
-      "type": "Brella"
+      "type": "Shelter"
     },
     {
       "id": 7010,
@@ -9914,7 +10167,7 @@
       "special": "Tenta Missiles",
       "specialPoints": 210,
       "sub": "Curling Bomb",
-      "type": "Shooter"
+      "type": "Stringer"
     },
     {
       "id": 8000,
@@ -9940,7 +10193,7 @@
       "special": "Zipcaster",
       "specialPoints": 200,
       "sub": "Burst Bomb",
-      "type": "Splatana"
+      "type": "Saber"
     },
     {
       "id": 8010,
@@ -9966,7 +10219,7 @@
       "special": "Ultra Stamp",
       "specialPoints": 180,
       "sub": "Torpedo",
-      "type": "Splatana"
+      "type": "Saber"
     }
   ]
 }

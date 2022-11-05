@@ -92,7 +92,7 @@ fcCmds = SlashCommandGroup('fc', 'Commands for friend codes')
 play = voice.create_subgroup(name='play', description='Commands related to playing audio')
 
 def loadConfig():
-	global configData, helpfldr, mysqlHandler, dev, head
+	global configData, mysqlHandler, dev, head
 	try:
 		with open(f"{dirname}/config/discordbot.json", 'r') as json_config:
 			configData = json.load(json_config)
@@ -187,7 +187,7 @@ async def cmdGithub(ctx):
 
 @client.slash_command(name='help', description='Displays the help menu')
 async def cmdHelp(ctx):
-	await ctx.respond("Help Menu:", view=serverutils.HelpMenuView(configData['help']))
+	await ctx.respond("Help Menu:", view=serverutils.HelpMenuView(f"{dirname}/help"))
 
 @adminAnnounceCmds.command(name='set', description="Sets a chat channel to receive announcements from my developers")
 async def cmdAnnounceAdd(ctx, channel: Option(discord.TextChannel, "Channel to set to receive announcements", required=True)):
@@ -419,17 +419,15 @@ async def cmdStoreDMAbilty(ctx, flag: Option(str, "ABILITY/BRAND/GEAR to stop DM
 
 # --- S3 commands ---
 
-#TODO: Need cmd reporting increments
-
 @s3WeaponCmds.command(name='info', description='Gets info on a weapon in Splatoon 3')
 async def cmdS3WeaponInfo(ctx, name: Option(str, "Name of the weapon to get info for", required=True)):
 	await s3Handler.cmdWeaponInfo(ctx, str(name))
 
-@s3WeaponCmds.command(name='special', description='Lists all Splatoon 3 weapons a given special weapon')
+@s3WeaponCmds.command(name='special', description='Lists all Splatoon 3 weapons with a given special weapon')
 async def cmdS3WeaponSpecial(ctx, special: Option(str, "Name of the special to get matching weapons for", choices = splat3info.getSpecialNames(), required=True)):
 	await s3Handler.cmdWeaponSpecial(ctx, str(special))
 
-@s3WeaponCmds.command(name='sub', description='Lists all Splatoon 3 weapons a given subweapon')
+@s3WeaponCmds.command(name='sub', description='Lists all Splatoon 3 weapons with a given subweapon')
 async def cmdS3WeaponSub(ctx, special: Option(str, "Name of the subweapon to get matching weapons for", choices = splat3info.getSubweaponNames(), required=True)):
 	await s3Handler.cmdWeaponSub(ctx, str(special))
 
@@ -756,7 +754,7 @@ async def on_ready():
 		serverConfig = serverconfig.ServerConfig(mysqlHandler)
 		commandParser = commandparser.CommandParser(serverConfig, client.user.id)
 		ownerCmds = ownercmds.ownerCmds(client, mysqlHandler, commandParser, owners)
-		serverUtils = serverutils.serverUtils(client, mysqlHandler, serverConfig, configData['help'])
+		serverUtils = serverutils.serverUtils(client, mysqlHandler, serverConfig)
 		friendCodes = friendcodes.FriendCodes(mysqlHandler, stringCrypt)
 		nsoTokens = nsotoken.Nsotoken(client, configData, mysqlHandler, stringCrypt, friendCodes)
 		nsoHandler = nsohandler.nsoHandler(client, mysqlHandler, nsoTokens, splat2info, configData)

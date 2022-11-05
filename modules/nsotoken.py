@@ -125,6 +125,9 @@ class Nsotoken():
 			print("No nso_userid configured, can't get bot NSO client")
 			return None
 
+		# Might get called before SQL has connected, so await connection
+		await self.sqlBroker.wait_for_startup()
+
 		nso = await self.get_nso_client(self.config['nso_userid'])
 		if not nso.is_logged_in():
 			print("Someone wants to use the bot NSO client, but it's not logged in!")
