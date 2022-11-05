@@ -45,20 +45,20 @@ There are a few admin commands to configure the bot. To run these commands, you 
 
 Commands to get info from SplatNet 3 - These commands are largely beta. Feedback is welcome.
 
-`/s3 stats sr` : Displays your stats from Salmon Run
-`/s3 stats battle NUM` : Displays the results of a previous battle (1-50)
-`/s3 fit` : Posts your current gear loadout
-`/s3 fest` : Shows if there is an announced SplatFest
-`/s3 scrim` : Generate a list of Splatoon 3 maps and modes
-`/s3 weapons info WEAP` : Gets Sub/Special/Level/Points for special for WEAP
-`/s3 weapons sub SUB` : Gets all weapons with the subweapon SUB
-`/s3 weapons special SPECIAL` : Gets all weapons with the special SPECIAL
-`/s3 weapons stats WEAPON` : Gets gameplay stats for a weapon
-`/s3 store list` : Shows the current items in the store
-`/s3 store order GEAR` : Orders the name of a piece of gear in the store
-`/s3 storedm add TRIGGER` : Sends a DM when gear with TRIGGER arrives. TRIGGER is Name of gear/brand of gear/main ability on gear
-`/s3 storedm remove TRIGGER` : Removes you from getting a DM with TRIGGER (see above for TRIGGER)
-`/s3 storedm list` : Shows your current triggers for getting a DM on items arriving in the store
+ - `/s3 stats sr` : Displays your stats from Salmon Run
+ - `/s3 stats battle NUM` : Displays the results of a previous battle (1-50)
+ - `/s3 fit` : Posts your current gear loadout
+ - `/s3 fest` : Shows if there is an announced SplatFest
+ - `/s3 scrim` : Generate a list of Splatoon 3 maps and modes
+ - `/s3 weapons info WEAP` : Gets Sub/Special/Level/Points for special for WEAP
+ - `/s3 weapons sub SUB` : Gets all weapons with the subweapon SUB
+ - `/s3 weapons special SPECIAL` : Gets all weapons with the special SPECIAL
+ - `/s3 weapons stats WEAPON` : Gets gameplay stats for a weapon
+ - `/s3 store list` : Shows the current items in the store
+ - `/s3 store order GEAR` : Orders the name of a piece of gear in the store
+ - `/s3 storedm add TRIGGER` : Sends a DM when gear with TRIGGER arrives. TRIGGER is Name of gear/brand of gear/main ability on gear
+ - `/s3 storedm remove TRIGGER` : Removes you from getting a DM with TRIGGER (see above for TRIGGER)
+ - `/s3 storedm list` : Shows your current triggers for getting a DM on items arriving in the store
 
 ### Music Commands
 
