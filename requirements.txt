@@ -9,3 +9,6 @@ html5lib
 pycryptodome
 requests
 itunes-app-scraper-dmi
+Pillow
+python-dateutil
+cairosvg

@@ -29,6 +29,10 @@ class FriendCodes:
 		if friend_code is None:
 			raise Exception("Malformed friend code")
 
+		existing = await self.getFriendCode(userid)
+		if (existing is not None) and (friend_code == existing):
+			return  # No change
+
 		ciphertext = self.stringCrypt.encryptString(friend_code)
 
 		cur = await self.sqlBroker.connect()

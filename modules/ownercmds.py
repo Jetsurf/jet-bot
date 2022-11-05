@@ -62,9 +62,10 @@ class ownerCmds:
 		if ctx.user not in self.owners:
 			await ctx.response.send_message("You are not an owner, this command is limited to my owners only :cop:")
 		else:
-			code = codeblk
+			code = codeblk.replace('`', '')
 			theeval = f"async def func(): \n{textwrap.indent(code, ' ')}"
 			try:
+				print(f"EVAL called by {ctx.user.name}\n{theeval}")
 				exec(theeval, env)
 			except Exception as err:
 				embed.title = "**ERROR IN EXEC SETUP**"

@@ -194,5 +194,20 @@ class MysqlSchema():
 			)
 			await self.sqlBroker.c_commit(cur)
 
+		if not await self.sqlBroker.hasTable(cur, 's3storedms'):
+			print("Creating table 's3storedms'...")
+			await cur.execute(
+			"""
+			CREATE TABLE s3storedms
+			(
+			serverid BIGINT unsigned NOT NULL,
+			clientid BIGINT unsigned NOT NULL,
+			dmtriggers TEXT,
+			PRIMARY KEY (`clientid`)
+			) ENGINE=InnoDB
+			"""
+			)
+			await self.sqlBroker.c_commit(cur)
+
 		await self.sqlBroker.close(cur)
 		return

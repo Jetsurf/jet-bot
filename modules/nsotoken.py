@@ -1,11 +1,11 @@
 from __future__ import print_function
 import asyncio
 
-#PyNSO Specific
-import pynso
-from pynso.nso_api import NSO_API
-from pynso.imink import IMink
-from pynso.nso_api_s2 import NSO_API_S2
+# nso-api specific
+import nso_api
+from nso_api.nso_api import NSO_API
+from nso_api.imink import IMink
+from nso_api.nso_api_s2 import NSO_API_S2
 
 import mysqlhandler, discord
 import requests, json, re, sys, uuid, time
@@ -77,17 +77,21 @@ class tokenHandler(Modal):
 			self.stop()
 
 class Nsotoken():
-	def __init__(self, client, config, mysqlhandler, stringCrypt):
+	def __init__(self, client, config, mysqlhandler, stringCrypt, friendCodes):
 		self.client = client
 		self.config = config
 		self.session = requests.Session()
 		self.sqlBroker = mysqlhandler
-		self.scheduler = AsyncIOScheduler()
 		self.stringCrypt = stringCrypt
-		self.scheduler.add_job(self.updateAppVersion, 'cron', hour="3", minute='0', second='35', timezone='UTC')
-		self.scheduler.add_job(self.nso_client_cleanup, 'cron', hour="0", minute='0', second='0', timezone='UTC')
+		self.friendCodes = friendCodes
 		self.imink = IMink("Jet-bot/1.0.0 (discord=jetsurf#8514)")  # TODO: Figure out bot owner automatically
 		self.nso_clients = {}
+
+		# Set up scheduled tasks
+		self.scheduler = AsyncIOScheduler()
+		self.scheduler.add_job(self.updateAppVersion, 'interval', hours = 24)
+		self.scheduler.add_job(self.nso_client_cleanup, 'interval', minutes = 5)
+		self.scheduler.start()
 
 	async def migrate_tokens_if_needed(self):
 		cur = await self.sqlBroker.connect()
@@ -121,6 +125,9 @@ class Nsotoken():
 			print("No nso_userid configured, can't get bot NSO client")
 			return None
 
+		# Might get called before SQL has connected, so await connection
+		await self.sqlBroker.wait_for_startup()
+
 		nso = await self.get_nso_client(self.config['nso_userid'])
 		if not nso.is_logged_in():
 			print("Someone wants to use the bot NSO client, but it's not logged in!")
@@ -133,6 +140,8 @@ class Nsotoken():
 
 	# Given a userid, returns an NSO client for that user.
 	async def get_nso_client(self, userid):
+		userid = int(userid)
+
 		# If we already have a client for this user, just return it
 		if self.nso_clients.get(userid):
 			return self.nso_clients[userid]
@@ -152,15 +161,28 @@ class Nsotoken():
 		self.nso_clients[userid] = nso
 		return nso
 
+	async def remove_nso_client(self, userid):
+		userid = int(userid)
+
+		# Record friend code from client object before deletion
+		client = self.nso_clients[userid]
+		if not client is None:
+			fc = client.get_cached_friend_code()
+			if not fc is None:
+				await self.friendCodes.setFriendCode(userid, fc)
+
+		# Remove it
+		del self.nso_clients[userid]
+
 	async def nso_client_cleanup(self):
 		for userid in list(self.nso_clients):
 			client = self.nso_clients[userid]
 			idle_seconds = client.get_idle_seconds()
 			if idle_seconds > (4 * 3600):
 				print(f"NSO client for {userid} not used for {int(idle_seconds)} seconds. Deleting.")
-				del self.nso_clients[userid]
+				await self.remove_nso_client(userid)
 
-	# This is a callback which is called by pynso when a client object's
+	# This is a callback which is called by nso-api when a client object's
 	#  keys change.
 	# This callback is not async, so we use asyncio.create_task to call
 	#  an async method later that does the actual work.

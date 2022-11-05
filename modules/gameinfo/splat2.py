@@ -188,7 +188,7 @@ class SplatMatchResult():
 		return msg
 
 
-class SplatInfo():
+class Splat2():
 	def __init__(self):
 		self.initModes()
 		self.initMaps()

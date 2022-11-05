@@ -69,19 +69,11 @@ class HelpMenuView(discord.ui.View):
 		self.add_item(HelpDropDown(helpdir))
 
 class serverUtils():
-	def __init__(self, client, mysqlhandler, serverconfig, helpfldr):
+	def __init__(self, client, mysqlhandler, serverconfig):
 		self.sqlBroker = mysqlhandler
-		self.helpfldr = helpfldr
 		self.serverConfig = serverconfig
 		self.client = client
 		self.statusnum = 1
-		self.valid_commands = {
-			'base'		: 		[ "help", "github", "support" ],
-			'base_sn' 	: 		[ "currentmaps", "nextmaps", "nextsr", "currentsr", "splatnetgear", "storedm" ],
-			'user_sn'	:		[ "rank", "stats", "srstats", "order", "passport", "emote", "message", "getemotes", "fc" ],
-			'hybrid_sn' : 		[ "weapon", "weapons","map", "maps", "battle", "battles" ],
-			'voice' 	:	 	[ "join", "play", "playrandom", "currentsong", "queue", "stop", "skip", "volume", "sounds", "leavevoice" ]
-		}
 		self.scheduler = AsyncIOScheduler()
 		self.scheduler.add_job(self.changeStatus, 'cron', minute='*/5', timezone='UTC') 
 		self.scheduler.start()
@@ -225,35 +217,16 @@ class serverUtils():
 		else:
 			return False
 
-	async def report_cmd_totals(self, message):
-		embed = discord.Embed(colour=0x00FFF3)
-		embed.title = "Command Totals"
-		cur = await self.sqlBroker.connect()
+	#TODO: Readd cmd report. Old one is way to dumb, new data will help determine how it's presented
 
-		for cmd_set in self.valid_commands:
-			theString = ""
-			for cmd in self.valid_commands[cmd_set]:
-				stmt = "SELECT IFNULL(SUM(count), 0) FROM commandcounts WHERE (command = %s)"
-				await cur.execute(stmt, (cmd,))
-				count = await cur.fetchone()
-				theString = f"{theString} **{cmd}** : {str(count[0])}\n"
-			embed.add_field(name=f"**{cmd_set}**", value=theString, inline=True)
-		await self.sqlBroker.close(cur)
-		await message.channel.send(embed=embed)
-
-	async def increment_cmd(self, ctx, cmd):
-		#Needs a try catch to prevent failures if mysql is acting up to allow slash commands to not have repetitive code for handling the exception there
-		#This will also catch DM'ed slash commands trying to be incremented
+	async def contextIncrementCmd(self, ctx):
 		try:
-			if cmd not in self.valid_commands['base'] and cmd not in self.valid_commands['base_sn'] and cmd not in self.valid_commands['user_sn'] and cmd not in self.valid_commands['hybrid_sn'] and cmd not in self.valid_commands['voice']:
-				return
-
 			cur = await self.sqlBroker.connect()
 			stmt = "INSERT INTO commandcounts (serverid, command, count) VALUES (%s, %s, 1) ON DUPLICATE KEY UPDATE count = count + 1;"
 			if ctx.guild == None:
-				await cur.execute(stmt, ('0', cmd,))
+				await cur.execute(stmt, ('0', ctx.command.qualified_name,))
 			else:
-				await cur.execute(stmt, (ctx.guild.id, cmd,))
+				await cur.execute(stmt, (ctx.guild.id, ctx.command.qualified_name,))
 			await self.sqlBroker.commit(cur)
 		except:
 			pass

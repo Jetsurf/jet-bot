@@ -1,259 +1,33 @@
 import discord, asyncio
 import mysqlhandler, nsotoken
-import re, time, requests, random
+import json, sys, re, time, requests, random, hashlib, os, io
+import s3.storedm
+import s3.schedule
+import s3.imageextractor
 
-#Image Editing
-from PIL import Image, ImageFont, ImageDraw 
+from s3.imagebuilder import S3ImageBuilder
+from s3.embedbuilder import S3EmbedBuilder
+
 from io import BytesIO
+from os.path import exists
 import base64
 import datetime
 import dateutil.parser
 
-class S3Utils():
-	@classmethod
-	def createBattleDetailsEmbed(cls, details):
-		embed = discord.Embed(colour=0x0004FF)
-		playerName = details['data']['vsHistoryDetail']['player']['name']
-		type = details['data']['vsHistoryDetail']['vsMode']['mode']
-		mode = details['data']['vsHistoryDetail']['vsRule']['name']
-		judgement = details['data']['vsHistoryDetail']['judgement']
-		playerId = details['data']['vsHistoryDetail']['player']['id']
-
-
-		typeNames = {"BANKARA": "Anarchy Battle", "FEST": "Splatfest", "X": "X", "LEAGUE": "League", "PRIVATE": "Private Battle"}
-		judgementNames = {"WIN": "Win", "LOSS": "Loss", "DEEMED_LOSE": "Loss due to early disconnect", "DRAW": "Draw"}
-
-		myTeam = details['data']['vsHistoryDetail']['myTeam']
-		otherTeams = details['data']['vsHistoryDetail']['otherTeams']
-
-		embed.title = f"Stats for {playerName}'s last battle - {typeNames.get(type, type)} - {mode} (Kills(Assists)/Deaths/Specials)"
-
-		cls.createBattleDetailsTeamEmbed(embed, "My Team", myTeam)
-
-		for t in otherTeams:
-			cls.createBattleDetailsTeamEmbed(embed, "Opposing Team", t)
-
-		embed.set_footer(text=f"Judgement {judgementNames.get(judgement, judgement)}")
-		return embed
-
-	@classmethod
-	def createBattleDetailsTeamEmbed(cls, embed, name, team):
-		stats = []
-		for p in team['players']:
-			result = p['result']
-
-			if result is None:
-				stats.append("%s \u2014 %s \u2014 (disconnect)" % (p['weapon']['name'], discord.utils.escape_markdown(p['name']),))
-			else:
-				stats.append("%s \u2014 %s \u2014 %d(%d)/%d/%d paint %d" % (p['weapon']['name'], discord.utils.escape_markdown(p['name']), result['kill'], result['assist'], result['death'], result['special'], p['paint']))
-		embed.add_field(name = name, value = "\n".join(stats), inline = False)
-
-	@classmethod
-	def createSplatfestEmbed(cls, splatfest):
-		now = datetime.datetime.now(datetime.timezone.utc)
-
-		starttime = dateutil.parser.isoparse(splatfest['startTime'])
-		endtime   = dateutil.parser.isoparse(splatfest['endTime'])
-
-		if starttime > now:
-			whenstr = f"Starts at <t:{int(starttime.timestamp())}> (<t:{int(starttime.timestamp())}:R>)"
-		elif endtime > now:
-			whenstr = f"Ends at <t:{int(endtime.timestamp())}> (<t:{int(endtime.timestamp())}:R>)"
-		else:
-			whenstr = f"Ended at <t:{int(endtime.timestamp())}>>"
-
-		embed = discord.Embed(colour=0x0004FF, description = whenstr)
-		embed.title = splatfest['title']
-		embed.set_image(url = splatfest['image']['url'])
-
-		for t in splatfest['teams']:
-			id = base64.b64decode(t['id']).decode("utf-8")
-			which = re.sub('^.*:', '', id)
-			embed.add_field(name = f'Team {which}', value = t['teamName'])
-
-		return embed
-
-
-	@classmethod
-	def createSalmonRunResultsEmbed(cls, results):
-		embed = discord.Embed(colour=0x0004FF)
-		historyGroups = results['data']['coopResult']['historyGroups']['nodes']
-		stats = results['data']['coopResult']
-		pointCard = results['data']['coopResult']['pointCard']
-		embed.title = f"{lastGameDetails['afterGrade']['name']} - {stats['regularGradePoint']}"
-		embed.add_field(name = "Totals", value = f"Shifts Worked: {pointCard['playCount']}\nPower Eggs: {pointCard['deliverCount']}\nGolden Eggs: {pointCard['goldenDeliverCount']}\nTotal Points: {pointCard['totalPoint']}\nKing Salmonoid Kills: {pointCard['defeatBossCount']}", inline = True)
-		embed.add_field(name = "Scales", value = f"Bronze: {stats['scale']['bronze']}\nSilver: {stats['scale']['silver']}\nGold:{stats['scale']['gold']}", inline = True)
-		
-		bossSeen = 0
-		bossDowns = 0
-		clears = 0
-		pwrEggTotal = 0
-		gldEggTotal = 0
-		matches = 0
-		for group in historyGroups:
-			#Here for checking highest results
-			for match in group['historyDetails']['nodes']:
-				if match['bossResult'] != None:
-					bossSeen += 1
-					if match['bossResult']['hasDefeatBoss']:
-						bossDowns += 1
-
-				pwrEggTotal += match['myResult']['deliverCount']
-				gldEggTotal += match['myResult']['goldenDeliverCount']
-				if match['gradePointDiff'] == 'UP':
-					clears += 1
-				matches += 1
-
-		#embed.add_field(name = f"Average Stats (Last {matches})", value = "STUFF", inline = True)
-		embed.add_field(name = f"Total Stats (Last {matches})", value = f"King Salmonoids Seen: {bossSeen}\nKing Salmonids Clears: {bossDowns}\nGolden Eggs: {gldEggTotal}\nPower Eggs: {pwrEggTotal}", inline = True)
-
-		return embed
-
-	@classmethod
-	def createGearSubsEmbed(cls, embed, gear):
-		out = []
-		out.append(f"Main: {gear['primaryGearPower']['name']}")
-		for sub in gear['additionalGearPowers']:
-			out.append(f"Sub: {sub['name']}")
-
-		embed.add_field(name=f"{gear['__isGear'].replace('Gear', '')} - {gear['name']}", value="\n".join(out))
-
-	@classmethod
-	def createMultiplayerStatsEmbed(cls, statssimple, statsfull, species):
-		embed = discord.Embed(colour=0x0004FF)
-		name = statsfull['data']['currentPlayer']['name']
-		id = statsfull['data']['currentPlayer']['nameId']
-		shoes = statsfull['data']['currentPlayer']['shoesGear']
-		clothes = statsfull['data']['currentPlayer']['clothingGear']
-		head = statsfull['data']['currentPlayer']['headGear']
-		weapon = statsfull['data']['currentPlayer']['weapon']
-		byname = statsfull['data']['currentPlayer']['byname']
-		usedWeaps = statsfull['data']['playHistory']['frequentlyUsedWeapons']
-		paintpt = statsfull['data']['playHistory']['paintPointTotal']
-		maxRank = statsfull['data']['playHistory']['udemaeMax']
-		winCount = statsfull['data']['playHistory']['winCountTotal']
-		totalBattle = statssimple['data']['playHistory']['battleNumTotal']
-		species = species['data']['currentPlayer']['species']
-
-		embed.title = f"Multiplayer stats for {name}#{id} - {species.title()}"
-		percent = "{:.0f}".format(winCount/totalBattle * 100 if totalBattle > 0 else 0.0)
-		embed.add_field(name="Stats", value=f"Title: {byname}\nTotal Turf Inked: {str(paintpt)}\nBattles (Total/Won/Percent) : {str(totalBattle)}/{str(winCount)}/{str(percent)}%\n")
-		cls.createGearSubsEmbed(embed, head)
-		cls.createGearSubsEmbed(embed, clothes)
-		cls.createGearSubsEmbed(embed, shoes)
-
-		return embed
-
-	#Ensure you have 'hosted_url' AND 'web_dir' both set before calling this!
-	@classmethod
-	def createNamePlateImage(cls, playerJson, hostedUrl, webDir):
-		imgResponse = requests.get(playerJson['data']['currentPlayer']['nameplate']['background']['image']['url'])
-		npImage = Image.open(BytesIO(imgResponse.content)).convert("RGBA")
-		
-		s2FontSmall = ImageFont.truetype('/home/dbot/s2.otf', size=24)
-		s2FontMed = ImageFont.truetype('/home/dbot/s2.otf', size=36)
-		s1FontLarge = ImageFont.truetype('/home/dbot/s1.otf', size=64)
-
-		MAXW, MAXH = 700, 200
-		size = (72, 72)
-		i = 3 #Max badges is 3
-		for badge in playerJson['data']['currentPlayer']['nameplate']['badges']:
-			if badge is None:
-				break
-			else:	
-				badgeRes = requests.get(badge['image']['url'])
-				badgeImg = Image.open(BytesIO(badgeRes.content)).convert("RGBA")
-				badgeImg.thumbnail(size, Image.ANTIALIAS)
-				npImage.paste(badgeImg, (MAXW-(i*size[0]), MAXH-size[1]), badgeImg)
-				i-=1
-
-		imgEdit = ImageDraw.Draw(npImage)
-
-		imgEdit.text((10,10), playerJson['data']['currentPlayer']['byname'], (255, 255, 255), font=s2FontMed, anchor='lt')
-		imgEdit.text((10,175), f"#{playerJson['data']['currentPlayer']['nameId']}", (255, 255, 255), font=s2FontSmall, anchor='lt')
-		imgEdit.text((MAXW/2, MAXH/2), playerJson['data']['currentPlayer']['name'], (255, 255, 255), font=s1FontLarge, anchor='mm')
-
-		imgName = f"{playerJson['data']['currentPlayer']['name']}{playerJson['data']['currentPlayer']['nameId']}.png"
-		imgUrl = f"{hostedUrl}/s3/nameplates/{imgName}"
-		imgPath = f"{webDir}/s3/nameplates/{imgName}"
-
-		npImage.save(imgPath, "PNG")
-		return imgUrl
-
-	@classmethod
-	def addCircleToImage(self, image, HW, BUF):
-		circleImg = Image.new("RGBA", (HW, HW), (255, 255, 255 ,0))
-		circDraw = ImageDraw.Draw(circleImg)
-		bounds = (0, 0, HW-2, HW-2)
-		circDraw.ellipse(bounds, fill="black")
-		circleImg.paste(image, (0 + int(BUF/2),0 + int(BUF/2)), image)
-		return circleImg
-
-	@classmethod
-	def createFitImage(self, statsjson, hostedUrl, webDir):
-		gear = { 'weapon' : statsjson['data']['currentPlayer']['weapon'], 'head' : statsjson['data']['currentPlayer']['headGear'],
-				'clothes' : statsjson['data']['currentPlayer']['clothingGear'], 'shoes' : statsjson['data']['currentPlayer']['shoesGear'] }
-		s2FontSmall = ImageFont.truetype('/home/dbot/s2.otf', size=24)
-		MAXW, MAXH = 860, 294
-		TEXTBUF = 24
-		GHW = 220
-		MAINHW = 70
-		SUBHW = 50
-		BUF = 5
-		TEXTCOLOR = (0, 150, 150, 255)
-		retImage = Image.new("RGBA", (MAXW, MAXH), (0, 0, 0, 0))
-		retDraw = ImageDraw.Draw(retImage)
-		i = 4
-		for k, v in gear.items():
-			res = requests.get(v['image']['url'])
-			gimg = Image.open(BytesIO(res.content)).convert("RGBA")
-			gimg.thumbnail((GHW, GHW), Image.ANTIALIAS)
-			if k == 'weapon':
-				retDraw.text((MAXW - (i * GHW) + int(GHW / 2), 0 + 3), f"{v['name']}", TEXTCOLOR, font=s2FontSmall, anchor='mt')
-				retImage.paste(gimg, (MAXW - (i * GHW) + int((MAINHW - SUBHW) / 2), TEXTBUF), gimg)
-				reqSub = requests.get(v['subWeapon']['image']['url'])
-				reqSpec = requests.get(v['specialWeapon']['image']['url'])
-				subImg = Image.open(BytesIO(reqSub.content)).convert("RGBA")
-				subImg.thumbnail((SUBHW-BUF, SUBHW-BUF), Image.ANTIALIAS)
-				specImg = Image.open(BytesIO(reqSpec.content)).convert("RGBA")
-				specImg.thumbnail((SUBHW - BUF, SUBHW - BUF), Image.ANTIALIAS)
-				center = (int(MAXW - (i * GHW) + (GHW / 2)), GHW + TEXTBUF)
-				subImg = self.addCircleToImage(subImg, SUBHW, BUF)
-				specImg = self.addCircleToImage(specImg, SUBHW, BUF)
-				retImage.paste(subImg, (center[0]-SUBHW, center[1]), subImg)
-				retImage.paste(specImg, center, specImg)
-			else:
-				retDraw.text((MAXW - (i * GHW) + int(GHW / 2) - (MAINHW - SUBHW), 0 + 3), f"{v['name']}", TEXTCOLOR, font=s2FontSmall, anchor='mt')
-				retImage.paste(gimg, (MAXW - (i * GHW) - int((MAINHW - SUBHW) / 2), TEXTBUF), gimg)
-				maReq = requests.get(v["primaryGearPower"]['image']['url'])
-				maImg = Image.open(BytesIO(maReq.content)).convert("RGBA")
-				maImg.thumbnail((MAINHW-BUF, MAINHW-BUF), Image.ANTIALIAS)
-				maImg = self.addCircleToImage(maImg, MAINHW, BUF)
-				retImage.paste(maImg, (MAXW - (i * GHW) - (MAINHW - SUBHW), GHW - (MAINHW - SUBHW) + TEXTBUF), maImg)
-				j = 1
-				for ability in v['additionalGearPowers']:
-					abilReq = requests.get(ability['image']['url'])
-					abilImg = Image.open(BytesIO(abilReq.content)).convert("RGBA")
-					abilImg.thumbnail((SUBHW-BUF, SUBHW-BUF), Image.ANTIALIAS)
-					abilImg = self.addCircleToImage(abilImg, SUBHW, BUF)
-					retImage.paste(abilImg, (MAXW - (i * GHW) + (j * SUBHW),GHW + TEXTBUF), abilImg)
-					j += 1
-				retDraw.line([((MAXW - (i * GHW) - (MAINHW - SUBHW), 0)), ((MAXW - (i * GHW) - (MAINHW - SUBHW), MAXH))], fill="black", width=3)
-			i -= 1
-
-		retDraw.rectangle((0, 0, MAXW - 1, MAXH - 1), outline="black", width=3)
-		imgName = f"{statsjson['data']['currentPlayer']['name']}-{statsjson['data']['currentPlayer']['nameId']}.png"
-		retImage.save(f"{webDir}/s3/fits/{imgName}", "PNG")
-		return f"{hostedUrl}/s3/fits/{imgName}"	
-
 class S3Handler():
-	def __init__(self, client, mysqlHandler, nsotoken, splat3info, configData):
+	def __init__(self, client, mysqlHandler, nsotoken, splat3info, configData, fonts, cachemanager):
 		self.client = client
 		self.sqlBroker = mysqlHandler
 		self.nsotoken = nsotoken
 		self.splat3info = splat3info
+		self.configData = configData
 		self.hostedUrl = configData.get('hosted_url')
 		self.webDir = configData.get('web_dir')
+		self.schedule = s3.schedule.S3Schedule(nsotoken, mysqlHandler, cachemanager)
+		self.storedm = s3.storedm.S3StoreHandler(client, nsotoken, splat3info, mysqlHandler, configData)
+		self.imageextractor = s3.imageextractor.S3ImageExtractor(nsotoken, cachemanager)
+		self.fonts = fonts
+		self.cachemanager = cachemanager
 
 	async def cmdWeaponInfo(self, ctx, name):
 		match = self.splat3info.weapons.matchItem(name)
@@ -292,6 +66,10 @@ class S3Handler():
 		for w in weapons:
 			embed.add_field(name=w.name(), value=f"Special: {w.special().name()}\nPts for Special: {str(w.specpts())}\nLevel To Purchase: {str(w.level())}", inline=True)
 		await ctx.respond(embed=embed)
+
+	async def cmdWeaponRandom(self, ctx):
+		weapon = self.splat3info.weapons.getRandomItem()
+		await ctx.respond(f"Random weapon: **{weapon.name()}** (subweapon **{weapon.sub().name()}**/special **{weapon.special().name()}**)")
 
 	async def cmdScrim(self, ctx, num, modelist):
 		if (num < 0) or (num > 20):
@@ -346,8 +124,10 @@ class S3Handler():
 			await ctx.respond("Failed to retrieve battle details")
 			return
 
-		embed = S3Utils.createBattleDetailsEmbed(details)
-		await ctx.respond(embed=embed)
+		weapon_thumbnail_cache = self.cachemanager.open("s3.weapons.small-2d", (3600 * 24 * 90))  # Cache for 90 days
+
+		image_io = S3ImageBuilder.createBattleDetailsImage(details, weapon_thumbnail_cache, self.fonts)
+		await ctx.respond(file = discord.File(image_io, filename = "battle.png", description = "Battle details"))
 
 	async def cmdStats(self, ctx):
 		await ctx.defer()
@@ -367,9 +147,9 @@ class S3Handler():
 
 		species = nso.s3.get_species_cur_weapon()
 
-		embed = S3Utils.createMultiplayerStatsEmbed(statssimple, statsfull, species)
+		embed = S3EmbedBuilder.createMultiplayerStatsEmbed(statssimple, statsfull, species)
 		if self.webDir and self.hostedUrl:
-			imgUrl = S3Utils.createNamePlateImage(statsfull, self.hostedUrl, self.webDir)
+			imgUrl = S3ImageBuilder.createNamePlateImage(statsfull, self.fonts, self.configData)
 			embed.set_thumbnail(url=f"{imgUrl}?{str(time.time() % 1)}")
 
 		await ctx.respond(embed = embed)
@@ -388,7 +168,7 @@ class S3Handler():
 			print(f"get_salmon_run_stats returned none for user {ctx.user.id}")
 			return
 
-		embed = S3Utils.createSalmonRunResultsEmbed(srstats)
+		embed = S3EmbedBuilder.createSalmonRunResultsEmbed(srstats)
 		await ctx.respond(embed = embed)
 
 	async def cmdFit(self, ctx):
@@ -405,8 +185,8 @@ class S3Handler():
 			print(f"cmdFit: get_player_stats_full returned none for {ctx.user.id}")
 			return
 
-		url = S3Utils.createFitImage(statsfull, self.hostedUrl, self.webDir)
-		await ctx.respond(f"{url}?{str(time.time() % 1)}")
+		image_io = S3ImageBuilder.createFitImage(statsfull, self.fonts, self.configData)
+		await ctx.respond(file = discord.File(image_io, filename = "fit.png", description = "Fit image"))
 
 	async def cmdFest(self, ctx):
 		await ctx.defer()
@@ -425,5 +205,145 @@ class S3Handler():
 			print(f"get_splatfest_list returned none for user {ctx.user.id}")
 			return
 
-		embed = S3Utils.createSplatfestEmbed(festinfo['data']['festRecords']['nodes'][0])
+		embed = S3EmbedBuilder.createSplatfestEmbed(festinfo['data']['festRecords']['nodes'][0])
 		await ctx.respond(embed = embed)
+
+	async def cmdSchedule(self, ctx, which):
+		await ctx.defer()
+
+		name = self.schedule.schedule_names[which]
+
+		sched = self.schedule.get_schedule(which, count = 2)
+		if len(sched) == 0:
+			await ctx.respond(f"That schedule is empty.", ephemeral = True)
+			return
+
+		now = time.time()
+
+		embed = discord.Embed(colour=0x0004FF)
+		embed.title = f"{name} Schedule"
+
+		for rot in sched:
+			title = rot['mode']
+
+			if rot['endtime'] < now:
+				title += f" \u2014 Ended"
+			elif rot['starttime'] <= now and rot['endtime'] > now:
+				title += f" \u2014 Started at <t:{int(rot['starttime'])}>"
+			else:
+				title += f" \u2014 Upcoming at <t:{int(rot['starttime'])}>"
+
+			map_names = map(lambda m: m['name'], rot['maps'])
+
+			text = "\n".join(map_names)
+
+			embed.add_field(name = title, value = text, inline = False)
+
+		await ctx.respond(embed = embed)
+
+	async def cmdStoreList(self, ctx):
+		if self.storedm.cacheState:
+			await ctx.respond(embed=S3EmbedBuilder.createStoreListingEmbed(self.storedm.storecache, self.fonts, self.configData))
+		else:
+			#TODO...
+			await ctx.respond("I can't fetch the current store listing, please try again later")
+
+	async def cmdS3StoreOrder(self, ctx, item, override):
+		await ctx.defer()
+
+		nso = await self.nsotoken.get_nso_client(ctx.user.id)
+		if not nso.is_logged_in():
+			await ctx.respond("You don't have a NSO token setup! Run /token to get started.")
+			return
+
+		match = self.splat3info.gear.matchItem(item)
+		if match.isValid():
+			store = nso.s3.get_store_items()
+			if store == None:
+				await ctx.respond("Something went wrong!")
+				return
+
+			theItem = None
+			for item in store['data']['gesotown']['limitedGears']:
+				if item['gear']['name'] == match.get().name():
+					theItem = item
+					break
+
+			if theItem == None:
+				for item in store['data']['gesotown']['pickupBrand']['brandGears']:
+					if item['gear']['name'] == match.get().name():
+						theItem = item
+						break
+
+			if theItem == None:
+				await ctx.respond(f"{match.get().name()} isn't in the store right now.")
+				return
+			else:
+				ret = nso.s3.do_store_order(theItem['id'], override)
+				if ret['data']['orderGesotownGear']['userErrors'] == None:
+					#createStoreEmbed(self, gear, brand, title, configData):
+					brand = self.splat3info.brands.getItemByName(theItem['gear']['brand']['name'])
+					await ctx.respond(embed = S3EmbedBuilder.createStoreEmbed(theItem, brand, "Ordered! Talk to Murch in game to get it!", self.configData))
+				elif ret['data']['orderGesotownGear']['userErrors'][0]['code'] == "GESOTOWN_ALREADY_ORDERED":
+					await ctx.respond("You already have an item on order! If you still want to order this, run this command again with Override set to True.")
+				else:
+					await ctx.respond("Something went wrong.")
+
+				return
+		else:
+			if len(match.items) < 1:
+				await ctx.respond(f"Can't find any gear with the name {item}")
+				return
+			else:
+				embed = discord.Embed(colour=0xF9FC5F)
+				embed.title = "Did you mean?"
+				embed.add_field(name="Gear", value=", ".join(map(lambda item: item.name(), match.items)), inline=False)
+				await ctx.respond(embed = embed)
+				return
+
+	async def cmdWeaponStats(self, ctx, weapon):
+		await ctx.defer()
+
+		nso = await self.nsotoken.get_nso_client(ctx.user.id)
+		if not nso.is_logged_in():
+			await ctx.respond("You don't have a NSO token setup! Run /token to get started.")
+			return
+
+		match = self.splat3info.weapons.matchItem(weapon)
+		if match.isValid():
+			weapons = nso.s3.get_weapon_stats()
+			if weapons == None:
+				await ctx.respond("Something went wrong!")
+				return
+
+			theWeapon = None
+			for node in weapons['data']['weaponRecords']['nodes']:
+				if match.get().name() == node['name']:
+					theWeapon = node
+					break
+
+			if theWeapon == None:
+				await ctx.respond(f"It looks like you haven't used {match.get().name()} yet. Go try it out!")
+				return
+			else:
+				embed = discord.Embed(colour=0xF9FC5F)
+				embed.title = f"{theWeapon['name']} Stats"
+				img = S3ImageBuilder.createWeaponCard(theWeapon)
+				#embed.set_thumbnail(discord.File(img, filename = "weapon.png", description = "Weapon image"))
+				embed.add_field(name = "Turf Inked", value = f"{theWeapon['stats']['paint']}", inline = True)
+				embed.add_field(name = "Freshness", value = f"{theWeapon['stats']['vibes']}", inline = True)
+				embed.add_field(name = "Wins", value = f"{theWeapon['stats']['win']}", inline = True)
+				embed.add_field(name = "Level", value = f"{theWeapon['stats']['level']}", inline = True)
+				embed.add_field(name = "EXP till next level", value = f"{theWeapon['stats']['paint']}", inline = True)
+
+				await ctx.respond(embed = embed)
+		else:
+			if len(match.items) < 1:
+				await ctx.respond(f"Can't find any gear with the name {weapon}")
+				return
+			else:
+				embed = discord.Embed(colour=0xF9FC5F)
+				embed.title = "Did you mean?"
+				embed.add_field(name="Weapon", value=", ".join(map(lambda item: item.name(), match.items)), inline=False)
+				await ctx.respond(embed = embed)
+				return

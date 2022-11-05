@@ -10,6 +10,16 @@ class mysqlHandler():
 		self.pool = None
 		self.cons = {}
 
+	# On bot startup, the mysql connection may not be ready yet. We can
+	#  use this to wait for it.
+	async def wait_for_startup(self):
+		for i in range(10):
+			if self.pool is None:
+				await asyncio.sleep(1)
+
+		return self.pool is not None
+
+
 	async def startUp(self):
 		self.pool = await aiomysql.create_pool(host=self.__host, port=3306, user=self.__user, password=self.__pw, db=self.__db, maxsize=25)
 		print("MYSQL: Created connection pool")
