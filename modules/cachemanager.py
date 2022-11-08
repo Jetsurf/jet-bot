@@ -1,10 +1,13 @@
 import re, os, time
 
+DEFAULT_MAX_AGE = 3600 * 24 * 90  # 90 days
+
 class Cache():
-	def __init__(self, manager, path, maxage):
-		self.manager = manager
-		self.path    = path
-		self.maxage  = maxage
+	def __init__(self, manager, path, max_age):
+		self.manager   = manager
+		self.path      = path
+		self.max_age   = max_age or DEFAULT_MAX_AGE
+		self.fresh_age = int(self.max_age * 0.9)
 		os.makedirs(self.path, exist_ok = True)
 
 	def key_path(self, key):
@@ -26,8 +29,17 @@ class Cache():
 		age = self.get_age(key)
 		if age is None:
 			return False  # Does not exist
-		elif age > self.maxage:
+		elif age > self.max_age:
 			return False  # Past max age
+
+		return True
+
+	def is_fresh(self, key):
+		age = self.get_age(key)
+		if age is None:
+			return False  # Does not exist
+		elif age > self.fresh_age:
+			return False  # Past freshness age
 
 		return True
 
@@ -35,7 +47,7 @@ class Cache():
 		age = self.get_age(key)
 		if age is None:
 			return None  # Does not exist
-		elif age > self.maxage:
+		elif age > self.max_age:
 			return None  # Past max age
 
 		path = self.key_path(key)
@@ -137,6 +149,6 @@ class CacheManager():
 
 		return "%s/%s/" % (self.path, "/".join(parts))
 
-	def open(self, name, maxage):
+	def open(self, name, max_age = None):
 		path = self.cache_name_to_path(name)
-		return Cache(self, path, maxage)
+		return Cache(self, path, max_age)

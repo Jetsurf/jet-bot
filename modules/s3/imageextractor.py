@@ -45,7 +45,7 @@ class S3ImageExtractor():
 		# Find records for uncached images
 		uncached = []
 		for rec in IMAGES:
-			if not self.caches[rec['cache']].has(rec['key']):
+			if not self.caches[rec['cache']].is_fresh(rec['key']):
 				uncached.append(rec)
 
 		if len(uncached) == 0:

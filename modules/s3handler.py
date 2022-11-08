@@ -124,7 +124,7 @@ class S3Handler():
 			await ctx.respond("Failed to retrieve battle details")
 			return
 
-		weapon_thumbnail_cache = self.cachemanager.open("s3.weapons.small-2d", (3600 * 24 * 90))  # Cache for 90 days
+		weapon_thumbnail_cache = self.cachemanager.open("s3.weapons.small-2d")
 
 		image_io = S3ImageBuilder.createBattleDetailsImage(details, weapon_thumbnail_cache, self.fonts)
 		await ctx.respond(file = discord.File(image_io, filename = "battle.png", description = "Battle details"))

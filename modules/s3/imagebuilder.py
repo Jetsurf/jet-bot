@@ -42,8 +42,8 @@ class S3ImageBuilder():
 				if (weapon := p.get('weapon')) and (weapon.get('image2dThumbnail')):
 					key = base64.b64decode(weapon['id']).decode("utf-8") + ".png"
 					url = weapon['image2dThumbnail']['url']
-					if weapon_thumbnail_cache.has(key):
-						continue  # Already cached
+					if weapon_thumbnail_cache.is_fresh(key):
+						continue  # Already fresh
 
 					print(f"Caching weapon thumbnail key '{key}' image-url {url}")
 					response = requests.get(url, stream=True)
@@ -233,8 +233,8 @@ class S3ImageBuilder():
 
 		yposition = 0
 
-		maps_cache = cachemanager.open("s3.sr.maps", (24 * 3600 * 90))  # Fresh for 90 days
-		weapons_cache = cachemanager.open("s3.sr.weapons", (24 * 3600 * 90))  # Fresh for 90 days
+		maps_cache = cachemanager.open("s3.sr.maps")
+		weapons_cache = cachemanager.open("s3.sr.weapons")
 
 		for s in schedule:
 			# Add map image
