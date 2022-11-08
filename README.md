@@ -47,6 +47,8 @@ Commands to get info from SplatNet 3 - These commands are largely beta. Feedback
 
  - `/s3 stats sr` : Displays your stats from Salmon Run
  - `/s3 stats battle NUM` : Displays the results of a previous battle (1-50)
+ - `/s3 schedule` : Shows the map/mode schedule for a specific game type
+ - `/s3 srmaps` : Shows the current Salmon Run maps
  - `/s3 fit` : Posts your current gear loadout
  - `/s3 fest` : Shows if there is an announced SplatFest
  - `/s3 scrim` : Generate a list of Splatoon 3 maps and modes
@@ -76,36 +78,36 @@ These commands cannot be used in DM's.
  - `/voice volume` : Sets my voice volume for the current song (Youtube defaults to 7%, caps at 60% vol)
  - `/voice sounds` : List all possible sounds for `/voice play sound` to play
  
-### Splatoon General Info Commands
+### Splatoon 2 General Info Commands
 
- - `/maps current` : Displays the current Splatoon 2 Gamemodes/Maps
- - `/maps next NUM` : Displays the upcoming Splatoon 2 Gamemodes/Maps NUM rotations in the future (1-11)
- - `/maps currentsr` : Displays the current Splatoon 2 Salmon Run Map/Weapons
- - `/maps nextsr` : Displays the next Splatoon 2 Salmon Run Map/Weapons
- - `/maps random NUM` : Generates a list of random maps (1-10, NUM is optional for just 1 random map)
- - `/maps callout MAP` : Provides a map with callout locations
- - `/maps list` : Shows all Splatoon 2 maps w/ abbreviations
- - `/store currentgear` : Gets all of the current gear for sale on SplatNet
- - `/store dm add FLAG` : DM's you when a piece of gear with FLAG (Ability/Brand/Gear Name) appears in the SplatNet store. Can't DM the bot with this.
- - `/store dm list` : Shows you all FLAGS you are subscribed to for when gear with FLAG appears in the store. Can't DM the bot with this.
- - `/store dm remove FLAG` : Removes you from receiving DM's when a piece of gear with FLAG (Ability/Brand/Gear Name) appears in the SplatNet store. Can't DM the bot with this.
- - `/weapons random NUM` : Generates a list of random weapons (1-10), NUM is optional for just 1 random weapon)
- - `/weapons info WEAP` : Gets Sub/Special/Level/Points for special for WEAP
- - `/weapons sub SUB` : Gets all weapons with the subweapon SUB
- - `/weapons special SPECIAL` : Gets all weapons with the special SPECIAL
- - `/weapons list TYPE` : Gets all weapons of the type TYPE
+ - `/s2 maps current` : Displays the current Splatoon 2 Gamemodes/Maps
+ - `/s2 maps next NUM` : Displays the upcoming Splatoon 2 Gamemodes/Maps NUM rotations in the future (1-11)
+ - `/s2 maps currentsr` : Displays the current Splatoon 2 Salmon Run Map/Weapons
+ - `/s2 maps nextsr` : Displays the next Splatoon 2 Salmon Run Map/Weapons
+ - `/s2 maps random NUM` : Generates a list of random maps (1-10, NUM is optional for just 1 random map)
+ - `/s2 maps callout MAP` : Provides a map with callout locations
+ - `/s2 maps list` : Shows all Splatoon 2 maps w/ abbreviations
+ - `/s2 store currentgear` : Gets all of the current gear for sale on SplatNet
+ - `/s2 store dm add FLAG` : DM's you when a piece of gear with FLAG (Ability/Brand/Gear Name) appears in the SplatNet store. Can't DM the bot with this.
+ - `/s2 store dm list` : Shows you all FLAGS you are subscribed to for when gear with FLAG appears in the store. Can't DM the bot with this.
+ - `/s2 store dm remove FLAG` : Removes you from receiving DM's when a piece of gear with FLAG (Ability/Brand/Gear Name) appears in the SplatNet store. Can't DM the bot with this.
+ - `/s2 weapons random NUM` : Generates a list of random weapons (1-10), NUM is optional for just 1 random weapon)
+ - `/s2 weapons info WEAP` : Gets Sub/Special/Level/Points for special for WEAP
+ - `/s2 weapons sub SUB` : Gets all weapons with the subweapon SUB
+ - `/s2 weapons special SPECIAL` : Gets all weapons with the special SPECIAL
+ - `/s2 weapons list TYPE` : Gets all weapons of the type TYPE
  
 ### Splatoon 2 Splatnet Commands
 
 The following commands require you to run `/token` and follow the instructions. Run `/token` again to remove all tokens from the bot.
 
- - `/stats battle NUM` : Gets stats from NUM last battle (1 is latest, upto 50)
- - `/stats rank` : Shows your ranks in the ranked gamemodes
- - `/stats multi` : Shows various stats from your gameplay
- - `/stats sr` : Shows various stats from Salmon Run
- - `/stats maps MAP` : Pulls stats for a specific map
- - `/store order ID/ITEM NAME` : `/store currentgear` provides an ID. Use either the ID or the name of an item on the store to order it
- - `/weapons stats WEAPON` : Pulls stats for a specific weapon
+ - `/s2 stats battle NUM` : Gets stats from NUM last battle (1 is latest, upto 50)
+ - `/s2 stats rank` : Shows your ranks in the ranked gamemodes
+ - `/s2 stats multi` : Shows various stats from your gameplay
+ - `/s2 stats sr` : Shows various stats from Salmon Run
+ - `/s2 stats maps MAP` : Pulls stats for a specific map
+ - `/s2 store order ID/ITEM NAME` : `/store currentgear` provides an ID. Use either the ID or the name of an item on the store to order it
+ - `/s2 weapons stats WEAPON` : Pulls stats for a specific weapon
 
 ### Animal Crossing: New Horizons Commands
 
