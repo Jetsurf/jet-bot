@@ -8,7 +8,7 @@ class CommandParser():
 		self.db           = None
 		self.serverConfig = serverConfig
 
-	async def parse(self, serverid, message):
+	async def parse(self, message):
 		# Ignore zero-length messages. This can happen if there is no text but attached pictures.
 		if len(message) == 0:
 			return None

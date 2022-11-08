@@ -895,10 +895,8 @@ async def on_message(message):
 		elif '!announce' in command:
 			await serverUtils.doAnnouncement(message)
 		return
-	else:
-		theServer = message.guild.id
 
-	parsed = await commandParser.parse(theServer, message.content)
+	parsed = await commandParser.parse(message.content)
 	if parsed == None:
 		return
 
@@ -906,7 +904,6 @@ async def on_message(message):
 	args = parsed['args']
 
 	if cmd == 'eval' and message.author in owners:
-		print(f"EVAL: {' '.join(args)}")
 		await ownerCmds.eval(context, ' '.join(args))
 	elif cmd == 'getcons' and message.author in owners:
 		await mysqlHandler.printCons(message)
