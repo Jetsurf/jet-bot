@@ -55,7 +55,7 @@ class ownerCmds:
 
 	async def eval(self, ctx, codeblk):
 		newout = io.StringIO()
-		env = { 'ctx' : ctx, 'sqlBroker': self.sqlBroker}
+		env = { 'ctx' : ctx, 'sqlBroker': self.sqlBroker, 'client' : self.client }
 		env.update(globals())
 
 		embed = discord.Embed(colour=0x00FFFF)

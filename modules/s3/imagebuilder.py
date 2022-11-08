@@ -6,6 +6,7 @@ from io import BytesIO
 import base64
 import datetime
 import dateutil.parser
+import hashlib
 
 class S3ImageBuilder():
 	@classmethod
@@ -212,6 +213,71 @@ class S3ImageBuilder():
 
 		return yposition
 
+	@classmethod
+	def createSRScheduleImage(cls, schedule, fontbroker, cachemanager):
+		now = time.time()
+
+		width = 640
+		height_each = 346
+		height = height_each * len(schedule)
+
+		weapon_width = 64
+		weapon_height = 64
+
+		image = Image.new('RGB', (width, height), (0, 0, 0))
+		draw = ImageDraw.Draw(image)
+
+		s1FontMed = fontbroker.truetype("s1.otf", size=36)
+		s1FontSmall = fontbroker.truetype("s1.otf", size=24)
+		s2FontSmall = fontbroker.truetype("s2.otf", size=16)
+
+		yposition = 0
+
+		maps_cache = cachemanager.open("s3.sr.maps", (24 * 3600 * 90))  # Fresh for 90 days
+		weapons_cache = cachemanager.open("s3.sr.weapons", (24 * 3600 * 90))  # Fresh for 90 days
+
+		for s in schedule:
+			# Add map image
+			map_key = f"{s['maps'][0]['stageid']}.png"
+			if map_image_io := maps_cache.get_io(map_key):
+				map_image = Image.open(map_image_io).convert("RGBA")
+				map_image.thumbnail((640, 480), Image.ANTIALIAS)
+				image.paste(map_image, (0, yposition), map_image)
+
+			# Add map name
+			cls.drawShadowedText(draw, (int(width / 2), yposition), s['maps'][0]['name'], (255, 255, 255), font = s1FontMed, anchor = 'mt')
+			#draw.text((int(width / 2), yposition), s['maps'][0]['name'], (255, 255, 255), font=s1FontMed, anchor='mt')
+
+			# Add start time
+			if s['endtime'] < now:
+				cls.drawShadowedText(draw, (int(width / 2), yposition + 40), "Ended %s ago" % (cls.formatTimespan(int(now - s['endtime']))), (255, 255, 255), font = s1FontSmall, anchor = 'mt')
+			elif s['starttime'] <= now and s['endtime'] > now:
+				cls.drawShadowedText(draw, (int(width / 2), yposition + 40), "Started %s ago" % (cls.formatTimespan(int(now - s['starttime']))), (255, 255, 255), font = s1FontSmall, anchor = 'mt')
+			else:
+				cls.drawShadowedText(draw, (int(width / 2), yposition + 40), "Starting in %s" % (cls.formatTimespan(int(s['starttime'] - now))), (255, 255, 255), font = s1FontSmall, anchor = 'mt')
+
+			# Add weapon images
+			for i in range(len(s['weapons'])):
+				weapon = s['weapons'][i]
+				weapon_key = f"weapon-{hashlib.sha1(weapon['name'].encode('utf-8')).hexdigest()}.png"
+				if weapon_image_io := weapons_cache.get_io(weapon_key):
+					weapon_image = Image.open(weapon_image_io).convert("RGBA")
+					weapon_image.thumbnail((weapon_width, weapon_height), Image.ANTIALIAS)
+					xposition = int(i * int(width / 4) + (width / 8) - (weapon_width / 2))
+					bbox = [(xposition, yposition + height_each - 96), (xposition + weapon_width, yposition + height_each - 92 + weapon_height)]
+					draw.ellipse(bbox, fill = (0, 0, 0))
+					image.paste(weapon_image, (bbox[0][0], bbox[0][1]), weapon_image)
+
+				cls.drawShadowedText(draw, (bbox[0][0] + int(weapon_width / 2), bbox[1][1]), weapon['name'], (255, 255, 255), font=s2FontSmall, anchor='mt')
+				#draw.text((bbox[0][0] + int(weapon_width / 2), bbox[1][1]), weapon['name'], font=s2FontSmall, anchor='mt')
+
+			yposition += height_each
+
+		image_io = io.BytesIO()
+		image.save(image_io, 'PNG')
+		image_io.seek(0)
+		return image_io
+
 	#Ensure you have 'hosted_url' AND 'web_dir' both set before calling this!
 	@classmethod
 	def createNamePlateImage(cls, playerJson, fonts, configData):
@@ -256,6 +322,21 @@ class S3ImageBuilder():
 		circDraw.ellipse(bounds, fill="black")
 		circleImg.paste(image, (int(BUF/2), int(BUF/2)), image)
 		return circleImg
+
+	@classmethod
+	def drawShadowedText(cls, draw, position, text, color, font, anchor):
+		draw.text((position[0] + 1, position[1] + 1), text, (0, 0, 0), font, anchor)
+		draw.text(position, text, color, font, anchor)
+
+	@classmethod
+	def formatTimespan(cls, span):
+		if (span > (60 * 60)):
+			hours = int(span / (60 * 60))
+			minutes = int((span % (60 * 60)) / 60)
+			return "%02dh%02dm" % (hours, minutes)
+		else:
+			minutes = int(span / 60)
+			return "%02dm" % (minutes)
 
 	@classmethod
 	def createGearCard(cls, gear):

@@ -2,6 +2,8 @@
 **Commands to get info from SplatNet 3 - Commands are a work in progress. Feedback is welcome
 `/s3 stats sr` : Displays your stats from Salmon Run
 `/s3 stats battle NUM` : Displays the results of a previous battle (1-50)
+`/s3 schedule` : Shows the map/mode schedule for a specific game type
+`/s3 srmaps` : Shows the current Salmon Run maps
 `/s3 fit` : Posts your current gear loadout
 `/s3 fest` : Shows if there is an announced SplatFest
 `/s3 scrim` : Generate a list of Splatoon 3 maps and modes

@@ -7,6 +7,14 @@ import cairosvg
 MAX_AGE = 3600 * 24 * 90  # Cache for 90 days
 
 IMAGES = [
+	# Game types - There are multiple versions of these, so we match the entire filename
+	{'cache': 's3.gametypes', 'key': 'regular.png', 'size': [256, 256], 'pattern': r'^regular\.3eb4232dea50f0ac4572f9b74528ad64\.svg$'},
+	{'cache': 's3.gametypes', 'key': 'bankara.png', 'size': [256, 256], 'pattern': r'^bankara\.74016634881fdb9c06de56050f97c989\.svg$'},
+	{'cache': 's3.gametypes', 'key': 'x.png',       'size': [256, 256], 'pattern': r'^x\.eb457f28e921f665d1667ca52a96f8a4\.svg$'},
+	{'cache': 's3.gametypes', 'key': 'league.png',  'size': [256, 256], 'pattern': r'^league\.ff2d38486a281f7cf56a6f5b1c517735\.svg$'},
+	{'cache': 's3.gametypes', 'key': 'private.png', 'size': [256, 256], 'pattern': r'^private\.055700d3775bf4835d7e6de297df9caa\.svg$'},
+	{'cache': 's3.gametypes', 'key': 'coop.png',    'size': [256, 256], 'pattern': r'^coop\.9773616172420f5fb865f8a5c185bf59\.svg$'},
+
 	# Ranked modes
 	{'cache': 's3.modes', 'key': 'SZ.png', 'size': [256, 256], 'pattern': r'^area\.[0-9a-f]+\.svg$'},
 	{'cache': 's3.modes', 'key': 'TC.png', 'size': [256, 256], 'pattern': r'^yagura\.[0-9a-f]+\.svg$'},
