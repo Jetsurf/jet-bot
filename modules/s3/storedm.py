@@ -2,6 +2,8 @@ import discord, asyncio
 import mysqlhandler, nsotoken, s3handler
 import json, time
 
+from .embedbuilder import S3EmbedBuilder
+
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 class s3OrderView(discord.ui.View):
@@ -129,7 +131,7 @@ class S3StoreHandler():
 		view = s3OrderView(gear, self, self.nsotoken, user, self.splat3info)
 		await view.initView()
 		#def createStoreEmbed(self, gear, brand, title, configData, instructions = None):
-		embed = s3handler.S3Utils.createStoreEmbed(gear, brand, "Gear you wanted to be notified about has appeared in the Splatnet 3 shop!", self.configData)
+		embed = s3handler.S3EmbedBuilder.createStoreEmbed(gear, brand, "Gear you wanted to be notified about has appeared in the Splatnet 3 shop!", self.configData)
 		await user.send(embed = embed, view = view)
 
 	async def doStoreRegularDM(self):
