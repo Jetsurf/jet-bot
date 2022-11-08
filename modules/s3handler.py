@@ -241,6 +241,16 @@ class S3Handler():
 
 		await ctx.respond(embed = embed)
 
+	async def cmdSRMaps(self, ctx):
+		await ctx.defer()
+
+		sched = self.schedule.get_schedule('SR', count = 2)
+		if len(sched) == 0:
+			await ctx.respond(f"That schedule is empty.", ephemeral = True)
+
+		image_io = S3ImageBuilder.createSRScheduleImage(sched, self.fonts, self.cachemanager)
+		await ctx.respond(file = discord.File(image_io, filename = "sr-schedule.png", description = "Salmon Run schedule"))
+
 	async def cmdStoreList(self, ctx):
 		if self.storedm.cacheState:
 			await ctx.respond(embed=S3EmbedBuilder.createStoreListingEmbed(self.storedm.storecache, self.fonts, self.configData))

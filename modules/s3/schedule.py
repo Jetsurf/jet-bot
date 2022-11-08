@@ -21,6 +21,7 @@ class S3Schedule():
 		'SF': 'splatfest_schedule',
 		'AO': 'anarchy_open_schedule',
 		'AS': 'anarchy_series_schedule',
+		'SR': 'salmon_run_schedule',
 	}
 
 	schedule_names = {
@@ -28,6 +29,7 @@ class S3Schedule():
 		'SF': 'Splatfest',
 		'AO': 'Anarchy Open',
 		'AS': 'Anarchy Series',
+		'SR': 'Salmon Run',
 	}
 
 	def __init__(self, nsotoken, sqlBroker, cachemanager):
@@ -170,6 +172,7 @@ class S3Schedule():
 				continue  # Nothing scheduled in this timeslot
 
 			rec = {}
+			rec['mode']      = 'Salmon Run'
 			rec['starttime'] = dateutil.parser.isoparse(node['startTime']).timestamp()
 			rec['endtime']   = dateutil.parser.isoparse(node['endTime']).timestamp()
 			rec['maps']      = [ self.parse_salmon_map(node['setting']['coopStage']) ]
@@ -236,7 +239,7 @@ class S3Schedule():
 
 				print(f"Caching SR map image stageid {map['stageid']} name '{map['name']}' image-url {map['image']}")
 				response = requests.get(map['image'], stream=True)
-				self.image_cache_salmon_maps.add_http_response(key, response)
+				self.image_cache_sr_maps.add_http_response(key, response)
 
 			for weapon in rec['weapons']:
 				if (not weapon['name']) or (not weapon['image']):
