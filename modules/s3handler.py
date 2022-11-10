@@ -1,6 +1,8 @@
 import discord, asyncio
 import mysqlhandler, nsotoken
 import json, sys, re, time, requests, random, hashlib, os, io
+import sys
+import traceback
 import s3.storedm
 import s3.schedule
 import s3.imageextractor
@@ -114,7 +116,10 @@ class S3Handler():
 			return
 
 		battles = histories['data']['latestBattleHistories']['historyGroups']['nodes'][0]['historyDetails']['nodes']
-		if battlenum > len(battles):
+		if battlenum < 1:
+			await ctx.respond("The most recent battle is number 1.")
+			return
+		elif battlenum > len(battles):
 			await ctx.respond(f"You asked for battle number {battlenum} but I only see {len(battles)} battles.")
 			return
 
@@ -126,7 +131,15 @@ class S3Handler():
 
 		weapon_thumbnail_cache = self.cachemanager.open("s3.weapons.small-2d")
 
-		image_io = S3ImageBuilder.createBattleDetailsImage(details, weapon_thumbnail_cache, self.fonts)
+		try:
+			image_io = S3ImageBuilder.createBattleDetailsImage(details, weapon_thumbnail_cache, self.fonts)
+		except:
+			await ctx.respond("Could not render battle details! If problem persists, please complain (see /support).")
+			sys.stderr.write(f"*** Could not render battle details!\n")
+			traceback.print_exc(file = sys.stderr)
+			sys.stderr.write(f"*** Battle JSON follows:\n{json.dumps(details)}\n")
+			return
+
 		await ctx.respond(file = discord.File(image_io, filename = "battle.png", description = "Battle details"))
 
 	async def cmdStats(self, ctx):
