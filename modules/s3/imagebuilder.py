@@ -83,18 +83,17 @@ class S3ImageBuilder():
 		# Score bar
 		if not myTeam['result'] is None:  # May be null if game was a draw
 			if mode == 'TURF_WAR':
-				ratios = [*[t['result'].get('paintRatio', 0) for t in all_teams]]
-				labels = [("%0.1f" % (r)) for r in ratios]
-				print(repr(ratios))
+				scores = [*[t['result'].get('paintRatio', 0) for t in all_teams]]
+				labels = [("%0.1f%%" % (r * 100)) for r in scores]
 			else:
-				#scores = [myTeam['result'].get('score', 0), *[t['result'].get('score', 0) for t in otherTeams]]
 				scores = [*[t['result'].get('score', 0) for t in all_teams]]
 				labels = [str(s) for s in scores]
-				total = sum(scores)
-				if total == 0:
-					ratios = [0 for s in scores]
-				else:
-					ratios = [(s / total) for s in scores]
+
+			total = sum(scores)
+			if total == 0:
+				ratios = [0 for s in scores]
+			else:
+				ratios = [(s / total) for s in scores]
 
 			if len(all_teams) == 3:
 				positions = [5, int(image.width / 2), image.width - 5]
