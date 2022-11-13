@@ -15,7 +15,7 @@ class S3ImageBuilder():
 		anarchyTypeNames = {"OPEN": "Open", "CHALLENGE": "Series"}
 		festTypeNames = {"NORMAL": "Normal", "DECUPLE": "10x", "DRAGON": "100x", "DOUBLE_DRAGON": "333x"}
 		judgementNames = {"WIN": "Victory", "LOSE": "Defeat", "EXEMPTED_LOSE": "Early disconnect with no penalty", "DEEMED_LOSE": "Loss due to early disconnect", "DRAW": "No contest"}
-		modeNames = {"TURF_WAR": "Turf War", "GOAL": "Rainmaker", "LOFT": "Tower Control", "CLAM": "Clam Blitz", "AREA": "Splat Zones"}
+		modeNames = {"TURF_WAR": "Turf War", "TRI_COLOR": "Tricolor turf war", "GOAL": "Rainmaker", "LOFT": "Tower Control", "CLAM": "Clam Blitz", "AREA": "Splat Zones"}
 
 		playerName = details['data']['vsHistoryDetail']['player']['name']
 		type = details['data']['vsHistoryDetail']['vsMode']['mode']
@@ -82,7 +82,7 @@ class S3ImageBuilder():
 
 		# Score bar
 		if not myTeam['result'] is None:  # May be null if game was a draw
-			if mode == 'TURF_WAR':
+			if (mode == 'TURF_WAR') or (mode == 'TRI_COLOR'):
 				scores = [*[t['result'].get('paintRatio', 0) for t in all_teams]]
 				labels = [("%0.1f%%" % (r * 100)) for r in scores]
 			else:
