@@ -60,37 +60,6 @@ dev = True
 head = {}
 keyPath = f"{dirname}/config/db-secret-key.hex"
 
-# S2
-s2Cmds = SlashCommandGroup('s2', 'Splatoon 2')
-s2MapCmds = s2Cmds.create_subgroup('maps', 'Splatoon 2 maps')
-s2WeaponCmds = s2Cmds.create_subgroup('weapons', 'Splatoon 2 Weapons')
-s2StoreCmds = s2Cmds.create_subgroup('store', 'Splatnet 2 store')
-s2StoredmCmds = s2Cmds.create_subgroup('storedm', description="Gear DM notifications")
-s2StatsCmds = s2Cmds.create_subgroup('stats', 'Gameplay stats')
-
-# S3
-s3Cmds = SlashCommandGroup('s3', 'Commands related to Splatoon 3')
-s3WeaponCmds = s3Cmds.create_subgroup('weapon', 'Commands related to weapons in Splatoon 3')
-s3StatsCmds = s3Cmds.create_subgroup('stats', 'Commands related to Splatoon 3 gameplay stats')
-s3StoreDmCmds = s3Cmds.create_subgroup('storedm', 'Splatoon 3 Store gear DMs')
-s3StoreCmds = s3Cmds.create_subgroup('store', 'Splatoon 3 store cmds')
-
-# ACNH
-acnhCmds = SlashCommandGroup('acnh', "Commands related to Animal Crossing New Horizons")
-
-# Admin
-adminCmds = SlashCommandGroup('admin', 'Commands that require guild admin privledges to run')
-adminS2feedCmds = adminCmds.create_subgroup(name='s2feed', description='Admin commands related to SplatNet 2 rotation feeds')
-adminDmCmds = adminCmds.create_subgroup(name='dm', description="Admin commands related to DM's on users leaving")
-adminAnnounceCmds = adminCmds.create_subgroup(name='announcements', description='Admin commands related to developer announcements')
-
-# Other
-voice = SlashCommandGroup('voice', 'Commands related to voice functions')
-owner = SlashCommandGroup('owner', "Commands that are owner only")
-groupCmds = SlashCommandGroup('group', 'Commands related to finding a group of players')
-fcCmds = SlashCommandGroup('fc', 'Commands for friend codes')
-play = voice.create_subgroup(name='play', description='Commands related to playing audio')
-
 def loadConfig():
 	global configData, mysqlHandler, dev, head
 	try:
@@ -125,6 +94,46 @@ def ensureEncryptionKey():
 	else:
 		print("Creating new secret key file...")
 		stringCrypt.writeSecretKeyFile(keyPath)
+
+loadConfig()
+
+# S2
+s2Cmds = SlashCommandGroup('s2', 'Splatoon 2')
+s2MapCmds = s2Cmds.create_subgroup('maps', 'Splatoon 2 maps')
+s2WeaponCmds = s2Cmds.create_subgroup('weapons', 'Splatoon 2 Weapons')
+s2StoreCmds = s2Cmds.create_subgroup('store', 'Splatnet 2 store')
+s2StoredmCmds = s2Cmds.create_subgroup('storedm', description="Gear DM notifications")
+s2StatsCmds = s2Cmds.create_subgroup('stats', 'Gameplay stats')
+
+# S3
+if not configData.get('s3_top_level', False):
+	s3Cmds = SlashCommandGroup('s3', 'Commands related to Splatoon 3')
+	s3WeaponCmds = s3Cmds.create_subgroup('weapon', 'Commands related to weapons in Splatoon 3')
+	s3StatsCmds = s3Cmds.create_subgroup('stats', 'Commands related to Splatoon 3 gameplay stats')
+	s3StoreDmCmds = s3Cmds.create_subgroup('storedm', 'Splatoon 3 Store gear DMs')
+	s3StoreCmds = s3Cmds.create_subgroup('store', 'Splatoon 3 store cmds')
+else:
+	s3Cmds = client
+	s3WeaponCmds = SlashCommandGroup('weapon', 'Commands related to weapons in Splatoon 3')
+	s3StatsCmds = SlashCommandGroup('stats', 'Commands related to Splatoon 3 gameplay stats')
+	s3StoreDmCmds = SlashCommandGroup('storedm', 'Splatoon 3 Store gear DMs')
+	s3StoreCmds = SlashCommandGroup('store', 'Splatoon 3 store cmds')
+
+# ACNH
+acnhCmds = SlashCommandGroup('acnh', "Commands related to Animal Crossing New Horizons")
+
+# Admin
+adminCmds = SlashCommandGroup('admin', 'Commands that require guild admin privledges to run')
+adminS2feedCmds = adminCmds.create_subgroup(name='s2feed', description='Admin commands related to SplatNet 2 rotation feeds')
+adminDmCmds = adminCmds.create_subgroup(name='dm', description="Admin commands related to DM's on users leaving")
+adminAnnounceCmds = adminCmds.create_subgroup(name='announcements', description='Admin commands related to developer announcements')
+
+# Other
+voice = SlashCommandGroup('voice', 'Commands related to voice functions')
+owner = SlashCommandGroup('owner', "Commands that are owner only")
+groupCmds = SlashCommandGroup('group', 'Commands related to finding a group of players')
+fcCmds = SlashCommandGroup('fc', 'Commands for friend codes')
+play = voice.create_subgroup(name='play', description='Commands related to playing audio')
 
 @client.slash_command(name='token', description='Manages your tokens to use NSO commands')
 async def cmdToken(ctx):
@@ -912,7 +921,6 @@ async def on_message(message):
 	sys.stderr.flush()
 
 #Setup
-loadConfig()
 if configData.get('output_to_log'):
 	os.makedirs(f"{dirname}/logs", exist_ok=True)
 	sys.stdout = open(f"{dirname}/logs/discordbot.log", 'a+')
@@ -931,7 +939,13 @@ client.add_application_command(adminCmds)
 client.add_application_command(groupCmds)
 client.add_application_command(fcCmds)
 client.add_application_command(s2Cmds)
-client.add_application_command(s3Cmds)
+if not configData.get('s3_top_level', False):
+	client.add_application_command(s3Cmds)
+else:
+	client.add_application_command(s3WeaponCmds)
+	client.add_application_command(s3StatsCmds)
+	client.add_application_command(s3StoreDmCmds)
+	client.add_application_command(s3StoreCmds)
 client.add_application_command(acnhCmds)
 
 sys.stdout.flush()
