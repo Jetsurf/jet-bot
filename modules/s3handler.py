@@ -237,7 +237,8 @@ class S3Handler():
 		embed.title = f"{name} Schedule"
 
 		for rot in sched:
-			title = rot['mode']
+			mode = self.splat3info.getModeByInternalName(rot['mode'])
+			title = mode.name() if mode else rot['mode']
 
 			if rot['endtime'] < now:
 				title += f" \u2014 Ended"

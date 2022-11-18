@@ -14,6 +14,7 @@ class S3Schedule():
 		discord.OptionChoice('Splatfest', 'SF'),
 		discord.OptionChoice('Anarchy Open', 'AO'),
 		discord.OptionChoice('Anarchy Series', 'AS'),
+		discord.OptionChoice('X Battles', 'XB'),
 	]
 
 	schedule_properties = {
@@ -22,6 +23,7 @@ class S3Schedule():
 		'AO': 'anarchy_open_schedule',
 		'AS': 'anarchy_series_schedule',
 		'SR': 'salmon_run_schedule',
+		'XB': 'x_battles_schedule',
 	}
 
 	schedule_names = {
@@ -30,6 +32,7 @@ class S3Schedule():
 		'AO': 'Anarchy Open',
 		'AS': 'Anarchy Series',
 		'SR': 'Salmon Run',
+		'XB': 'X Battles',
 	}
 
 	def __init__(self, nsotoken, sqlBroker, cachemanager):
@@ -45,6 +48,7 @@ class S3Schedule():
 		self.splatfest_schedule      = []
 		self.anarchy_open_schedule   = []
 		self.anarchy_series_schedule = []
+		self.x_battles_schedule      = []
 
 		self.salmon_run_schedule     = []
 
@@ -83,18 +87,6 @@ class S3Schedule():
 
 		return schedule[index:index + count]
 
-#	def get_turf_schedule(self, checktime = None, count = 1):
-#		return self.get_schedule('TW', *kwargs)
-#
-#	def get_fest_schedule(self, checktime = None, count = 1):
-#		return self.get_schedule('SF', *kwargs)
-#
-#	def get_anarchy_open_schedule(self, checktime = None, count = 1):
-#		return self.get_schedule('AO', *kwargs)
-#
-#	def get_anarchy_series_schedule(self, checktime = None, count = 1):
-#		return self.get_schedule('AS', *kwargs)
-
 	# Given 'vsStages' object, returns a list of maps
 	def parse_maps(self, data):
 		maps = []
@@ -124,21 +116,25 @@ class S3Schedule():
 		return weapons
 
 	def parse_schedule_turf(self, settings, rec):
-		rec['mode'] = settings['vsRule']['name']
+		rec['mode'] = settings['vsRule']['rule']
 		rec['maps'] = self.parse_maps(settings['vsStages'])
 
 	def parse_schedule_fest(self, settings, rec):
-		rec['mode'] = settings['vsRule']['name']
+		rec['mode'] = settings['vsRule']['rule']
 		rec['maps'] = self.parse_maps(settings['vsStages'])
 
 	def parse_schedule_anarchy_open(self, settings, rec):
 		settings = [ s for s in settings if s['mode'] == 'OPEN' ][0]
-		rec['mode'] = settings['vsRule']['name']
+		rec['mode'] = settings['vsRule']['rule']
 		rec['maps'] = self.parse_maps(settings['vsStages'])
 
 	def parse_schedule_anarchy_series(self, settings, rec):
 		settings = [ s for s in settings if s['mode'] == 'CHALLENGE' ][0]
 		rec['mode'] = settings['vsRule']['name']
+		rec['maps'] = self.parse_maps(settings['vsStages'])
+
+	def parse_schedule_x_battles(self, settings, rec):
+		rec['mode'] = settings['vsRule']['rule']
 		rec['maps'] = self.parse_maps(settings['vsStages'])
 
 	def parse_schedule(self, data, key, sub):
@@ -204,6 +200,7 @@ class S3Schedule():
 		self.splatfest_schedule      = self.parse_schedule(data['data'].get('festSchedules'), 'festMatchSetting', self.parse_schedule_fest)
 		self.anarchy_open_schedule   = self.parse_schedule(data['data'].get('bankaraSchedules'), 'bankaraMatchSettings', self.parse_schedule_anarchy_open)
 		self.anarchy_series_schedule = self.parse_schedule(data['data'].get('bankaraSchedules'), 'bankaraMatchSettings', self.parse_schedule_anarchy_series)
+		self.x_battles_schedule      = self.parse_schedule(data['data'].get('xSchedules'), 'xMatchSetting', self.parse_schedule_x_battles)
 
 		self.salmon_run_schedule = self.parse_salmon_schedule(data['data'].get('coopGroupingSchedule', {}).get('regularSchedules'))
 
