@@ -5857,6 +5857,140 @@
       "nameEnglish": "Chinese"
     }
   },
+  "modes": [
+    {
+      "abbrevs": [
+        "TW"
+      ],
+      "internalName": "TURF_WAR",
+      "names": {
+        "de-DE": "Revierkampf",
+        "en-GB": "Turf War",
+        "en-US": "Turf War",
+        "es-ES": "Territorial",
+        "es-MX": "Territorial",
+        "fr-CA": "Guerre de territoire",
+        "fr-FR": "Guerre de territoire",
+        "it-IT": "Mischia mollusca",
+        "ja-JP": "\u30ca\u30ef\u30d0\u30ea\u30d0\u30c8\u30eb",
+        "ko-KR": "\uc601\uc5ed \ubc30\ud2c0",
+        "nl-NL": "Grondoorlog",
+        "ru-RU": "\u0411\u043e\u0439 \u0437\u0430 \u0440\u0430\u0439\u043e\u043d",
+        "zh-CN": "\u5360\u5730\u5bf9\u6218",
+        "zh-TW": "\u5360\u5730\u5c0d\u6230"
+      }
+    },
+    {
+      "abbrevs": [
+        "3C"
+      ],
+      "internalName": "TRI_COLOR",
+      "names": {
+        "de-DE": "Dreifarb-Kampf",
+        "en-GB": "Tricolor Turf War",
+        "en-US": "Tricolor Turf War",
+        "es-ES": "Combate tricolor ",
+        "es-MX": "Territorial tricolor",
+        "fr-CA": "Guerre tricolore",
+        "fr-FR": "Guerre tricolore",
+        "it-IT": "Partita tricolore",
+        "ja-JP": "\u30c8\u30ea\u30ab\u30e9\u30d0\u30c8\u30eb",
+        "ko-KR": "\ud2b8\ub9ac\uceec\ub7ec \ubc30\ud2c0",
+        "nl-NL": "Driekleurenoorlog",
+        "ru-RU": "\u0422\u0440\u0435\u0445\u0446\u0432\u0435\u0442\u043d\u044b\u0439 \u0431\u043e\u0439",
+        "zh-CN": "\u4e09\u8272\u593a\u5b9d\u5bf9\u6218",
+        "zh-TW": "\u4e09\u8272\u596a\u5bf6\u5c0d\u6230"
+      }
+    },
+    {
+      "abbrevs": [
+        "SZ"
+      ],
+      "internalName": "AREA",
+      "names": {
+        "de-DE": "Herrschaft",
+        "en-GB": "Splat Zones",
+        "en-US": "Splat Zones",
+        "es-ES": "Pintazonas",
+        "es-MX": "Pintazonas",
+        "fr-CA": "D\u00e9fense de zone",
+        "fr-FR": "D\u00e9fense de zone",
+        "it-IT": "Zona splat",
+        "ja-JP": "\u30ac\u30c1\u30a8\u30ea\u30a2",
+        "ko-KR": "\ub7ad\ud06c \uc5d0\uc5b4\ub9ac\uc5b4",
+        "nl-NL": "Spetterzone",
+        "ru-RU": "\u0411\u043e\u0439 \u0437\u0430 \u0437\u043e\u043d\u044b",
+        "zh-CN": "\u771f\u683c\u533a\u57df",
+        "zh-TW": "\u771f\u683c\u5340\u57df"
+      }
+    },
+    {
+      "abbrevs": [
+        "CB"
+      ],
+      "internalName": "CLAM",
+      "names": {
+        "de-DE": "Muschelchaos",
+        "en-GB": "Clam Blitz",
+        "en-US": "Clam Blitz",
+        "es-ES": "Asalto almeja",
+        "es-MX": "Asalto almeja",
+        "fr-CA": "Pluie de palourdes",
+        "fr-FR": "Pluie de palourdes",
+        "it-IT": "Vongol gol",
+        "ja-JP": "\u30ac\u30c1\u30a2\u30b5\u30ea",
+        "ko-KR": "\ub7ad\ud06c \ubc14\uc9c0\ub77d",
+        "nl-NL": "Schelpenstrijd",
+        "ru-RU": "\u0423\u0441\u0442\u0440\u043e\u0431\u043e\u043b",
+        "zh-CN": "\u771f\u683c\u86e4\u870a",
+        "zh-TW": "\u771f\u683c\u86e4\u870a"
+      }
+    },
+    {
+      "abbrevs": [
+        "RM"
+      ],
+      "internalName": "GOAL",
+      "names": {
+        "de-DE": "Operation Goldfisch",
+        "en-GB": "Rainmaker",
+        "en-US": "Rainmaker",
+        "es-ES": "Pez dorado",
+        "es-MX": "Pez dorado",
+        "fr-CA": "Mission Bazookarpe",
+        "fr-FR": "Mission Bazookarpe",
+        "it-IT": "Bazookarp",
+        "ja-JP": "\u30ac\u30c1\u30db\u30b3\u30d0\u30c8\u30eb",
+        "ko-KR": "\ub7ad\ud06c \ud53c\uc2dc \ubc30\ud2c0",
+        "nl-NL": "Bazookarper",
+        "ru-RU": "\u041c\u0435\u0433\u0430\u043a\u0430\u0440\u043f",
+        "zh-CN": "\u771f\u683c\u9c7c\u864e\u5bf9\u6218",
+        "zh-TW": "\u771f\u683c\u9b5a\u864e\u5c0d\u6230"
+      }
+    },
+    {
+      "abbrevs": [
+        "TC"
+      ],
+      "internalName": "LOFT",
+      "names": {
+        "de-DE": "Turm-Kommando",
+        "en-GB": "Tower Control",
+        "en-US": "Tower Control",
+        "es-ES": "Torre",
+        "es-MX": "Torre\u00f3n",
+        "fr-CA": "Exp\u00e9dition risqu\u00e9e",
+        "fr-FR": "Exp\u00e9dition risqu\u00e9e",
+        "it-IT": "Torre mobile",
+        "ja-JP": "\u30ac\u30c1\u30e4\u30b0\u30e9",
+        "ko-KR": "\ub7ad\ud06c \ud0c0\uc6cc",
+        "nl-NL": "Torentwist",
+        "ru-RU": "\u0411\u043e\u0439 \u0437\u0430 \u0431\u0430\u0448\u043d\u044e",
+        "zh-CN": "\u771f\u683c\u5854\u697c",
+        "zh-TW": "\u771f\u683c\u5854\u6a13"
+      }
+    }
+  ],
   "shoes": [
     {
       "ability": "Sub Resistance Up",
