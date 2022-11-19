@@ -17,7 +17,7 @@ import datetime
 import dateutil.parser
 
 class S3Handler():
-	def __init__(self, client, mysqlHandler, nsotoken, splat3info, configData, fonts, cachemanager):
+	def __init__(self, client, mysqlHandler, nsotoken, splat3info, configData, fonts, cachemanager, components):
 		self.client = client
 		self.sqlBroker = mysqlHandler
 		self.nsotoken = nsotoken
@@ -30,6 +30,7 @@ class S3Handler():
 		self.imageextractor = s3.imageextractor.S3ImageExtractor(nsotoken, cachemanager)
 		self.fonts = fonts
 		self.cachemanager = cachemanager
+		self.components = components
 
 	async def cmdWeaponInfo(self, ctx, name):
 		match = self.splat3info.weapons.matchItem(name)
@@ -38,7 +39,8 @@ class S3Handler():
 			return
 
 		weapon = match.get()
-		await ctx.respond(f"Weapon '{weapon.name()}' has subweapon '{weapon.sub().name()}' and special '{weapon.special().name()}'.")
+		lang = self.components['translate'].get_lang_ietf()
+		await ctx.respond(_("Weapon '**%s**' has subweapon '**%s**' and special '**%s**'.") % (weapon.name(lang), weapon.sub().name(lang), weapon.special().name(lang)))
 		return
 
 	async def cmdWeaponSpecial(self, ctx, name):
@@ -71,7 +73,8 @@ class S3Handler():
 
 	async def cmdWeaponRandom(self, ctx):
 		weapon = self.splat3info.weapons.getRandomItem()
-		await ctx.respond(f"Random weapon: **{weapon.name()}** (subweapon **{weapon.sub().name()}**/special **{weapon.special().name()}**)")
+		lang = self.components['translate'].get_lang_ietf()
+		await ctx.respond(_("Random weapon: **%s** (subweapon **%s**/special **%s**)") % (weapon.name(lang), weapon.sub().name(lang), weapon.special().name(lang)))
 
 	async def cmdScrim(self, ctx, num, modelist):
 		if (num < 0) or (num > 20):

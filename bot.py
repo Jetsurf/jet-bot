@@ -18,7 +18,7 @@ from discord.ext import commands
 import urllib, urllib.request, requests, pymysql
 
 #Our Classes
-import nsotoken, commandparser, serverconfig, ownercmds, messagecontext
+import nsotoken, commandparser, configstore, ownercmds, messagecontext
 import vserver, mysqlhandler, mysqlschema, serverutils
 import nsohandler, achandler, s3handler
 import stringcrypt
@@ -30,6 +30,7 @@ import friendcodes
 import gameinfo.splat2
 import gameinfo.splat3
 import s3.schedule
+import translate
 
 # Uncomment for verbose logging from pycord
 #logging.basicConfig(level=logging.DEBUG)
@@ -59,6 +60,8 @@ owners = []
 dev = True
 head = {}
 keyPath = f"{dirname}/config/db-secret-key.hex"
+components = {}
+components['translate'] = translate.Translate(f"{dirname}/share/locale/")
 
 def loadConfig():
 	global configData, mysqlHandler, dev, head
@@ -197,6 +200,12 @@ async def cmdGithub(ctx):
 @client.slash_command(name='help', description='Displays the help menu')
 async def cmdHelp(ctx):
 	await ctx.respond("Help Menu:", view=serverutils.HelpMenuView(f"{dirname}/help"))
+
+@client.slash_command(name='lang', description='Select your language.')
+async def cmdLang(ctx, language: Option(str, "Language", choices = [discord.OptionChoice(f"{components['translate'].LANGS[k]['name']} ({components['translate'].LANGS[k]['country']})", k) for k in components['translate'].LANGS])):
+	await components['user_config'].setConfigValue(ctx.user.id, "lang", language)
+	components['translate'].select(language)
+	await ctx.respond(_("Okay, I set your language to: %s") % (language,), ephemeral=True)
 
 @adminAnnounceCmds.command(name='set', description="Sets a chat channel to receive announcements from my developers")
 async def cmdAnnounceAdd(ctx, channel: Option(discord.TextChannel, "Channel to set to receive announcements", required=True)):
@@ -764,14 +773,15 @@ async def on_ready():
 			if server.id not in serverVoices:
 				serverVoices[server.id] = vserver.voiceServer(client, mysqlHandler, server.id, configData['soundsdir'])
 
-		serverConfig = serverconfig.ServerConfig(mysqlHandler)
+		serverConfig = configstore.ServerConfig(mysqlHandler)
+		components['user_config'] = configstore.UserConfig(mysqlHandler)
 		commandParser = commandparser.CommandParser(serverConfig, client.user.id)
 		ownerCmds = ownercmds.ownerCmds(client, mysqlHandler, commandParser, owners)
 		serverUtils = serverutils.serverUtils(client, mysqlHandler, serverConfig)
 		friendCodes = friendcodes.FriendCodes(mysqlHandler, stringCrypt)
 		nsoTokens = nsotoken.Nsotoken(client, configData, mysqlHandler, stringCrypt, friendCodes)
 		nsoHandler = nsohandler.nsoHandler(client, mysqlHandler, nsoTokens, splat2info, configData)
-		s3Handler = s3handler.S3Handler(client, mysqlHandler, nsoTokens, splat3info, configData, fonts, cachemanager)
+		s3Handler = s3handler.S3Handler(client, mysqlHandler, nsoTokens, splat3info, configData, fonts, cachemanager, components)
 		acHandler = achandler.acHandler(client, mysqlHandler, nsoTokens, configData)
 		await mysqlHandler.startUp()
 		mysqlSchema = mysqlschema.MysqlSchema(mysqlHandler)
@@ -785,7 +795,7 @@ async def on_ready():
 
 		await nsoHandler.updateS2JSON()
 		await s3Handler.storedm.cacheS3JSON()
-		client.before_invoke(serverUtils.contextIncrementCmd)
+		client.before_invoke(command_hook)
 		print('Done\n------')
 		await client.change_presence(status=discord.Status.online, activity=discord.Game("Check /help for cmd info."))
 	else:
@@ -793,6 +803,11 @@ async def on_ready():
 	doneStartup = True
 
 	sys.stdout.flush()
+
+async def command_hook(ctx):
+	await serverUtils.contextIncrementCmd(ctx)
+	if (ctx.user.id) and (lang := await components['user_config'].getConfigValue(ctx.user.id, "lang")):
+		components['translate'].select(lang)
 
 @client.event
 async def on_member_remove(member):

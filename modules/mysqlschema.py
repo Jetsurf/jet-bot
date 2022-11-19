@@ -108,6 +108,20 @@ class MysqlSchema():
 			)
 			await self.sqlBroker.c_commit(cur)
 
+		if not await self.sqlBroker.hasTable(cur, 'user_config'):
+			print("Creating table 'user_config'...")
+			await cur.execute(
+			"""
+			CREATE TABLE user_config
+			(
+			userid BIGINT UNSIGNED NOT NULL,
+			config TEXT NOT NULL,
+			PRIMARY KEY (userid)
+			) ENGINE = InnoDB
+			"""
+			)
+			await self.sqlBroker.c_commit(cur)
+
 		if await self.sqlBroker.hasTable(cur, 'tokens') and not await self.sqlBroker.hasColumn(cur, 'tokens', 'game_keys'):
 			if not await self.sqlBroker.hasTable(cur, 'tokens_migrate'):
 				print("Renaming old-style 'tokens' table in preparation for migration...")
