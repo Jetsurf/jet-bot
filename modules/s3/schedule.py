@@ -4,7 +4,7 @@ import time
 import requests
 import dateutil.parser
 import hashlib
-import base64
+import base64, traceback
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 

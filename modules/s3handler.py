@@ -9,6 +9,7 @@ import s3.imageextractor
 
 from s3.imagebuilder import S3ImageBuilder
 from s3.embedbuilder import S3EmbedBuilder
+from s3.feedhandler import S3FeedHandler
 
 from io import BytesIO
 from os.path import exists
@@ -27,6 +28,7 @@ class S3Handler():
 		self.webDir = configData.get('web_dir')
 		self.schedule = s3.schedule.S3Schedule(nsotoken, mysqlHandler, cachemanager)
 		self.storedm = s3.storedm.S3StoreHandler(client, nsotoken, splat3info, mysqlHandler, configData)
+		self.feeds = s3.feedhandler.S3FeedHandler(client, mysqlHandler, self.schedule, cachemanager, fonts)
 		self.imageextractor = s3.imageextractor.S3ImageExtractor(nsotoken, cachemanager)
 		self.fonts = fonts
 		self.cachemanager = cachemanager

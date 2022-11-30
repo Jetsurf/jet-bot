@@ -56,6 +56,22 @@ class MysqlSchema():
 			)
 			await self.sqlBroker.c_commit(cur)
 
+		if not await self.sqlBroker.hasTable(cur, 's3feeds'):
+			print("Creating table 's3feeds'...")
+			await cur.execute(
+			"""
+			CREATE TABLE `s3feeds` (
+			`serverid` bigint unsigned NOT NULL,
+  			`channelid` bigint unsigned NOT NULL,
+  			`maps` TINYINT NOT NULL,
+  			`sr` TINYINT NOT NULL,
+  			`gear` TINYINT NOT NULL,
+  			PRIMARY KEY (`serverid`, `channelid`)
+			) ENGINE=InnoDB
+			"""
+			)
+			await self.sqlBroker.c_commit(cur)
+
 		if not await self.sqlBroker.hasKey(cur, 'feeds', 'serverid') or not await self.sqlBroker.hasKey(cur, 'feeds', 'channelid'):
 			print("Updating keys on table 'feeds'...")
 			await cur.execute("ALTER TABLE feeds MODIFY serverid BIGINT unsigned NOT NULL, MODIFY channelid BIGINT unsigned NOT NULL")
