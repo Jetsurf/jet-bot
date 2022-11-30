@@ -499,6 +499,10 @@ async def cmdS3Fest(ctx):
 async def cmdS3Schedule(ctx, which: Option(str, "Schedule type", choices = s3.schedule.S3Schedule.schedule_choices)):
 	await s3Handler.cmdSchedule(ctx, which)
 
+@s3Cmds.command(name = 'maps', description = 'Show current maps')
+async def cmdS3Maps(ctx):
+	await s3Handler.cmdMaps(ctx)
+
 @s3Cmds.command(name = 'srmaps', description = 'Show Salmon Run maps')
 async def cmdS3SRMaps(ctx):
 	await s3Handler.cmdSRMaps(ctx)

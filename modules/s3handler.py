@@ -257,6 +257,37 @@ class S3Handler():
 
 		await ctx.respond(embed = embed)
 
+	async def cmdMaps(self, ctx):
+		await ctx.defer()
+
+		# Pull each schedule for the current time
+		now = time.time()
+		schedules = {}
+		for t in ['TW', 'SF', 'AO', 'AS', 'XB']:
+			schedules[t] = self.schedule.get_schedule(t, checktime = now, count = 2)
+
+		# Gather all the known time windows
+		timewindows = {}
+		for t in ['TW', 'SF', 'AO', 'AS', 'XB']:
+			for r in schedules[t]:
+				timewindows[r['starttime']] = {'starttime': r['starttime'], 'endtime': r['endtime']}
+
+		# Pick the two earliest time windows
+		timewindows = list(timewindows.values())
+		timewindows.sort(key = lambda w: w['starttime'])
+		timewindows = timewindows[0:2]
+
+		if len(timewindows) == 0:
+			await ctx.respond("Sorry, I have no schedule data")
+			return
+
+		# Filter the schedules to those matching the two earliest time windows
+		for t in ['TW', 'SF', 'AO', 'AS', 'XB']:
+			schedules[t] = [s for s in schedules[t] if (r['starttime'] in [w['starttime'] for w in timewindows])]
+
+		image_io = S3ImageBuilder.createScheduleImage(timewindows, schedules, self.fonts, self.cachemanager, self.splat3info)
+		await ctx.respond(file = discord.File(image_io, filename = "map-schedule.png", description = "Map schedule"))
+
 	async def cmdSRMaps(self, ctx):
 		await ctx.defer()
 
