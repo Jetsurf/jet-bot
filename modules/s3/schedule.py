@@ -94,7 +94,7 @@ class S3Schedule():
 			map = {}
 			map['image']   = vs['image']['url']
 			map['name']    = vs['name']
-			map['stageid'] = vs['vsStageId']  # TODO: Use base64 of 'id' field instead?
+			map['stageid'] = base64.b64decode(vs['id']).decode("utf-8")
 			maps.append(map)
 		return maps
 
@@ -130,7 +130,7 @@ class S3Schedule():
 
 	def parse_schedule_anarchy_series(self, settings, rec):
 		settings = [ s for s in settings if s['mode'] == 'CHALLENGE' ][0]
-		rec['mode'] = settings['vsRule']['name']
+		rec['mode'] = settings['vsRule']['rule']
 		rec['maps'] = self.parse_maps(settings['vsStages'])
 
 	def parse_schedule_x_battles(self, settings, rec):
@@ -215,7 +215,7 @@ class S3Schedule():
 				if (not map['stageid']) or (not map['image']):
 					continue  # Missing required fields
 
-				key = f"stage-{map['stageid']}.png"
+				key = f"{map['stageid']}.png"
 				if self.image_cache_small.is_fresh(key):
 					continue  # Already fresh
 
