@@ -63,6 +63,11 @@ class S3StoreHandler():
 	async def cacheS3JSON(self):
 		print("Updating cached S3 json...")
 		nso = await self.nsotoken.get_bot_nso_client()
+		if not nso:
+			return  # No bot account configured
+		elif not nso.is_logged_in():
+			print("S3StoreHandler.cacheS3JSON(): Time to refresh store cache, but the bot account is not logged in")
+			return
 
 		storejson = nso.s3.get_store_items()
 		if storejson is None:
@@ -73,7 +78,7 @@ class S3StoreHandler():
 				print("Failed to update store cache for rotation")
 				self.cacheState = False
 				return
-		
+
 		print("Got store cache for this rotation")
 		self.storecache = storejson['data']['gesotown']
 		self.cacheState = True

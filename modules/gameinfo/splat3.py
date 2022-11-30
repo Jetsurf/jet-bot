@@ -81,7 +81,12 @@ class Splat3Map(gameinfo.matchset.MatchItem):
 	pass
 
 class Splat3Mode(gameinfo.matchset.MatchItem):
-	pass
+	def __init__(self, name, abbrevs, internalName):
+		self._internalName = internalName
+		super().__init__(name, abbrevs)
+
+	def internalName(self):
+		return self._internalName
 
 class Splat3Subweapon(gameinfo.matchset.MatchItem):
 	pass
@@ -184,7 +189,7 @@ class Splat3():
 		data = self.loadJSON(datadir)
 
 		self.initMaps()
-		self.initModes()
+		self.initModes(data)
 		self.initSubweapons(data)
 		self.initSpecials(data)
 		self.initWeaponTypes(data)
@@ -205,12 +210,10 @@ class Splat3():
 			abbrevs = m[1]
 			self.maps.append(Splat3Map(name, abbrevs))
 
-	def initModes(self):
+	def initModes(self, data):
 		self.modes = gameinfo.matchset.MatchSet('mode', [])
-		for m in modesData:
-			name    = m[0]
-			abbrevs = m[1]
-			self.modes.append(Splat3Mode(name, abbrevs))
+		for m in data['modes']:
+			self.modes.append(Splat3Mode(m['names'], m['abbrevs'], m['internalName']))
 
 	def initSubweapons(self, data):
 		self.subweapons = gameinfo.matchset.MatchSet('subweapon', [])
@@ -305,3 +308,9 @@ class Splat3():
 
 	def getBrandById(self, id):
 		return list(filter(lambda b: b.id() == id, self.brands.getAllItems()))
+
+	def getModeByInternalName(self, intName):
+		found = list(filter(lambda m: m.internalName() == intName, self.modes.getAllItems()))
+		if len(found):
+			return found[0]
+		return None

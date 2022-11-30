@@ -213,6 +213,165 @@ class S3ImageBuilder():
 		return yposition
 
 	@classmethod
+	def createScheduleImage(cls, timewindows, schedules, fontbroker, cachemanager, splat3info):
+		now = time.time()
+
+		maps_cache = cachemanager.open("s3.maps.small")
+		modes_cache = cachemanager.open("s3.modes")
+		game_types_cache = cachemanager.open("s3.gametypes")
+
+		# Game type icon mappings
+		game_type_icons = {
+			'TW': 'regular',
+			'SF': 'regular',
+			'AO': 'bankara',
+			'AS': 'bankara',
+			'XB': 'x',
+		}
+
+		# Game type name mappings
+		game_type_names = {
+			'TW': 'Turf War',
+			'SF': 'Splatfest',
+			'AO': 'Anarchy Open',
+			'AS': 'Anarchy Series',
+			'XB': 'X Battle',
+		}
+
+		# Count the number of columns needed
+		column_count = 0
+		for t in ['TW', 'SF', 'AO', 'AS', 'XB']:
+			if len(schedules[t]) == 0:
+				continue
+			column_count += 1
+
+		# Figure out image dimensions
+		game_type_icon_size = 128
+		header_height = 170
+		column_width = 200
+		map_thumbnail_width = column_width - 10
+		map_thumbnail_height = 95
+		map_thumbnail_offset = 5
+		mode_icon_size = 48
+		width = column_count * column_width
+
+		image = Image.new('RGB', (width, 800), (54, 57, 63))
+		draw = ImageDraw.Draw(image)
+
+		s1FontMed = fontbroker.truetype("s1.otf", size=36)
+		s2FontMed = fontbroker.truetype("s2.otf", size=24)
+		s2FontSmall = fontbroker.truetype("s2.otf", size=16)
+
+		# Add game type header
+		xposition = 0
+		for t in ['TW', 'SF', 'AO', 'AS', 'XB']:
+			if len(schedules[t]) == 0:
+				continue
+
+			if game_type_icon_io := game_types_cache.get_io(f"{game_type_icons[t]}.png"):
+				game_type_icon = Image.open(game_type_icon_io).convert("RGBA")
+				game_type_icon.thumbnail((game_type_icon_size, game_type_icon_size), Image.ANTIALIAS)
+				image.paste(game_type_icon, (int(xposition + (column_width / 2) - (game_type_icon_size / 2)), 0), game_type_icon)
+
+			cls.drawShadowedText(draw, (int(xposition + (column_width / 2)), game_type_icon_size), game_type_names.get(t, '?'), (255, 255, 255), font = s2FontMed, anchor = 'mt')
+
+			xposition += column_width
+
+		# Add first row time
+		yposition = header_height
+		cls.drawShadowedText(draw, (int(width / 2), yposition), cls.formatTimeWindow(timewindows[0]['starttime'], timewindows[0]['endtime'], now), (255, 255, 255), font = s1FontMed, anchor = 'mt')
+		yposition += s1FontMed.size
+
+		# Add first row map/mode images
+		xposition = 0
+		ybase = yposition
+		for t in ['TW', 'SF', 'AO', 'AS', 'XB']:
+			yposition = ybase
+
+			# Get rotation at the first time slot
+			rots = [s for s in schedules[t] if s['starttime'] == timewindows[0]['starttime']]
+			if len(rots) == 0:
+				continue
+			rot = rots[0]
+
+			# Add mode icon
+			mode = splat3info.getModeByInternalName(rot['mode'])
+			if (not mode is None) and (mode_icon_io := modes_cache.get_io(f"{mode.abbrev().upper()}.png")):
+				mode_icon = Image.open(mode_icon_io).convert("RGBA")
+				mode_icon.thumbnail((mode_icon_size, mode_icon_size), Image.ANTIALIAS)
+				image.paste(mode_icon, (int(xposition + (column_width / 2) - (mode_icon.width / 2)), yposition), mode_icon)
+			yposition += mode_icon_size
+
+			# Add mode name
+			if (not mode is None):
+				cls.drawShadowedText(draw, (int(xposition + (column_width / 2)), yposition + 5), mode.name(), (255, 255, 255), font = s2FontSmall, anchor = 'mt')
+			yposition += s2FontSmall.size + 10
+
+			# Add map thumbnails
+			for i in range(min(2, len(rot['maps']))):
+				map = rot['maps'][i]
+				if map_thumbnail_io := maps_cache.get_io(f"{map['stageid']}.png"):
+					map_thumbnail = Image.open(map_thumbnail_io).convert("RGBA")
+					map_thumbnail.thumbnail((map_thumbnail_width, map_thumbnail_height), Image.ANTIALIAS)
+					image.paste(map_thumbnail, (xposition + map_thumbnail_offset, yposition + map_thumbnail_height * i), map_thumbnail)
+			yposition += map_thumbnail_height * 2
+
+			# Add map names
+			for i in range(min(2, len(rot['maps']))):
+				map = rot['maps'][i]
+				cls.drawShadowedText(draw, (int(xposition + (column_width / 2)), yposition + 5 + ((s2FontSmall.size + 5) * i)), map['name'], (255, 255, 255), font = s2FontSmall, anchor = 'mt')
+
+			yposition += (s2FontSmall.size + 5) * 2
+			xposition += column_width
+
+		# Subsequent rows
+		xposition = 0
+		for tw in timewindows[1:]:
+			# Add time
+			yposition += 15
+			cls.drawShadowedText(draw, (int(width / 2), yposition), cls.formatTimeWindow(tw['starttime'], tw['endtime'], now), (255, 255, 255), font = s1FontMed, anchor = 'mt')
+			yposition += s1FontMed.size
+
+			ybase = yposition
+			for t in ['TW', 'SF', 'AO', 'AS', 'XB']:
+				yposition = ybase
+
+				# Get rotation at this time slot
+				rots = [s for s in schedules[t] if s['starttime'] == tw['starttime']]
+				if len(rots) == 0:
+					continue
+				rot = rots[0]
+
+				# Add mode icon
+				mode = splat3info.getModeByInternalName(rot['mode'])
+				if (not mode is None) and (mode_icon_io := modes_cache.get_io(f"{mode.abbrev().upper()}.png")):
+					mode_icon = Image.open(mode_icon_io).convert("RGBA")
+					mode_icon.thumbnail((mode_icon_size, mode_icon_size), Image.ANTIALIAS)
+					image.paste(mode_icon, (int(xposition + (column_width / 2) - (mode_icon.width / 2)), yposition), mode_icon)
+				yposition += mode_icon_size
+
+				# Add mode name
+				if (not mode is None):
+					cls.drawShadowedText(draw, (int(xposition + (column_width / 2)), yposition + 5), mode.name(), (255, 255, 255), font = s2FontSmall, anchor = 'mt')
+				yposition += s2FontSmall.size + 5
+
+				# Add map names
+				for i in range(min(2, len(rot['maps']))):
+					map = rot['maps'][i]
+					cls.drawShadowedText(draw, (int(xposition + (column_width / 2)), yposition + 5 + ((s2FontSmall.size + 5) * i)), map['name'], (255, 255, 255), font = s2FontSmall, anchor = 'mt')
+
+				yposition += (s2FontSmall.size + 5) * 2
+				xposition += column_width
+
+		# Crop to used height
+		image = image.crop((0, 0, image.width, yposition))
+
+		image_io = io.BytesIO()
+		image.save(image_io, 'PNG')
+		image_io.seek(0)
+		return image_io
+
+	@classmethod
 	def createSRScheduleImage(cls, schedule, fontbroker, cachemanager):
 		now = time.time()
 
@@ -336,6 +495,18 @@ class S3ImageBuilder():
 		else:
 			minutes = int(span / 60)
 			return "%02dm" % (minutes)
+
+	@classmethod
+	def formatTimeWindow(cls, starttime, endtime, now = None):
+		if now == None:
+			now = time.time()
+
+		if endtime < now:
+			return "Ended %s ago" % (cls.formatTimespan(int(now - endtime)))
+		elif (starttime <= now) and (endtime > now):
+			return "Started %s ago" % (cls.formatTimespan(int(now - starttime)))
+		else:
+			return "Starting in %s" % (cls.formatTimespan(int(starttime - now)))
 
 	@classmethod
 	def createGearCard(cls, gear):

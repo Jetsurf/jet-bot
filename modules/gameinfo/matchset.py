@@ -3,7 +3,7 @@ import random
 class MatchItem():
 	def __init__(self, name, abbrevs = None):
 		self._name      = name
-		self._abbrevs   = abbrevs or []
+		self._abbrevs   = [a.lower() for a in (abbrevs or [])]
 
 	def name(self, language = "en-US"):
 		if isinstance(self._name, dict):
