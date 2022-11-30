@@ -210,7 +210,7 @@ class S3Schedule():
 
 	def cache_images(self):
 		# PvP
-		for rec in [*self.turf_war_schedule, *self.splatfest_schedule, *self.anarchy_open_schedule, *self.anarchy_series_schedule]:
+		for rec in [*self.turf_war_schedule, *self.splatfest_schedule, *self.anarchy_open_schedule, *self.anarchy_series_schedule, *self.x_battles_schedule]:
 			for map in rec['maps']:
 				if (not map['stageid']) or (not map['image']):
 					continue  # Missing required fields
