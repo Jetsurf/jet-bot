@@ -11,7 +11,7 @@ import hashlib
 class S3ImageBuilder():
 	@classmethod
 	def createBattleDetailsImage(cls, details, weapon_thumbnail_cache, font_broker):
-		typeNames = {"BANKARA": "Anarchy", "FEST": "Splatfest", "X": "X Rank", "LEAGUE": "League", "PRIVATE": "Private Battle"}
+		typeNames = {"BANKARA": "Anarchy", "FEST": "Splatfest", "X_MATCH": "X Battle", "LEAGUE": "League", "PRIVATE": "Private Battle"}
 		anarchyTypeNames = {"OPEN": "Open", "CHALLENGE": "Series"}
 		festTypeNames = {"NORMAL": "Normal", "DECUPLE": "10x", "DRAGON": "100x", "DOUBLE_DRAGON": "333x"}
 		judgementNames = {"WIN": "Victory", "LOSE": "Defeat", "EXEMPTED_LOSE": "Early disconnect with no penalty", "DEEMED_LOSE": "Loss due to early disconnect", "DRAW": "No contest"}
