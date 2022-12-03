@@ -27,7 +27,7 @@ class S3Handler():
 		self.hostedUrl = configData.get('hosted_url')
 		self.webDir = configData.get('web_dir')
 		self.schedule = s3.schedule.S3Schedule(nsotoken, mysqlHandler, cachemanager)
-		self.storedm = s3.storedm.S3StoreHandler(client, nsotoken, splat3info, mysqlHandler, configData)
+		self.storedm = s3.storedm.S3StoreHandler(client, nsotoken, splat3info, mysqlHandler, configData, cachemanager)
 		self.feeds = s3.feedhandler.S3FeedHandler(client, splat3info, mysqlHandler, self.schedule, cachemanager, fonts)
 		self.imageextractor = s3.imageextractor.S3ImageExtractor(nsotoken, cachemanager)
 		self.fonts = fonts

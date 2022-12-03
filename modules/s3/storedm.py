@@ -3,6 +3,7 @@ import mysqlhandler, nsotoken
 import json, time
 
 from .embedbuilder import S3EmbedBuilder
+from .imagebuilder import S3ImageBuilder
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
@@ -41,13 +42,14 @@ class s3OrderView(discord.ui.View):
 			await interaction.response.send_message("Something went wrong.")
 
 class S3StoreHandler():
-	def __init__(self, client, nsoToken, splat3info, mysqlHandler, configData):
+	def __init__(self, client, nsoToken, splat3info, mysqlHandler, configData, cachemanager):
 		self.client = client
 		self.sqlBroker = mysqlHandler
 		self.nsotoken = nsoToken
 		self.splat3info = splat3info
 		self.scheduler = AsyncIOScheduler()
 		self.configData = configData
+		self.cachemanager = cachemanager
 		if 'storedm_debug' in configData and configData['storedm_debug']:
 			self.scheduler.add_job(self.doStoreRegularDM, 'cron', second = "0", timezone = 'UTC') 
 			self.scheduler.add_job(self.doStoreDailyDropDM, 'cron', second = '0', timezone = 'UTC')
@@ -135,9 +137,17 @@ class S3StoreHandler():
 
 		view = s3OrderView(gear, self.nsotoken, user, self.splat3info)
 		await view.initView()
-		#def createStoreEmbed(self, gear, brand, title, configData, instructions = None):
-		embed = S3EmbedBuilder.createStoreEmbed(gear, brand, "Gear you wanted to be notified about has appeared in the Splatnet 3 shop!", self.configData)
-		await user.send(embed = embed, view = view)
+
+		embed = S3EmbedBuilder.createStoreEmbed(gear, brand, "Gear you wanted to be notified about has appeared in the Splatnet 3 shop!")
+
+		# Add gear card image as embed thumbnail
+		file = None
+		if gearcard_io := S3ImageBuilder.getGearCardIO(gear, self.cachemanager):
+			file = discord.File(fp = gearcard_io, filename = 'gearcard.png', description = 'Gear card')
+			embed.set_thumbnail(url = "attachment://gearcard.png")
+
+		await user.send(file = file, embed = embed, view = view)
+		return
 
 	async def doStoreRegularDM(self):
 		if not self.cacheState:

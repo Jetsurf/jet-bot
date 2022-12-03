@@ -534,6 +534,19 @@ class S3ImageBuilder():
 
 		return img
 
+	# Returns a gear card image as an io handle.
+	# Will cache the image for future use.
+	@classmethod
+	def getGearCardIO(cls, gear, cachemanager):
+		gearcard_cache = cachemanager.open("s3.gearcards")
+		cache_key = "%s.png" % (hashlib.sha224(f"{gear['id']}{gear['gear']['primaryGearPower']['name']}".encode()).hexdigest(),)
+		if gearcard_io := gearcard_cache.get_io(cache_key):
+			return gearcard_io
+
+		gearcard_image = S3ImageBuilder.createGearCard(gear['gear'])
+		gearcard_io = gearcard_cache.add_image(cache_key, gearcard_image)
+		return gearcard_io
+
 	@classmethod
 	def createWeaponCard(cls, weapon):
 		IMGW, IMGH = 220, 290
