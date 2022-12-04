@@ -436,9 +436,8 @@ class S3ImageBuilder():
 		image_io.seek(0)
 		return image_io
 
-	#Ensure you have 'hosted_url' AND 'web_dir' both set before calling this!
 	@classmethod
-	def createNamePlateImage(cls, playerJson, fonts, configData):
+	def createNamePlateImage(cls, playerJson, fonts):
 		imgResponse = requests.get(playerJson['data']['currentPlayer']['nameplate']['background']['image']['url'])
 		npImage = Image.open(BytesIO(imgResponse.content)).convert("RGBA")
 
@@ -452,7 +451,7 @@ class S3ImageBuilder():
 		for badge in playerJson['data']['currentPlayer']['nameplate']['badges']:
 			if badge is None:
 				break
-			else:	
+			else:
 				badgeRes = requests.get(badge['image']['url'])
 				badgeImg = Image.open(BytesIO(badgeRes.content)).convert("RGBA")
 				badgeImg.thumbnail(size, Image.ANTIALIAS)
@@ -465,12 +464,18 @@ class S3ImageBuilder():
 		imgEdit.text((10,175), f"#{playerJson['data']['currentPlayer']['nameId']}", (255, 255, 255), font=s2FontSmall, anchor='lt')
 		imgEdit.text((MAXW/2, MAXH/2), playerJson['data']['currentPlayer']['name'], (255, 255, 255), font=s1FontLarge, anchor='mm')
 
-		imgName = f"{playerJson['data']['currentPlayer']['name']}{playerJson['data']['currentPlayer']['nameId']}.png"
-		imgUrl = f"{configData['hosted_url']}/s3/nameplates/{imgName}"
-		imgPath = f"{configData['web_dir']}/s3/nameplates/{imgName}"
+		return npImage
 
-		npImage.save(imgPath, "PNG")
-		return imgUrl
+	@classmethod
+	def getNamePlateImageIO(cls, playerJson, fonts, cachemanager):
+		nameplate_cache = cachemanager.open("s3.nameplates", 300)  # Cache for 5 minutes
+		cache_key = "%s.png" % (hashlib.sha224(f"{playerJson['data']['currentPlayer']['name']}#{playerJson['data']['currentPlayer']['nameId']}".encode()).hexdigest(),)
+		if nameplate_io := nameplate_cache.get_io(cache_key):
+			return nameplate_io
+
+		nameplate_image = S3ImageBuilder.createNamePlateImage(playerJson, fonts)
+		nameplate_io = nameplate_cache.add_image(cache_key, nameplate_image)
+		return nameplate_io
 
 	@classmethod
 	def addCircleToImage(cls, image, HW, BUF):
