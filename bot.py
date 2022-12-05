@@ -268,7 +268,7 @@ async def cmdAdminS3Feed(ctx, maps: Option(bool, "Include maps in the feed?", re
 		return
 
 	if await checkIfAdmin(ctx):
-		if not maps and not sr and not not gear:
+		if not maps and not sr and not gear:
 			await ctx.respond("Not going to create an empty feed.")
 		else:
 			await serverUtils.createFeed(ctx, args=[ maps, sr, gear, True ])

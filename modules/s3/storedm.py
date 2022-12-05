@@ -120,6 +120,7 @@ class S3StoreHandler():
 				triggers = json.loads(toDM[id][2])
 				server = self.client.get_guild(int(servid))
 
+				#TODO : Change to use fetch_user
 				await server.chunk()
 				theMem = server.get_member(int(memid))
 				if theMem is None:
@@ -137,6 +138,7 @@ class S3StoreHandler():
 		await view.initView()
 		#def createStoreEmbed(self, gear, brand, title, configData, instructions = None):
 		embed = S3EmbedBuilder.createStoreEmbed(gear, brand, "Gear you wanted to be notified about has appeared in the Splatnet 3 shop!", self.configData)
+		#TODO: Check for 403 and remove user
 		await user.send(embed = embed, view = view)
 
 	async def doStoreRegularDM(self):
@@ -172,6 +174,8 @@ class S3StoreHandler():
 		await cur.execute("SELECT COUNT(*) FROM s3storedms WHERE clientid = %s", (ctx.user.id,))
 		count = await cur.fetchall()
 		count = count[0][0]
+		term = None
+
 		if count > 0:
 			await cur.execute("SELECT dmtriggers FROM s3storedms WHERE clientid = %s AND serverid = %s", (ctx.user.id, ctx.guild.id,))
 			theTriggers = await cur.fetchall()
@@ -191,6 +195,7 @@ class S3StoreHandler():
 					return
 				else:
 					theTriggers['mabilities'].append(match1.get().name())
+					term = match1.get().name()
 
 		#Search brands
 		if flag != True:
@@ -203,6 +208,7 @@ class S3StoreHandler():
 					return
 				else:
 					theTriggers['brands'].append(match2.get().name())
+					term = match2.get().name()
 
 		#Search Items
 		if flag != True:
@@ -215,11 +221,13 @@ class S3StoreHandler():
 					return
 				else:
 					theTriggers['gearnames'].append(match3.get().name())
+					term = match3.get().name()
 
 		if flag == True:
 			if count == 0:
 				#We need to make sure DM's work, could cross check this with S2 storedm?
 				try:
+					#TODO - Move this to await user.create_dm() -> channel.can_send():
 					chan = await ctx.user.send("This is a test to ensure that you can receive DM's. Be aware that if I am unable to DM you, I will no longer notify you of items in the store. Rerun /store dm add to be readded.")
 				except discord.Forbidden:
 					await ctx.respond("I am unable to DM you, please check to ensure you can receive DM's from me before attempting again.", ephemeral=True)
@@ -228,7 +236,7 @@ class S3StoreHandler():
 			await cur.execute("REPLACE INTO s3storedms (clientid, serverid, dmtriggers) VALUES (%s, %s, %s)", (ctx.user.id, ctx.guild.id, json.dumps(theTriggers)))
 			await self.sqlBroker.commit(cur)
 
-			await ctx.respond(f"Added you to recieve a DM when gear with/by/named {trigger} appears in the Splatnet 3 store!")
+			await ctx.respond(f"Added you to recieve a DM when gear with/by/named {term} appears in the Splatnet 3 store!")
 		else:
 			await self.sqlBroker.close(cur)
 			if len(match1.items) + len(match2.items) + len(match3.items) < 1:

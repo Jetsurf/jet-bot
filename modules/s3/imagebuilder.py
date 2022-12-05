@@ -509,6 +509,29 @@ class S3ImageBuilder():
 			return "Starting in %s" % (cls.formatTimespan(int(starttime - now)))
 
 	@classmethod
+	def createFeedGearCard(cls, gear, fonts):
+		CARDW = 220
+		IMGW = len(gear) * CARDW
+		IMGH = 314
+		TEXTH = 24
+		TEXTCOLOR = (0, 150, 150, 255)
+		s2Font = fonts.truetype("s2.otf", size=24)
+
+		img = Image.new("RGBA", (IMGW, IMGH), (0, 0, 0, 0))
+		draw = ImageDraw.Draw(img)
+
+		for i, item in enumerate(gear):
+			print(f"{item}")
+			draw.text(((i * CARDW) + int(CARDW / 2), 0), f"{item['gear']['name']}" , TEXTCOLOR, font=s2Font, anchor='mt')
+			gearCard = cls.createGearCard(item['gear'])
+			img.paste(gearCard, (i * CARDW, TEXTH), gearCard)
+
+		retImg = io.BytesIO()
+		img.save(retImg, 'PNG')
+		retImg.seek(0)
+		return retImg
+
+	@classmethod
 	def createGearCard(cls, gear):
 		IMGW, IMGH = 220, 290
 		MAHW, SUBHW, BUF = 70, 50, 5
