@@ -521,7 +521,6 @@ class S3ImageBuilder():
 		draw = ImageDraw.Draw(img)
 
 		for i, item in enumerate(gear):
-			print(f"{item}")
 			draw.text(((i * CARDW) + int(CARDW / 2), 0), f"{item['gear']['name']}" , TEXTCOLOR, font=s2Font, anchor='mt')
 			gearCard = cls.createGearCard(item['gear'])
 			img.paste(gearCard, (i * CARDW, TEXTH), gearCard)
@@ -614,7 +613,7 @@ class S3ImageBuilder():
 		return img
 
 	@classmethod
-	def createStoreCanvas(self, gearJson, fonts, configData):
+	def createStoreCanvas(self, gearJson, fonts):
 		MAXW, MAXH = 660, 1062
 		CARDW, CARDH = 220, 290
 		TEXTH = 24
@@ -641,7 +640,9 @@ class S3ImageBuilder():
 				gearImg = self.createGearCard(gear['gear'])
 				img.paste(gearImg, (j * CARDW, (i+1) * CARDH + ((6+i) * TEXTH)), gearImg)
 
-		img.save(f"{configData['web_dir']}/s3/store.png", "PNG")
+		retImg = io.BytesIO()
+		img.save(retImg, 'PNG')
+		retImg.seek(0)
 
-		return f"{configData['hosted_url']}/s3/store.png?{str(time.time())}"
+		return retImg
 

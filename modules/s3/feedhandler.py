@@ -19,16 +19,10 @@ class S3FeedHandler():
 		self.fonts = fonts
 		self.scheduler = AsyncIOScheduler(timezone='UTC')
 		self.debug = True
-		if self.debug:
-			self.scheduler.add_job(self.doMapFeed, 'cron', second="0")
-			self.scheduler.add_job(self.doGearFeed, 'cron', second="0")
-			self.scheduler.add_job(self.doSRFeed, "cron", second="0")
-			self.scheduler.start()
-		else:
-			self.scheduler.add_job(self.doMapFeed, 'cron', hour="*/2", minute='0', second='25', timezone='UTC')
-			self.scheduler.add_job(self.doGearFeed, 'cron', hour="*/4", minute='0', second='25', timezone='UTC')
-			self.debug = False
-			asyncio.create_task(self.initSRSchedule())
+
+		self.scheduler.add_job(self.doMapFeed, 'cron', hour="*/2", minute='0', second='25', timezone='UTC')
+		self.scheduler.add_job(self.doGearFeed, 'cron', hour="*/4", minute='0', second='25', timezone='UTC')
+		asyncio.create_task(self.initSRSchedule())
 
 	async def initSRSchedule(self):
 		while self.schedule.get_schedule('SR') == []:
@@ -67,7 +61,6 @@ class S3FeedHandler():
 			schedules[t] = [s for s in schedules[t] if (r['starttime'] in [w['starttime'] for w in timewindows])]
 
 		image_io = S3ImageBuilder.createScheduleImage(timewindows, schedules, self.fonts, self.cachemanager, self.splat3info)
-		#TODO - Move this to embed builder
 		embed = discord.Embed(colour=0x0004FF)
 		embed.title = "Current Splatoon 3 multiplayer map rotation"
 		img = discord.File(image_io, filename = "maps-feed.png", description = "Current S3 multiplayer schedule")
@@ -90,7 +83,6 @@ class S3FeedHandler():
 
 		sched = self.schedule.get_schedule('SR', count = 2)
 		image_io = S3ImageBuilder.createSRScheduleImage(sched, self.fonts, self.cachemanager)
-		#TODO - Move this to embed builder
 		embed = discord.Embed(colour=0x0004FF)
 		embed.title = "Current Splatoon 3 Salmon Run rotation"
 		img = discord.File(image_io, filename = "sr-feed.png", description = "Current S3 Salmon Run schedule")
@@ -115,7 +107,7 @@ class S3FeedHandler():
 			print("Storecache is none...")
 			return
 
-		if datetime.now(timezone.utc).hour == 23:
+		if datetime.now(timezone.utc).hour == 0:
 			items = self.storedm.storecache['pickupBrand']['brandGears'] 
 			items.append(self.storedm.storecache['limitedGears'][5])
 			image_io = S3ImageBuilder.createFeedGearCard(items, self.fonts)
@@ -123,7 +115,6 @@ class S3FeedHandler():
 			items = [ self.storedm.storecache['limitedGears'][5] ]
 			image_io = S3ImageBuilder.createFeedGearCard(items, self.fonts)
 
-		#TODO - Move this to embed builder
 		embed = discord.Embed(colour=0x0004FF)
 		embed.title = "New gear in Splatoon 3 Splatnet store"
 		img = discord.File(image_io, filename = "gear-feed.png", description = "New gear posted to Splatoon 3 Splatnet")
