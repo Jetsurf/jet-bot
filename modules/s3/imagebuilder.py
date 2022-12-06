@@ -624,7 +624,6 @@ class S3ImageBuilder():
 
 		#Daily Drops
 		draw.text((int(MAXW/2), 0), f"The Daily Drop: {gearJson['pickupBrand']['brand']['name']}", TEXTCOLOR, font=s2FontSmall, anchor="mt")
-		draw.line([(0, TEXTH), (MAXW, TEXTH)], fill='black', width=3) #Don't know if lines are going to be good
 		for i, gear in enumerate(gearJson['pickupBrand']['brandGears']):
 			draw.text((i * CARDW + int(CARDW/2), TEXTH), gear['gear']['name'], TEXTCOLOR, font=s2FontSmall, anchor='mt')
 			draw.text((i * CARDW + int(CARDW/2), TEXTH * 2), f"Price: {gear['price']}", TEXTCOLOR, font=s2FontSmall, anchor="mt")

@@ -53,7 +53,7 @@ class S3FeedHandler():
 		timewindows = timewindows[0:2]
 
 		if len(timewindows) == 0:
-			await ctx.respond("Sorry, I have no schedule data")
+			print("Missed map rotation")
 			return
 
 		# Filter the schedules to those matching the two earliest time windows
@@ -65,7 +65,7 @@ class S3FeedHandler():
 		embed.title = "Current Splatoon 3 multiplayer map rotation"
 		img = discord.File(image_io, filename = "maps-feed.png", description = "Current S3 multiplayer schedule")
 		embed.set_image(url = "attachment://maps-feed.png")
-		
+
 		cur = await self.sqlBroker.connect()
 		await cur.execute("SELECT * from s3feeds WHERE sr = 1")
 		srFeeds = await cur.fetchall()
