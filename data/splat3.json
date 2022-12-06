@@ -4444,6 +4444,68 @@
       "season": 0
     }
   ],
+  "coopModes": [
+    {
+      "internalName": "Coop",
+      "names": {
+        "de-DE": "Salmon Run",
+        "en-GB": "Salmon Run",
+        "en-US": "Salmon Run",
+        "es-ES": "Salmon Run",
+        "es-MX": "Salmon Run",
+        "fr-CA": "Salmon Run",
+        "fr-FR": "Salmon Run",
+        "it-IT": "Salmon Run",
+        "ja-JP": "SALMON RUN",
+        "ko-KR": "SALMON RUN",
+        "nl-NL": "Salmon Run",
+        "ru-RU": "Salmon Run",
+        "zh-CN": "SALMON RUN",
+        "zh-TW": "SALMON RUN"
+      },
+      "settingName": "CoopNormalSetting"
+    },
+    {
+      "internalName": "CoopBigRun",
+      "names": {
+        "de-DE": "Big Run",
+        "en-GB": "Big Run",
+        "en-US": "Big Run",
+        "es-ES": "Big Run",
+        "es-MX": "Big Run",
+        "fr-CA": "Big Run",
+        "fr-FR": "Big Run",
+        "it-IT": "Big Run",
+        "ja-JP": "\u30d3\u30c3\u30b0\u30e9\u30f3",
+        "ko-KR": "\ube45 \ub7f0",
+        "nl-NL": "Big Run",
+        "ru-RU": "Big Run",
+        "zh-CN": "\u5927\u578b\u8dd1",
+        "zh-TW": "\u5927\u578b\u8dd1"
+      },
+      "settingName": "CoopBigRunSetting"
+    },
+    {
+      "internalName": "CoopPrivate",
+      "names": {
+        "de-DE": "Private Schicht",
+        "en-GB": "Private Job",
+        "en-US": "Private Job",
+        "es-ES": "Trabajo privado",
+        "es-MX": "Trabajo privado",
+        "fr-CA": "Mission priv\u00e9e",
+        "fr-FR": "Mission priv\u00e9e",
+        "it-IT": "Lavoro privato",
+        "ja-JP": "\u30d7\u30e9\u30a4\u30d9\u30fc\u30c8\u30d0\u30a4\u30c8",
+        "ko-KR": "\ud504\ub77c\uc774\ube57 \uc544\ub974\ubc14\uc774\ud2b8",
+        "nl-NL": "Priv\u00e9klus",
+        "ru-RU": "\u0427\u0430\u0441\u0442\u043d\u0430\u044f \u0441\u043c\u0435\u043d\u0430",
+        "zh-CN": "\u79c1\u4eba\u6253\u5de5",
+        "zh-TW": "\u79c1\u4eba\u6253\u5de5"
+      },
+      "settingName": null
+    }
+  ],
   "hats": [
     {
       "ability": "Ink Recovery Up",

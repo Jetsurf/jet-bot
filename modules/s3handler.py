@@ -230,7 +230,7 @@ class S3Handler():
 
 		name = self.schedule.schedule_names[which]
 
-		sched = self.schedule.get_schedule(which, count = 2)
+		sched = self.schedule.get_schedule(which, count = 6)
 		if len(sched) == 0:
 			await ctx.respond(f"That schedule is empty.", ephemeral = True)
 			return
@@ -241,8 +241,14 @@ class S3Handler():
 		embed.title = f"{name} Schedule"
 
 		for rot in sched:
-			mode = self.splat3info.getModeByInternalName(rot['mode'])
-			title = mode.name() if mode else rot['mode']
+			if rot['type'] == 'VERSUS':
+				mode = self.splat3info.getModeByInternalName(rot['mode'])
+				title = mode.name() if mode else rot['mode']
+			elif rot['type'] == 'COOP':
+				mode = self.splat3info.getCoopModeBySettingName(rot['mode'])
+				title = mode.name() if mode else rot['mode']
+			else:
+				title = rot['mode']
 
 			if rot['endtime'] < now:
 				title += f" \u2014 Ended"

@@ -393,6 +393,7 @@ class S3ImageBuilder():
 
 		maps_cache = cachemanager.open("s3.sr.maps")
 		weapons_cache = cachemanager.open("s3.sr.weapons")
+		gametype_cache = cachemanager.open("s3.gametypes")
 
 		for s in schedule:
 			# Add map image
@@ -402,9 +403,19 @@ class S3ImageBuilder():
 				map_image.thumbnail((640, 480), Image.ANTIALIAS)
 				image.paste(map_image, (0, yposition), map_image)
 
-			# Add map name
-			cls.drawShadowedText(draw, (int(width / 2), yposition), s['maps'][0]['name'], (255, 255, 255), font = s1FontMed, anchor = 'mt')
-			#draw.text((int(width / 2), yposition), s['maps'][0]['name'], (255, 255, 255), font=s1FontMed, anchor='mt')
+			# If it's a Big Run, add Big Run icon
+			if s['mode'] == 'CoopBigRunSetting':
+				if mode_icon_io := gametype_cache.get_io('big_run.png'):
+					mode_icon_image = Image.open(mode_icon_io).convert("RGBA")
+					mode_icon_image.thumbnail((256, 256), Image.ANTIALIAS)
+					image.paste(mode_icon_image, (int((image.width / 2) - (mode_icon_image.width / 2)), int(yposition + (height_each / 2) - 128)), mode_icon_image)
+
+			# Add title
+			if s['mode'] == 'CoopBigRunSetting':
+				title = f"Big Run - {s['maps'][0]['name']}"
+			else:
+				title = s['maps'][0]['name']
+			cls.drawShadowedText(draw, (int(width / 2), yposition), title, (255, 255, 255), font = s1FontMed, anchor = 'mt')
 
 			# Add start time
 			if s['endtime'] < now:

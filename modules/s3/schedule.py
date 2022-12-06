@@ -138,7 +138,7 @@ class S3Schedule():
 		rec['mode'] = settings['vsRule']['rule']
 		rec['maps'] = self.parse_maps(settings['vsStages'])
 
-	def parse_schedule(self, data, key, sub):
+	def parse_versus_schedule(self, data, key, sub):
 		if not data or not data.get('nodes'):
 			return []  # Empty
 
@@ -150,6 +150,7 @@ class S3Schedule():
 				continue  # Nothing scheduled in this timeslot
 
 			rec = {}
+			rec['type']      = 'VERSUS'
 			rec['starttime'] = dateutil.parser.isoparse(node['startTime']).timestamp()
 			rec['endtime']   = dateutil.parser.isoparse(node['endTime']).timestamp()
 			sub(node[key], rec)
@@ -169,7 +170,8 @@ class S3Schedule():
 				continue  # Nothing scheduled in this timeslot
 
 			rec = {}
-			rec['mode']      = 'Salmon Run'
+			rec['type']      = 'COOP'
+			rec['mode']      = node['setting']['__typename']
 			rec['starttime'] = dateutil.parser.isoparse(node['startTime']).timestamp()
 			rec['endtime']   = dateutil.parser.isoparse(node['endTime']).timestamp()
 			rec['maps']      = [ self.parse_salmon_map(node['setting']['coopStage']) ]
@@ -197,13 +199,18 @@ class S3Schedule():
 			print("S3Schedule.update(): Failed to retrieve schedule")
 			return
 
-		self.turf_war_schedule       = self.parse_schedule(data['data'].get('regularSchedules'), 'regularMatchSetting', self.parse_schedule_turf)
-		self.splatfest_schedule      = self.parse_schedule(data['data'].get('festSchedules'), 'festMatchSetting', self.parse_schedule_fest)
-		self.anarchy_open_schedule   = self.parse_schedule(data['data'].get('bankaraSchedules'), 'bankaraMatchSettings', self.parse_schedule_anarchy_open)
-		self.anarchy_series_schedule = self.parse_schedule(data['data'].get('bankaraSchedules'), 'bankaraMatchSettings', self.parse_schedule_anarchy_series)
-		self.x_battles_schedule      = self.parse_schedule(data['data'].get('xSchedules'), 'xMatchSetting', self.parse_schedule_x_battles)
+		self.turf_war_schedule       = self.parse_versus_schedule(data['data'].get('regularSchedules'), 'regularMatchSetting', self.parse_schedule_turf)
+		self.splatfest_schedule      = self.parse_versus_schedule(data['data'].get('festSchedules'), 'festMatchSetting', self.parse_schedule_fest)
+		self.anarchy_open_schedule   = self.parse_versus_schedule(data['data'].get('bankaraSchedules'), 'bankaraMatchSettings', self.parse_schedule_anarchy_open)
+		self.anarchy_series_schedule = self.parse_versus_schedule(data['data'].get('bankaraSchedules'), 'bankaraMatchSettings', self.parse_schedule_anarchy_series)
+		self.x_battles_schedule      = self.parse_versus_schedule(data['data'].get('xSchedules'), 'xMatchSetting', self.parse_schedule_x_battles)
 
 		self.salmon_run_schedule = self.parse_salmon_schedule(data['data'].get('coopGroupingSchedule', {}).get('regularSchedules'))
+
+		# If Big Run schedules are included, parse them and insert them into the regular SR schedule
+		if big_run_data := data['data'].get('coopGroupingSchedule', {}).get('bigRunSchedules'):
+			big_run_schedule = self.parse_salmon_schedule(big_run_data)
+			self.salmon_run_schedule = sorted([*self.salmon_run_schedule, *big_run_schedule], key = lambda s: s['starttime'])
 
 		self.cache_images()
 
