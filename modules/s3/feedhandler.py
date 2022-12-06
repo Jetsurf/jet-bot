@@ -67,14 +67,14 @@ class S3FeedHandler():
 		embed.set_image(url = "attachment://maps-feed.png")
 
 		cur = await self.sqlBroker.connect()
-		await cur.execute("SELECT * from s3feeds WHERE sr = 1")
-		srFeeds = await cur.fetchall()
+		await cur.execute("SELECT * from s3feeds WHERE (maps = 1)")
+		map_feeds = await cur.fetchall()
 		await self.sqlBroker.close(cur)
 
-		print(f"Doing {len(srFeeds)} S3 map feeds")
+		print(f"Doing {len(map_feeds)} S3 map feeds")
 
-		for id in range(len(srFeeds)):
-			channel = self.client.get_guild(int(srFeeds[id][0])).get_channel(int(srFeeds[id][1]))
+		for id in range(len(map_feeds)):
+			channel = self.client.get_guild(int(map_feeds[id][0])).get_channel(int(map_feeds[id][1]))
 			await channel.send(file = img, embed = embed)
 
 	async def doSRFeed(self):
@@ -87,7 +87,7 @@ class S3FeedHandler():
 		embed.title = "Current Splatoon 3 Salmon Run rotation"
 		img = discord.File(image_io, filename = "sr-feed.png", description = "Current S3 Salmon Run schedule")
 		embed.set_image(url = "attachment://sr-feed.png")
-		
+
 		cur = await self.sqlBroker.connect()
 		await cur.execute("SELECT * from s3feeds WHERE sr = 1")
 		srFeeds = await cur.fetchall()
