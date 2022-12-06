@@ -11,7 +11,7 @@ import hashlib
 class S3ImageBuilder():
 	@classmethod
 	def createBattleDetailsImage(cls, details, weapon_thumbnail_cache, font_broker):
-		typeNames = {"BANKARA": "Anarchy", "FEST": "Splatfest", "X": "X Rank", "LEAGUE": "League", "PRIVATE": "Private Battle"}
+		typeNames = {"BANKARA": "Anarchy", "FEST": "Splatfest", "X_MATCH": "X Battle", "LEAGUE": "League", "PRIVATE": "Private Battle"}
 		anarchyTypeNames = {"OPEN": "Open", "CHALLENGE": "Series"}
 		festTypeNames = {"NORMAL": "Normal", "DECUPLE": "10x", "DRAGON": "100x", "DOUBLE_DRAGON": "333x"}
 		judgementNames = {"WIN": "Victory", "LOSE": "Defeat", "EXEMPTED_LOSE": "Early disconnect with no penalty", "DEEMED_LOSE": "Loss due to early disconnect", "DRAW": "No contest"}
@@ -436,9 +436,8 @@ class S3ImageBuilder():
 		image_io.seek(0)
 		return image_io
 
-	#Ensure you have 'hosted_url' AND 'web_dir' both set before calling this!
 	@classmethod
-	def createNamePlateImage(cls, playerJson, fonts, configData):
+	def createNamePlateImage(cls, playerJson, fonts):
 		imgResponse = requests.get(playerJson['data']['currentPlayer']['nameplate']['background']['image']['url'])
 		npImage = Image.open(BytesIO(imgResponse.content)).convert("RGBA")
 
@@ -452,7 +451,7 @@ class S3ImageBuilder():
 		for badge in playerJson['data']['currentPlayer']['nameplate']['badges']:
 			if badge is None:
 				break
-			else:	
+			else:
 				badgeRes = requests.get(badge['image']['url'])
 				badgeImg = Image.open(BytesIO(badgeRes.content)).convert("RGBA")
 				badgeImg.thumbnail(size, Image.ANTIALIAS)
@@ -465,12 +464,18 @@ class S3ImageBuilder():
 		imgEdit.text((10,175), f"#{playerJson['data']['currentPlayer']['nameId']}", (255, 255, 255), font=s2FontSmall, anchor='lt')
 		imgEdit.text((MAXW/2, MAXH/2), playerJson['data']['currentPlayer']['name'], (255, 255, 255), font=s1FontLarge, anchor='mm')
 
-		imgName = f"{playerJson['data']['currentPlayer']['name']}{playerJson['data']['currentPlayer']['nameId']}.png"
-		imgUrl = f"{configData['hosted_url']}/s3/nameplates/{imgName}"
-		imgPath = f"{configData['web_dir']}/s3/nameplates/{imgName}"
+		return npImage
 
-		npImage.save(imgPath, "PNG")
-		return imgUrl
+	@classmethod
+	def getNamePlateImageIO(cls, playerJson, fonts, cachemanager):
+		nameplate_cache = cachemanager.open("s3.nameplates", 300)  # Cache for 5 minutes
+		cache_key = "%s.png" % (hashlib.sha224(f"{playerJson['data']['currentPlayer']['name']}#{playerJson['data']['currentPlayer']['nameId']}".encode()).hexdigest(),)
+		if nameplate_io := nameplate_cache.get_io(cache_key):
+			return nameplate_io
+
+		nameplate_image = S3ImageBuilder.createNamePlateImage(playerJson, fonts)
+		nameplate_io = nameplate_cache.add_image(cache_key, nameplate_image)
+		return nameplate_io
 
 	@classmethod
 	def addCircleToImage(cls, image, HW, BUF):
@@ -555,6 +560,19 @@ class S3ImageBuilder():
 			img.paste(abilImg, (MAHW + (i * SUBHW), IMGH - SUBHW), abilImg)
 
 		return img
+
+	# Returns a gear card image as an io handle.
+	# Will cache the image for future use.
+	@classmethod
+	def getGearCardIO(cls, gear, cachemanager):
+		gearcard_cache = cachemanager.open("s3.gearcards")
+		cache_key = "%s.png" % (hashlib.sha224(f"{gear['id']}{gear['gear']['primaryGearPower']['name']}".encode()).hexdigest(),)
+		if gearcard_io := gearcard_cache.get_io(cache_key):
+			return gearcard_io
+
+		gearcard_image = S3ImageBuilder.createGearCard(gear['gear'])
+		gearcard_io = gearcard_cache.add_image(cache_key, gearcard_image)
+		return gearcard_io
 
 	@classmethod
 	def createWeaponCard(cls, weapon):

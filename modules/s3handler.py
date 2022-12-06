@@ -27,8 +27,8 @@ class S3Handler():
 		self.hostedUrl = configData.get('hosted_url')
 		self.webDir = configData.get('web_dir')
 		self.schedule = s3.schedule.S3Schedule(nsotoken, mysqlHandler, cachemanager)
-		self.storedm = s3.storedm.S3StoreHandler(client, nsotoken, splat3info, mysqlHandler, configData)
-		self.feeds = s3.feedhandler.S3FeedHandler(client, splat3info, mysqlHandler, self.schedule, cachemanager, fonts, self.storedm)
+		self.storedm = s3.storedm.S3StoreHandler(client, nsotoken, splat3info, mysqlHandler, configData, cachemanager)
+		self.feeds = s3.feedhandler.S3FeedHandler(client, splat3info, mysqlHandler, self.schedule, cachemanager, fonts)
 		self.imageextractor = s3.imageextractor.S3ImageExtractor(nsotoken, cachemanager)
 		self.fonts = fonts
 		self.cachemanager = cachemanager
@@ -144,7 +144,7 @@ class S3Handler():
 
 		await ctx.respond(file = discord.File(image_io, filename = "battle.png", description = "Battle details"))
 
-	async def cmdStats(self, ctx):
+	async def cmdStatsMulti(self, ctx):
 		await ctx.defer()
 
 		nso = await self.nsotoken.get_nso_client(ctx.user.id)
@@ -163,11 +163,13 @@ class S3Handler():
 		species = nso.s3.get_species_cur_weapon()
 
 		embed = S3EmbedBuilder.createMultiplayerStatsEmbed(statssimple, statsfull, species)
-		if self.webDir and self.hostedUrl:
-			imgUrl = S3ImageBuilder.createNamePlateImage(statsfull, self.fonts, self.configData)
-			embed.set_thumbnail(url=f"{imgUrl}?{str(time.time() % 1)}")
 
-		await ctx.respond(embed = embed)
+		file = None
+		if nameplate_io := S3ImageBuilder.getNamePlateImageIO(statsfull, self.fonts, self.cachemanager):
+			file = discord.File(nameplate_io, filename = "nameplate.png", description = "Nameplate")
+			embed.set_thumbnail(url=f"attachment://nameplate.png")
+
+		await ctx.respond(embed = embed, file = file)
 
 	async def cmdSRStats(self, ctx):
 		await ctx.defer()
