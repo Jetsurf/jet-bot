@@ -843,8 +843,13 @@ async def on_member_remove(member):
 	for mem in await serverUtils.getAllDM(member.guild.id):
 		memid = mem[0]
 		memobj = client.get_guild(member.guild.id).get_member(memid)
-		if memobj.guild_permissions.administrator:
-			await memobj.send(f"{member.name} left {member.guild.name}")
+
+		if not memobj:
+			continue  # No such member in guild anymore
+		elif not memobj.guild_permissions.administrator:
+			continue  # Not an administrator
+
+		await memobj.send(f"{member.name} left {member.guild.name}")
 
 @client.event
 async def on_guild_join(server):
