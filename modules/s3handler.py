@@ -28,7 +28,7 @@ class S3Handler():
 		self.webDir = configData.get('web_dir')
 		self.schedule = s3.schedule.S3Schedule(nsotoken, mysqlHandler, cachemanager)
 		self.storedm = s3.storedm.S3StoreHandler(client, nsotoken, splat3info, mysqlHandler, configData, cachemanager)
-		self.feeds = s3.feedhandler.S3FeedHandler(client, splat3info, mysqlHandler, self.schedule, cachemanager, fonts)
+		self.feeds = s3.feedhandler.S3FeedHandler(client, splat3info, mysqlHandler, self.schedule, cachemanager, fonts, self.storedm)
 		self.imageextractor = s3.imageextractor.S3ImageExtractor(nsotoken, cachemanager)
 		self.fonts = fonts
 		self.cachemanager = cachemanager
@@ -403,7 +403,6 @@ class S3Handler():
 		else:
 			embed = discord.Embed(colour=0xF9FC5F)
 			embed.title = f"{theWeapon['name']} Stats"
-			print(json.dumps(theWeapon))
 
 			file = None
 			if weaponcard_io := S3ImageBuilder.getWeaponCardIO(theWeapon, self.cachemanager):
