@@ -15,6 +15,7 @@ class S3Schedule():
 		discord.OptionChoice('Anarchy Open', 'AO'),
 		discord.OptionChoice('Anarchy Series', 'AS'),
 		discord.OptionChoice('X Battles', 'XB'),
+		discord.OptionChoice('Salmon Run', 'SR'),
 	]
 
 	schedule_properties = {
@@ -78,7 +79,7 @@ class S3Schedule():
 
 		index = None
 		for i in range(len(schedule)):
-			if schedule[i]['starttime'] < checktime:
+			if schedule[i]['endtime'] > checktime:
 				index = i
 				break
 
