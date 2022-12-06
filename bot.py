@@ -737,6 +737,27 @@ async def checkIfAdmin(ctx):
 
 	return ctx.user.guild_permissions.administrator
 
+# Set the bot's nickname on the given server to the configured nickname, as
+#  long as we have permission and no other nickname has been set already.
+async def setNickname(guild):
+	global configData
+
+	nickname = configData.get('nickname')
+
+	if not nickname:
+		return  # No nickname configured
+	elif not guild.me.nick is None:
+		return  # Nickname was already customized on this server
+	elif not guild.me.guild_permissions.change_nickname:
+		return  # No permission to change nickname on this server
+
+	try:
+		await guild.me.edit(nick = nickname)
+	except Exception as e:
+		print(f"Exception setting nickname on server {guild.id}: {e}")
+
+	return
+
 @client.event
 async def on_ready():
 	global client, mysqlHandler, serverUtils, serverVoices, splat2info, configData, ownerCmds
@@ -841,6 +862,9 @@ async def on_guild_join(server):
 
 	for mem in owners:
 		await mem.send(f"I joined server: {server.name} - I am now in {str(len(client.guilds))} servers")
+
+	await setNickname(server)
+
 	sys.stdout.flush()
 
 @client.event
