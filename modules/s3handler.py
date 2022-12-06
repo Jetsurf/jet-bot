@@ -375,40 +375,45 @@ class S3Handler():
 			return
 
 		match = self.splat3info.weapons.matchItem(weapon)
-		if match.isValid():
-			weapons = nso.s3.get_weapon_stats()
-			if weapons == None:
-				await ctx.respond("Something went wrong!")
-				return
-
-			theWeapon = None
-			for node in weapons['data']['weaponRecords']['nodes']:
-				if match.get().name() == node['name']:
-					theWeapon = node
-					break
-
-			if theWeapon == None:
-				await ctx.respond(f"It looks like you haven't used {match.get().name()} yet. Go try it out!")
-				return
-			else:
-				embed = discord.Embed(colour=0xF9FC5F)
-				embed.title = f"{theWeapon['name']} Stats"
-				img = S3ImageBuilder.createWeaponCard(theWeapon)
-				#embed.set_thumbnail(discord.File(img, filename = "weapon.png", description = "Weapon image"))
-				embed.add_field(name = "Turf Inked", value = f"{theWeapon['stats']['paint']}", inline = True)
-				embed.add_field(name = "Freshness", value = f"{theWeapon['stats']['vibes']}", inline = True)
-				embed.add_field(name = "Wins", value = f"{theWeapon['stats']['win']}", inline = True)
-				embed.add_field(name = "Level", value = f"{theWeapon['stats']['level']}", inline = True)
-				embed.add_field(name = "EXP till next level", value = f"{theWeapon['stats']['paint']}", inline = True)
-
-				await ctx.respond(embed = embed)
-		else:
+		if not match.isValid():
 			if len(match.items) < 1:
-				await ctx.respond(f"Can't find any gear with the name {weapon}")
+				await ctx.respond(f"Can't find any gear with the name {weapon}", ephemeral = True)
 				return
 			else:
 				embed = discord.Embed(colour=0xF9FC5F)
 				embed.title = "Did you mean?"
 				embed.add_field(name="Weapon", value=", ".join(map(lambda item: item.name(), match.items)), inline=False)
-				await ctx.respond(embed = embed)
+				await ctx.respond(embed = embed, ephemeral = True)
 				return
+
+		weapons = nso.s3.get_weapon_stats()
+		if weapons == None:
+			await ctx.respond("Something went wrong!")
+			return
+
+		theWeapon = None
+		for node in weapons['data']['weaponRecords']['nodes']:
+			if match.get().name() == node['name']:
+				theWeapon = node
+				break
+
+		if theWeapon == None:
+			await ctx.respond(f"It looks like you haven't used {match.get().name()} yet. Go try it out!")
+			return
+		else:
+			embed = discord.Embed(colour=0xF9FC5F)
+			embed.title = f"{theWeapon['name']} Stats"
+			print(json.dumps(theWeapon))
+
+			file = None
+			if weaponcard_io := S3ImageBuilder.getWeaponCardIO(theWeapon, self.cachemanager):
+				file = discord.File(weaponcard_io, filename = "weaponcard.png", description = "Weapon card")
+				embed.set_thumbnail(url=f"attachment://weaponcard.png")
+
+			embed.add_field(name = "Turf Inked", value = f"{theWeapon['stats']['paint']}", inline = True)
+			embed.add_field(name = "Freshness", value = f"{theWeapon['stats']['vibes']}", inline = True)
+			embed.add_field(name = "Wins", value = f"{theWeapon['stats']['win']}", inline = True)
+			embed.add_field(name = "Level", value = f"{theWeapon['stats']['level']}", inline = True)
+			embed.add_field(name = "EXP till next level", value = f"{theWeapon['stats']['paint']}", inline = True)
+
+			await ctx.respond(file = file, embed = embed)

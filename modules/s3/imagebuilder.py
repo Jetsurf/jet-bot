@@ -580,7 +580,7 @@ class S3ImageBuilder():
 		SHW, BUF = 70, 10
 		img = Image.new("RGBA", (IMGW, IMGH), (0, 0, 0, 0))
 
-		weapReq = requests.get(weapon['image']['url'])
+		weapReq = requests.get(weapon['image2d']['url'])
 		weapImg = Image.open(BytesIO(weapReq.content)).convert("RGBA")
 		weapImg = weapImg.resize((IMGW, IMGW), Image.ANTIALIAS)
 		img.paste(weapImg, (10, 0), weapImg)
@@ -597,6 +597,17 @@ class S3ImageBuilder():
 		img.paste(specImg, (int(IMGW/2), IMGW), specImg)
 
 		return img
+
+	@classmethod
+	def getWeaponCardIO(cls, weapon, cachemanager):
+		weaponcard_cache = cachemanager.open("s3.weaponcards")
+		cache_key = "weapon-%d.png" % (weapon['weaponId'],)
+		if weaponcard_io := weaponcard_cache.get_io(cache_key):
+			return weaponcard_io
+
+		weaponcard_image = cls.createWeaponCard(weapon)
+		weaponcard_io = weaponcard_cache.add_image(cache_key, weaponcard_image)
+		return weaponcard_io
 
 	@classmethod
 	def createFitImage(cls, statsjson, fonts, configData):
