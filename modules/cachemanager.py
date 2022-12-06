@@ -149,7 +149,7 @@ class CacheManager():
 	# Key name must not start with period
 	@classmethod
 	def key_name_valid(cls, name):
-		return not re.match(r'^[A-Z0-9][-.A-Z0-9]*$', name, flags = re.IGNORECASE) is None
+		return not re.match(r'^[A-Z0-9][-_.A-Z0-9]*$', name, flags = re.IGNORECASE) is None
 
 	def __init__(self, path):
 		self.path = path

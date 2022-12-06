@@ -14,6 +14,7 @@ IMAGES = [
 	{'cache': 's3.gametypes', 'key': 'league.png',  'size': [256, 256], 'pattern': r'^league\.ff2d38486a281f7cf56a6f5b1c517735\.svg$'},
 	{'cache': 's3.gametypes', 'key': 'private.png', 'size': [256, 256], 'pattern': r'^private\.055700d3775bf4835d7e6de297df9caa\.svg$'},
 	{'cache': 's3.gametypes', 'key': 'coop.png',    'size': [256, 256], 'pattern': r'^coop\.9773616172420f5fb865f8a5c185bf59\.svg$'},
+	{'cache': 's3.gametypes', 'key': 'big_run.png', 'size': [256, 256], 'pattern': r'^big_run\.ad9dd311a46b5d78250409e01425e042\.svg$'},
 
 	# Ranked modes
 	{'cache': 's3.modes', 'key': 'SZ.png', 'size': [256, 256], 'pattern': r'^area\.[0-9a-f]+\.svg$'},
