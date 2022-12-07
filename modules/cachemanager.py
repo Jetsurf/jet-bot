@@ -106,7 +106,7 @@ class Cache():
 		self.add_io(key, image_io)
 		image_io.seek(0)
 
-		return io
+		return image_io
 
 	# Takes a requests.Response object. It's best to create it using stream = True:
 	# response = requests.get(url, stream=True)
