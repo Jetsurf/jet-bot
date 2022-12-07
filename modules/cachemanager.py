@@ -1,4 +1,5 @@
 import re, os, time
+import io
 
 DEFAULT_MAX_AGE = 3600 * 24 * 90  # 90 days
 
@@ -88,11 +89,23 @@ class Cache():
 		if file is None:
 			return  # Couldn't create file
 
-		while (buf := f.read(8192)) != '':
+		while buf := io.read(8192):
 			file.write(buf)
 
 		file.close()
 		os.rename(tmppath, path)
+
+	# Takes a PIL.Image and caches it.
+	# Returns an io object containing the image data.
+	def add_image(self, key, image, format = 'PNG'):
+		image_io = io.BytesIO()
+		image.save(image_io, format)
+		image_io.seek(0)
+
+		self.add_io(key, image_io)
+		image_io.seek(0)
+
+		return image_io
 
 	# Takes a requests.Response object. It's best to create it using stream = True:
 	# response = requests.get(url, stream=True)
@@ -135,7 +148,7 @@ class CacheManager():
 	# Key name must not start with period
 	@classmethod
 	def key_name_valid(cls, name):
-		return not re.match(r'^[A-Z0-9][-.A-Z0-9]*$', name, flags = re.IGNORECASE) is None
+		return not re.match(r'^[A-Z0-9][-_.A-Z0-9]*$', name, flags = re.IGNORECASE) is None
 
 	def __init__(self, path):
 		self.path = path

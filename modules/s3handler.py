@@ -9,6 +9,7 @@ import s3.imageextractor
 
 from s3.imagebuilder import S3ImageBuilder
 from s3.embedbuilder import S3EmbedBuilder
+from s3.feedhandler import S3FeedHandler
 
 from io import BytesIO
 from os.path import exists
@@ -26,7 +27,8 @@ class S3Handler():
 		self.hostedUrl = configData.get('hosted_url')
 		self.webDir = configData.get('web_dir')
 		self.schedule = s3.schedule.S3Schedule(nsotoken, mysqlHandler, cachemanager)
-		self.storedm = s3.storedm.S3StoreHandler(client, nsotoken, splat3info, mysqlHandler, configData)
+		self.storedm = s3.storedm.S3StoreHandler(client, nsotoken, splat3info, mysqlHandler, configData, cachemanager)
+		self.feeds = s3.feedhandler.S3FeedHandler(client, splat3info, mysqlHandler, self.schedule, cachemanager, fonts, self.storedm)
 		self.imageextractor = s3.imageextractor.S3ImageExtractor(nsotoken, cachemanager)
 		self.fonts = fonts
 		self.cachemanager = cachemanager
@@ -142,7 +144,7 @@ class S3Handler():
 
 		await ctx.respond(file = discord.File(image_io, filename = "battle.png", description = "Battle details"))
 
-	async def cmdStats(self, ctx):
+	async def cmdStatsMulti(self, ctx):
 		await ctx.defer()
 
 		nso = await self.nsotoken.get_nso_client(ctx.user.id)
@@ -161,11 +163,13 @@ class S3Handler():
 		species = nso.s3.get_species_cur_weapon()
 
 		embed = S3EmbedBuilder.createMultiplayerStatsEmbed(statssimple, statsfull, species)
-		if self.webDir and self.hostedUrl:
-			imgUrl = S3ImageBuilder.createNamePlateImage(statsfull, self.fonts, self.configData)
-			embed.set_thumbnail(url=f"{imgUrl}?{str(time.time() % 1)}")
 
-		await ctx.respond(embed = embed)
+		file = None
+		if nameplate_io := S3ImageBuilder.getNamePlateImageIO(statsfull, self.fonts, self.cachemanager):
+			file = discord.File(nameplate_io, filename = "nameplate.png", description = "Nameplate")
+			embed.set_thumbnail(url=f"attachment://nameplate.png")
+
+		await ctx.respond(embed = embed, file = file)
 
 	async def cmdSRStats(self, ctx):
 		await ctx.defer()
@@ -226,7 +230,7 @@ class S3Handler():
 
 		name = self.schedule.schedule_names[which]
 
-		sched = self.schedule.get_schedule(which, count = 2)
+		sched = self.schedule.get_schedule(which, count = 6)
 		if len(sched) == 0:
 			await ctx.respond(f"That schedule is empty.", ephemeral = True)
 			return
@@ -237,8 +241,14 @@ class S3Handler():
 		embed.title = f"{name} Schedule"
 
 		for rot in sched:
-			mode = self.splat3info.getModeByInternalName(rot['mode'])
-			title = mode.name() if mode else rot['mode']
+			if rot['type'] == 'VERSUS':
+				mode = self.splat3info.getModeByInternalName(rot['mode'])
+				title = mode.name() if mode else rot['mode']
+			elif rot['type'] == 'COOP':
+				mode = self.splat3info.getCoopModeBySettingName(rot['mode'])
+				title = mode.name() if mode else rot['mode']
+			else:
+				title = rot['mode']
 
 			if rot['endtime'] < now:
 				title += f" \u2014 Ended"
@@ -298,7 +308,13 @@ class S3Handler():
 
 	async def cmdStoreList(self, ctx):
 		if self.storedm.cacheState:
-			await ctx.respond(embed=S3EmbedBuilder.createStoreListingEmbed(self.storedm.storecache, self.fonts, self.configData))
+			embed = discord.Embed(colour=0xF9FC5F)
+			embed.title = "Splatoon 3 Splatnet Store Gear"
+			img = S3ImageBuilder.createStoreCanvas(self.storedm.storecache, self.fonts)
+			img = discord.File(img, filename = "store.png", description = "Current store for Splatoon 3 Splatnet")
+			embed.set_image(url="attachment://store.png")
+			embed.set_footer(text="To order gear, run /s3 order GEARNAME")
+			await ctx.respond(embed = embed, file = img)
 		else:
 			#TODO...
 			await ctx.respond("I can't fetch the current store listing, please try again later")
@@ -365,40 +381,44 @@ class S3Handler():
 			return
 
 		match = self.splat3info.weapons.matchItem(weapon)
-		if match.isValid():
-			weapons = nso.s3.get_weapon_stats()
-			if weapons == None:
-				await ctx.respond("Something went wrong!")
-				return
-
-			theWeapon = None
-			for node in weapons['data']['weaponRecords']['nodes']:
-				if match.get().name() == node['name']:
-					theWeapon = node
-					break
-
-			if theWeapon == None:
-				await ctx.respond(f"It looks like you haven't used {match.get().name()} yet. Go try it out!")
-				return
-			else:
-				embed = discord.Embed(colour=0xF9FC5F)
-				embed.title = f"{theWeapon['name']} Stats"
-				img = S3ImageBuilder.createWeaponCard(theWeapon)
-				#embed.set_thumbnail(discord.File(img, filename = "weapon.png", description = "Weapon image"))
-				embed.add_field(name = "Turf Inked", value = f"{theWeapon['stats']['paint']}", inline = True)
-				embed.add_field(name = "Freshness", value = f"{theWeapon['stats']['vibes']}", inline = True)
-				embed.add_field(name = "Wins", value = f"{theWeapon['stats']['win']}", inline = True)
-				embed.add_field(name = "Level", value = f"{theWeapon['stats']['level']}", inline = True)
-				embed.add_field(name = "EXP till next level", value = f"{theWeapon['stats']['paint']}", inline = True)
-
-				await ctx.respond(embed = embed)
-		else:
+		if not match.isValid():
 			if len(match.items) < 1:
-				await ctx.respond(f"Can't find any gear with the name {weapon}")
+				await ctx.respond(f"Can't find any gear with the name {weapon}", ephemeral = True)
 				return
 			else:
 				embed = discord.Embed(colour=0xF9FC5F)
 				embed.title = "Did you mean?"
 				embed.add_field(name="Weapon", value=", ".join(map(lambda item: item.name(), match.items)), inline=False)
-				await ctx.respond(embed = embed)
+				await ctx.respond(embed = embed, ephemeral = True)
 				return
+
+		weapons = nso.s3.get_weapon_stats()
+		if weapons == None:
+			await ctx.respond("Something went wrong!")
+			return
+
+		theWeapon = None
+		for node in weapons['data']['weaponRecords']['nodes']:
+			if match.get().name() == node['name']:
+				theWeapon = node
+				break
+
+		if theWeapon == None:
+			await ctx.respond(f"It looks like you haven't used {match.get().name()} yet. Go try it out!")
+			return
+		else:
+			embed = discord.Embed(colour=0xF9FC5F)
+			embed.title = f"{theWeapon['name']} Stats"
+
+			file = None
+			if weaponcard_io := S3ImageBuilder.getWeaponCardIO(theWeapon, self.cachemanager):
+				file = discord.File(weaponcard_io, filename = "weaponcard.png", description = "Weapon card")
+				embed.set_thumbnail(url=f"attachment://weaponcard.png")
+
+			embed.add_field(name = "Turf Inked", value = f"{theWeapon['stats']['paint']}", inline = True)
+			embed.add_field(name = "Freshness", value = f"{theWeapon['stats']['vibes']}", inline = True)
+			embed.add_field(name = "Wins", value = f"{theWeapon['stats']['win']}", inline = True)
+			embed.add_field(name = "Level", value = f"{theWeapon['stats']['level']}", inline = True)
+			embed.add_field(name = "EXP till next level", value = f"{theWeapon['stats']['expToLevelUp']}", inline = True)
+
+			await ctx.respond(file = file, embed = embed)

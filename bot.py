@@ -125,6 +125,7 @@ acnhCmds = SlashCommandGroup('acnh', "Commands related to Animal Crossing New Ho
 # Admin
 adminCmds = SlashCommandGroup('admin', 'Commands that require guild admin privledges to run')
 adminS2feedCmds = adminCmds.create_subgroup(name='s2feed', description='Admin commands related to SplatNet 2 rotation feeds')
+#adminS3feedCmds = adminCmds.create_subgroup(name="s3feed", description='Admin commands related to SplatNet 3 rotation feeds')
 adminDmCmds = adminCmds.create_subgroup(name='dm', description="Admin commands related to DM's on users leaving")
 adminAnnounceCmds = adminCmds.create_subgroup(name='announcements', description='Admin commands related to developer announcements')
 
@@ -236,18 +237,16 @@ async def cmdDMRemove(ctx):
 		await ctx.respond("You aren't a guild administrator")
 
 @adminS2feedCmds.command(name='create', description="Sets up a Splatoon 2 rotation feed for a channel")
-async def cmdAdminFeed(ctx, map: Option(bool, "Enable maps in the feed?", required=True), sr: Option(bool, "Enable Salmon Run in the feed?", required=True), gear: Option(bool, "Enable gear in the feed?", required=True), recreate: Option(bool, "Recreate feed if one is already present.", required=False)):
-	args = [ map, sr, gear, recreate ]
-
+async def cmdAdminFeed(ctx, maps: Option(bool, "Enable maps in the feed?", required=True), sr: Option(bool, "Enable Salmon Run in the feed?", required=True), gear: Option(bool, "Enable gear in the feed?", required=True)):
 	if ctx.guild == None:
 		await ctx.respond("Can't DM me with this command.")
 		return
 
 	if await checkIfAdmin(ctx):
-		if map == False and sr == False and gear == False:
+		if not map and not sr and not gear:
 			await ctx.respond("Not going to create a feed with nothing in it.")
 		else:
-			await serverUtils.createFeed(ctx, args=args)
+			await serverUtils.createFeed(ctx, args=[ maps, sr, gear, False ])
 	else:
 		await ctx.respond("You aren't a guild administrator", ephemeral=True)
 
@@ -258,10 +257,23 @@ async def cmdAdminDeleteFeed(ctx):
 		return
 
 	if await checkIfAdmin(ctx):
-		#TODO: Add view to confirm delete, better than using an argument - this will be a future update
-		await serverUtils.deleteFeed(ctx, bypass=True)
+		await serverUtils.deleteFeed(ctx)
 	else:
 		await ctx.respond("You aren't a guild administrator", ephemeral=True)
+
+#@adminS3feedCmds.command(name='create', description='Sets up a Splatoon 3 rotation feed for a channel')
+#async def cmdAdminS3Feed(ctx, maps: Option(bool, "Include maps in the feed?", required=True), sr: Option(bool, "Include Salmon Run in the feed?", required=True), gear: Option(bool, "Enable gear in the feed?", required=True)):
+#	if ctx.guild == None:
+#		await ctx.respond("Can't DM me with this command.")
+#		return
+#
+#	if await checkIfAdmin(ctx):
+#		if not maps and not sr and not gear:
+#			await ctx.respond("Not going to create an empty feed.")
+#		else:
+#			await serverUtils.createFeed(ctx, args=[ maps, sr, gear, True ])
+#	else:
+#		await ctx.respond("You aren't a guild administrator", ephemeral=True)
 
 @adminDmCmds.command(name='remove', description="Removes you from being DM'ed on users leaving")
 async def cmdDMRemove(ctx):
@@ -456,8 +468,8 @@ async def cmdS3StatsBattle(ctx, battlenum: Option(int, "Battle Number, 1 being l
 	await s3Handler.cmdStatsBattle(ctx, battlenum)
 
 @s3StatsCmds.command(name = 'multi', description = 'Get your Splatoon 3 multiplayer stats')
-async def cmdS3Stats(ctx):
-	await s3Handler.cmdStats(ctx)
+async def cmdS3StatsMulti(ctx):
+	await s3Handler.cmdStatsMulti(ctx)
 
 @s3StatsCmds.command(name = 'sr', description = 'Get your Splatoon 3 Salmon Run stats')
 async def cmdS3Stats(ctx):
@@ -725,6 +737,27 @@ async def checkIfAdmin(ctx):
 
 	return ctx.user.guild_permissions.administrator
 
+# Set the bot's nickname on the given server to the configured nickname, as
+#  long as we have permission and no other nickname has been set already.
+async def setNickname(guild):
+	global configData
+
+	nickname = configData.get('nickname')
+
+	if not nickname:
+		return  # No nickname configured
+	elif not guild.me.nick is None:
+		return  # Nickname was already customized on this server
+	elif not guild.me.guild_permissions.change_nickname:
+		return  # No permission to change nickname on this server
+
+	try:
+		await guild.me.edit(nick = nickname)
+	except Exception as e:
+		print(f"Exception setting nickname on server {guild.id}: {e}")
+
+	return
+
 @client.event
 async def on_ready():
 	global client, mysqlHandler, serverUtils, serverVoices, splat2info, configData, ownerCmds
@@ -789,6 +822,7 @@ async def on_ready():
 
 		await nsoHandler.updateS2JSON()
 		await s3Handler.storedm.cacheS3JSON()
+		#await s3Handler.feeds.initSchedule()
 		client.before_invoke(serverUtils.contextIncrementCmd)
 		print('Done\n------')
 		await client.change_presence(status=discord.Status.online, activity=discord.Game("Check /help for cmd info."))
@@ -809,8 +843,13 @@ async def on_member_remove(member):
 	for mem in await serverUtils.getAllDM(member.guild.id):
 		memid = mem[0]
 		memobj = client.get_guild(member.guild.id).get_member(memid)
-		if memobj.guild_permissions.administrator:
-			await memobj.send(f"{member.name} left {member.guild.name}")
+
+		if not memobj:
+			continue  # No such member in guild anymore
+		elif not memobj.guild_permissions.administrator:
+			continue  # Not an administrator
+
+		await memobj.send(f"{member.name} left {member.guild.name}")
 
 @client.event
 async def on_guild_join(server):
@@ -828,6 +867,9 @@ async def on_guild_join(server):
 
 	for mem in owners:
 		await mem.send(f"I joined server: {server.name} - I am now in {str(len(client.guilds))} servers")
+
+	await setNickname(server)
+
 	sys.stdout.flush()
 
 @client.event

@@ -122,13 +122,8 @@ class S3EmbedBuilder():
 		return embed
 
 	@classmethod
-	def createStoreEmbed(self, gear, brand, title, configData):
+	def createStoreEmbed(self, gear, brand, title):
 		embed = discord.Embed(colour=0xF9FC5F)
-		imgHash = hashlib.sha224(f"{gear['id']}{gear['gear']['primaryGearPower']['name']}".encode()).hexdigest()
-		if not os.path.exists(f"{configData['web_dir']}/s3/gearcards/{imgHash}.png"):
-			S3ImageBuilder.createGearCard(gear['gear']).save(f"{configData['web_dir']}/s3/gearcards/{imgHash}.png")
-
-		embed.set_thumbnail(url=f"{configData['hosted_url']}/s3/gearcards/{imgHash}.png")
 
 		embed.title = title
 		embed.add_field(name = "Brand", value = gear['gear']['brand']['name'], inline = True)
@@ -139,13 +134,4 @@ class S3EmbedBuilder():
 		embed.add_field(name = "Common Ability", value = brand.commonAbility().name(), inline = True)
 		embed.add_field(name = "Price", value = gear['price'], inline = True)
 
-		return embed
-
-	@classmethod
-	def createStoreListingEmbed(self, gearJson, fonts, configData):
-		embed = discord.Embed(colour=0xF9FC5F)
-		embed.title = "Splatoon 3 Splatnet Store Gear"
-		url = S3ImageBuilder.createStoreCanvas(gearJson, fonts, configData)
-		embed.set_image(url=url)
-		embed.set_footer(text="To order gear, run /s3 order GEARNAME")
 		return embed

@@ -78,7 +78,7 @@ class serverUtils():
 		self.scheduler.add_job(self.changeStatus, 'cron', minute='*/5', timezone='UTC') 
 		self.scheduler.start()
 
-	async def deleteFeed(self, ctx, bypass=False):
+	async def deleteFeed(self, ctx):
 		cur = await self.sqlBroker.connect()
 		stmt = "SELECT * FROM feeds WHERE serverid = %s AND channelid = %s"
 		await cur.execute(stmt, (ctx.guild.id, ctx.channel.id,))
@@ -103,35 +103,26 @@ class serverUtils():
 
 	async def createFeed(self, ctx, args=None):
 		cur = await self.sqlBroker.connect()
-		stmt = "SELECT * FROM feeds WHERE serverid = %s AND channelid = %s"
-		await cur.execute(stmt, (ctx.guild.id, ctx.channel.id,))
-		chan = await cur.fetchone()
 
-		if chan != None and args[3] == True:
-			mapflag = args[0]
-			srflag = args[1]
-			gearflag = args[2]
-			await self.deleteFeed(ctx, bypass=True)
-		elif chan == None:
-			mapflag = args[0]
-			srflag = args[1]
-			gearflag = args[2]
+		mapflag = args[0]
+		srflag = args[1]
+		gearflag = args[2]
+		isS3 = args[3]
+
+		if isS3:
+			stmt = "REPLACE INTO s3feeds (serverid, channelid, maps, sr, gear) VALUES(%s, %s, %s, %s, %s)"
 		else:
-			await ctx.respond("Feed already created for this channel, please delete it or set recreate to True")
-			return
+			stmt = "REPLACE INTO feeds (serverid, channelid, maps, sr, gear) VALUES(%s, %s, %s, %s, %s)"
 
-		stmt = "INSERT INTO feeds (serverid, channelid, maps, sr, gear) VALUES(%s, %s, %s, %s, %s)"
 		feed = (str(ctx.guild.id), str(ctx.channel.id), int(mapflag == True), int(srflag == True), int(gearflag == True),)
 
 		await cur.execute(stmt, feed)
 		if cur.lastrowid != None:
 			await self.sqlBroker.commit(cur)
 			await ctx.respond("Feed created! Feed will start when the next rotation happens.")
-			return True
 		else:
 			await self.sqlBroker.rollback(cur)
 			await ctx.respond("Feed failed to create.")
-			return False
 
 	async def changeStatus(self):
 		status = [ "Check /help for cmd info.",

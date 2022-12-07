@@ -88,6 +88,18 @@ class Splat3Mode(gameinfo.matchset.MatchItem):
 	def internalName(self):
 		return self._internalName
 
+class Splat3CoopMode(gameinfo.matchset.MatchItem):
+	def __init__(self, name, internalName, settingName):
+		self._internalName = internalName
+		self._settingName  = settingName
+		super().__init__(name, [])
+
+	def internalName(self):
+		return self._internalName
+
+	def settingName(self):
+		return self._settingName
+
 class Splat3Subweapon(gameinfo.matchset.MatchItem):
 	pass
 
@@ -190,6 +202,7 @@ class Splat3():
 
 		self.initMaps()
 		self.initModes(data)
+		self.initCoopModes(data)
 		self.initSubweapons(data)
 		self.initSpecials(data)
 		self.initWeaponTypes(data)
@@ -214,6 +227,11 @@ class Splat3():
 		self.modes = gameinfo.matchset.MatchSet('mode', [])
 		for m in data['modes']:
 			self.modes.append(Splat3Mode(m['names'], m['abbrevs'], m['internalName']))
+
+	def initCoopModes(self, data):
+		self.coopModes = gameinfo.matchset.MatchSet('coop mode', [])
+		for m in data['coopModes']:
+			self.coopModes.append(Splat3CoopMode(m['names'], m['internalName'], m['settingName']))
 
 	def initSubweapons(self, data):
 		self.subweapons = gameinfo.matchset.MatchSet('subweapon', [])
@@ -311,6 +329,12 @@ class Splat3():
 
 	def getModeByInternalName(self, intName):
 		found = list(filter(lambda m: m.internalName() == intName, self.modes.getAllItems()))
+		if len(found):
+			return found[0]
+		return None
+
+	def getCoopModeBySettingName(self, settingName):
+		found = list(filter(lambda m: m.settingName() == settingName, self.coopModes.getAllItems()))
 		if len(found):
 			return found[0]
 		return None
