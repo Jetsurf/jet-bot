@@ -419,6 +419,6 @@ class S3Handler():
 			embed.add_field(name = "Freshness", value = f"{theWeapon['stats']['vibes']}", inline = True)
 			embed.add_field(name = "Wins", value = f"{theWeapon['stats']['win']}", inline = True)
 			embed.add_field(name = "Level", value = f"{theWeapon['stats']['level']}", inline = True)
-			embed.add_field(name = "EXP till next level", value = f"{theWeapon['stats']['paint']}", inline = True)
+			embed.add_field(name = "EXP till next level", value = f"{theWeapon['stats']['expToLevelUp']}", inline = True)
 
 			await ctx.respond(file = file, embed = embed)
