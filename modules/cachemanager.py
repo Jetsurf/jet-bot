@@ -89,7 +89,6 @@ class Cache():
 		if file is None:
 			return  # Couldn't create file
 
-		import time
 		while buf := io.read(8192):
 			file.write(buf)
 
