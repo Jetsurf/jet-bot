@@ -78,9 +78,13 @@ class serverUtils():
 		self.scheduler.add_job(self.changeStatus, 'cron', minute='*/5', timezone='UTC') 
 		self.scheduler.start()
 
-	async def deleteFeed(self, ctx):
+	async def deleteFeed(self, ctx, isS3=False):
 		cur = await self.sqlBroker.connect()
-		stmt = "SELECT * FROM feeds WHERE serverid = %s AND channelid = %s"
+		if isS3:
+			stmt = "SELECT * FROM s3feeds WHERE serverid = %s AND channelid = %s"
+		else:
+			stmt = "SELECT * FROM feeds WHERE serverid = %s AND channelid = %s"
+			
 		await cur.execute(stmt, (ctx.guild.id, ctx.channel.id,))
 		chan = await cur.fetchone()
 

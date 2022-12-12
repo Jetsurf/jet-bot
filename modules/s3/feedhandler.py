@@ -18,13 +18,12 @@ class S3FeedHandler():
 		self.splat3info = splat3info
 		self.fonts = fonts
 		self.scheduler = AsyncIOScheduler(timezone='UTC')
-		self.debug = True
-
+\
 		self.scheduler.add_job(self.doMapFeed, 'cron', hour="*/2", minute='0', second='25', timezone='UTC')
 		self.scheduler.add_job(self.doGearFeed, 'cron', hour="*/4", minute='0', second='25', timezone='UTC')
-		asyncio.create_task(self.initSRSchedule())
+		asyncio.create_task(self.scheduleSRFeed())
 
-	async def initSRSchedule(self):
+	async def scheduleSRFeed(self):
 		while self.schedule.get_schedule('SR') == []:
 			await asyncio.sleep(1)
 
@@ -78,8 +77,7 @@ class S3FeedHandler():
 			await channel.send(file = img, embed = embed)
 
 	async def doSRFeed(self):
-		if not self.debug:
-			await self.initSchedule() # Setup next run
+		await self.scheduleSRFeed() # Setup next run
 
 		sched = self.schedule.get_schedule('SR', count = 2)
 		image_io = S3ImageBuilder.createSRScheduleImage(sched, self.fonts, self.cachemanager)

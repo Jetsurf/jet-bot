@@ -125,7 +125,7 @@ acnhCmds = SlashCommandGroup('acnh', "Commands related to Animal Crossing New Ho
 # Admin
 adminCmds = SlashCommandGroup('admin', 'Commands that require guild admin privledges to run')
 adminS2feedCmds = adminCmds.create_subgroup(name='s2feed', description='Admin commands related to SplatNet 2 rotation feeds')
-#adminS3feedCmds = adminCmds.create_subgroup(name="s3feed", description='Admin commands related to SplatNet 3 rotation feeds')
+adminS3feedCmds = adminCmds.create_subgroup(name="s3feed", description='Admin commands related to SplatNet 3 rotation feeds')
 adminDmCmds = adminCmds.create_subgroup(name='dm', description="Admin commands related to DM's on users leaving")
 adminAnnounceCmds = adminCmds.create_subgroup(name='announcements', description='Admin commands related to developer announcements')
 
@@ -261,19 +261,30 @@ async def cmdAdminDeleteFeed(ctx):
 	else:
 		await ctx.respond("You aren't a guild administrator", ephemeral=True)
 
-#@adminS3feedCmds.command(name='create', description='Sets up a Splatoon 3 rotation feed for a channel')
-#async def cmdAdminS3Feed(ctx, maps: Option(bool, "Include maps in the feed?", required=True), sr: Option(bool, "Include Salmon Run in the feed?", required=True), gear: Option(bool, "Enable gear in the feed?", required=True)):
-#	if ctx.guild == None:
-#		await ctx.respond("Can't DM me with this command.")
-#		return
-#
-#	if await checkIfAdmin(ctx):
-#		if not maps and not sr and not gear:
-#			await ctx.respond("Not going to create an empty feed.")
-#		else:
-#			await serverUtils.createFeed(ctx, args=[ maps, sr, gear, True ])
-#	else:
-#		await ctx.respond("You aren't a guild administrator", ephemeral=True)
+@adminS3feedCmds.command(name='create', description='Sets up a Splatoon 3 rotation feed for a channel')
+async def cmdAdminS3Feed(ctx, maps: Option(bool, "Include maps in the feed?", required=True), sr: Option(bool, "Include Salmon Run in the feed?", required=True), gear: Option(bool, "Enable gear in the feed?", required=True)):
+	if ctx.guild == None:
+		await ctx.respond("Can't DM me with this command.")
+		return
+
+	if await checkIfAdmin(ctx):
+		if not maps and not sr and not gear:
+			await ctx.respond("Not going to create an empty feed.")
+		else:
+			await serverUtils.createFeed(ctx, args=[ maps, sr, gear, True ])
+	else:
+		await ctx.respond("You aren't a guild administrator", ephemeral=True)
+
+@adminS3feedCmds.command(name='delete', description="Deletes a feed from a channel")
+async def cmdAdminDeleteFeed(ctx):
+	if ctx.guild == None:
+		await ctx.respond("Can't DM me with this command.")
+		return
+
+	if await checkIfAdmin(ctx):
+		await serverUtils.deleteFeed(ctx)
+	else:
+		await ctx.respond("You aren't a guild administrator", ephemeral=True)
 
 @adminDmCmds.command(name='remove', description="Removes you from being DM'ed on users leaving")
 async def cmdDMRemove(ctx):
@@ -822,7 +833,7 @@ async def on_ready():
 
 		await nsoHandler.updateS2JSON()
 		await s3Handler.storedm.cacheS3JSON()
-		#await s3Handler.feeds.initSchedule()
+
 		client.before_invoke(serverUtils.contextIncrementCmd)
 		print('Done\n------')
 		await client.change_presence(status=discord.Status.online, activity=discord.Game("Check /help for cmd info."))
