@@ -519,6 +519,10 @@ async def cmdS3StoreOrder(ctx, item: Option(str, "Name of gear to order", requir
 async def cmdS3Fit(ctx):
 	await s3Handler.cmdFit(ctx)
 
+@s3Cmds.command(name = 'gearseed', description = 'Export gear seed checker file')
+async def cmdS3Gearseed(ctx):
+	await s3Handler.cmdGearseed(ctx)
+
 # --- Owner Commands ---
 
 @owner.command(name='eval', description="Eval a code block (Owners only)", default_permission=False)
