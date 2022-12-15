@@ -949,6 +949,11 @@ async def on_message(message):
 			await serverUtils.report_cmd_totals(message)
 		elif '!announce' in command:
 			await serverUtils.doAnnouncement(message)
+		elif command == '!nicknames':
+			await channel.send("Okay, setting guild nicknames")
+			for g in client.guilds:
+				await setNickname(g)
+				await asyncio.sleep(15)
 		return
 
 	parsed = await commandParser.parse(message.content)
