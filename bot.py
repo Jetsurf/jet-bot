@@ -276,13 +276,13 @@ async def cmdAdminS3Feed(ctx, maps: Option(bool, "Include maps in the feed?", re
 		await ctx.respond("You aren't a guild administrator", ephemeral=True)
 
 @adminS3feedCmds.command(name='delete', description="Deletes a feed from a channel")
-async def cmdAdminDeleteFeed(ctx):
+async def cmdS3AdminDeleteFeed(ctx):
 	if ctx.guild == None:
 		await ctx.respond("Can't DM me with this command.")
 		return
 
 	if await checkIfAdmin(ctx):
-		await serverUtils.deleteFeed(ctx)
+		await serverUtils.deleteFeed(ctx, isS3=True)
 	else:
 		await ctx.respond("You aren't a guild administrator", ephemeral=True)
 
