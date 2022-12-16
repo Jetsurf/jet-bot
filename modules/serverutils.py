@@ -90,17 +90,16 @@ class serverUtils():
 
 		#TODO: Need to improve this w/ confirmation to delete
 		if chan != None:
-			if bypass:
-				stmt = "DELETE FROM feeds WHERE serverid = %s AND channelid = %s"
-				await cur.execute(stmt, (ctx.guild.id, ctx.channel.id,))
-				if cur.lastrowid != None:
-					await self.sqlBroker.commit(cur)
-					await ctx.respond("Ok, deleted feed.")
-					return True
-				else:
-					await self.sqlBroker.rollback(cur)
-					await ctx.respond("Error in deleting feed.")
-					return False
+			stmt = "DELETE FROM feeds WHERE serverid = %s AND channelid = %s"
+			await cur.execute(stmt, (ctx.guild.id, ctx.channel.id,))
+			if cur.lastrowid != None:
+				await self.sqlBroker.commit(cur)
+				await ctx.respond("Ok, deleted feed.")
+				return True
+			else:
+				await self.sqlBroker.rollback(cur)
+				await ctx.respond("Error in deleting feed.")
+				return False
 		else:
 			await ctx.respond("No feed setup for this channel.")
 			return False
