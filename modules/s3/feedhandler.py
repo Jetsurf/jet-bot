@@ -6,7 +6,7 @@ from .imagebuilder import S3ImageBuilder
 from .schedule import S3Schedule
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 class S3FeedHandler():
 	def __init__(self, client, splat3info, mysqlHandler, schedule, cachemanager, fonts, storedm):
@@ -17,8 +17,8 @@ class S3FeedHandler():
 		self.cachemanager = cachemanager
 		self.splat3info = splat3info
 		self.fonts = fonts
+		self.initialized = False
 		self.scheduler = AsyncIOScheduler(timezone='UTC')
-\
 		self.scheduler.add_job(self.doMapFeed, 'cron', hour="*/2", minute='0', second='25', timezone='UTC')
 		self.scheduler.add_job(self.doGearFeed, 'cron', hour="*/4", minute='0', second='25', timezone='UTC')
 		asyncio.create_task(self.scheduleSRFeed())
@@ -28,10 +28,14 @@ class S3FeedHandler():
 			await asyncio.sleep(1)
 
 		sched = self.schedule.get_schedule('SR')
+		#(datetime.now() + timedelta(minutes=1)).timestamp())
 		runtime = datetime.fromtimestamp(int(sched[0]['endtime']) + 20)
 		print(f"Scheduling SR feed run at {runtime}")
 		self.scheduler.add_job(self.doSRFeed, 'date', next_run_time=runtime)
-		self.scheduler.start()  
+
+		if not self.initialized:
+			self.scheduler.start()
+			self.initialized = True
 
 	async def doMapFeed(self):
 		# Pull each schedule for the current time
