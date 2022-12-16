@@ -377,7 +377,7 @@ class S3Handler():
 
 		nso = await self.nsotoken.get_nso_client(ctx.user.id)
 		if not nso.is_logged_in():
-			await ctx.respond("You don't have a NSO token setup! Run /token to get started.")
+			await ctx.respond("You don't have an NSO token set up! Run /token to get started.", ephemeral = True)
 			return
 
 		match = self.splat3info.weapons.matchItem(weapon)
@@ -422,3 +422,32 @@ class S3Handler():
 			embed.add_field(name = "EXP till next level", value = f"{theWeapon['stats']['expToLevelUp']}", inline = True)
 
 			await ctx.respond(file = file, embed = embed)
+
+	async def cmdGearseed(self, ctx):
+		await ctx.defer()
+
+		if not ctx.guild is None:
+			await ctx.respond("Please send me this command as a private message.", ephemeral = True)
+			return
+
+		nso = await self.nsotoken.get_nso_client(ctx.user.id)
+		if not nso.is_logged_in():
+			await ctx.respond("You don't have an NSO token set up! You must run /token first.")
+			return
+
+		data = nso.s3.get_gear_seed_data()
+		if data is None:
+			await ctx.respond("Sorry, could not export your gear seed data.")
+			return
+
+		filename = f"gear_{data['timestamp']}.json"
+
+		json_io = io.StringIO()
+		json.dump(data, json_io)
+		json_io.seek(0)
+
+		file = discord.File(fp = json_io, filename = filename, description = "Gear seed checker file")
+
+		await ctx.respond("This is your gear seed file.", files = [file])
+
+		await ctx.channel.send("After you have downloaded the seed file, you may upload it to: <https://leanny.github.io/splat3seedchecker/#/settings>.")
