@@ -38,8 +38,10 @@ There are a few admin commands to configure the bot. To run these commands, you 
  - `/admin announcement set CHANNEL` : Sets a chat channel for announcements about restarts/new features from the devs
  - `/admin announcement get` : Gets the name of the channel that is set to receive announcements
  - `/admin announcement stop` : Disables announcements from the devs for the server
- - `/admin feed create` : Create (or change) feed for rotation updates (maps/sr/gear)
- - `/admin feed delete` : Deletes feed for a channel
+ - `/admin s2feed create` : Create (or change) a Splatoon 2 feed for rotation updates. Takes 3 True/False flags to put maps/sr/gear info in the feed.
+ - `/admin s2feed delete` : Deletes a Splatoon 2 feed for a channel.
+ - `/admin s3feed create` : Create (or change) a feed for Splatoon 3 rotations. The flags for maps/sr/gear will enable/disable those rotation updates for a channel.
+ - `/admin s3feed delete` : Deletes a Splatoon 3 feed for a channel.
 
 ### Splatoon 3 Commands
 

@@ -78,25 +78,28 @@ class serverUtils():
 		self.scheduler.add_job(self.changeStatus, 'cron', minute='*/5', timezone='UTC') 
 		self.scheduler.start()
 
-	async def deleteFeed(self, ctx):
+	async def deleteFeed(self, ctx, isS3=False):
 		cur = await self.sqlBroker.connect()
-		stmt = "SELECT * FROM feeds WHERE serverid = %s AND channelid = %s"
+		if isS3:
+			stmt = "SELECT * FROM s3feeds WHERE serverid = %s AND channelid = %s"
+		else:
+			stmt = "SELECT * FROM feeds WHERE serverid = %s AND channelid = %s"
+			
 		await cur.execute(stmt, (ctx.guild.id, ctx.channel.id,))
 		chan = await cur.fetchone()
 
 		#TODO: Need to improve this w/ confirmation to delete
 		if chan != None:
-			if bypass:
-				stmt = "DELETE FROM feeds WHERE serverid = %s AND channelid = %s"
-				await cur.execute(stmt, (ctx.guild.id, ctx.channel.id,))
-				if cur.lastrowid != None:
-					await self.sqlBroker.commit(cur)
-					await ctx.respond("Ok, deleted feed.")
-					return True
-				else:
-					await self.sqlBroker.rollback(cur)
-					await ctx.respond("Error in deleting feed.")
-					return False
+			stmt = "DELETE FROM feeds WHERE serverid = %s AND channelid = %s"
+			await cur.execute(stmt, (ctx.guild.id, ctx.channel.id,))
+			if cur.lastrowid != None:
+				await self.sqlBroker.commit(cur)
+				await ctx.respond("Ok, deleted feed.")
+				return True
+			else:
+				await self.sqlBroker.rollback(cur)
+				await ctx.respond("Error in deleting feed.")
+				return False
 		else:
 			await ctx.respond("No feed setup for this channel.")
 			return False

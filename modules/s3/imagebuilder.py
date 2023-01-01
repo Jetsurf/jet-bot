@@ -417,13 +417,8 @@ class S3ImageBuilder():
 				title = s['maps'][0]['name']
 			cls.drawShadowedText(draw, (int(width / 2), yposition), title, (255, 255, 255), font = s1FontMed, anchor = 'mt')
 
-			# Add start time
-			if s['endtime'] < now:
-				cls.drawShadowedText(draw, (int(width / 2), yposition + 40), "Ended %s ago" % (cls.formatTimespan(int(now - s['endtime']))), (255, 255, 255), font = s1FontSmall, anchor = 'mt')
-			elif s['starttime'] <= now and s['endtime'] > now:
-				cls.drawShadowedText(draw, (int(width / 2), yposition + 40), "Started %s ago" % (cls.formatTimespan(int(now - s['starttime']))), (255, 255, 255), font = s1FontSmall, anchor = 'mt')
-			else:
-				cls.drawShadowedText(draw, (int(width / 2), yposition + 40), "Starting in %s" % (cls.formatTimespan(int(s['starttime'] - now))), (255, 255, 255), font = s1FontSmall, anchor = 'mt')
+			# Add time
+			cls.drawShadowedText(draw, (int(width / 2), yposition + 40), cls.formatTimeWindow(s['starttime'], s['endtime']), (255, 255, 255), font = s1FontSmall, anchor = 'mt')
 
 			# Add weapon images
 			for i in range(len(s['weapons'])):
@@ -519,6 +514,8 @@ class S3ImageBuilder():
 
 		if endtime < now:
 			return "Ended %s ago" % (cls.formatTimespan(int(now - endtime)))
+		elif (starttime <= now + 60) and (starttime >= now - 60):
+			return "Starting now"
 		elif (starttime <= now) and (endtime > now):
 			return "Started %s ago" % (cls.formatTimespan(int(now - starttime)))
 		else:
