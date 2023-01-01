@@ -354,7 +354,7 @@ class S3Handler():
 				if ret['data']['orderGesotownGear']['userErrors'] == None:
 					#createStoreEmbed(self, gear, brand, title, configData):
 					brand = self.splat3info.brands.getItemByName(theItem['gear']['brand']['name'])
-					await ctx.respond(embed = S3EmbedBuilder.createStoreEmbed(theItem, brand, "Ordered! Talk to Murch in game to get it!", self.configData))
+					await ctx.respond(embed = S3EmbedBuilder.createStoreEmbed(theItem, brand, "Ordered! Talk to Murch in game to get it!"))
 				elif ret['data']['orderGesotownGear']['userErrors'][0]['code'] == "GESOTOWN_ALREADY_ORDERED":
 					await ctx.respond("You already have an item on order! If you still want to order this, run this command again with Override set to True.")
 				else:
