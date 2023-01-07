@@ -240,10 +240,12 @@ class S3ImageBuilder():
 
 		# Count the number of columns needed
 		column_count = 0
+		active_types = []
 		for t in ['TW', 'SF', 'AO', 'AS', 'XB']:
 			if len(schedules[t]) == 0:
 				continue
 			column_count += 1
+			active_types.append(t)
 
 		# Figure out image dimensions
 		game_type_icon_size = 128
@@ -258,16 +260,13 @@ class S3ImageBuilder():
 		image = Image.new('RGB', (width, 800), (54, 57, 63))
 		draw = ImageDraw.Draw(image)
 
-		s1FontMed = fontbroker.truetype("s1.otf", size=36)
+		s1FontMed = fontbroker.truetype("s1.otf", size=16)  # TODO: Dynamic size up to 36
 		s2FontMed = fontbroker.truetype("s2.otf", size=24)
 		s2FontSmall = fontbroker.truetype("s2.otf", size=16)
 
 		# Add game type header
 		xposition = 0
-		for t in ['TW', 'SF', 'AO', 'AS', 'XB']:
-			if len(schedules[t]) == 0:
-				continue
-
+		for t in active_types:
 			if game_type_icon_io := game_types_cache.get_io(f"{game_type_icons[t]}.png"):
 				game_type_icon = Image.open(game_type_icon_io).convert("RGBA")
 				game_type_icon.thumbnail((game_type_icon_size, game_type_icon_size), Image.ANTIALIAS)
@@ -285,14 +284,14 @@ class S3ImageBuilder():
 		# Add first row map/mode images
 		xposition = 0
 		ybase = yposition
-		for t in ['TW', 'SF', 'AO', 'AS', 'XB']:
-			yposition = ybase
-
+		for t in active_types:
 			# Get rotation at the first time slot
 			rots = [s for s in schedules[t] if s['starttime'] == timewindows[0]['starttime']]
 			if len(rots) == 0:
 				continue
 			rot = rots[0]
+
+			yposition = ybase
 
 			# Add mode icon
 			mode = splat3info.getModeByInternalName(rot['mode'])
@@ -333,14 +332,14 @@ class S3ImageBuilder():
 			yposition += s1FontMed.size
 
 			ybase = yposition
-			for t in ['TW', 'SF', 'AO', 'AS', 'XB']:
-				yposition = ybase
-
+			for t in active_types:
 				# Get rotation at this time slot
 				rots = [s for s in schedules[t] if s['starttime'] == tw['starttime']]
 				if len(rots) == 0:
 					continue
 				rot = rots[0]
+
+				yposition = ybase
 
 				# Add mode icon
 				mode = splat3info.getModeByInternalName(rot['mode'])
