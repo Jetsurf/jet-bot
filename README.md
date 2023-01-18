@@ -2,9 +2,8 @@
 Splatnet/Music bot was originally created in 2017 to be a music/soundclip playing bot. It 
 has evolved into its primary purpose of fetching info from Nintendo Switch Online 
 
-- Splatoon 2: Rotation info, Splatnet gameplay stats, ordering gear and notifications of specific gear arriving in the store
+- Splatoon 2 & Splatoon 3: Rotation info, Splatnet gameplay stats, ordering gear and notifications of specific gear arriving in the store
 - Animal Crossing New Horizons: Passports
-- Splatoon 3 Support is planned
 
 ## Installation
 
