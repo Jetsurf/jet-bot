@@ -19,8 +19,8 @@ class S3FeedHandler():
 		self.fonts = fonts
 		self.initialized = False
 		self.scheduler = AsyncIOScheduler(timezone='UTC')
-		self.scheduler.add_job(self.doMapFeed, 'cron', second='0', timezone='UTC')#hour="*/2", minute='0', second='25', timezone='UTC')
-		self.scheduler.add_job(self.doGearFeed, 'cron', second='0', timezone='UTC')#hour="*/4", minute='0', second='25', timezone='UTC')
+		self.scheduler.add_job(self.doMapFeed, 'cron', hour="*/2", minute='0', second='25', timezone='UTC')
+		self.scheduler.add_job(self.doGearFeed, 'cron', hour="*/4", minute='0', second='25', timezone='UTC')
 		asyncio.create_task(self.scheduleSRFeed())
 
 	async def scheduleSRFeed(self):
