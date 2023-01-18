@@ -90,7 +90,11 @@ class serverUtils():
 
 		#TODO: Need to improve this w/ confirmation to delete
 		if chan != None:
-			stmt = "DELETE FROM feeds WHERE serverid = %s AND channelid = %s"
+			if isS3:
+				stmt = "DELETE FROM s3feeds WHERE serverid = %s AND channelid = %s"
+			else:
+				stmt = "DELETE FROM feeds WHERE serverid = %s AND channelid = %s"
+				
 			await cur.execute(stmt, (ctx.guild.id, ctx.channel.id,))
 			if cur.lastrowid != None:
 				await self.sqlBroker.commit(cur)
