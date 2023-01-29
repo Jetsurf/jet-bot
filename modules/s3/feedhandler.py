@@ -80,7 +80,11 @@ class S3FeedHandler():
 
 			channel = self.client.get_guild(int(map_feeds[id][0])).get_channel(int(map_feeds[id][1]))
 			if channel != None:
-				await channel.send(file = img, embed = embed)
+				try: 
+					await channel.send(file = img, embed = embed)
+				except discord.Forbidden:
+					print(f"403 - Deleting feed for channel {map_feeds[id][1]}")
+					await cur.execute("DELETE FROM s3feeds WHERE channelid = %s", (map_feeds[id][1],))
 			else:
 				print(f"Deleting feed for channel {map_feeds[id][1]}")
 				await cur.execute("DELETE FROM s3feeds WHERE channelid = %s", (map_feeds[id][1],))
@@ -109,7 +113,11 @@ class S3FeedHandler():
 
 			channel = self.client.get_guild(int(srFeeds[id][0])).get_channel(int(srFeeds[id][1]))
 			if channel != None:
-				await channel.send(file = img, embed = embed)
+				try: 
+					await channel.send(file = img, embed = embed)
+				except discord.Forbidden:
+					print(f"403 - Deleting feed for channel {srFeeds[id][1]}")
+					await cur.execute("DELETE FROM s3feeds WHERE channelid = %s", (srFeeds[id][1],))
 			else:
 				print(f"Deleting feed for channel {srFeeds[id][1]}")
 				await cur.execute("DELETE FROM s3feeds WHERE channelid = %s", (srFeeds[id][1],))
@@ -148,7 +156,11 @@ class S3FeedHandler():
 
 			channel = self.client.get_guild(int(gearFeeds[id][0])).get_channel(int(gearFeeds[id][1]))
 			if channel != None:
-				await channel.send(file = img, embed = embed)
+				try: 
+					await channel.send(file = img, embed = embed)
+				except discord.Forbidden:
+					print(f"403 - Deleting feed for channel {gearFeeds[id][1]}")
+					await cur.execute("DELETE FROM s3feeds WHERE channelid = %s", (gearFeeds[id][1],))
 			else:
 				print(f"Deleting feed for channel {gearFeeds[id][1]}")
 				await cur.execute("DELETE FROM s3feeds WHERE channelid = %s", (gearFeeds[id][1],))
