@@ -148,15 +148,18 @@ class Nsotoken():
 
 		# Construct a new one for this user
 		nsoAppInfo = await self.getAppVersion()
-		nso = NSO_API(nsoAppInfo['version'], self.imink, userid)
+		nso = NSO_API(self.imink, userid)
 
 		# If we have keys, load them into the client
 		keys = await self.nso_client_load_keys(userid)
 		if keys:
-			nso.set_keys(keys)
+			nso.load_user_data(keys)
 
-		# Register callback for when keys change
-		nso.on_keys_update(self.nso_client_keys_updated)
+		# Register callback for when user data changes
+		nso.on_user_data_update(self.nso_user_data_updated)
+
+		# Register callback for when global data changes
+		nso.on_global_data_update(self.nso_global_data_updated)
 
 		self.nso_clients[userid] = nso
 		return nso
@@ -184,17 +187,21 @@ class Nsotoken():
 
 	# This is a callback which is called by nso-api when a client object's
 	#  keys change.
-	# This callback is not async, so we use asyncio.create_task to call
-	#  an async method later that does the actual work.
-	def nso_client_keys_updated(self, nso, userid):
-		print(f"Time to save keys for user {userid}")
+	def nso_user_data_updated(self, nso, userid):
+		# This callback is not async, so we use asyncio.create_task() to schedule an async call
 		asyncio.create_task(self.nso_client_save_keys(userid))
+
+	# This is a callback which is called by nso-api when global data has
+	#  changed.
+	def nso_global_data_updated(self, data):
+		# This callback is not async, so we use asyncio.create_task() to schedule an async call
+		asyncio.create_task(self.nso_save_global_data(data))
 
 	async def nso_client_save_keys(self, userid):
 		if not self.nso_clients.get(userid):
 			return  # No client for this user
 
-		keys = self.nso_clients[userid].get_keys()
+		keys = self.nso_clients[userid].get_user_data()
 		plaintext = json.dumps(keys)
 		ciphertext = self.stringCrypt.encryptString(plaintext)
 		#print(f"nso_client_save_keys: {plaintext} -> {ciphertext}")
@@ -219,6 +226,25 @@ class Nsotoken():
 		#print(f"getGameKeys: {ciphertext} -> {plaintext}")
 		keys = json.loads(plaintext)
 		return keys
+
+	async def nso_save_global_data(self, data):
+		jsondata = json.dumps(data)
+		cur = await self.sqlBroker.connect()
+		await cur.execute("DELETE FROM nso_global_data")
+		await cur.execute("INSERT INTO nso_global_data (updatetime, jsondata) VALUES (NOW(), %s)", (jsondata,))
+		await self.sqlBroker.commit(cur)
+		return
+
+	async def nso_load_global_data(self):
+		cur = await self.sqlBroker.connect()
+		await cur.execute("SELECT jsondata FROM nso_global_data LIMIT 1")
+		row = await cur.fetchone()
+		await self.sqlBroker.commit(cur)
+
+		if (row == None) or (row[0] == None):
+			return None  # No stored data
+
+		return json.loads(row[0])
 
 	async def getAppVersion(self):
 		cur = await self.sqlBroker.connect()

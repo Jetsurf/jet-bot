@@ -144,6 +144,19 @@ class MysqlSchema():
 			)
 			await self.sqlBroker.c_commit(cur)
 
+		if not await self.sqlBroker.hasTable(cur, 'nso_global_data'):
+			print("Creating table 'nso_global_data'...")
+			await cur.execute(
+			"""
+			CREATE TABLE nso_global_data
+			(
+			updatetime DATETIME NOT NULL,
+			jsondata TEXT NULL
+			) ENGINE = InnoDB
+			"""
+			)
+			await self.sqlBroker.c_commit(cur)
+
 		if not await self.sqlBroker.hasTable(cur, 'emotes'):
 			print("Creating table 'emotes'...")
 			await cur.execute(
