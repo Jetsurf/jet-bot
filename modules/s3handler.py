@@ -307,6 +307,8 @@ class S3Handler():
 		await ctx.respond(file = discord.File(image_io, filename = "sr-schedule.png", description = "Salmon Run schedule"))
 
 	async def cmdStoreList(self, ctx):
+		await ctx.defer()
+
 		if self.storedm.cacheState:
 			embed = discord.Embed(colour=0xF9FC5F)
 			embed.title = "Splatoon 3 Splatnet Store Gear"
