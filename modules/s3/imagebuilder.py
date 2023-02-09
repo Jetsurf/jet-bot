@@ -537,13 +537,14 @@ class S3ImageBuilder():
 		IMGH = 314
 		TEXTH = 24
 		TEXTCOLOR = (0, 150, 150, 255)
-		s2Font = fonts.truetype("s2.otf", size=24)
+		s2Font = fonts.truetype("s2.otf", size=TEXTH)
 
 		img = Image.new("RGBA", (IMGW, IMGH), (0, 0, 0, 0))
 		draw = ImageDraw.Draw(img)
 
 		for i, item in enumerate(gear):
-			draw.text(((i * CARDW) + int(CARDW / 2), 0), f"{item['gear']['name']}" , TEXTCOLOR, font=s2Font, anchor='mt')
+			nameFont = fonts.truetype_for_width("s2.otf", TEXTH, CARDW, gear['gear']['name'])
+			draw.text(((i * CARDW) + int(CARDW / 2), 0), f"{item['gear']['name']}" , TEXTCOLOR, font=nameFont, anchor='mt')
 			gearCard = cls.createGearCard(item['gear'])
 			img.paste(gearCard, (i * CARDW, TEXTH), gearCard)
 
@@ -671,7 +672,8 @@ class S3ImageBuilder():
 		#Daily Drops
 		draw.text((int(MAXW/2), 0), f"The Daily Drop: {gearJson['pickupBrand']['brand']['name']}", TEXTCOLOR, font=s2FontSmall, anchor="mt")
 		for i, gear in enumerate(gearJson['pickupBrand']['brandGears']):
-			draw.text((i * CARDW + int(CARDW/2), TEXTH), gear['gear']['name'], TEXTCOLOR, font=s2FontSmall, anchor='mt')
+			nameFont = fonts.truetype_for_width("s2.otf", TEXTH, CARDW, gear['gear']['name'])
+			draw.text((i * CARDW + int(CARDW/2), TEXTH), gear['gear']['name'], TEXTCOLOR, font=nameFont, anchor='mt')
 			draw.text((i * CARDW + int(CARDW/2), TEXTH * 2), f"Price: {gear['price']}", TEXTCOLOR, font=s2FontSmall, anchor="mt")
 			gearImg = self.createGearCard(gear['gear'])
 			img.paste(gearImg, (i * CARDW, TEXTH*3), gearImg)
@@ -680,7 +682,8 @@ class S3ImageBuilder():
 		draw.text((int(MAXW/2), CARDH + (TEXTH*3)), "Normal gear on sale", TEXTCOLOR, font=s2FontSmall, anchor="mt")
 		for i, gears in enumerate([gearJson['limitedGears'][i * 3:(i + 1) * 3] for i in range((len(gearJson['limitedGears']) + 3 - 1) // 3 )]):
 			for j, gear in enumerate(gears):
-				draw.text((j * CARDW + int(CARDW/2), (i+1) * CARDH + ((4+i) * TEXTH + i * TEXTH)), gear['gear']['name'], TEXTCOLOR, font=s2FontSmall, anchor="mt")
+				nameFont = fonts.truetype_for_width("s2.otf", TEXTH, CARDW, gear['gear']['name'])
+				draw.text((j * CARDW + int(CARDW/2), (i+1) * CARDH + ((4+i) * TEXTH + i * TEXTH)), gear['gear']['name'], TEXTCOLOR, font=nameFont, anchor="mt")
 				draw.text((j * CARDW + int(CARDW/2), (i+1) * CARDH + ((5+i) * TEXTH + i * TEXTH)), f"Price: {gear['price']}", TEXTCOLOR, font=s2FontSmall, anchor="mt")
 				gearImg = self.createGearCard(gear['gear'])
 				img.paste(gearImg, (j * CARDW, (i+1) * CARDH + ((6+i) * TEXTH)), gearImg)

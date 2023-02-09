@@ -37,7 +37,7 @@ class Fonts:
 	# Returns a font sized appropriately to fit within the given maximum
 	#  width.
 	def truetype_for_width(self, name, max_size, max_width, string):
-		size = self.size_for_width(self, name, max_size, max_width, string)
+		size = self.size_for_width(name, max_size, max_width, string)
 		return self.truetype(name, size)
 
 	# Returns a font size such that the string when rendered fits within
