@@ -543,7 +543,7 @@ class S3ImageBuilder():
 		draw = ImageDraw.Draw(img)
 
 		for i, item in enumerate(gear):
-			nameFont = fonts.truetype_for_width("s2.otf", TEXTH, CARDW, gear['gear']['name'])
+			nameFont = fonts.truetype_for_width("s2.otf", TEXTH, CARDW, item['gear']['name'])
 			draw.text(((i * CARDW) + int(CARDW / 2), 0), f"{item['gear']['name']}" , TEXTCOLOR, font=nameFont, anchor='mt')
 			gearCard = cls.createGearCard(item['gear'])
 			img.paste(gearCard, (i * CARDW, TEXTH), gearCard)
