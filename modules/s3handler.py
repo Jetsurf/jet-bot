@@ -291,7 +291,7 @@ class S3Handler():
 
 		# Filter the schedules to those matching the two earliest time windows
 		for t in ['TW', 'SF', 'AO', 'AS', 'XB']:
-			schedules[t] = [s for s in schedules[t] if (r['starttime'] in [w['starttime'] for w in timewindows])]
+			schedules[t] = [s for s in schedules[t] if (s['starttime'] in [w['starttime'] for w in timewindows])]
 
 		image_io = S3ImageBuilder.createScheduleImage(timewindows, schedules, self.fonts, self.cachemanager, self.splat3info)
 		await ctx.respond(file = discord.File(image_io, filename = "map-schedule.png", description = "Map schedule"))
