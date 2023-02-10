@@ -10986,7 +10986,7 @@
       },
       "price": 1900,
       "special": "Wave Breaker",
-      "specialPoints": 180,
+      "specialPoints": 190,
       "sub": "Torpedo",
       "type": "Shooter"
     },
@@ -11090,7 +11090,7 @@
       },
       "price": 900,
       "special": "Trizooka",
-      "specialPoints": 200,
+      "specialPoints": 190,
       "sub": "Suction Bomb",
       "type": "Shooter"
     },
@@ -11142,7 +11142,7 @@
       },
       "price": 0,
       "special": "Trizooka",
-      "specialPoints": 200,
+      "specialPoints": 190,
       "sub": "Suction Bomb",
       "type": "Shooter"
     },
@@ -11168,7 +11168,7 @@
       },
       "price": 9500,
       "special": "Killer Wail 5.1",
-      "specialPoints": 200,
+      "specialPoints": 190,
       "sub": "Splash Wall",
       "type": "Shooter"
     },
@@ -11220,7 +11220,7 @@
       },
       "price": 20800,
       "special": "Crab Tank",
-      "specialPoints": 190,
+      "specialPoints": 180,
       "sub": "Angle Shooter",
       "type": "Shooter"
     },
@@ -11272,7 +11272,7 @@
       },
       "price": 12600,
       "special": "Ink Vac",
-      "specialPoints": 200,
+      "specialPoints": 190,
       "sub": "Sprinkler",
       "type": "Shooter"
     },
@@ -11324,7 +11324,7 @@
       },
       "price": 7100,
       "special": "Killer Wail 5.1",
-      "specialPoints": 200,
+      "specialPoints": 190,
       "sub": "Point Sensor",
       "type": "Shooter"
     },
@@ -12130,7 +12130,7 @@
       },
       "price": 12600,
       "special": "Booyah Bomb",
-      "specialPoints": 210,
+      "specialPoints": 220,
       "sub": "Fizzy Bomb",
       "type": "Slosher"
     },
@@ -12416,7 +12416,7 @@
       },
       "price": 2400,
       "special": "Crab Tank",
-      "specialPoints": 200,
+      "specialPoints": 190,
       "sub": "Suction Bomb",
       "type": "Maneuver"
     },
@@ -12676,7 +12676,7 @@
       },
       "price": 1000,
       "special": "Ultra Stamp",
-      "specialPoints": 180,
+      "specialPoints": 190,
       "sub": "Torpedo",
       "type": "Saber"
     }

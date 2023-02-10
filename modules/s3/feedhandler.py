@@ -50,18 +50,18 @@ class S3FeedHandler():
 			for r in schedules[t]:
 				timewindows[r['starttime']] = {'starttime': r['starttime'], 'endtime': r['endtime']}
 
-		# Pick the two earliest time windows
+		# Pick the earliest time window
 		timewindows = list(timewindows.values())
 		timewindows.sort(key = lambda w: w['starttime'])
-		timewindows = timewindows[0:2]
+		timewindows = timewindows[0:1]
 
 		if len(timewindows) == 0:
 			print("Missed map rotation")
 			return
 
-		# Filter the schedules to those matching the two earliest time windows
+		# Filter the schedules to those matching the time window(s)
 		for t in ['TW', 'SF', 'AO', 'AS', 'XB']:
-			schedules[t] = [s for s in schedules[t] if (r['starttime'] in [w['starttime'] for w in timewindows])]
+			schedules[t] = [s for s in schedules[t] if (s['starttime'] in [w['starttime'] for w in timewindows])]
 
 		image_io = S3ImageBuilder.createScheduleImage(timewindows, schedules, self.fonts, self.cachemanager, self.splat3info)
 		embed = discord.Embed(colour=0x0004FF)
@@ -78,7 +78,7 @@ class S3FeedHandler():
 			embed.set_image(url = "attachment://maps-feed.png")
 			image_io.seek(0)
 
-			channel = self.client.get_guild(int(map_feeds[id][0])).get_channel(int(map_feeds[id][1]))
+			channel = self.client.get_guild(int(map_feeds[id][0])).get_channel_or_thread(int(map_feeds[id][1]))
 			if channel != None:
 				try: 
 					await channel.send(file = img, embed = embed)
@@ -111,7 +111,7 @@ class S3FeedHandler():
 			embed.set_image(url = "attachment://sr-feed.png")
 			image_io.seek(0)
 
-			channel = self.client.get_guild(int(srFeeds[id][0])).get_channel(int(srFeeds[id][1]))
+			channel = self.client.get_guild(int(srFeeds[id][0])).get_channel_or_thread(int(srFeeds[id][1]))
 			if channel != None:
 				try: 
 					await channel.send(file = img, embed = embed)
@@ -154,7 +154,7 @@ class S3FeedHandler():
 			embed.set_image(url = "attachment://gear-feed.png")			
 			image_io.seek(0)
 
-			channel = self.client.get_guild(int(gearFeeds[id][0])).get_channel(int(gearFeeds[id][1]))
+			channel = self.client.get_guild(int(gearFeeds[id][0])).get_channel_or_thread(int(gearFeeds[id][1]))
 			if channel != None:
 				try: 
 					await channel.send(file = img, embed = embed)

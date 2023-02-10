@@ -89,29 +89,39 @@ class S3ImageBuilder():
 				scores = [*[t['result'].get('score', 0) for t in all_teams]]
 				labels = [str(s) for s in scores]
 
+			labelwidths = [fonts['s1'].getlength(l) for l in labels]
+
 			total = sum(scores)
 			if total == 0:
 				ratios = [0 for s in scores]
 			else:
 				ratios = [(s / total) for s in scores]
 
+			colors = [(int(t['color']['r'] * 255), int(t['color']['g'] * 255), int(t['color']['b'] * 255)) for t in all_teams]
+			widths = [int((r * image.width) + 0.5) for r in ratios]
+
 			if len(all_teams) == 3:
-				positions = [5, int(image.width / 2), image.width - 5]
+				positions = [5, int(widths[0] + (widths[1] / 2)), image.width - 5]
 				anchors = ['lt', 'mt', 'rt']
+
+				# Handle middle team label collisions
+				if positions[1] - int(labelwidths[1] / 2) < positions[0] + labelwidths[0]:
+					positions[1] = positions[0] + labelwidths[0] + 5 + int(labelwidths[1] / 2)
+				elif positions[1] + int(labelwidths[1] / 2) > positions[2]:
+					positions[1] = positions[2] - labelwidths[1] - 5 - int(labelwidths[1] / 2)
 			else:
 				positions = [5, image.width - 5]
 				anchors = ['lt', 'rt']
 
-			colors = [(int(t['color']['r'] * 255), int(t['color']['g'] * 255), int(t['color']['b'] * 255)) for t in all_teams]
-			widths = [int((r * image.width) + 0.5) for r in ratios]
-
+			# Draw bars
 			x = 0
 			for i in range(len(all_teams)):
 				draw.rectangle([(x, yposition), (x + widths[i], yposition + 24)], fill = colors[i])
 				x += widths[i]
 
-				draw.text((positions[i] + 1, yposition + 1), labels[i], (0, 0, 0), font = fonts['s1'], anchor = anchors[i])
-				draw.text((positions[i], yposition), labels[i], (255, 255, 255), font = fonts['s1'], anchor = anchors[i])
+			# Overlay labels
+			for i in range(len(all_teams)):
+				cls.drawShadowedText(draw, (positions[i], yposition), labels[i], (255, 255, 255), font = fonts['s1'], anchor = anchors[i])
 
 			yposition += fonts['s1'].size
 
@@ -527,13 +537,14 @@ class S3ImageBuilder():
 		IMGH = 314
 		TEXTH = 24
 		TEXTCOLOR = (0, 150, 150, 255)
-		s2Font = fonts.truetype("s2.otf", size=24)
+		s2Font = fonts.truetype("s2.otf", size=TEXTH)
 
 		img = Image.new("RGBA", (IMGW, IMGH), (0, 0, 0, 0))
 		draw = ImageDraw.Draw(img)
 
 		for i, item in enumerate(gear):
-			draw.text(((i * CARDW) + int(CARDW / 2), 0), f"{item['gear']['name']}" , TEXTCOLOR, font=s2Font, anchor='mt')
+			nameFont = fonts.truetype_for_width("s2.otf", TEXTH, CARDW, item['gear']['name'])
+			draw.text(((i * CARDW) + int(CARDW / 2), 0), f"{item['gear']['name']}" , TEXTCOLOR, font=nameFont, anchor='mt')
 			gearCard = cls.createGearCard(item['gear'])
 			img.paste(gearCard, (i * CARDW, TEXTH), gearCard)
 
@@ -661,7 +672,8 @@ class S3ImageBuilder():
 		#Daily Drops
 		draw.text((int(MAXW/2), 0), f"The Daily Drop: {gearJson['pickupBrand']['brand']['name']}", TEXTCOLOR, font=s2FontSmall, anchor="mt")
 		for i, gear in enumerate(gearJson['pickupBrand']['brandGears']):
-			draw.text((i * CARDW + int(CARDW/2), TEXTH), gear['gear']['name'], TEXTCOLOR, font=s2FontSmall, anchor='mt')
+			nameFont = fonts.truetype_for_width("s2.otf", TEXTH, CARDW, gear['gear']['name'])
+			draw.text((i * CARDW + int(CARDW/2), TEXTH), gear['gear']['name'], TEXTCOLOR, font=nameFont, anchor='mt')
 			draw.text((i * CARDW + int(CARDW/2), TEXTH * 2), f"Price: {gear['price']}", TEXTCOLOR, font=s2FontSmall, anchor="mt")
 			gearImg = self.createGearCard(gear['gear'])
 			img.paste(gearImg, (i * CARDW, TEXTH*3), gearImg)
@@ -670,7 +682,8 @@ class S3ImageBuilder():
 		draw.text((int(MAXW/2), CARDH + (TEXTH*3)), "Normal gear on sale", TEXTCOLOR, font=s2FontSmall, anchor="mt")
 		for i, gears in enumerate([gearJson['limitedGears'][i * 3:(i + 1) * 3] for i in range((len(gearJson['limitedGears']) + 3 - 1) // 3 )]):
 			for j, gear in enumerate(gears):
-				draw.text((j * CARDW + int(CARDW/2), (i+1) * CARDH + ((4+i) * TEXTH + i * TEXTH)), gear['gear']['name'], TEXTCOLOR, font=s2FontSmall, anchor="mt")
+				nameFont = fonts.truetype_for_width("s2.otf", TEXTH, CARDW, gear['gear']['name'])
+				draw.text((j * CARDW + int(CARDW/2), (i+1) * CARDH + ((4+i) * TEXTH + i * TEXTH)), gear['gear']['name'], TEXTCOLOR, font=nameFont, anchor="mt")
 				draw.text((j * CARDW + int(CARDW/2), (i+1) * CARDH + ((5+i) * TEXTH + i * TEXTH)), f"Price: {gear['price']}", TEXTCOLOR, font=s2FontSmall, anchor="mt")
 				gearImg = self.createGearCard(gear['gear'])
 				img.paste(gearImg, (j * CARDW, (i+1) * CARDH + ((6+i) * TEXTH)), gearImg)
