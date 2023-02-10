@@ -78,7 +78,7 @@ class S3FeedHandler():
 			embed.set_image(url = "attachment://maps-feed.png")
 			image_io.seek(0)
 
-			channel = self.client.get_guild(int(map_feeds[id][0])).get_channel(int(map_feeds[id][1]))
+			channel = self.client.get_guild(int(map_feeds[id][0])).get_channel_or_thread(int(map_feeds[id][1]))
 			if channel != None:
 				try: 
 					await channel.send(file = img, embed = embed)
@@ -111,7 +111,7 @@ class S3FeedHandler():
 			embed.set_image(url = "attachment://sr-feed.png")
 			image_io.seek(0)
 
-			channel = self.client.get_guild(int(srFeeds[id][0])).get_channel(int(srFeeds[id][1]))
+			channel = self.client.get_guild(int(srFeeds[id][0])).get_channel_or_thread(int(srFeeds[id][1]))
 			if channel != None:
 				try: 
 					await channel.send(file = img, embed = embed)
@@ -154,7 +154,7 @@ class S3FeedHandler():
 			embed.set_image(url = "attachment://gear-feed.png")			
 			image_io.seek(0)
 
-			channel = self.client.get_guild(int(gearFeeds[id][0])).get_channel(int(gearFeeds[id][1]))
+			channel = self.client.get_guild(int(gearFeeds[id][0])).get_channel_or_thread(int(gearFeeds[id][1]))
 			if channel != None:
 				try: 
 					await channel.send(file = img, embed = embed)

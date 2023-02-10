@@ -77,7 +77,7 @@ class nsoHandler():
 			if theServer == None:
 				continue
 
-			theChannel = theServer.get_channel(channelid)
+			theChannel = theServer.get_channel_or_thread(channelid)
 			if theChannel is None:
 				continue
 
