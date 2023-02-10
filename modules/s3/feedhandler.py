@@ -50,16 +50,16 @@ class S3FeedHandler():
 			for r in schedules[t]:
 				timewindows[r['starttime']] = {'starttime': r['starttime'], 'endtime': r['endtime']}
 
-		# Pick the two earliest time windows
+		# Pick the earliest time window
 		timewindows = list(timewindows.values())
 		timewindows.sort(key = lambda w: w['starttime'])
-		timewindows = timewindows[0:2]
+		timewindows = timewindows[0:1]
 
 		if len(timewindows) == 0:
 			print("Missed map rotation")
 			return
 
-		# Filter the schedules to those matching the two earliest time windows
+		# Filter the schedules to those matching the time window(s)
 		for t in ['TW', 'SF', 'AO', 'AS', 'XB']:
 			schedules[t] = [s for s in schedules[t] if (s['starttime'] in [w['starttime'] for w in timewindows])]
 
