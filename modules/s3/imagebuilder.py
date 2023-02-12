@@ -288,8 +288,10 @@ class S3ImageBuilder():
 
 		# Add first row time
 		yposition = header_height
-		cls.drawShadowedText(draw, (int(width / 2), yposition), cls.formatTimeWindow(timewindows[0]['starttime'], timewindows[0]['endtime'], now), (255, 255, 255), font = s1FontMed, anchor = 'mt')
-		yposition += s1FontMed.size
+		timeString = cls.formatTimeWindow(timewindows[0]['starttime'], timewindows[0]['endtime'], now)
+		timeFont = fontbroker.truetype_for_width("s1.otf", 36, width, timeString)
+		cls.drawShadowedText(draw, (int(width / 2), yposition), timeString, (255, 255, 255), font = timeFont, anchor = 'mt')
+		yposition += timeFont.size
 
 		# Add first row map/mode images
 		xposition = 0
@@ -338,8 +340,10 @@ class S3ImageBuilder():
 		for tw in timewindows[1:]:
 			# Add time
 			yposition += 15
-			cls.drawShadowedText(draw, (int(width / 2), yposition), cls.formatTimeWindow(tw['starttime'], tw['endtime'], now), (255, 255, 255), font = s1FontMed, anchor = 'mt')
-			yposition += s1FontMed.size
+			timeString = cls.formatTimeWindow(tw['starttime'], tw['endtime'], now)
+			timeFont = fontbroker.truetype_for_width("s1.otf", 36, width, timeString)
+			cls.drawShadowedText(draw, (int(width / 2), yposition), timeString, (255, 255, 255), font = timeFont, anchor = 'mt')
+			yposition += timeFont.size
 
 			ybase = yposition
 			for t in active_types:
