@@ -2,6 +2,7 @@ import discord, re, sys
 import mysqlhandler
 from discord.ui import *
 from discord.enums import ComponentType, InputTextStyle
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 #Eval
 import traceback, textwrap, io, signal, asyncio
@@ -26,6 +27,18 @@ class ownerCmds:
 		self.cmdParser = cmdparser
 		self.client = client
 		self.owners = owners
+		self.didMysqlAlert = False
+		self.scheduler = AsyncIOScheduler()
+		self.scheduler.add_job(self.checkMysqlCons, 'cron', second='0', timezone='UTC')
+		self.scheduler.start()
+
+	async def checkMysqlCons(self):
+		if not self.didMysqlAlert:
+			print(f"DEBUG: Active SQL Connections: {len(self.sqlBroker.cons)}")
+			if len(self.sqlBroker.cons) > 8:
+				for owner in self.owners:
+					await owner.send("ALERT: Active MySQL Connections threshold exceeded")
+				self.didMysqlAlert = True
 
 	async def emotePicker(self, ctx, opts):
 		for emote in opts:

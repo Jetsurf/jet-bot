@@ -1,5 +1,7 @@
 import asyncio
 import aiomysql
+import traceback
+import pdb
 
 class mysqlHandler():
 	def __init__(self, host, user, pw, db):
@@ -9,6 +11,7 @@ class mysqlHandler():
 		self.__db = db
 		self.pool = None
 		self.cons = {}
+		self.traces = {}
 
 	# On bot startup, the mysql connection may not be ready yet. We can
 	#  use this to wait for it.
@@ -19,7 +22,6 @@ class mysqlHandler():
 
 		return self.pool is not None
 
-
 	async def startUp(self):
 		self.pool = await aiomysql.create_pool(host=self.__host, port=3306, user=self.__user, password=self.__pw, db=self.__db, maxsize=25)
 		print("MYSQL: Created connection pool")
@@ -27,6 +29,7 @@ class mysqlHandler():
 	async def connect(self, *args):
 		con = await self.pool.acquire()
 		cur = await con.cursor(*args)
+		self.traces[hash(cur)] = traceback.format_stack()[:-1]
 		self.cons[hash(cur)] = con
 		return cur
 
@@ -75,6 +78,8 @@ class mysqlHandler():
 		return True
 
 	async def printCons(self, message):
+		for con in self.cons:
+			print(f"DEBUG: {str(con)} + {''.join(self.traces[hash(con)])}")
 		await message.channel.send("MySQL Connections: " + str(self.cons))
 
 	async def getConnection(self, cur):

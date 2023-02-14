@@ -982,6 +982,9 @@ async def on_message(message):
 		await ownerCmds.eval(context, ' '.join(args))
 	elif cmd == 'getcons' and message.author in owners:
 		await mysqlHandler.printCons(message)
+	elif cmd == 'eatcon' and message.author in owners and dev:
+		await mysqlHandler.connect()
+		await message.channel.send("Om nom nom, ate a MySQL connection...")
 
 	sys.stdout.flush()
 	sys.stderr.flush()
