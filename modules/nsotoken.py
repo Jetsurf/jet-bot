@@ -206,22 +206,20 @@ class Nsotoken():
 		ciphertext = self.stringCrypt.encryptString(plaintext)
 		#print(f"nso_client_save_keys: {plaintext} -> {ciphertext}")
 
-		cur = await self.sqlBroker.connect()
-		await cur.execute("DELETE FROM nso_client_keys WHERE (clientid = %s)", (userid,))
-		await cur.execute("INSERT INTO nso_client_keys (clientid, updatetime, jsonkeys) VALUES (%s, NOW(), %s)", (userid, ciphertext))
-		await self.sqlBroker.commit(cur)
+		async with self.sqlBroker.context() as sql:
+			await sql.query("DELETE FROM nso_client_keys WHERE (clientid = %s)", (userid,))
+			await sql.query("INSERT INTO nso_client_keys (clientid, updatetime, jsonkeys) VALUES (%s, NOW(), %s)", (userid, ciphertext))
+
 		return
 
 	async def nso_client_load_keys(self, userid):
-		cur = await self.sqlBroker.connect()
-		await cur.execute("SELECT jsonkeys FROM nso_client_keys WHERE (clientid = %s) LIMIT 1", (userid,))
-		row = await cur.fetchone()
-		await self.sqlBroker.commit(cur)
+		async with self.sqlBroker.context() as sql:
+			row = await sql.query_first("SELECT jsonkeys FROM nso_client_keys WHERE (clientid = %s) LIMIT 1", (userid,))
 
-		if (row == None) or (row[0] == None):
+		if (row == None) or (row['jsonkeys'] == None):
 			return None  # No keys
 
-		ciphertext = row[0]
+		ciphertext = row['jsonkeys']
 		plaintext = self.stringCrypt.decryptString(ciphertext)
 		#print(f"getGameKeys: {ciphertext} -> {plaintext}")
 		keys = json.loads(plaintext)
@@ -229,22 +227,21 @@ class Nsotoken():
 
 	async def nso_save_global_data(self, data):
 		jsondata = json.dumps(data)
-		cur = await self.sqlBroker.connect()
-		await cur.execute("DELETE FROM nso_global_data")
-		await cur.execute("INSERT INTO nso_global_data (updatetime, jsondata) VALUES (NOW(), %s)", (jsondata,))
-		await self.sqlBroker.commit(cur)
+
+		async with self.sqlBroker.context() as sql:
+			await sql.query("DELETE FROM nso_global_data")
+			await sql.query("INSERT INTO nso_global_data (updatetime, jsondata) VALUES (NOW(), %s)", (jsondata,))
+
 		return
 
 	async def nso_load_global_data(self):
-		cur = await self.sqlBroker.connect()
-		await cur.execute("SELECT jsondata FROM nso_global_data LIMIT 1")
-		row = await cur.fetchone()
-		await self.sqlBroker.commit(cur)
+		async with self.sqlBroker.context() as sql:
+			row = await sql.query_first("SELECT jsondata FROM nso_global_data LIMIT 1")
 
-		if (row == None) or (row[0] == None):
+		if (row == None) or (row['jsondata'] == None):
 			return None  # No stored data
 
-		return json.loads(row[0])
+		return json.loads(row['jsondata'])
 
 	async def getAppVersion(self):
 		cur = await self.sqlBroker.connect()
