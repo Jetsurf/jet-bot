@@ -37,7 +37,7 @@ class orderView(discord.ui.View):
 			await self.nsoHandler.orderGearCommand(interaction, args=['5'])
 			self.confirm=True
 
-class nsoHandler():
+class S2Handler():
 	def __init__(self, client, mysqlHandler, nsotoken, splatInfo, configData):
 		self.client = client
 		self.splatInfo = splatInfo

@@ -20,7 +20,7 @@ import urllib, urllib.request, requests, pymysql
 #Our Classes
 import nsotoken, commandparser, serverconfig, ownercmds, messagecontext
 import vserver, mysqlhandler, mysqlschema, serverutils
-import nsohandler, achandler, s3handler
+import s2handler, achandler, s3handler
 import stringcrypt
 import fonts
 import cachemanager
@@ -46,7 +46,7 @@ client = discord.AutoShardedBot(intents=intents, chunk_guilds_at_startup=False)
 commandParser = None
 serverConfig = None
 mysqlHandler = None
-nsoHandler = None
+s2Handler = None
 s3Handler = None
 nsoTokens = None
 ownerCmds = None
@@ -330,7 +330,7 @@ async def cmdACNHEmote(ctx, message: Option(str, "The message to send")):
 
 @s2MapCmds.command(name='current', description='Shows current map rotation')
 async def cmdCurrentMaps(ctx):
-	await ctx.respond(embed=await nsoHandler.mapsEmbed())
+	await ctx.respond(embed=await s2Handler.mapsEmbed())
 
 @s2MapCmds.command(name='next', description='Shows the next maps in rotation')
 async def cmdNextMaps(ctx, rotation: Option(int, "Map Rotations ahead to show, max of 11 ahead", required=False, default=1)):
@@ -340,61 +340,61 @@ async def cmdNextMaps(ctx, rotation: Option(int, "Map Rotations ahead to show, m
 	if rotation == None:
 		rotation = 1
 
-	await ctx.respond(embed=await nsoHandler.mapsEmbed(rotation))
+	await ctx.respond(embed=await s2Handler.mapsEmbed(rotation))
 
 @s2MapCmds.command(name='nextsr', description='Shows the next Salmon Run rotation')
 async def cmdNextSR(ctx):
-	await ctx.respond(embed=nsoHandler.srEmbed(getNext=True))
+	await ctx.respond(embed = s2Handler.srEmbed(getNext=True))
 
 @s2MapCmds.command(name='currentsr', description='Shows the current Salmon Run rotation')
 async def cmdCurrentSR(ctx):
-	await ctx.respond(embed=nsoHandler.srEmbed(getNext=False))
+	await ctx.respond(embed = s2Handler.srEmbed(getNext=False))
 
 @s2MapCmds.command(name='callout', description="View callout locations for a map")
 async def cmdMapsCallout(ctx, map: Option(str, "Map to show callout locations for", choices=[ themap.name() for themap in splat2info.getAllMaps() ] ,required=True)):
-	await nsoHandler.cmdMaps(ctx, args=[ 'callout', str(map) ])
+	await s2Handler.cmdMaps(ctx, args=[ 'callout', str(map) ])
 
 @s2MapCmds.command(name='list', description="Shows all Splatoon 2 maps")
 async def cmdMapsStats(ctx):
-	await nsoHandler.cmdMaps(ctx, args=[ 'list' ])
+	await s2Handler.cmdMaps(ctx, args=[ 'list' ])
 
 @s2MapCmds.command(name='random', description="Generates a random list of maps")
 async def cmdMapsRandom(ctx, num: Option(int, "Number of maps to include in the list (1-10)", required=True)):
 	if num < 1 or num > 10:
 		await ctx.respond("Num needs to be between 1-10")
 	else:
-		await nsoHandler.cmdMaps(ctx, args=[ 'random', str(num)])
+		await s2Handler.cmdMaps(ctx, args=[ 'random', str(num)])
 
 @s2StatsCmds.command(name='maps', description="Shows gameplay stats for a map")
 async def cmdMapsStats(ctx, map: Option(str, "Map to show stats for", choices=[ themap.name() for themap in splat2info.getAllMaps() ] ,required=True)):
-	await nsoHandler.cmdMaps(ctx, args=[ 'stats', str(map)])
+	await s2Handler.cmdMaps(ctx, args=[ 'stats', str(map)])
 
 @s2StatsCmds.command(name='ranks', description='Get your ranks in ranked mode from S2 SplatNet')
 async def cmdRanks(ctx):
-	await nsoHandler.getRanks(ctx)
+	await s2Handler.getRanks(ctx)
 
 @s2StatsCmds.command(name='sr', description='Get your Salmon Run stats from S2 SplatNet')
 async def cmdSRStats(ctx):
-	await nsoHandler.getSRStats(ctx)
+	await s2Handler.getSRStats(ctx)
 
 @s2StatsCmds.command(name='multi', description='Get your multiplayer stats from S2 SplatNet')
 async def cmdStats(ctx):
-	await nsoHandler.getStats(ctx)
+	await s2Handler.getStats(ctx)
 
 @s2StatsCmds.command(name='battle', description='Get stats from a battle (1-50)')
 async def cmdBattle(ctx, battlenum: Option(int, "Battle Number, 1 being latest, 50 max", required=True, default=1)):
 	if battlenum >= 50 or battlenum < 0:
 		await ctx.respond("Battlenum needs to be between 1-50!")
 		return
-	await nsoHandler.battleParser(ctx, battlenum)
+	await s2Handler.battleParser(ctx, battlenum)
 
 @s2WeaponCmds.command(name='info', description='Gets info on a weapon')
 async def cmdWeapInfo(ctx, name: Option(str, "Name of the weapon to get info for", required=True)):
-	await nsoHandler.cmdWeaps(ctx, args=[ 'info', str(name) ])
+	await s2Handler.cmdWeaps(ctx, args=[ 'info', str(name) ])
 
 @s2WeaponCmds.command(name='list', description='Gets a list of weapons by type')
 async def cmdWeapList(ctx, weaptype: Option(str, "Type of weapon to generate a list for", required=True, choices=[ weaptype.name() for weaptype in splat2info.getAllWeaponTypes() ])):
-	await nsoHandler.cmdWeaps(ctx, args=[ 'list', str(weaptype) ])
+	await s2Handler.cmdWeaps(ctx, args=[ 'list', str(weaptype) ])
 
 @s2WeaponCmds.command(name='random', description='Generates a random list of weapons')
 async def cmdWeapRandom(ctx, num: Option(int, "Number of weapons to include in the list (1-10)", required=True)):
@@ -402,28 +402,28 @@ async def cmdWeapRandom(ctx, num: Option(int, "Number of weapons to include in t
 		await ctx.respond("Num must be between 1-10!")
 		return
 
-	await nsoHandler.cmdWeaps(ctx, args=[ 'random', str(num) ])
+	await s2Handler.cmdWeaps(ctx, args=[ 'random', str(num) ])
 
 @s2WeaponCmds.command(name='special', description='Gets all weapons with special type')
 async def cmdWeapSpecial(ctx, special: Option(str, "Name of the special to get matching weapons for", choices=[ weap.name() for weap in splat2info.getAllSpecials() ], required=True)):
-	await nsoHandler.cmdWeaps(ctx, args=[ 'special', str(special) ])
+	await s2Handler.cmdWeaps(ctx, args=[ 'special', str(special) ])
 
 @s2WeaponCmds.command(name='stats', description='Gets stats from a weapon')
 async def cmdWeapStats(ctx, name: Option(str, "Name of the weapon to get stats for", required=True)):
-	await nsoHandler.cmdWeaps(ctx, args=[ 'stats', str(name) ])
+	await s2Handler.cmdWeaps(ctx, args=[ 'stats', str(name) ])
 
 @s2WeaponCmds.command(name='sub', description='Gets all weapons with sub type')
 async def cmdWeapSub(ctx, sub: Option(str, "Name of the sub to get matching weapons for", choices=[ weap.name() for weap in splat2info.getAllSubweapons() ], required=True)):
-	await nsoHandler.cmdWeaps(ctx, args=[ 'sub', str(sub) ])
+	await s2Handler.cmdWeaps(ctx, args=[ 'sub', str(sub) ])
 
 @s2StoreCmds.command(name='currentgear', description="See the current gear on the SplatNet store")
 async def cmdStoreCurrent(ctx):
-	await nsoHandler.gearParser(ctx)
+	await s2Handler.gearParser(ctx)
 
 @s2StoreCmds.command(name='order', description='Orders gear from the SplatNet store')
 async def cmdOrder(ctx, order: Option(str, "ID or NAME of the gear to order from the store (get both from /store currentgear)", required=True), override: Option(bool, "Override if you have an item already on order", required=False)):
 	print(f"Ordering gear for user: {ctx.user.name} and id {str(ctx.user.id)}")
-	await nsoHandler.orderGearCommand(ctx, args=[str(order)], override=override if override != None else False)
+	await s2Handler.orderGearCommand(ctx, args=[str(order)], override=override if override != None else False)
 
 @s2StoredmCmds.command(name='add', description='Sends a DM when gear with ABILITY/BRAND/GEAR appears in the store')
 async def cmdStoreDMAbilty(ctx, flag: Option(str, "ABILITY/BRAND/GEAR to DM you with when it appears in the store", required=True)):
@@ -431,7 +431,7 @@ async def cmdStoreDMAbilty(ctx, flag: Option(str, "ABILITY/BRAND/GEAR to DM you 
 		await ctx.respond("Can't DM me with this command.")
 		return
 
-	await nsoHandler.addStoreDM(ctx, [ str(flag) ])
+	await s2Handler.addStoreDM(ctx, [ str(flag) ])
 
 @s2StoredmCmds.command(name='list', description='Shows you everything you are set to recieve a DM for')
 async def cmdStoreDMAbilty(ctx):
@@ -439,7 +439,7 @@ async def cmdStoreDMAbilty(ctx):
 		await ctx.respond("Can't DM me with this command.")
 		return
 
-	await nsoHandler.listStoreDM(ctx)
+	await s2Handler.listStoreDM(ctx)
 
 @s2StoredmCmds.command(name='remove', description='Removes you from being DMed when gear with FLAG appears in the store')
 async def cmdStoreDMAbilty(ctx, flag: Option(str, "ABILITY/BRAND/GEAR to stop DMing you with when it appears in the store", required=True)):
@@ -447,7 +447,7 @@ async def cmdStoreDMAbilty(ctx, flag: Option(str, "ABILITY/BRAND/GEAR to stop DM
 		await ctx.respond("Can't DM me with this command.")
 		return
 
-	await nsoHandler.removeStoreDM(ctx, [ str(flag) ])
+	await s2Handler.removeStoreDM(ctx, [ str(flag) ])
 
 # --- S3 commands ---
 
@@ -776,7 +776,7 @@ async def setNickname(guild):
 @client.event
 async def on_ready():
 	global client, mysqlHandler, serverUtils, serverVoices, splat2info, configData, ownerCmds
-	global nsoHandler, nsoTokens, head, dev, owners, commandParser, doneStartup, acHandler, stringCrypt
+	global s2Handler, nsoTokens, head, dev, owners, commandParser, doneStartup, acHandler, stringCrypt
 	global friendCodes, s3Handler
 
 	if not doneStartup:
@@ -822,7 +822,7 @@ async def on_ready():
 		serverUtils = serverutils.serverUtils(client, mysqlHandler, serverConfig)
 		friendCodes = friendcodes.FriendCodes(mysqlHandler, stringCrypt)
 		nsoTokens = nsotoken.Nsotoken(client, configData, mysqlHandler, stringCrypt, friendCodes)
-		nsoHandler = nsohandler.nsoHandler(client, mysqlHandler, nsoTokens, splat2info, configData)
+		s2Handler = s2handler.S2Handler(client, mysqlHandler, nsoTokens, splat2info, configData)
 		s3Handler = s3handler.S3Handler(client, mysqlHandler, nsoTokens, splat3info, configData, fonts, cachemanager)
 		acHandler = achandler.acHandler(client, mysqlHandler, nsoTokens, configData)
 		await mysqlHandler.startUp()
@@ -835,7 +835,7 @@ async def on_ready():
 
 		await nsoTokens.updateAppVersion()
 
-		await nsoHandler.updateS2JSON()
+		await s2Handler.updateS2JSON()
 		await s3Handler.storedm.cacheS3JSON()
 
 		client.before_invoke(serverUtils.contextIncrementCmd)
@@ -942,7 +942,7 @@ async def on_voice_state_update(mem, before, after):
 @client.event
 async def on_message(message):
 	global serverUtils, mysqlHandler
-	global nsoHandler, owners, commandParser, doneStartup, ownerCmds
+	global s2Handler, owners, commandParser, doneStartup, ownerCmds
 
 	# Filter out bots and system messages or handling of messages until startup is done
 	if message.author.bot or message.type != discord.MessageType.default or not doneStartup:
