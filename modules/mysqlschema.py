@@ -9,9 +9,9 @@ class MysqlSchema():
 
 		cur = await self.sqlBroker.connect()
 
-		if not await self.sqlBroker.hasTable(cur, 'nso_app_version'):
-			print("Creating table 'nso_app_version'...")
-			await cur.execute("CREATE TABLE nso_app_version (version VARCHAR(32) NOT NULL, updatetime DATETIME NOT NULL)")
+		if await self.sqlBroker.hasTable(cur, 'nso_app_version'):
+			print("Removing table 'nso_app_version'...")
+			await cur.execute("DROP TABLE nso_app_version")
 			await self.sqlBroker.c_commit(cur)
 
 		if not await self.sqlBroker.hasTable(cur, 'playlist'):

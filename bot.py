@@ -833,8 +833,6 @@ async def on_ready():
 		groups.Groups.setFriendObjects(client, mysqlHandler, friendCodes)
 		await groups.Groups.startup()
 
-		await nsoTokens.updateAppVersion()
-
 		await s2Handler.updateS2JSON()
 		await s3Handler.storedm.cacheS3JSON()
 

@@ -89,7 +89,6 @@ class Nsotoken():
 
 		# Set up scheduled tasks
 		self.scheduler = AsyncIOScheduler()
-		self.scheduler.add_job(self.updateAppVersion, 'interval', hours = 24)
 		self.scheduler.add_job(self.nso_client_cleanup, 'interval', minutes = 5)
 		self.scheduler.start()
 
@@ -147,7 +146,6 @@ class Nsotoken():
 			return self.nso_clients[userid]
 
 		# Construct a new one for this user
-		nsoAppInfo = await self.getAppVersion()
 		nso = NSO_API(self.imink, userid)
 
 		# If we have keys, load them into the client
@@ -243,48 +241,6 @@ class Nsotoken():
 
 		return json.loads(row['jsondata'])
 
-	async def getAppVersion(self):
-		cur = await self.sqlBroker.connect()
-
-		await cur.execute("SELECT version, UNIX_TIMESTAMP(updatetime) AS updatetime FROM nso_app_version")
-		row = await cur.fetchone()
-		await self.sqlBroker.commit(cur)
-
-		if row:
-			return {'version': row[0], 'updatetime': row[1]}
-
-		return None
-
-	async def updateAppVersion(self):
-		oldInfo = await self.getAppVersion()
-		if oldInfo != None:
-			age = time.time() - oldInfo['updatetime']
-			if age < 3600:
-				print("Skipping NSO version check -- cached data is recent")
-				return
-
-		scraper = AppStoreScraper()
-		nsogp = scraper.get_app_details(1234806557, country='us') #iOS App ID
-
-		newVersion = nsogp['version']
-		if newVersion == None:
-			print(f"Couldn't retrieve NSO app version?")
-			return
-
-		cur = await self.sqlBroker.connect()
-
-		if (oldInfo == None) or (oldInfo['version'] != newVersion):
-			# Version was updated
-			await cur.execute("DELETE FROM nso_app_version")
-			await cur.execute("INSERT INTO nso_app_version (version, updatetime) VALUES (%s, NOW())", (newVersion,))
-			print(f"Updated NSO version: {oldInfo['version'] if oldInfo else '(none)'} -> {newVersion}")
-		else:
-			# No version change, so just bump the timestamp
-			await cur.execute("UPDATE nso_app_version SET updatetime = NOW()")
-
-		await self.sqlBroker.commit(cur)
-		return
-
 	async def deleteTokens(self, interaction):
 		cur = await self.sqlBroker.connect()
 		print("Deleting token and nso client")
@@ -299,4 +255,3 @@ class Nsotoken():
 		else:
 			await self.sqlBroker.rollback(cur)
 			return False
-			
