@@ -828,7 +828,6 @@ async def on_ready():
 		await mysqlHandler.startUp()
 		mysqlSchema = mysqlschema.MysqlSchema(mysqlHandler)
 		await mysqlSchema.update()
-		await nsoTokens.migrate_tokens_if_needed()
 
 		groups.Groups.setFriendObjects(client, mysqlHandler, friendCodes)
 		await groups.Groups.startup()

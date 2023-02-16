@@ -124,12 +124,6 @@ class MysqlSchema():
 			)
 			await self.sqlBroker.c_commit(cur)
 
-		if await self.sqlBroker.hasTable(cur, 'tokens') and not await self.sqlBroker.hasColumn(cur, 'tokens', 'game_keys'):
-			if not await self.sqlBroker.hasTable(cur, 'tokens_migrate'):
-				print("Renaming old-style 'tokens' table in preparation for migration...")
-				await cur.execute("RENAME TABLE tokens TO tokens_migrate")
-				await self.sqlBroker.c_commit(cur)
-
 		if not await self.sqlBroker.hasTable(cur, 'nso_client_keys'):
 			print("Creating table 'nso_client_keys'...")
 			await cur.execute(

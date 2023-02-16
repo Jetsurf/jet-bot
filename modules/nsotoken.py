@@ -92,32 +92,6 @@ class Nsotoken():
 		self.scheduler.add_job(self.nso_client_cleanup, 'interval', minutes = 5)
 		self.scheduler.start()
 
-	async def migrate_tokens_if_needed(self):
-		cur = await self.sqlBroker.connect()
-
-		if not await self.sqlBroker.hasTable(cur, 'tokens'):
-			return  # No such table
-
-		await cur.execute("SELECT clientid, session_token FROM tokens")
-		rows = await cur.fetchall()
-
-		for row in rows:
-			clientid = row[0]
-			session_token_ciphertext = row[1]
-
-			print(f"MIGRATE user {clientid}")
-
-			client = await self.get_nso_client(clientid)
-			if client.is_logged_in():
-				print("  Already has new-style tokens, not migrating...")
-				continue
-
-			session_token = self.stringCrypt.decryptString(session_token_ciphertext)
-			client.set_session_token(session_token)
-			await self.nso_client_save_keys(clientid)
-
-		await cur.execute("DROP TABLE tokens")
-
 	# Returns NSO client for the bot account, or None if there was a problem.
 	async def get_bot_nso_client(self):
 		if not self.config.get('nso_userid'):
