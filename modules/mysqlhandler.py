@@ -129,6 +129,10 @@ class MysqlContext():
 			await self.broker.rollback(self.cur)
 			return False  # Allow exception to propagate
 
+	@property
+	def lastrowid(self):
+		return self.cur.lastrowid
+
 	async def commit(self):
 		await self.broker.c_commit(self.cur)
 

@@ -60,20 +60,12 @@ class S2Handler():
 
 	async def doFeed(self):
 		#TODO: Future Update: Is it possible to put the orderid button into gear feeds. Expire the button after that rotation
-		cur = await self.sqlBroker.connect()
-		stmt = "SELECT * FROM feeds"
-		feeds = await cur.execute(stmt)
-		feeds = await cur.fetchall()
+		async with self.sqlBroker.context() as sql:
+			feeds = await sql.query("SELECT * FROM feeds")
+
 		print(f"Processing: {str(len(feeds))} feeds")
-
-		for server in range(len(feeds)):
-			serverid = feeds[server][0]
-			channelid = feeds[server][1]
-			mapflag = feeds[server][2]
-			srflag = feeds[server][3]
-			gearflag = feeds[server][4]
-
-			theServer = self.client.get_guild(serverid)
+		for feed in feeds:
+			theServer = self.client.get_guild(feed['serverid'])
 			if theServer == None:
 				continue
 
@@ -82,15 +74,11 @@ class S2Handler():
 				continue
 
 			try:
-				await theChannel.send(embed=await self.make_notification(bool(mapflag), bool(srflag), bool(gearflag)))
+				await theChannel.send(embed=await self.make_notification(bool(feed['maps']), bool(feed['sr']), bool(feed['gear'])))
 			except discord.Forbidden:
 				print(f"403 on feed, deleting feed from server: {theServer.id} and channel: {theChannel.id}")
-				stmt = 'DELETE FROM feeds WHERE serverid = %s AND channelid = %s'
-				await cur.execute(stmt, (theServer.id, theChannel.id, ))
-				print(f"Deleted {theServer.id} and channel {theChannel.id} from feeds")
-				await self.sqlBroker.c_commit(cur)
-
-		await self.sqlBroker.close(cur)
+				async with self.sqlBroker.context() as sql:
+					stmt = await sql.query('DELETE FROM feeds WHERE serverid = %s AND channelid = %s', (theServer.id, theChannel.id, ))
 
 	async def make_notification(self, mapflag, srflag, gearflag):
 		embed = discord.Embed(colour=0x3FFF33)
@@ -103,14 +91,13 @@ class S2Handler():
 			league = data['league']
 
 			embed.add_field(name="Maps", value="Maps currently on rotation", inline=False)
-			cur = await self.sqlBroker.connect()
-			await cur.execute("SELECT turfwar, ranked, league FROM emotes WHERE myid = %s", (self.client.user.id,))
-			emotes = await cur.fetchone()
-			await self.sqlBroker.commit(cur)
 
-			embed.add_field(name=f"{emotes[0] if emotes != None else ''} Turf War", value=f"{turf['stage_a']['name']}\n{turf['stage_b']['name']}", inline=True)
-			embed.add_field(name=f"{emotes[1] if emotes != None else ''} Ranked: {ranked['rule']['name']}", value=f"{ranked['stage_a']['name']}\n{ranked['stage_b']['name']}", inline=True)
-			embed.add_field(name=f"{emotes[2] if emotes != None else ''} League: {league['rule']['name']}", value=f"{league['stage_a']['name']}\n{league['stage_b']['name']}", inline=True)
+			async with self.sqlBroker.context() as sql:
+				emotes = await sql.query_first("SELECT * FROM emotes WHERE (myid = %s)", (self.client.user.id,))
+
+			embed.add_field(name=f"{emotes['turfwar'] if emotes != None else ''} Turf War", value=f"{turf['stage_a']['name']}\n{turf['stage_b']['name']}", inline=True)
+			embed.add_field(name=f"{emotes['ranked'] if emotes != None else ''} Ranked: {ranked['rule']['name']}", value=f"{ranked['stage_a']['name']}\n{ranked['stage_b']['name']}", inline=True)
+			embed.add_field(name=f"{emotes['league'] if emotes != None else ''} League: {league['rule']['name']}", value=f"{league['stage_a']['name']}\n{league['stage_b']['name']}", inline=True)
 
 		if srflag:
 			flag = 0

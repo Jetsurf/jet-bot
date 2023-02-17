@@ -43,7 +43,7 @@ class tokenMenuView(discord.ui.View):
 			self.add_item(delbut)
 
 	async def deleteTokens(self, interaction: discord.Interaction):
-		if await self.nsotoken.deleteTokens(interaction):
+		if await self.nsotoken.deleteTokens(interaction.user.id):
 			await interaction.response.edit_message(content='Tokens Deleted. To set them up again, run /token again.', embed=None, view=None)
 		else:
 			await interaction.response.edit_message(content='Tokens failed to delete, try again shortly or join my support guild.')
@@ -215,17 +215,10 @@ class Nsotoken():
 
 		return json.loads(row['jsondata'])
 
-	async def deleteTokens(self, interaction):
-		cur = await self.sqlBroker.connect()
-		print("Deleting token and nso client")
-		stmt = "DELETE FROM nso_client_keys WHERE (clientid = %s)"
-		instmt = (interaction.user.id,)
-		await cur.execute(stmt, instmt)
-		if cur.lastrowid != None:
-			await self.sqlBroker.commit(cur)
-			#Delete the nso object, as we destroyed tokens
-			del self.nso_clients[interaction.user.id]
-			return True
-		else:
-			await self.sqlBroker.rollback(cur)
-			return False
+	async def deleteTokens(self, userid):
+		print(f"Deleting token and nso client for {userid}")
+		async with self.sqlBroker.context() as sql:
+			await sql.query("DELETE FROM nso_client_keys WHERE (clientid = %s)", (userid,))
+
+		del self.nso_clients[userid]
+		return True
