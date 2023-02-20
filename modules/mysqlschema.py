@@ -232,5 +232,33 @@ class MysqlSchema():
 			)
 			await self.sqlBroker.c_commit(cur)
 
+		if not await self.sqlBroker.hasTable(cur, 's3_schedule_update'):
+			print("Creating table 's3_schedule_update'...")
+			await cur.execute(
+			"""
+			CREATE TABLE s3_schedule_update
+			(
+			updatetime DATETIME NOT NULL
+			) ENGINE = InnoDB
+			"""
+			)
+			await self.sqlBroker.c_commit(cur)
+
+		if not await self.sqlBroker.hasTable(cur, 's3_schedule_periods'):
+			print("Creating table 's3_schedule_periods'...")
+			await cur.execute(
+			"""
+			CREATE TABLE s3_schedule_periods
+			(
+			schedule  CHAR(2) NOT NULL,
+			starttime DATETIME NOT NULL,
+			endtime   DATETIME NOT NULL,
+			jsondata  TEXT NULL,
+			PRIMARY KEY(schedule, starttime)
+			) ENGINE = InnoDB
+			"""
+			)
+			await self.sqlBroker.c_commit(cur)
+
 		await self.sqlBroker.close(cur)
 		return

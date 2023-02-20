@@ -1,6 +1,7 @@
 import discord
 import asyncio
 import time
+import json
 import requests
 import dateutil.parser
 import hashlib
@@ -17,15 +18,6 @@ class S3Schedule():
 		discord.OptionChoice('X Battles', 'XB'),
 		discord.OptionChoice('Salmon Run', 'SR'),
 	]
-
-	schedule_properties = {
-		'TW': 'turf_war_schedule',
-		'SF': 'splatfest_schedule',
-		'AO': 'anarchy_open_schedule',
-		'AS': 'anarchy_series_schedule',
-		'SR': 'salmon_run_schedule',
-		'XB': 'x_battles_schedule',
-	}
 
 	schedule_names = {
 		'TW': 'Turf War',
@@ -45,21 +37,22 @@ class S3Schedule():
 		self.image_cache_sr_maps = cachemanager.open("s3.sr.maps")
 		self.image_cache_sr_weapons = cachemanager.open("s3.sr.weapons")
 
-		self.turf_war_schedule       = []
-		self.splatfest_schedule      = []
-		self.anarchy_open_schedule   = []
-		self.anarchy_series_schedule = []
-		self.x_battles_schedule      = []
-
-		self.salmon_run_schedule     = []
+		self.schedules = {}
+		for k in self.schedule_names.keys():
+			self.schedules[k] = []
 
 		# Schedule updates every hour
 		self.scheduler = AsyncIOScheduler()
 		self.scheduler.add_job(self.update, 'interval', minutes = 60)
 		self.scheduler.start()
 
-		# Update shortly after bot startup
-		asyncio.create_task(self.update())
+		# Do async startup
+		asyncio.create_task(self.startup())
+
+	async def startup(self):
+		await self.sqlBroker.wait_for_startup()
+		await self.load()
+		await self.update()
 
 	def is_update_needed(self):
 		if self.updatetime is None:
@@ -71,8 +64,7 @@ class S3Schedule():
 		return False
 
 	def get_schedule(self, name, checktime = None, count = 1):
-		property = self.schedule_properties[name]
-		schedule = getattr(self, self.schedule_properties[name])
+		schedule = self.schedules[name]
 
 		if checktime == None:
 			checktime = time.time()
@@ -199,61 +191,93 @@ class S3Schedule():
 			print("S3Schedule.update(): Failed to retrieve schedule")
 			return
 
-		self.turf_war_schedule       = self.parse_versus_schedule(data['data'].get('regularSchedules'), 'regularMatchSetting', self.parse_schedule_turf)
-		self.splatfest_schedule      = self.parse_versus_schedule(data['data'].get('festSchedules'), 'festMatchSetting', self.parse_schedule_fest)
-		self.anarchy_open_schedule   = self.parse_versus_schedule(data['data'].get('bankaraSchedules'), 'bankaraMatchSettings', self.parse_schedule_anarchy_open)
-		self.anarchy_series_schedule = self.parse_versus_schedule(data['data'].get('bankaraSchedules'), 'bankaraMatchSettings', self.parse_schedule_anarchy_series)
-		self.x_battles_schedule      = self.parse_versus_schedule(data['data'].get('xSchedules'), 'xMatchSetting', self.parse_schedule_x_battles)
+		self.schedules['TW'] = self.parse_versus_schedule(data['data'].get('regularSchedules'), 'regularMatchSetting', self.parse_schedule_turf)
+		self.schedules['SF'] = self.parse_versus_schedule(data['data'].get('festSchedules'), 'festMatchSetting', self.parse_schedule_fest)
+		self.schedules['AO'] = self.parse_versus_schedule(data['data'].get('bankaraSchedules'), 'bankaraMatchSettings', self.parse_schedule_anarchy_open)
+		self.schedules['AS'] = self.parse_versus_schedule(data['data'].get('bankaraSchedules'), 'bankaraMatchSettings', self.parse_schedule_anarchy_series)
+		self.schedules['XB'] = self.parse_versus_schedule(data['data'].get('xSchedules'), 'xMatchSetting', self.parse_schedule_x_battles)
 
-		self.salmon_run_schedule = self.parse_salmon_schedule(data['data'].get('coopGroupingSchedule', {}).get('regularSchedules'))
+		self.schedules['SR'] = self.parse_salmon_schedule(data['data'].get('coopGroupingSchedule', {}).get('regularSchedules'))
 
 		# If Big Run schedules are included, parse them and insert them into the regular SR schedule
 		if big_run_data := data['data'].get('coopGroupingSchedule', {}).get('bigRunSchedules'):
 			big_run_schedule = self.parse_salmon_schedule(big_run_data)
-			self.salmon_run_schedule = sorted([*self.salmon_run_schedule, *big_run_schedule], key = lambda s: s['starttime'])
-
-		self.cache_images()
+			self.schedules['SR'] = sorted([*self.schedules['SR'], *big_run_schedule], key = lambda s: s['starttime'])
 
 		self.updatetime = time.time()
 
+		await self.save()
+
+		self.cache_images()
+
+	async def save(self):
+		async with self.sqlBroker.context() as sql:
+			await sql.query("DELETE FROM s3_schedule_update")
+			await sql.query("INSERT INTO s3_schedule_update (updatetime) VALUES (FROM_UNIXTIME(%s))", (self.updatetime,))
+
+			for s in self.schedule_names.keys():
+				await sql.query("DELETE FROM s3_schedule_periods WHERE (schedule = %s)", (s,))
+				for rec in self.schedules[s]:
+					await sql.query("INSERT INTO s3_schedule_periods (schedule, starttime, endtime, jsondata) VALUES (%s, FROM_UNIXTIME(%s), FROM_UNIXTIME(%s), %s)", (s, rec['starttime'], rec['endtime'], json.dumps(rec)))
+
+	async def load(self):
+		async with self.sqlBroker.context() as sql:
+			updaterow = await sql.query_first("SELECT UNIX_TIMESTAMP(updatetime) AS updatetime FROM s3_schedule_update")
+
+			schedules = {}
+			rows = await sql.query("SELECT schedule, jsondata FROM s3_schedule_periods")
+			for row in rows:
+				if not row['schedule'] in schedules:
+					schedules[row['schedule']] = []
+				schedules[row['schedule']].append(json.loads(row['jsondata']))
+
+			for s in self.schedule_names.keys():
+				if not s in schedules:
+					schedules[s] = []
+
+			self.schedules = schedules
+			self.updatetime = updaterow['updatetime']
+
 	def cache_images(self):
 		# PvP
-		for rec in [*self.turf_war_schedule, *self.splatfest_schedule, *self.anarchy_open_schedule, *self.anarchy_series_schedule, *self.x_battles_schedule]:
-			for map in rec['maps']:
-				if (not map['stageid']) or (not map['image']):
-					continue  # Missing required fields
+		for k in ['TW', 'SF', 'AO', 'AS', 'XB']:
+			for rec in self.schedules[k]:
+				for map in rec['maps']:
+					if (not map['stageid']) or (not map['image']):
+						continue  # Missing required fields
 
-				key = f"{map['stageid']}.png"
-				if self.image_cache_small.is_fresh(key):
-					continue  # Already fresh
+					key = f"{map['stageid']}.png"
+					if self.image_cache_small.is_fresh(key):
+						continue  # Already fresh
 
-				print(f"Caching map image stageid {map['stageid']} name '{map['name']}' image-url {map['image']}")
-				response = requests.get(map['image'], stream=True)
-				self.image_cache_small.add_http_response(key, response)
+					print(f"Caching map image stageid {map['stageid']} name '{map['name']}' image-url {map['image']}")
+					response = requests.get(map['image'], stream=True)
+					self.image_cache_small.add_http_response(key, response)
 
 
 		# Salmon run
-		for rec in self.salmon_run_schedule:
-			for map in rec['maps']:
-				if (not map['stageid']) or (not map['image']):
-					continue  # Missing required fields
+		for k in ['SR']:
+			for rec in self.schedules[k]:
+				for map in rec['maps']:
+					if (not map['stageid']) or (not map['image']):
+						continue  # Missing required fields
 
-				key = f"{map['stageid']}.png"
-				if self.image_cache_sr_maps.is_fresh(key):
-					continue  # Already fresh
+					key = f"{map['stageid']}.png"
+					if self.image_cache_sr_maps.is_fresh(key):
+						continue  # Already fresh
 
-				print(f"Caching SR map image stageid {map['stageid']} name '{map['name']}' image-url {map['image']}")
-				response = requests.get(map['image'], stream=True)
-				self.image_cache_sr_maps.add_http_response(key, response)
+					print(f"Caching SR map image stageid {map['stageid']} name '{map['name']}' image-url {map['image']}")
+					response = requests.get(map['image'], stream=True)
+					self.image_cache_sr_maps.add_http_response(key, response)
 
-			for weapon in rec['weapons']:
-				if (not weapon['name']) or (not weapon['image']):
-					continue  # Missing required fields
+				for weapon in rec['weapons']:
+					if (not weapon['name']) or (not weapon['image']):
+						continue  # Missing required fields
 
-				key = f"weapon-{hashlib.sha1(weapon['name'].encode('utf-8')).hexdigest()}.png"
-				if self.image_cache_sr_weapons.is_fresh(key):
-					continue  # Already fresh
+					key = f"weapon-{hashlib.sha1(weapon['name'].encode('utf-8')).hexdigest()}.png"
+					if self.image_cache_sr_weapons.is_fresh(key):
+						continue  # Already fresh
 
-				print(f"Caching SR weapon name '{weapon['name']}' key '{key}' image-url {weapon['image']}")
-				response = requests.get(weapon['image'], stream=True)
-				self.image_cache_sr_weapons.add_http_response(key, response)
+					print(f"Caching SR weapon name '{weapon['name']}' key '{key}' image-url {weapon['image']}")
+					response = requests.get(weapon['image'], stream=True)
+					self.image_cache_sr_weapons.add_http_response(key, response)
