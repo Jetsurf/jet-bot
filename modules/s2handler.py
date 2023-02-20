@@ -69,7 +69,7 @@ class S2Handler():
 			if theServer == None:
 				continue
 
-			theChannel = theServer.get_channel_or_thread(channelid)
+			theChannel = theServer.get_channel_or_thread(feed['channelid'])
 			if theChannel is None:
 				continue
 
