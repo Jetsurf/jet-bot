@@ -236,7 +236,7 @@ class S3Schedule():
 					schedules[s] = []
 
 			self.schedules = schedules
-			self.updatetime = updaterow['updatetime']
+			self.updatetime = updaterow['updatetime'] if updaterow else None
 
 	def cache_images(self):
 		# PvP
