@@ -780,26 +780,19 @@ async def on_ready():
 	global friendCodes, s3Handler
 
 	if not doneStartup:
-		print('Logged in as,', client.user.name, client.user.id)
-
-		#This is needed due to no prsence intent, prod bot needs to find the devs in its primary server
-		print(f"Chunking home server ({str(configData['home_server'])}) to find owners")
-		await client.get_guild(int(configData['home_server'])).chunk()
+		print(f"Logged in as {client.user.name}#{client.user.discriminator} id {client.user.id}")
 
 		#Get owners from Discord team api
 		print("Loading owners...")
 		theapp = await client.application_info()
 		if theapp.team:
-			ownerids = [x.id for x in theapp.team.members]
+			for mem in theapp.team.members:
+				owners.append(client.get_user(mem.id))
 		else:
-			ownerids = [theapp.owner.id]
+			owners = [theapp.owner]
 
-		for mem in client.get_all_members():
-			if mem.id in ownerids:
-				owners.append(mem)
-				print(f"Loaded owner: {str(mem.name)}")
-			if len(owners) == len(ownerids):
-				break
+		for owner in owners:
+			print(f"  Loaded owner: {str(owner.name)}#{str(owner.discriminator)} id {owner.id}")
 	else:
 		print('RECONNECT TO DISCORD')
 

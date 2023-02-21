@@ -6,7 +6,6 @@
 	"mysql_user"	: "",
 	"mysql_pw"	: "",
 	"mysql_db"	: "",
-	"home_server"	: "",
 	"hosted_url"	: "https://db-files.crmea.de",
 	"web_dir"	: "",
 	"nso_userid"    : ""
