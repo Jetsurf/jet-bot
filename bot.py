@@ -773,6 +773,28 @@ async def setNickname(guild):
 
 	return
 
+async def retrieveOwners():
+	global client, owners
+
+	owners = []
+	print("Retrieving bot owners...")
+
+	app = await client.application_info()  # Get owners from Discord team api
+	if app.team:
+		for mem in app.team.members:
+			owner = client.get_user(mem.id)
+			if not owner:
+				printf(f"  Can't get user object for team member {str(mem.name)}#{str(mem.discriminator)} id {mem.id}")
+			else:
+				owners.append(owner)
+	else:
+		owners = [app.owner]
+
+	for owner in owners:
+		print(f"  Loaded owner: {str(owner.name)}#{str(owner.discriminator)} id {owner.id}")
+
+	return
+
 @client.event
 async def on_ready():
 	global client, mysqlHandler, serverUtils, serverVoices, splat2info, configData, ownerCmds
@@ -782,17 +804,7 @@ async def on_ready():
 	if not doneStartup:
 		print(f"Logged in as {client.user.name}#{client.user.discriminator} id {client.user.id}")
 
-		#Get owners from Discord team api
-		print("Loading owners...")
-		theapp = await client.application_info()
-		if theapp.team:
-			for mem in theapp.team.members:
-				owners.append(client.get_user(mem.id))
-		else:
-			owners = [theapp.owner]
-
-		for owner in owners:
-			print(f"  Loaded owner: {str(owner.name)}#{str(owner.discriminator)} id {owner.id}")
+		await retrieveOwners()
 	else:
 		print('RECONNECT TO DISCORD')
 
