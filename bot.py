@@ -199,6 +199,8 @@ async def cmdGithub(ctx):
 async def cmdHelp(ctx):
 	await ctx.respond("Help Menu:", view=serverutils.HelpMenuView(f"{dirname}/help"))
 
+# --- Admin commands ---
+
 @adminAnnounceCmds.command(name='set', description="Sets a chat channel to receive announcements from my developers")
 async def cmdAnnounceAdd(ctx, channel: Option(discord.TextChannel, "Channel to set to receive announcements", required=True)):
 	if ctx.guild == None:
@@ -237,7 +239,7 @@ async def cmdDMRemove(ctx):
 		await ctx.respond("You aren't a guild administrator")
 
 @adminS2feedCmds.command(name='create', description="Sets up a Splatoon 2 rotation feed for a channel")
-async def cmdAdminFeed(ctx, maps: Option(bool, "Enable maps in the feed?", required=True), sr: Option(bool, "Enable Salmon Run in the feed?", required=True), gear: Option(bool, "Enable gear in the feed?", required=True)):
+async def cmdAdminS2FeedCreate(ctx, maps: Option(bool, "Enable maps in the feed?", required=True), sr: Option(bool, "Enable Salmon Run in the feed?", required=True), gear: Option(bool, "Enable gear in the feed?", required=True)):
 	if ctx.guild == None:
 		await ctx.respond("Can't DM me with this command.")
 		return
@@ -246,18 +248,18 @@ async def cmdAdminFeed(ctx, maps: Option(bool, "Enable maps in the feed?", requi
 		if not map and not sr and not gear:
 			await ctx.respond("Not going to create a feed with nothing in it.")
 		else:
-			await serverUtils.createFeed(ctx, args=[ maps, sr, gear, False ])
+			await s2Handler.cmdAdminS2FeedCreate(ctx, args = {"maps": maps, "sr": sr, "gear": gear})
 	else:
 		await ctx.respond("You aren't a guild administrator", ephemeral=True)
 
-@adminS2feedCmds.command(name='delete', description="Deletes a feed from a channel")
-async def cmdAdminDeleteFeed(ctx):
+@adminS2feedCmds.command(name='delete', description="Deletes an S2 feed from a channel")
+async def cmdAdminS2FeedDelete(ctx):
 	if ctx.guild == None:
 		await ctx.respond("Can't DM me with this command.")
 		return
 
 	if await checkIfAdmin(ctx):
-		await serverUtils.deleteFeed(ctx)
+		await s2Handler.cmdAdminS2FeedDelete(ctx)
 	else:
 		await ctx.respond("You aren't a guild administrator", ephemeral=True)
 

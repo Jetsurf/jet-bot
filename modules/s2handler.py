@@ -1103,3 +1103,22 @@ class S2Handler():
 				await ctx.respond(out)
 		else:
 			await ctx.respond("Unknown subcommand. Try 'weapons help'")
+
+	async def cmdAdminS2FeedCreate(self, ctx, args):
+		async with self.sqlBroker.context() as sql:
+			await sql.query("REPLACE INTO s2_feeds (serverid, channelid, maps, sr, gear) VALUES (%s, %s, %s, %s, %s)", (ctx.guild.id, ctx.channel.id, int(args['maps'] == True), int(args['sr'] == True), int(args['gear'] == True)))
+
+		await ctx.respond("S2 feed created! Feed will start when the next rotation happens.")
+		return True
+
+	async def cmdAdminS2FeedDelete(self, ctx):
+		async with self.sqlBroker.context() as sql:
+			feed = await sql.query_first("SELECT * FROM s2_feeds WHERE (serverid = %s) AND (channelid = %s)", (ctx.guild.id, ctx.channel.id,))
+			if feed is None:
+				await ctx.respond("There is no S2 feed set up for this channel.")
+				return False
+
+			await sql.query_first("DELETE FROM s2_feeds WHERE (serverid = %s) AND (channelid = %s)", (ctx.guild.id, ctx.channel.id,))
+
+		await ctx.respond("Ok, S2 deleted feed.")
+		return True
