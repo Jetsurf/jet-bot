@@ -9,6 +9,16 @@ class MysqlSchema():
 
 		cur = await self.sqlBroker.connect()
 
+		if await self.sqlBroker.hasTable(cur, 'feeds'):
+			print("Renaming table 'feeds' to 's2_feeds'...")
+			await cur.execute("RENAME TABLE feeds TO s2_feeds")
+			await self.sqlBroker.c_commit(cur)
+
+		if await self.sqlBroker.hasTable(cur, 'storedms'):
+			print("Renaming table 'storedms' to 's2_storedms'...")
+			await cur.execute("RENAME TABLE storedms TO s2_storedms")
+			await self.sqlBroker.c_commit(cur)
+
 		if await self.sqlBroker.hasTable(cur, 'nso_app_version'):
 			print("Removing table 'nso_app_version'...")
 			await cur.execute("DROP TABLE nso_app_version")
@@ -40,11 +50,11 @@ class MysqlSchema():
 			)
 			await self.sqlBroker.c_commit(cur)
 
-		if not await self.sqlBroker.hasTable(cur, 'feeds'):
-			print("Creating table 'feeds'...")
+		if not await self.sqlBroker.hasTable(cur, 's2_feeds'):
+			print("Creating table 's2_feeds'...")
 			await cur.execute(
 			"""
-			CREATE TABLE `feeds` (
+			CREATE TABLE `s2_feeds` (
 			`serverid` bigint unsigned NOT NULL,
   			`channelid` bigint unsigned NOT NULL,
   			`maps` TINYINT NOT NULL,
@@ -72,17 +82,17 @@ class MysqlSchema():
 			)
 			await self.sqlBroker.c_commit(cur)
 
-		if not await self.sqlBroker.hasKey(cur, 'feeds', 'serverid') or not await self.sqlBroker.hasKey(cur, 'feeds', 'channelid'):
+		if not await self.sqlBroker.hasKey(cur, 's2_feeds', 'serverid') or not await self.sqlBroker.hasKey(cur, 's2_feeds', 'channelid'):
 			print("Updating keys on table 'feeds'...")
 			await cur.execute("ALTER TABLE feeds MODIFY serverid BIGINT unsigned NOT NULL, MODIFY channelid BIGINT unsigned NOT NULL")
 			await cur.execute("ALTER TABLE feeds ADD PRIMARY KEY (`serverid`, `channelid`)")
 			await self.sqlBroker.c_commit(cur)
 
-		if not await self.sqlBroker.hasTable(cur, 'storedms'):
-			print("Creating table 'storedms'...")
+		if not await self.sqlBroker.hasTable(cur, 's2_storedms'):
+			print("Creating table 's2_storedms'...")
 			await cur.execute(
 			"""
-			CREATE TABLE `storedms` (
+			CREATE TABLE `s2_storedms` (
   			`clientid` bigint unsigned NOT NULL,
   			`serverid` bigint unsigned NOT NULL,
   			`ability` varchar(25) COLLATE utf8mb4_general_ci DEFAULT NULL,
