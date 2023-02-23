@@ -784,9 +784,9 @@ async def retrieveOwners():
 	app = await client.application_info()  # Get owners from Discord team api
 	if app.team:
 		for mem in app.team.members:
-			owner = client.get_user(mem.id)
+			owner = await client.fetch_user(mem.id)
 			if not owner:
-				printf(f"  Can't get user object for team member {str(mem.name)}#{str(mem.discriminator)} id {mem.id}")
+				print(f"  Can't get user object for team member {str(mem.name)}#{str(mem.discriminator)} id {mem.id}")
 			else:
 				owners.append(owner)
 	else:
