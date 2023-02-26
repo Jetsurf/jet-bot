@@ -80,7 +80,6 @@ class Nsotoken():
 	def __init__(self, client, config, mysqlhandler, stringCrypt, friendCodes):
 		self.client = client
 		self.config = config
-		self.session = requests.Session()
 		self.sqlBroker = mysqlhandler
 		self.stringCrypt = stringCrypt
 		self.friendCodes = friendCodes
