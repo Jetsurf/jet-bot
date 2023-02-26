@@ -1,5 +1,5 @@
 import re, os, time
-import requests
+import asyncio
 import aiohttp
 import io
 
@@ -7,11 +7,16 @@ DEFAULT_MAX_AGE = 3600 * 24 * 90  # 90 days
 
 class Cache():
 	def __init__(self, manager, path, max_age):
-		self.manager   = manager
-		self.path      = path
-		self.max_age   = max_age or DEFAULT_MAX_AGE
-		self.fresh_age = int(self.max_age * 0.9)
+		self.manager     = manager
+		self.path        = path
+		self.max_age     = max_age or DEFAULT_MAX_AGE
+		self.fresh_age   = int(self.max_age * 0.9)
+		self.http_client = None
 		os.makedirs(self.path, exist_ok = True)
+
+	def __del__(self):
+		if self.http_client:
+			asyncio.create_task(self.http_client.close())
 
 	def key_path(self, key):
 		if not CacheManager.key_name_valid(key):
@@ -147,6 +152,13 @@ class Cache():
 
 		file.close()
 		os.rename(tmppath, path)
+
+	async def add_url(self, key, url):
+		if self.http_client is None:
+			self.http_client = aiohttp.ClientSession()
+
+		response = await self.http_client.get(url)
+		await self.add_http_response_async(key, response)
 
 	# Takes a byte string object.
 	def add_bytes(self, key, bytes):

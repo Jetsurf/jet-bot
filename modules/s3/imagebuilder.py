@@ -10,7 +10,7 @@ import hashlib
 
 class S3ImageBuilder():
 	@classmethod
-	def createBattleDetailsImage(cls, details, weapon_thumbnail_cache, fontbroker):
+	async def createBattleDetailsImage(cls, details, weapon_thumbnail_cache, fontbroker):
 		typeNames = {"BANKARA": "Anarchy", "FEST": "Splatfest", "X_MATCH": "X Battle", "LEAGUE": "League", "PRIVATE": "Private Battle"}
 		anarchyTypeNames = {"OPEN": "Open", "CHALLENGE": "Series"}
 		festTypeNames = {"NORMAL": "Normal", "DECUPLE": "10x", "DRAGON": "100x", "DOUBLE_DRAGON": "333x"}
@@ -46,8 +46,7 @@ class S3ImageBuilder():
 						continue  # Already fresh
 
 					print(f"Caching weapon thumbnail key '{key}' image-url {url}")
-					response = requests.get(url, stream=True)
-					weapon_thumbnail_cache.add_http_response(key, response)
+					await weapon_thumbnail_cache.add_url(key, url)
 
 		fonts = {}
 		fonts['s2'] = fontbroker.truetype("s2.otf", size=24)
