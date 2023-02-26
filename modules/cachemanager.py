@@ -1,4 +1,6 @@
 import re, os, time
+import requests
+import aiohttp
 import io
 
 DEFAULT_MAX_AGE = 3600 * 24 * 90  # 90 days
@@ -122,6 +124,25 @@ class Cache():
 			return  # Couldn't create file
 
 		for buf in response.iter_content(chunk_size = None):
+			file.write(buf)
+
+		file.close()
+		os.rename(tmppath, path)
+
+	# Takes an aiohttp.ClientResponse object.
+	async def add_http_response_async(self, key, response):
+		if not response.ok:
+			print(f"Tried to cache unsuccessful HTTP response: {response.status_code} {response.reason} url '{response.url}'")
+			return
+
+		path = self.key_path(key)
+		tmppath = path + ".part"
+
+		file = self.create_file_exclusive(tmppath)
+		if file is None:
+			return  # Couldn't create file
+
+		async for buf in response.content.iter_chunked(4096):
 			file.write(buf)
 
 		file.close()

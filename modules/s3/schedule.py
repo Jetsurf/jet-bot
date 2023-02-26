@@ -1,5 +1,6 @@
 import discord
 import asyncio
+import aiohttp
 import time
 import json
 import requests
@@ -208,7 +209,7 @@ class S3Schedule():
 
 		await self.save()
 
-		self.cache_images()
+		await self.cache_images()
 
 	async def save(self):
 		async with self.sqlBroker.context() as sql:
@@ -238,46 +239,48 @@ class S3Schedule():
 			self.schedules = schedules
 			self.updatetime = updaterow['updatetime'] if updaterow else None
 
-	def cache_images(self):
-		# PvP
-		for k in ['TW', 'SF', 'AO', 'AS', 'XB']:
-			for rec in self.schedules[k]:
-				for map in rec['maps']:
-					if (not map['stageid']) or (not map['image']):
-						continue  # Missing required fields
+	async def cache_images(self):
+		async with aiohttp.ClientSession() as client:
 
-					key = f"{map['stageid']}.png"
-					if self.image_cache_small.is_fresh(key):
-						continue  # Already fresh
+			# PvP
+			for k in ['TW', 'SF', 'AO', 'AS', 'XB']:
+				for rec in self.schedules[k]:
+					for map in rec['maps']:
+						if (not map['stageid']) or (not map['image']):
+							continue  # Missing required fields
 
-					print(f"Caching map image stageid {map['stageid']} name '{map['name']}' image-url {map['image']}")
-					response = requests.get(map['image'], stream=True)
-					self.image_cache_small.add_http_response(key, response)
+						key = f"{map['stageid']}.png"
+						if self.image_cache_small.is_fresh(key):
+							continue  # Already fresh
+
+						print(f"Caching map image stageid {map['stageid']} name '{map['name']}' image-url {map['image']}")
+						response = await client.get(map['image'])
+						await self.image_cache_small.add_http_response_async(key, response)
 
 
-		# Salmon run
-		for k in ['SR']:
-			for rec in self.schedules[k]:
-				for map in rec['maps']:
-					if (not map['stageid']) or (not map['image']):
-						continue  # Missing required fields
+			# Salmon run
+			for k in ['SR']:
+				for rec in self.schedules[k]:
+					for map in rec['maps']:
+						if (not map['stageid']) or (not map['image']):
+							continue  # Missing required fields
 
-					key = f"{map['stageid']}.png"
-					if self.image_cache_sr_maps.is_fresh(key):
-						continue  # Already fresh
+						key = f"{map['stageid']}.png"
+						if self.image_cache_sr_maps.is_fresh(key):
+							continue  # Already fresh
 
-					print(f"Caching SR map image stageid {map['stageid']} name '{map['name']}' image-url {map['image']}")
-					response = requests.get(map['image'], stream=True)
-					self.image_cache_sr_maps.add_http_response(key, response)
+						print(f"Caching SR map image stageid {map['stageid']} name '{map['name']}' image-url {map['image']}")
+						response = await client.get(map['image'])
+						await self.image_cache_sr_maps.add_http_response_async(key, response)
 
-				for weapon in rec['weapons']:
-					if (not weapon['name']) or (not weapon['image']):
-						continue  # Missing required fields
+					for weapon in rec['weapons']:
+						if (not weapon['name']) or (not weapon['image']):
+							continue  # Missing required fields
 
-					key = f"weapon-{hashlib.sha1(weapon['name'].encode('utf-8')).hexdigest()}.png"
-					if self.image_cache_sr_weapons.is_fresh(key):
-						continue  # Already fresh
+						key = f"weapon-{hashlib.sha1(weapon['name'].encode('utf-8')).hexdigest()}.png"
+						if self.image_cache_sr_weapons.is_fresh(key):
+							continue  # Already fresh
 
-					print(f"Caching SR weapon name '{weapon['name']}' key '{key}' image-url {weapon['image']}")
-					response = requests.get(weapon['image'], stream=True)
-					self.image_cache_sr_weapons.add_http_response(key, response)
+						print(f"Caching SR weapon name '{weapon['name']}' key '{key}' image-url {weapon['image']}")
+						response = await client.get(weapon['image'])
+						await self.image_cache_sr_weapons.add_http_response_async(key, response)
