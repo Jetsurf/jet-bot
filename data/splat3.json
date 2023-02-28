@@ -812,6 +812,27 @@
       "uncommon": "Sub Power Up"
     },
     {
+      "common": "Special Saver",
+      "id": "B18",
+      "names": {
+        "de-DE": "Zekkori",
+        "en-GB": "Z+F",
+        "en-US": "Z+F",
+        "es-ES": "Ezkkor",
+        "es-MX": "ZyS",
+        "fr-CA": "E+A",
+        "fr-FR": "E+F",
+        "it-IT": "E+T",
+        "ja-JP": "\u30a8\u30be\u30c3\u30b3\u30ea\u30fc",
+        "ko-KR": "\uc81c\ucf54\ud540",
+        "nl-NL": "Zekkofin",
+        "ru-RU": "\u0419\u043e\u0436\u043a\u043e\u0422\u044e\u0440",
+        "zh-CN": "\u6cfd\u9177\u6696\u6d41",
+        "zh-TW": "\u6fa4\u9177\u6696\u6d41"
+      },
+      "uncommon": "Ink Recovery Up"
+    },
+    {
       "common": "Intensify Action",
       "id": "B19",
       "names": {
