@@ -613,7 +613,7 @@ class S2Handler():
 			merchitems = []
 			for i in range(0, len(self.storeJSON['merchandises'])):
 				merch = self.storeJSON['merchandises'][i]
-				merchitems.append(splatinfo.SplatStoreMerch(merch['gear']['name'], i, merch['id']))
+				merchitems.append(self.splatInfo.SplatStoreMerch(merch['gear']['name'], i, merch['id']))
 
 			# Try the match
 			match = self.splatInfo.matchItems("store merchandise", merchitems, " ".join(args))
