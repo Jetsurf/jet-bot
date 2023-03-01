@@ -598,7 +598,12 @@ class S3ImageBuilder():
 		SHW, BUF = 70, 10
 		img = Image.new("RGBA", (IMGW, IMGH), (0, 0, 0, 0))
 
-		weapReq = requests.get(weapon['image2d']['url'])
+		if 'image2d' in weapon:
+			weaponUrl = weapon['image2d']['url']
+		else:
+			weaponUrl = weapon['image']['url']
+
+		weapReq = requests.get(weaponUrl)
 		weapImg = Image.open(BytesIO(weapReq.content)).convert("RGBA")
 		weapImg = weapImg.resize((IMGW, IMGW), Image.ANTIALIAS)
 		img.paste(weapImg, (10, 0), weapImg)
