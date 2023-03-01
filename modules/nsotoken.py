@@ -85,17 +85,36 @@ class Nsotoken():
 		self.friendCodes = friendCodes
 		self.imink = IMink("Jet-bot/1.0.0 (discord=jetsurf#8514)")  # TODO: Figure out bot owner automatically
 		self.nso_clients = {}
+		self.init_complete = False
 
 		# Set up scheduled tasks
 		self.scheduler = AsyncIOScheduler()
 		self.scheduler.add_job(self.nso_client_cleanup, 'interval', minutes = 5)
 		self.scheduler.start()
 
+		# Do async init
+		asyncio.create_task(self.async_init())
+
+	async def async_init(self):
+		global_data = await self.nso_load_global_data()
+		NSO_API.load_global_data(global_data)
+		self.init_complete = True
+
+	# Wait for the class's async_init to complete.
+	async def wait_for_init(self):
+		for i in range(5):
+			if self.init_complete:
+				return
+			await asyncio.sleep(1)
+
 	# Returns NSO client for the bot account, or None if there was a problem.
 	async def get_bot_nso_client(self):
 		if not self.config.get('nso_userid'):
 			print("No nso_userid configured, can't get bot NSO client")
 			return None
+
+		# Wait for async init
+		await self.wait_for_init()
 
 		# Might get called before SQL has connected, so await connection
 		await self.sqlBroker.wait_for_startup()
@@ -112,6 +131,9 @@ class Nsotoken():
 
 	# Given a userid, returns an NSO client for that user.
 	async def get_nso_client(self, userid):
+		# Wait for async init
+		await self.wait_for_init()
+
 		userid = int(userid)
 
 		# If we already have a client for this user, just return it
@@ -206,6 +228,8 @@ class Nsotoken():
 		return
 
 	async def nso_load_global_data(self):
+		await self.sqlBroker.wait_for_startup()
+
 		async with self.sqlBroker.context() as sql:
 			row = await sql.query_first("SELECT jsondata FROM nso_global_data LIMIT 1")
 
