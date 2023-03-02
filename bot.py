@@ -982,13 +982,17 @@ async def on_message(message):
 	cmd = parsed['cmd']
 	args = parsed['args']
 
-	if cmd == 'eval' and message.author in owners:
-		await ownerCmds.eval(context, ' '.join(args))
-	elif cmd == 'getcons' and message.author in owners:
-		await mysqlHandler.printCons(message)
-	elif cmd == 'eatcon' and message.author in owners and dev:
-		await mysqlHandler.connect()
-		await message.channel.send("Om nom nom, ate a MySQL connection...")
+	# Owner commands that can work in channels
+	if message.author in owners:
+		if cmd == 'eval':
+			await ownerCmds.eval(context, ' '.join(args))
+		elif cmd == 'getcons':
+			await mysqlHandler.printCons(message)
+		elif cmd == 'eatcon' and dev:
+			await mysqlHandler.connect()
+			await message.channel.send("Om nom nom, ate a MySQL connection...")
+		elif cmd == 'nsoinfo':
+			await ownerCmds.cmdNsoInfo(context, nsoTokens)
 
 	sys.stdout.flush()
 	sys.stderr.flush()
