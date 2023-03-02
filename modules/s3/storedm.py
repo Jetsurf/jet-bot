@@ -7,29 +7,34 @@ from .imagebuilder import S3ImageBuilder
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
-class s3OrderView(discord.ui.View):
-
-	def __init__(self, gear, nsotoken, user, splat3info):
+class S3OrderView(discord.ui.View):
+	def __init__(self, gear, nsoToken, showOrderButton, user, splat3info):
 		super().__init__()
-		self.nsoToken = nsotoken
+		self.nsoToken = nsoToken
 		self.user = user
 		self.confirm = False
 		self.timeout = 14300.0
 		self.gear = gear
 		self.splat3info = splat3info
 
-	async def initView(self):
-		orderBut = discord.ui.Button(label="Order Item")
-		self.nso = await self.nsoToken.get_nso_client(self.user.id)
-		if self.nso.is_logged_in():
-			orderBut.callback = self.orderItem
-		else:
-			self.stop()
-			return None
-		self.add_item(orderBut)
+		# Add order button
+		if showOrderButton:
+			orderButton = discord.ui.Button(label = "Order Item", style = discord.ButtonStyle.primary)
+			orderButton.callback = self.orderItem
+			self.add_item(orderButton)
+
+		# Add app button
+		url = "https://s.nintendo.com/av5ja-lp1/znca/game/4834290508791808?p=/gesotown/" + gear['id']
+		appButton = discord.ui.Button(label = 'NSO App', style = discord.ButtonStyle.gray, url = url)
+		self.add_item(appButton)
 
 	async def orderItem(self, interaction: discord.Interaction):
-		req = self.nso.s3.do_store_order(self.gear['id'], self.confirm)
+		nsoclient = await self.nsoToken.get_nso_client(self.user.id)
+		if (nsoclient is None) or (not nsoclient.is_logged_in()):
+			await interaction.response.send_message("Sorry, I can't order this item for you unless I have an active NSO token for you. You can use `/token` to set one up.")
+			return
+
+		req = nsoclient.s3.do_store_order(self.gear['id'], self.confirm)
 		if req['data']['orderGesotownGear']['userErrors'] == None:
 			await interaction.response.send_message("Ordered!")
 			self.clear_items()
@@ -45,7 +50,7 @@ class S3StoreHandler():
 	def __init__(self, client, nsoToken, splat3info, mysqlHandler, configData, cachemanager):
 		self.client = client
 		self.sqlBroker = mysqlHandler
-		self.nsotoken = nsoToken
+		self.nsoToken = nsoToken
 		self.splat3info = splat3info
 		self.scheduler = AsyncIOScheduler()
 		self.configData = configData
@@ -64,7 +69,7 @@ class S3StoreHandler():
 
 	async def cacheS3JSON(self):
 		print("Updating cached S3 json...")
-		nso = await self.nsotoken.get_bot_nso_client()
+		nso = await self.nsoToken.get_bot_nso_client()
 		if not nso:
 			return  # No bot account configured
 		elif not nso.is_logged_in():
@@ -137,10 +142,15 @@ class S3StoreHandler():
 		return
 
 	async def handleDM(self, user, gear):
+		# Get an NSO client for this user
+		nsoclient = await self.nsoToken.get_nso_client(user.id)
+		showOrderButton = False
+		if (not nsoclient is None) and (nsoclient.is_logged_in()):
+			showOrderButton = True
+
 		brand = self.splat3info.brands.getItemByName(gear['gear']['brand']['name'])
 
-		view = s3OrderView(gear, self.nsotoken, user, self.splat3info)
-		await view.initView()
+		view = S3OrderView(gear, self.nsoToken, showOrderButton, user, self.splat3info)
 
 		embed = S3EmbedBuilder.createStoreEmbed(gear, brand, "Gear you wanted to be notified about has appeared in the Splatnet 3 shop!")
 
@@ -252,7 +262,7 @@ class S3StoreHandler():
 		theTriggers = await cur.fetchall()
 		theTriggers = json.loads(theTriggers[0][0])
 
-		flag = False		
+		flag = False
 		#Search abilities
 		if flag != True:
 			match1 = self.splat3info.abilities.matchItem(trigger)
