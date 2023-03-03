@@ -9,12 +9,12 @@ class MysqlSchema():
 
 		cur = await self.sqlBroker.connect()
 
-		if await self.sqlBroker.hasTable(cur, 'feeds'):
+		if await self.sqlBroker.hasTable(cur, 'feeds') and not await self.sqlBroker.hasTable(cur, 's2_feeds'):
 			print("Renaming table 'feeds' to 's2_feeds'...")
 			await cur.execute("RENAME TABLE feeds TO s2_feeds")
 			await self.sqlBroker.c_commit(cur)
 
-		if await self.sqlBroker.hasTable(cur, 'storedms'):
+		if await self.sqlBroker.hasTable(cur, 'storedms') and not await self.sqlBroker.hasTable(cur, 's2_storedms'):
 			print("Renaming table 'storedms' to 's2_storedms'...")
 			await cur.execute("RENAME TABLE storedms TO s2_storedms")
 			await self.sqlBroker.c_commit(cur)
