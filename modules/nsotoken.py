@@ -83,7 +83,7 @@ class Nsotoken():
 		self.sqlBroker = mysqlhandler
 		self.stringCrypt = stringCrypt
 		self.friendCodes = friendCodes
-		self.imink = IMink("Jet-bot/1.0.0 (discord=jetsurf#8514)")  # TODO: Figure out bot owner automatically
+		self.f_provider = IMink("Jet-bot/1.0.0 (discord=jetsurf#8514)")  # TODO: Figure out bot owner automatically
 		self.nso_clients = {}
 		self.init_complete = False
 
@@ -141,7 +141,7 @@ class Nsotoken():
 			return self.nso_clients[userid]
 
 		# Construct a new one for this user
-		nso = NSO_API(self.imink, userid)
+		nso = NSO_API(self.f_provider, userid)
 
 		# If we have keys, load them into the client
 		keys = await self.nso_client_load_keys(userid)
