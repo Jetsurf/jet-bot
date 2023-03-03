@@ -12,15 +12,13 @@ class FriendCodes:
 		return f"{match[1]}-{match[2]}-{match[3]}"
 
 	async def getFriendCode(self, userid):
-		cur = await self.sqlBroker.connect()
-		await cur.execute("SELECT encrypted_friend_code FROM friend_codes WHERE (userid = %s)", (userid,))
-		row = await cur.fetchone()
-		await self.sqlBroker.commit(cur)
+		async with self.sqlBroker.context() as sql:
+			row = await sql.query_first("SELECT encrypted_friend_code FROM friend_codes WHERE (userid = %s)", (userid,))
 
 		if row is None:
 			return None  # No friend code stored
 
-		ciphertext = row[0]
+		ciphertext = row['encrypted_friend_code']
 		plaintext = self.stringCrypt.decryptString(ciphertext)
 		return plaintext
 
@@ -35,8 +33,8 @@ class FriendCodes:
 
 		ciphertext = self.stringCrypt.encryptString(friend_code)
 
-		cur = await self.sqlBroker.connect()
-		await cur.execute("DELETE FROM friend_codes WHERE (userid = %s)", (userid,))
-		await cur.execute("INSERT INTO friend_codes (userid, updatetime, encrypted_friend_code) VALUES (%s, NOW(), %s)", (userid, ciphertext))
-		await self.sqlBroker.commit(cur)
+		async with self.sqlBroker.context() as sql:
+			await sql.query("DELETE FROM friend_codes WHERE (userid = %s)", (userid,))
+			await sql.query("INSERT INTO friend_codes (userid, updatetime, encrypted_friend_code) VALUES (%s, NOW(), %s)", (userid, ciphertext))
+
 		return

@@ -10,7 +10,7 @@ import hashlib
 
 class S3ImageBuilder():
 	@classmethod
-	def createBattleDetailsImage(cls, details, weapon_thumbnail_cache, font_broker):
+	async def createBattleDetailsImage(cls, details, weapon_thumbnail_cache, fontbroker):
 		typeNames = {"BANKARA": "Anarchy", "FEST": "Splatfest", "X_MATCH": "X Battle", "LEAGUE": "League", "PRIVATE": "Private Battle"}
 		anarchyTypeNames = {"OPEN": "Open", "CHALLENGE": "Series"}
 		festTypeNames = {"NORMAL": "Normal", "DECUPLE": "10x", "DRAGON": "100x", "DOUBLE_DRAGON": "333x"}
@@ -46,12 +46,11 @@ class S3ImageBuilder():
 						continue  # Already fresh
 
 					print(f"Caching weapon thumbnail key '{key}' image-url {url}")
-					response = requests.get(url, stream=True)
-					weapon_thumbnail_cache.add_http_response(key, response)
+					await weapon_thumbnail_cache.add_url(key, url)
 
 		fonts = {}
-		fonts['s2'] = font_broker.truetype("s2.otf", size=24)
-		fonts['s1'] = font_broker.truetype("s1.otf", size=24)
+		fonts['s2'] = fontbroker.truetype("s2.otf", size=24)
+		fonts['s1'] = fontbroker.truetype("s1.otf", size=24)
 
 		myTeam = details['data']['vsHistoryDetail']['myTeam']
 		otherTeams = details['data']['vsHistoryDetail']['otherTeams']
@@ -70,15 +69,15 @@ class S3ImageBuilder():
 			text = f"{typeNames.get(type, type)} \u2022 {festTypeNames.get(fest_type, fest_type)}"
 		else:
 			text = f"{typeNames.get(type, type)}"
-		draw.text((image.width / 2, yposition), text, text_color, font = fonts['s1'], anchor='mt')
-		bbox = draw.textbbox((image.width / 2, yposition), text, font = fonts['s1'], anchor='mt')
-		yposition = bbox[3]
+		font = fontbroker.truetype_for_width("s1.otf", 24, image.width, text)
+		draw.text((image.width / 2, yposition), text, text_color, font = font, anchor='mt')
+		yposition += font.size
 
 		# Mode and map
 		text = f"{modeNames.get(mode, mode)} \u2022 {map}"
-		draw.text((image.width / 2, yposition), text, text_color, font = fonts['s1'], anchor='mt')
-		bbox = draw.textbbox((image.width / 2, yposition), text, font = fonts['s1'], anchor='mt')
-		yposition = bbox[3]
+		font = fontbroker.truetype_for_width("s1.otf", 24, image.width, text)
+		draw.text((image.width / 2, yposition), text, text_color, font = font, anchor='mt')
+		yposition += font.size
 
 		# Score bar
 		if not myTeam['result'] is None:  # May be null if game was a draw
@@ -288,8 +287,10 @@ class S3ImageBuilder():
 
 		# Add first row time
 		yposition = header_height
-		cls.drawShadowedText(draw, (int(width / 2), yposition), cls.formatTimeWindow(timewindows[0]['starttime'], timewindows[0]['endtime'], now), (255, 255, 255), font = s1FontMed, anchor = 'mt')
-		yposition += s1FontMed.size
+		timeString = cls.formatTimeWindow(timewindows[0]['starttime'], timewindows[0]['endtime'], now)
+		timeFont = fontbroker.truetype_for_width("s1.otf", 36, width, timeString)
+		cls.drawShadowedText(draw, (int(width / 2), yposition), timeString, (255, 255, 255), font = timeFont, anchor = 'mt')
+		yposition += timeFont.size
 
 		# Add first row map/mode images
 		xposition = 0
@@ -338,8 +339,10 @@ class S3ImageBuilder():
 		for tw in timewindows[1:]:
 			# Add time
 			yposition += 15
-			cls.drawShadowedText(draw, (int(width / 2), yposition), cls.formatTimeWindow(tw['starttime'], tw['endtime'], now), (255, 255, 255), font = s1FontMed, anchor = 'mt')
-			yposition += s1FontMed.size
+			timeString = cls.formatTimeWindow(tw['starttime'], tw['endtime'], now)
+			timeFont = fontbroker.truetype_for_width("s1.otf", 36, width, timeString)
+			cls.drawShadowedText(draw, (int(width / 2), yposition), timeString, (255, 255, 255), font = timeFont, anchor = 'mt')
+			yposition += timeFont.size
 
 			ybase = yposition
 			for t in active_types:

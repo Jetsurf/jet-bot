@@ -134,7 +134,7 @@ class S3Handler():
 		weapon_thumbnail_cache = self.cachemanager.open("s3.weapons.small-2d")
 
 		try:
-			image_io = S3ImageBuilder.createBattleDetailsImage(details, weapon_thumbnail_cache, self.fonts)
+			image_io = await S3ImageBuilder.createBattleDetailsImage(details, weapon_thumbnail_cache, self.fonts)
 		except:
 			await ctx.respond("Could not render battle details! If problem persists, please complain (see /support).")
 			sys.stderr.write(f"*** Could not render battle details!\n")

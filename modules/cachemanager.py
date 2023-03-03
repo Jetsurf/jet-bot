@@ -1,15 +1,22 @@
 import re, os, time
+import asyncio
+import aiohttp
 import io
 
 DEFAULT_MAX_AGE = 3600 * 24 * 90  # 90 days
 
 class Cache():
 	def __init__(self, manager, path, max_age):
-		self.manager   = manager
-		self.path      = path
-		self.max_age   = max_age or DEFAULT_MAX_AGE
-		self.fresh_age = int(self.max_age * 0.9)
+		self.manager     = manager
+		self.path        = path
+		self.max_age     = max_age or DEFAULT_MAX_AGE
+		self.fresh_age   = int(self.max_age * 0.9)
+		self.http_client = None
 		os.makedirs(self.path, exist_ok = True)
+
+	def __del__(self):
+		if self.http_client:
+			asyncio.create_task(self.http_client.close())
 
 	def key_path(self, key):
 		if not CacheManager.key_name_valid(key):
@@ -126,6 +133,32 @@ class Cache():
 
 		file.close()
 		os.rename(tmppath, path)
+
+	# Takes an aiohttp.ClientResponse object.
+	async def add_http_response_async(self, key, response):
+		if not response.ok:
+			print(f"Tried to cache unsuccessful HTTP response: {response.status_code} {response.reason} url '{response.url}'")
+			return
+
+		path = self.key_path(key)
+		tmppath = path + ".part"
+
+		file = self.create_file_exclusive(tmppath)
+		if file is None:
+			return  # Couldn't create file
+
+		async for buf in response.content.iter_chunked(4096):
+			file.write(buf)
+
+		file.close()
+		os.rename(tmppath, path)
+
+	async def add_url(self, key, url):
+		if self.http_client is None:
+			self.http_client = aiohttp.ClientSession()
+
+		response = await self.http_client.get(url)
+		await self.add_http_response_async(key, response)
 
 	# Takes a byte string object.
 	def add_bytes(self, key, bytes):

@@ -37,7 +37,7 @@ class orderView(discord.ui.View):
 			await self.nsoHandler.orderGearCommand(interaction, args=['5'])
 			self.confirm=True
 
-class nsoHandler():
+class S2Handler():
 	def __init__(self, client, mysqlHandler, nsotoken, splatInfo, configData):
 		self.client = client
 		self.splatInfo = splatInfo
@@ -60,37 +60,25 @@ class nsoHandler():
 
 	async def doFeed(self):
 		#TODO: Future Update: Is it possible to put the orderid button into gear feeds. Expire the button after that rotation
-		cur = await self.sqlBroker.connect()
-		stmt = "SELECT * FROM feeds"
-		feeds = await cur.execute(stmt)
-		feeds = await cur.fetchall()
+		async with self.sqlBroker.context() as sql:
+			feeds = await sql.query("SELECT * FROM s2_feeds")
+
 		print(f"Processing: {str(len(feeds))} feeds")
-
-		for server in range(len(feeds)):
-			serverid = feeds[server][0]
-			channelid = feeds[server][1]
-			mapflag = feeds[server][2]
-			srflag = feeds[server][3]
-			gearflag = feeds[server][4]
-
-			theServer = self.client.get_guild(serverid)
+		for feed in feeds:
+			theServer = self.client.get_guild(feed['serverid'])
 			if theServer == None:
 				continue
 
-			theChannel = theServer.get_channel_or_thread(channelid)
+			theChannel = theServer.get_channel_or_thread(feed['channelid'])
 			if theChannel is None:
 				continue
 
 			try:
-				await theChannel.send(embed=await self.make_notification(bool(mapflag), bool(srflag), bool(gearflag)))
+				await theChannel.send(embed=await self.make_notification(bool(feed['maps']), bool(feed['sr']), bool(feed['gear'])))
 			except discord.Forbidden:
 				print(f"403 on feed, deleting feed from server: {theServer.id} and channel: {theChannel.id}")
-				stmt = 'DELETE FROM feeds WHERE serverid = %s AND channelid = %s'
-				await cur.execute(stmt, (theServer.id, theChannel.id, ))
-				print(f"Deleted {theServer.id} and channel {theChannel.id} from feeds")
-				await self.sqlBroker.c_commit(cur)
-
-		await self.sqlBroker.close(cur)
+				async with self.sqlBroker.context() as sql:
+					stmt = await sql.query('DELETE FROM s2_feeds WHERE serverid = %s AND channelid = %s', (theServer.id, theChannel.id, ))
 
 	async def make_notification(self, mapflag, srflag, gearflag):
 		embed = discord.Embed(colour=0x3FFF33)
@@ -103,14 +91,13 @@ class nsoHandler():
 			league = data['league']
 
 			embed.add_field(name="Maps", value="Maps currently on rotation", inline=False)
-			cur = await self.sqlBroker.connect()
-			await cur.execute("SELECT turfwar, ranked, league FROM emotes WHERE myid = %s", (self.client.user.id,))
-			emotes = await cur.fetchone()
-			await self.sqlBroker.commit(cur)
 
-			embed.add_field(name=f"{emotes[0] if emotes != None else ''} Turf War", value=f"{turf['stage_a']['name']}\n{turf['stage_b']['name']}", inline=True)
-			embed.add_field(name=f"{emotes[1] if emotes != None else ''} Ranked: {ranked['rule']['name']}", value=f"{ranked['stage_a']['name']}\n{ranked['stage_b']['name']}", inline=True)
-			embed.add_field(name=f"{emotes[2] if emotes != None else ''} League: {league['rule']['name']}", value=f"{league['stage_a']['name']}\n{league['stage_b']['name']}", inline=True)
+			async with self.sqlBroker.context() as sql:
+				emotes = await sql.query_first("SELECT * FROM emotes WHERE (myid = %s)", (self.client.user.id,))
+
+			embed.add_field(name=f"{emotes['turfwar'] if emotes != None else ''} Turf War", value=f"{turf['stage_a']['name']}\n{turf['stage_b']['name']}", inline=True)
+			embed.add_field(name=f"{emotes['ranked'] if emotes != None else ''} Ranked: {ranked['rule']['name']}", value=f"{ranked['stage_a']['name']}\n{ranked['stage_b']['name']}", inline=True)
+			embed.add_field(name=f"{emotes['league'] if emotes != None else ''} League: {league['rule']['name']}", value=f"{league['stage_a']['name']}\n{league['stage_b']['name']}", inline=True)
 
 		if srflag:
 			flag = 0
@@ -220,11 +207,11 @@ class nsoHandler():
 		cur = await self.sqlBroker.connect()
 
 		if match1.isValid():
-			stmt = "SELECT COUNT(*) FROM storedms WHERE clientid = %s AND ability = %s"
+			stmt = "SELECT COUNT(*) FROM s2_storedms WHERE clientid = %s AND ability = %s"
 		elif match2.isValid():
-			stmt = "SELECT COUNT(*) FROM storedms WHERE clientid = %s AND brand = %s"
+			stmt = "SELECT COUNT(*) FROM s2_storedms WHERE clientid = %s AND brand = %s"
 		else:
-			stmt = "SELECT COUNT(*) FROM storedms WHERE clientid = %s AND gearname = %s"
+			stmt = "SELECT COUNT(*) FROM s2_storedms WHERE clientid = %s AND gearname = %s"
 
 		await cur.execute(stmt, (str(ctx.user.id), term,))
 		count = await cur.fetchone()
@@ -239,7 +226,7 @@ class nsoHandler():
 			await self.sqlBroker.close(cur)
 			return
 
-		stmt = "SELECT COUNT(*) FROM storedms WHERE clientid = %s"
+		stmt = "SELECT COUNT(*) FROM s2_storedms WHERE clientid = %s"
 		await cur.execute(stmt, (str(ctx.user.id),))
 		count = await cur.fetchone()
 		if count[0] == 0:
@@ -250,11 +237,11 @@ class nsoHandler():
 				return
 
 		if match1.isValid():
-			stmt = 'INSERT INTO storedms (clientid, serverid, ability) VALUES(%s, %s, %s)'
+			stmt = 'INSERT INTO s2_storedms (clientid, serverid, ability) VALUES(%s, %s, %s)'
 		elif match2.isValid():
-			stmt = 'INSERT INTO storedms (clientid, serverid, brand) VALUES(%s, %s, %s)'
+			stmt = 'INSERT INTO s2_storedms (clientid, serverid, brand) VALUES(%s, %s, %s)'
 		else:
-			stmt = 'INSERT INTO storedms (clientid, serverid, gearname) VALUES(%s, %s, %s)'
+			stmt = 'INSERT INTO s2_storedms (clientid, serverid, gearname) VALUES(%s, %s, %s)'
 
 		await cur.execute(stmt, (str(ctx.user.id), str(ctx.guild.id), term,))
 		await self.sqlBroker.commit(cur)
@@ -323,21 +310,21 @@ class nsoHandler():
 		cur = await self.sqlBroker.connect()
 
 		if match1.isValid():
-			stmt = "SELECT COUNT(*) FROM storedms WHERE clientid = %s AND ability = %s"
+			stmt = "SELECT COUNT(*) FROM s2_storedms WHERE clientid = %s AND ability = %s"
 		elif match2.isValid():
-			stmt = "SELECT COUNT(*) FROM storedms WHERE clientid = %s AND brand = %s"
+			stmt = "SELECT COUNT(*) FROM s2_storedms WHERE clientid = %s AND brand = %s"
 		else:
-			stmt = "SELECT COUNT(*) FROM storedms WHERE clientid = %s AND gearname = %s"
+			stmt = "SELECT COUNT(*) FROM s2_storedms WHERE clientid = %s AND gearname = %s"
 
 		await cur.execute(stmt, (str(ctx.user.id), term,))
 		count = await cur.fetchone()
 		if count[0] > 0:
 			if match1.isValid():
-				stmt = 'DELETE FROM storedms WHERE clientid=%s AND ability=%s'
+				stmt = 'DELETE FROM s2_storedms WHERE clientid=%s AND ability=%s'
 			elif match2.isValid():
-				stmt = 'DELETE FROM storedms WHERE clientid=%s AND brand=%s'
+				stmt = 'DELETE FROM s2_storedms WHERE clientid=%s AND brand=%s'
 			else:
-				stmt = 'DELETE FROM storedms WHERE clientid=%s AND gearname=%s'	
+				stmt = 'DELETE FROM s2_storedms WHERE clientid=%s AND gearname=%s'
 		else:
 			if match1.isValid():
 				await ctx.respond(f"Doesn't look like you are set to receive a DM when gear with {term} appears in the store.")
@@ -360,9 +347,9 @@ class nsoHandler():
 	async def listStoreDM(self, ctx):
 		cur = await self.sqlBroker.connect()
 
-		stmt1 = "SELECT ability FROM storedms WHERE clientid = %s"
-		stmt2 = "SELECT brand FROM storedms WHERE clientid = %s"
-		stmt3 = "SELECT gearname FROM storedms WHERE clientid = %s"
+		stmt1 = "SELECT ability FROM s2_storedms WHERE clientid = %s"
+		stmt2 = "SELECT brand FROM s2_storedms WHERE clientid = %s"
+		stmt3 = "SELECT gearname FROM s2_storedms WHERE clientid = %s"
 
 		await cur.execute(stmt1, (str(ctx.user.id),))
 		abilities = await cur.fetchall()
@@ -408,10 +395,10 @@ class nsoHandler():
 		except discord.Forbidden:
 			print(f"Forbidden from messaging user {str(theMem.id)}, removing from DMs")
 			cur = await self.sqlBroker.connect()
-			stmt = "DELETE FROM storedms WHERE clientid = %s"
+			stmt = "DELETE FROM s2_storedms WHERE clientid = %s"
 			await cur.execute(stmt, (theMem.id,))
 			await self.sqlBroker.commit(cur)
-			print(f"Removed {str(theMem.id)} from storedm")
+			print(f"Removed {str(theMem.id)} from S2 storedms")
 			return
 
 		print(f"Messaged {theMem.name}")
@@ -425,7 +412,7 @@ class nsoHandler():
 		theBrand = theGear['gear']['brand']['name']
 		print(f"Doing Store DM! Checking {theType} Brand: {theBrand} Ability: {theSkill}")
 
-		stmt = "SELECT DISTINCT clientid,serverid FROM storedms WHERE (ability = %s) OR (brand = %s) OR (gearname = %s)"
+		stmt = "SELECT DISTINCT clientid,serverid FROM s2_storedms WHERE (ability = %s) OR (brand = %s) OR (gearname = %s)"
 		await cur.execute(stmt, (theSkill, theBrand, theType,))
 		toDM = await cur.fetchall()
 		await self.sqlBroker.close(cur)
@@ -626,7 +613,7 @@ class nsoHandler():
 			merchitems = []
 			for i in range(0, len(self.storeJSON['merchandises'])):
 				merch = self.storeJSON['merchandises'][i]
-				merchitems.append(splatinfo.SplatStoreMerch(merch['gear']['name'], i, merch['id']))
+				merchitems.append(self.splatInfo.SplatStoreMerch(merch['gear']['name'], i, merch['id']))
 
 			# Try the match
 			match = self.splatInfo.matchItems("store merchandise", merchitems, " ".join(args))
@@ -1116,3 +1103,22 @@ class nsoHandler():
 				await ctx.respond(out)
 		else:
 			await ctx.respond("Unknown subcommand. Try 'weapons help'")
+
+	async def cmdAdminS2FeedCreate(self, ctx, args):
+		async with self.sqlBroker.context() as sql:
+			await sql.query("REPLACE INTO s2_feeds (serverid, channelid, maps, sr, gear) VALUES (%s, %s, %s, %s, %s)", (ctx.guild.id, ctx.channel.id, int(args['maps'] == True), int(args['sr'] == True), int(args['gear'] == True)))
+
+		await ctx.respond("S2 feed created! Feed will start when the next rotation happens.")
+		return True
+
+	async def cmdAdminS2FeedDelete(self, ctx):
+		async with self.sqlBroker.context() as sql:
+			feed = await sql.query_first("SELECT * FROM s2_feeds WHERE (serverid = %s) AND (channelid = %s)", (ctx.guild.id, ctx.channel.id,))
+			if feed is None:
+				await ctx.respond("There is no S2 feed set up for this channel.")
+				return False
+
+			await sql.query_first("DELETE FROM s2_feeds WHERE (serverid = %s) AND (channelid = %s)", (ctx.guild.id, ctx.channel.id,))
+
+		await ctx.respond("Ok, S2 deleted feed.")
+		return True
