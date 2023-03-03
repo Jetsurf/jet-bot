@@ -2,12 +2,17 @@ import discord, re, sys
 import mysqlhandler
 from discord.ui import *
 from discord.enums import ComponentType, InputTextStyle
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 #Eval
 import traceback, textwrap, io, signal, asyncio
 from contextlib import redirect_stdout
 from subprocess import call
 from pathlib import Path
+
+# NSO-API
+import nso_api
+from nso_api.nso_api import NSO_API
 
 class evalModal(Modal):
 	def __init__(self, ownercmd, *args, **kwargs):
@@ -26,6 +31,17 @@ class ownerCmds:
 		self.cmdParser = cmdparser
 		self.client = client
 		self.owners = owners
+		self.didMysqlAlert = False
+		self.scheduler = AsyncIOScheduler()
+		self.scheduler.add_job(self.checkMysqlCons, 'cron', second='0', timezone='UTC')
+		self.scheduler.start()
+
+	async def checkMysqlCons(self):
+		if not self.didMysqlAlert:
+			if len(self.sqlBroker.cons) > 8:
+				for owner in self.owners:
+					await owner.send("ALERT: Active MySQL Connections threshold exceeded")
+				self.didMysqlAlert = True
 
 	async def emotePicker(self, ctx, opts):
 		for emote in opts:
@@ -98,3 +114,18 @@ class ownerCmds:
 			else:
 				embed.add_field(name="Result", value=out, inline=False)
 				await ctx.response.send_message(embed=embed)
+
+	async def cmdNsoInfo(self, ctx, nsotoken):
+		info = f"NSO-API version `{NSO_API.get_version()}`\n"
+
+		app_version = NSO_API.get_global_data_value("app_version")
+		if app_version:
+			info += f"NSO app version `{app_version['data']['version']}` retrieved <t:{app_version['retrievetime']}>\n"
+
+		s3_web_app_version = NSO_API.get_global_data_value("s3.web_app_version")
+		if s3_web_app_version:
+			info += f"S3 web app version `{s3_web_app_version['data']['version']}` revision `{s3_web_app_version['data']['revision']}` retrieved <t:{s3_web_app_version['retrievetime']}>\n"
+
+		info += f"Active NSO clients: {len(nsotoken.nso_clients)}\n"
+
+		await ctx.respond(info)

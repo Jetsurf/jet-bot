@@ -7,29 +7,34 @@ from .imagebuilder import S3ImageBuilder
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
-class s3OrderView(discord.ui.View):
-
-	def __init__(self, gear, nsotoken, user, splat3info):
+class S3OrderView(discord.ui.View):
+	def __init__(self, gear, nsoToken, showOrderButton, user, splat3info):
 		super().__init__()
-		self.nsoToken = nsotoken
+		self.nsoToken = nsoToken
 		self.user = user
 		self.confirm = False
 		self.timeout = 14300.0
 		self.gear = gear
 		self.splat3info = splat3info
 
-	async def initView(self):
-		orderBut = discord.ui.Button(label="Order Item")
-		self.nso = await self.nsoToken.get_nso_client(self.user.id)
-		if self.nso.is_logged_in():
-			orderBut.callback = self.orderItem
-		else:
-			self.stop()
-			return None
-		self.add_item(orderBut)
+		# Add order button
+		if showOrderButton:
+			orderButton = discord.ui.Button(label = "Order Item", style = discord.ButtonStyle.primary)
+			orderButton.callback = self.orderItem
+			self.add_item(orderButton)
+
+		# Add app button
+		url = "https://s.nintendo.com/av5ja-lp1/znca/game/4834290508791808?p=/gesotown/" + gear['id']
+		appButton = discord.ui.Button(label = 'NSO App', style = discord.ButtonStyle.gray, url = url)
+		self.add_item(appButton)
 
 	async def orderItem(self, interaction: discord.Interaction):
-		req = self.nso.s3.do_store_order(self.gear['id'], self.confirm)
+		nsoclient = await self.nsoToken.get_nso_client(self.user.id)
+		if (nsoclient is None) or (not nsoclient.is_logged_in()):
+			await interaction.response.send_message("Sorry, I can't order this item for you unless I have an active NSO token for you. You can use `/token` to set one up.")
+			return
+
+		req = nsoclient.s3.do_store_order(self.gear['id'], self.confirm)
 		if req['data']['orderGesotownGear']['userErrors'] == None:
 			await interaction.response.send_message("Ordered!")
 			self.clear_items()
@@ -45,7 +50,7 @@ class S3StoreHandler():
 	def __init__(self, client, nsoToken, splat3info, mysqlHandler, configData, cachemanager):
 		self.client = client
 		self.sqlBroker = mysqlHandler
-		self.nsotoken = nsoToken
+		self.nsoToken = nsoToken
 		self.splat3info = splat3info
 		self.scheduler = AsyncIOScheduler()
 		self.configData = configData
@@ -64,7 +69,7 @@ class S3StoreHandler():
 
 	async def cacheS3JSON(self):
 		print("Updating cached S3 json...")
-		nso = await self.nsotoken.get_bot_nso_client()
+		nso = await self.nsoToken.get_bot_nso_client()
 		if not nso:
 			return  # No bot account configured
 		elif not nso.is_logged_in():
@@ -88,56 +93,64 @@ class S3StoreHandler():
 	##Trigger Keys: gearname brand mability
 	#{ 'gearnames' : ['Gear One', "Two" ], 'brands': ['Toni-Kensa', 'Forge'], 'mabilities' : ['Ink Saver (Main)'] }
 
-	def checkToDM(self, gear, triggers):
+	def checkToDM(self, gear, criteria):
 		brand = gear['gear']['brand']['name']
 		mability = gear['gear']['primaryGearPower']['name']
 		gearname = gear['gear']['name']
 
-		for trigger in triggers.values():
-			if brand in trigger:
-				return True
-			if mability in trigger:
-				return True
-			if gearname in trigger:
-				return True
-			
+		if brand in criteria['brands']:
+			return True
+		elif mability in criteria['mabilities']:
+			return True
+		elif gearname in criteria['gearnames']:
+			return True
+
 		return False
 
-	async def doStoreDailyDropDM(self):
-		theDrop = self.storecache['pickupBrand']
-		theItems = self.storecache['pickupBrand']['brandGears']
-		
-		cur = await self.sqlBroker.connect()
-		await cur.execute("SELECT * from s3storedms")
-		toDM = await cur.fetchall()
-		await self.sqlBroker.close(cur)
+	async def doStoreDM(self, items):
+		async with self.sqlBroker.context() as sql:
+			triggers = await sql.query("SELECT * from s3storedms")
 
-		print(f"Doing Daily Drop S3 Store DM. Checking:")
+		for item in items:
+			print(f"S3 doStoreDM(): new gear: name '{item['gear']['name']}' brand '{item['gear']['brand']['name']}' ability '{item['gear']['primaryGearPower']['name']}'")
 
-		for gear in theItems:
-			print(f"Gear: {gear['gear']['name']} Brand: {gear['gear']['brand']['name']} Ability: {gear['gear']['primaryGearPower']['name']}")
-			for id in range(len(toDM)):
-				servid = toDM[id][0]
-				memid = toDM[id][1]
-				triggers = json.loads(toDM[id][2])
-				server = self.client.get_guild(int(servid))
+			for trigger in triggers:
+				criteria = json.loads(trigger['dmtriggers'])
 
-				#TODO : Change to use fetch_user
-				await server.chunk()
-				theMem = server.get_member(int(memid))
-				if theMem is None:
+				user = await self.client.fetch_user(trigger['clientid'])
+				if user is None:
 					continue
-				elif self.checkToDM(gear, triggers):
-					print(f"Messaging {theMem.name}")
-					asyncio.ensure_future(self.handleDM(theMem, gear))
 
+				if self.checkToDM(item, criteria):
+					print(f"  Messaging {user.name}")
+					asyncio.ensure_future(self.handleDM(user, item))
+
+	async def doStoreDailyDropDM(self):
+		items = self.storecache['pickupBrand']['brandGears']
+		print(f"Doing S3 daily drop store DMs.")
+		await self.doStoreDM(items)
+		return
+
+	async def doStoreRegularDM(self):
+		if not self.cacheState:
+			print("Cache was not updated... skipping this daily drop...")
+			return
+
+		items = [ self.storecache['limitedGears'][5] ]
+		print(f"Doing S3 regular store DMs.")
+		await self.doStoreDM(items)
 		return
 
 	async def handleDM(self, user, gear):
+		# Get an NSO client for this user
+		nsoclient = await self.nsoToken.get_nso_client(user.id)
+		showOrderButton = False
+		if (not nsoclient is None) and (nsoclient.is_logged_in()):
+			showOrderButton = True
+
 		brand = self.splat3info.brands.getItemByName(gear['gear']['brand']['name'])
 
-		view = s3OrderView(gear, self.nsotoken, user, self.splat3info)
-		await view.initView()
+		view = S3OrderView(gear, self.nsoToken, showOrderButton, user, self.splat3info)
 
 		embed = S3EmbedBuilder.createStoreEmbed(gear, brand, "Gear you wanted to be notified about has appeared in the Splatnet 3 shop!")
 
@@ -149,34 +162,6 @@ class S3StoreHandler():
 
 		await user.send(file = file, embed = embed, view = view)
 		return
-
-	async def doStoreRegularDM(self):
-		if not self.cacheState:
-			print("Cache was not updated... skipping this daily drop...")
-			return
-
-		theGear = self.storecache['limitedGears'][5]
-		cur = await self.sqlBroker.connect()
-
-		print(f"Doing S3 Store DM. Checking {theGear['gear']['name']} Brand: {theGear['gear']['brand']['name']} Ability: {theGear['gear']['primaryGearPower']['name']}")
-		
-		await cur.execute("SELECT * FROM s3storedms")
-		toDM = await cur.fetchall()
-		await self.sqlBroker.close(cur)
-
-		for id in range(len(toDM)):
-			servid = toDM[id][0]
-			memid = toDM[id][1]
-			triggers = json.loads(toDM[id][2])
-			server = self.client.get_guild(int(servid))
-
-			await server.chunk()
-			theMem = server.get_member(int(memid))
-			if theMem is None:
-				continue
-			elif self.checkToDM(theGear, triggers):
-				print(f"Messaging {theMem.name}")
-				asyncio.ensure_future(self.handleDM(theMem, theGear))
 
 	async def addS3StoreDm(self, ctx, trigger):
 		cur = await self.sqlBroker.connect()
@@ -192,7 +177,7 @@ class S3StoreHandler():
 		else:
 			theTriggers = { 'mabilities' : [], 'brands' : [], 'gearnames' : [] }
 
-		flag = False		
+		flag = False
 		#Search abilities
 		if flag != True:
 			match1 = self.splat3info.abilities.matchItem(trigger)
@@ -237,7 +222,7 @@ class S3StoreHandler():
 				#We need to make sure DM's work, could cross check this with S2 storedm?
 				try:
 					#TODO - Move this to await user.create_dm() -> channel.can_send():
-					chan = await ctx.user.send("This is a test to ensure that you can receive DM's. Be aware that if I am unable to DM you, I will no longer notify you of items in the store. Rerun /store dm add to be readded.")
+					chan = await ctx.user.send("This is a test to ensure that you can receive DM's. Be aware that if I am unable to DM you, I will no longer notify you of items in the store. Rerun /s3 store dm add to be readded.")
 				except discord.Forbidden:
 					await ctx.respond("I am unable to DM you, please check to ensure you can receive DM's from me before attempting again.", ephemeral=True)
 					return
@@ -277,7 +262,7 @@ class S3StoreHandler():
 		theTriggers = await cur.fetchall()
 		theTriggers = json.loads(theTriggers[0][0])
 
-		flag = False		
+		flag = False
 		#Search abilities
 		if flag != True:
 			match1 = self.splat3info.abilities.matchItem(trigger)
@@ -338,15 +323,17 @@ class S3StoreHandler():
 			await ctx.respond(embed=embed)
 
 	async def listS3StoreDm(self, ctx):
-		cur = await self.sqlBroker.connect()
-		await cur.execute("SELECT dmtriggers FROM s3storedms WHERE clientid = %s", (ctx.user.id,))
-		triggers = await cur.fetchall()
-		await self.sqlBroker.close(cur)
+		async with self.sqlBroker.context() as sql:
+			rec = await sql.query_first("SELECT * from s3storedms WHERE (clientid = %s)", (ctx.user.id,))
+
+		if rec is None:
+			await ctx.respond("You don't have any Splatoon 3 gear notifications set up. You can add one with `/s3 storedm add`")
+			return
+
+		triggers = json.loads(rec['dmtriggers'])
 
 		embed = discord.Embed(colour=0x0004FF)
-		embed.title = f"Splatoon 3 store dm triggers for {ctx.user.name}"
-
-		triggers = json.loads(triggers[0][0])
+		embed.title = f"Splatoon 3 store notification triggers for {ctx.user.name}"
 
 		embed.add_field(name="Ability Triggers", value="\n".join(triggers['mabilities']) if triggers['mabilities'] else "None", inline=False)
 		embed.add_field(name="Brand Triggers", value="\n".join(triggers['brands']) if triggers['brands'] else "None", inline=False)

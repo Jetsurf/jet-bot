@@ -9,9 +9,19 @@ class MysqlSchema():
 
 		cur = await self.sqlBroker.connect()
 
-		if not await self.sqlBroker.hasTable(cur, 'nso_app_version'):
-			print("Creating table 'nso_app_version'...")
-			await cur.execute("CREATE TABLE nso_app_version (version VARCHAR(32) NOT NULL, updatetime DATETIME NOT NULL)")
+		if await self.sqlBroker.hasTable(cur, 'feeds') and not await self.sqlBroker.hasTable(cur, 's2_feeds'):
+			print("Renaming table 'feeds' to 's2_feeds'...")
+			await cur.execute("RENAME TABLE feeds TO s2_feeds")
+			await self.sqlBroker.c_commit(cur)
+
+		if await self.sqlBroker.hasTable(cur, 'storedms') and not await self.sqlBroker.hasTable(cur, 's2_storedms'):
+			print("Renaming table 'storedms' to 's2_storedms'...")
+			await cur.execute("RENAME TABLE storedms TO s2_storedms")
+			await self.sqlBroker.c_commit(cur)
+
+		if await self.sqlBroker.hasTable(cur, 'nso_app_version'):
+			print("Removing table 'nso_app_version'...")
+			await cur.execute("DROP TABLE nso_app_version")
 			await self.sqlBroker.c_commit(cur)
 
 		if not await self.sqlBroker.hasTable(cur, 'playlist'):
@@ -40,11 +50,11 @@ class MysqlSchema():
 			)
 			await self.sqlBroker.c_commit(cur)
 
-		if not await self.sqlBroker.hasTable(cur, 'feeds'):
-			print("Creating table 'feeds'...")
+		if not await self.sqlBroker.hasTable(cur, 's2_feeds'):
+			print("Creating table 's2_feeds'...")
 			await cur.execute(
 			"""
-			CREATE TABLE `feeds` (
+			CREATE TABLE `s2_feeds` (
 			`serverid` bigint unsigned NOT NULL,
   			`channelid` bigint unsigned NOT NULL,
   			`maps` TINYINT NOT NULL,
@@ -56,33 +66,33 @@ class MysqlSchema():
 			)
 			await self.sqlBroker.c_commit(cur)
 
-		#if not await self.sqlBroker.hasTable(cur, 's3feeds'):
-		#	print("Creating table 's3feeds'...")
-		#	await cur.execute(
-		#	"""
-		#	CREATE TABLE `s3feeds` (
-		#	`serverid` bigint unsigned NOT NULL,
-  		#	`channelid` bigint unsigned NOT NULL,
-  		#	`maps` TINYINT NOT NULL,
-  		#	`sr` TINYINT NOT NULL,
-  		#	`gear` TINYINT NOT NULL,
-  		#	PRIMARY KEY (`serverid`, `channelid`)
-		#	) ENGINE=InnoDB
-		#	"""
-		#	)
-		#	await self.sqlBroker.c_commit(cur)
+		if not await self.sqlBroker.hasTable(cur, 's3feeds'):
+			print("Creating table 's3feeds'...")
+			await cur.execute(
+			"""
+			CREATE TABLE `s3feeds` (
+			`serverid` bigint unsigned NOT NULL,
+			`channelid` bigint unsigned NOT NULL,
+			`maps` TINYINT NOT NULL,
+			`sr` TINYINT NOT NULL,
+			`gear` TINYINT NOT NULL,
+			PRIMARY KEY (`serverid`, `channelid`)
+			) ENGINE=InnoDB
+			"""
+			)
+			await self.sqlBroker.c_commit(cur)
 
-		if not await self.sqlBroker.hasKey(cur, 'feeds', 'serverid') or not await self.sqlBroker.hasKey(cur, 'feeds', 'channelid'):
+		if not await self.sqlBroker.hasKey(cur, 's2_feeds', 'serverid') or not await self.sqlBroker.hasKey(cur, 's2_feeds', 'channelid'):
 			print("Updating keys on table 'feeds'...")
 			await cur.execute("ALTER TABLE feeds MODIFY serverid BIGINT unsigned NOT NULL, MODIFY channelid BIGINT unsigned NOT NULL")
 			await cur.execute("ALTER TABLE feeds ADD PRIMARY KEY (`serverid`, `channelid`)")
 			await self.sqlBroker.c_commit(cur)
 
-		if not await self.sqlBroker.hasTable(cur, 'storedms'):
-			print("Creating table 'storedms'...")
+		if not await self.sqlBroker.hasTable(cur, 's2_storedms'):
+			print("Creating table 's2_storedms'...")
 			await cur.execute(
 			"""
-			CREATE TABLE `storedms` (
+			CREATE TABLE `s2_storedms` (
   			`clientid` bigint unsigned NOT NULL,
   			`serverid` bigint unsigned NOT NULL,
   			`ability` varchar(25) COLLATE utf8mb4_general_ci DEFAULT NULL,
@@ -123,12 +133,6 @@ class MysqlSchema():
 			"""
 			)
 			await self.sqlBroker.c_commit(cur)
-
-		if await self.sqlBroker.hasTable(cur, 'tokens') and not await self.sqlBroker.hasColumn(cur, 'tokens', 'game_keys'):
-			if not await self.sqlBroker.hasTable(cur, 'tokens_migrate'):
-				print("Renaming old-style 'tokens' table in preparation for migration...")
-				await cur.execute("RENAME TABLE tokens TO tokens_migrate")
-				await self.sqlBroker.c_commit(cur)
 
 		if not await self.sqlBroker.hasTable(cur, 'nso_client_keys'):
 			print("Creating table 'nso_client_keys'...")
@@ -234,6 +238,34 @@ class MysqlSchema():
 			dmtriggers TEXT,
 			PRIMARY KEY (`clientid`)
 			) ENGINE=InnoDB
+			"""
+			)
+			await self.sqlBroker.c_commit(cur)
+
+		if not await self.sqlBroker.hasTable(cur, 's3_schedule_update'):
+			print("Creating table 's3_schedule_update'...")
+			await cur.execute(
+			"""
+			CREATE TABLE s3_schedule_update
+			(
+			updatetime DATETIME NOT NULL
+			) ENGINE = InnoDB
+			"""
+			)
+			await self.sqlBroker.c_commit(cur)
+
+		if not await self.sqlBroker.hasTable(cur, 's3_schedule_periods'):
+			print("Creating table 's3_schedule_periods'...")
+			await cur.execute(
+			"""
+			CREATE TABLE s3_schedule_periods
+			(
+			schedule  CHAR(2) NOT NULL,
+			starttime DATETIME NOT NULL,
+			endtime   DATETIME NOT NULL,
+			jsondata  TEXT NULL,
+			PRIMARY KEY(schedule, starttime)
+			) ENGINE = InnoDB
 			"""
 			)
 			await self.sqlBroker.c_commit(cur)

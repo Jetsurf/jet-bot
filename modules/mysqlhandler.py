@@ -1,5 +1,7 @@
 import asyncio
 import aiomysql
+import traceback
+import pdb
 
 class mysqlHandler():
 	def __init__(self, host, user, pw, db):
@@ -9,6 +11,7 @@ class mysqlHandler():
 		self.__db = db
 		self.pool = None
 		self.cons = {}
+		self.traces = {}
 
 	# On bot startup, the mysql connection may not be ready yet. We can
 	#  use this to wait for it.
@@ -19,14 +22,17 @@ class mysqlHandler():
 
 		return self.pool is not None
 
-
 	async def startUp(self):
 		self.pool = await aiomysql.create_pool(host=self.__host, port=3306, user=self.__user, password=self.__pw, db=self.__db, maxsize=25)
 		print("MYSQL: Created connection pool")
 
+	def context(self, *args):
+		return MysqlContext(self, *args)
+
 	async def connect(self, *args):
 		con = await self.pool.acquire()
 		cur = await con.cursor(*args)
+		self.traces[hash(cur)] = traceback.format_stack()[:-1]
 		self.cons[hash(cur)] = con
 		return cur
 
@@ -75,6 +81,8 @@ class mysqlHandler():
 		return True
 
 	async def printCons(self, message):
+		for con in self.cons:
+			print(f"DEBUG: {str(con)} + {''.join(self.traces[hash(con)])}")
 		await message.channel.send("MySQL Connections: " + str(self.cons))
 
 	async def getConnection(self, cur):
@@ -90,3 +98,62 @@ class mysqlHandler():
 		self.pool.close()
 		await self.pool.wait_closed()
 		print("MYSQL: Closed Pool")
+
+class MysqlContext():
+	def __init__(self, broker, *args):
+		if len(args) == 0:
+			args = [aiomysql.DictCursor]
+
+		self.broker = broker
+		self.args   = args
+		self.valid  = False
+		self.cur    = None
+
+	async def __aenter__(self):
+		print(f"Entering SQL context {repr(self)}")
+		self.cur = await self.broker.connect(*self.args)
+		self.valid = True
+		return self
+
+	async def __aexit__(self, exc_type, exc_value, exc_tb):
+		if exc_type is None:
+			if self.valid:
+				print(f"Leaving SQL context normally {repr(self)}")
+				await self.broker.commit(self.cur)
+			else:
+				print(f"Leaving SQL context after rollback {repr(self)}")
+				await self.broker.close(self.cur)
+		else:
+			print(f"Leaving SQL context due to exception {repr(self)}")
+			self.valid = False
+			await self.broker.rollback(self.cur)
+			return False  # Allow exception to propagate
+
+	@property
+	def lastrowid(self):
+		return self.cur.lastrowid
+
+	async def commit(self):
+		await self.broker.c_commit(self.cur)
+
+	async def rollback(self):
+		self.valid = False
+		await self.broker.c_rollback(self.cur)
+
+	# Convenience method for executing a query and returning all rows
+	async def query(self, stmt, args = ()):
+		if not self.valid:
+			raise Exception("Attempt to call query() on invalid SQL context")
+
+		await self.cur.execute(stmt, args)
+		rows = await self.cur.fetchall()
+		return rows
+
+	# Convenience method for executing a query and returning the first row
+	async def query_first(self, stmt, args = ()):
+		if not self.valid:
+			raise Exception("Attempt to call query_first() on invalid SQL context")
+
+		await self.cur.execute(stmt, args)
+		row = await self.cur.fetchone()
+		return row

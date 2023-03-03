@@ -101,6 +101,11 @@ class voiceServer():
 				tmpvclient = self.vclient
 				self.vclient = None
 				await tmpvclient.disconnect()
+				
+			if ctx.guild.voice_client != None:
+				print("DEBUG: Got vclient as none and server voice client present... disconnecting")
+				await ctx.guild.voice_client.disconnect()
+
 			self.vclient = await channel.connect()
 			await ctx.respond(f"Joined voice channel {channel.name}")
 		else:

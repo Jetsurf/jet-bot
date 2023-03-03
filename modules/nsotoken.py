@@ -43,7 +43,7 @@ class tokenMenuView(discord.ui.View):
 			self.add_item(delbut)
 
 	async def deleteTokens(self, interaction: discord.Interaction):
-		if await self.nsotoken.deleteTokens(interaction):
+		if await self.nsotoken.deleteTokens(interaction.user.id):
 			await interaction.response.edit_message(content='Tokens Deleted. To set them up again, run /token again.', embed=None, view=None)
 		else:
 			await interaction.response.edit_message(content='Tokens failed to delete, try again shortly or join my support guild.')
@@ -80,50 +80,41 @@ class Nsotoken():
 	def __init__(self, client, config, mysqlhandler, stringCrypt, friendCodes):
 		self.client = client
 		self.config = config
-		self.session = requests.Session()
 		self.sqlBroker = mysqlhandler
 		self.stringCrypt = stringCrypt
 		self.friendCodes = friendCodes
-		self.imink = IMink("Jet-bot/1.0.0 (discord=jetsurf#8514)")  # TODO: Figure out bot owner automatically
+		self.f_provider = IMink("Jet-bot/1.0.0 (discord=jetsurf#8514)")  # TODO: Figure out bot owner automatically
 		self.nso_clients = {}
+		self.init_complete = False
 
 		# Set up scheduled tasks
 		self.scheduler = AsyncIOScheduler()
-		self.scheduler.add_job(self.updateAppVersion, 'interval', hours = 24)
 		self.scheduler.add_job(self.nso_client_cleanup, 'interval', minutes = 5)
 		self.scheduler.start()
 
-	async def migrate_tokens_if_needed(self):
-		cur = await self.sqlBroker.connect()
+		# Do async init
+		asyncio.create_task(self.async_init())
 
-		if not await self.sqlBroker.hasTable(cur, 'tokens'):
-			return  # No such table
+	async def async_init(self):
+		global_data = await self.nso_load_global_data()
+		NSO_API.load_global_data(global_data)
+		self.init_complete = True
 
-		await cur.execute("SELECT clientid, session_token FROM tokens")
-		rows = await cur.fetchall()
-
-		for row in rows:
-			clientid = row[0]
-			session_token_ciphertext = row[1]
-
-			print(f"MIGRATE user {clientid}")
-
-			client = await self.get_nso_client(clientid)
-			if client.is_logged_in():
-				print("  Already has new-style tokens, not migrating...")
-				continue
-
-			session_token = self.stringCrypt.decryptString(session_token_ciphertext)
-			client.set_session_token(session_token)
-			await self.nso_client_save_keys(clientid)
-
-		await cur.execute("DROP TABLE tokens")
+	# Wait for the class's async_init to complete.
+	async def wait_for_init(self):
+		for i in range(5):
+			if self.init_complete:
+				return
+			await asyncio.sleep(1)
 
 	# Returns NSO client for the bot account, or None if there was a problem.
 	async def get_bot_nso_client(self):
 		if not self.config.get('nso_userid'):
 			print("No nso_userid configured, can't get bot NSO client")
 			return None
+
+		# Wait for async init
+		await self.wait_for_init()
 
 		# Might get called before SQL has connected, so await connection
 		await self.sqlBroker.wait_for_startup()
@@ -140,6 +131,9 @@ class Nsotoken():
 
 	# Given a userid, returns an NSO client for that user.
 	async def get_nso_client(self, userid):
+		# Wait for async init
+		await self.wait_for_init()
+
 		userid = int(userid)
 
 		# If we already have a client for this user, just return it
@@ -147,8 +141,7 @@ class Nsotoken():
 			return self.nso_clients[userid]
 
 		# Construct a new one for this user
-		nsoAppInfo = await self.getAppVersion()
-		nso = NSO_API(self.imink, userid)
+		nso = NSO_API(self.f_provider, userid)
 
 		# If we have keys, load them into the client
 		keys = await self.nso_client_load_keys(userid)
@@ -206,22 +199,20 @@ class Nsotoken():
 		ciphertext = self.stringCrypt.encryptString(plaintext)
 		#print(f"nso_client_save_keys: {plaintext} -> {ciphertext}")
 
-		cur = await self.sqlBroker.connect()
-		await cur.execute("DELETE FROM nso_client_keys WHERE (clientid = %s)", (userid,))
-		await cur.execute("INSERT INTO nso_client_keys (clientid, updatetime, jsonkeys) VALUES (%s, NOW(), %s)", (userid, ciphertext))
-		await self.sqlBroker.commit(cur)
+		async with self.sqlBroker.context() as sql:
+			await sql.query("DELETE FROM nso_client_keys WHERE (clientid = %s)", (userid,))
+			await sql.query("INSERT INTO nso_client_keys (clientid, updatetime, jsonkeys) VALUES (%s, NOW(), %s)", (userid, ciphertext))
+
 		return
 
 	async def nso_client_load_keys(self, userid):
-		cur = await self.sqlBroker.connect()
-		await cur.execute("SELECT jsonkeys FROM nso_client_keys WHERE (clientid = %s) LIMIT 1", (userid,))
-		row = await cur.fetchone()
-		await self.sqlBroker.commit(cur)
+		async with self.sqlBroker.context() as sql:
+			row = await sql.query_first("SELECT jsonkeys FROM nso_client_keys WHERE (clientid = %s) LIMIT 1", (userid,))
 
-		if (row == None) or (row[0] == None):
+		if (row == None) or (row['jsonkeys'] == None):
 			return None  # No keys
 
-		ciphertext = row[0]
+		ciphertext = row['jsonkeys']
 		plaintext = self.stringCrypt.decryptString(ciphertext)
 		#print(f"getGameKeys: {ciphertext} -> {plaintext}")
 		keys = json.loads(plaintext)
@@ -229,77 +220,28 @@ class Nsotoken():
 
 	async def nso_save_global_data(self, data):
 		jsondata = json.dumps(data)
-		cur = await self.sqlBroker.connect()
-		await cur.execute("DELETE FROM nso_global_data")
-		await cur.execute("INSERT INTO nso_global_data (updatetime, jsondata) VALUES (NOW(), %s)", (jsondata,))
-		await self.sqlBroker.commit(cur)
+
+		async with self.sqlBroker.context() as sql:
+			await sql.query("DELETE FROM nso_global_data")
+			await sql.query("INSERT INTO nso_global_data (updatetime, jsondata) VALUES (NOW(), %s)", (jsondata,))
+
 		return
 
 	async def nso_load_global_data(self):
-		cur = await self.sqlBroker.connect()
-		await cur.execute("SELECT jsondata FROM nso_global_data LIMIT 1")
-		row = await cur.fetchone()
-		await self.sqlBroker.commit(cur)
+		await self.sqlBroker.wait_for_startup()
 
-		if (row == None) or (row[0] == None):
+		async with self.sqlBroker.context() as sql:
+			row = await sql.query_first("SELECT jsondata FROM nso_global_data LIMIT 1")
+
+		if (row == None) or (row['jsondata'] == None):
 			return None  # No stored data
 
-		return json.loads(row[0])
+		return json.loads(row['jsondata'])
 
-	async def getAppVersion(self):
-		cur = await self.sqlBroker.connect()
+	async def deleteTokens(self, userid):
+		print(f"Deleting token and nso client for {userid}")
+		async with self.sqlBroker.context() as sql:
+			await sql.query("DELETE FROM nso_client_keys WHERE (clientid = %s)", (userid,))
 
-		await cur.execute("SELECT version, UNIX_TIMESTAMP(updatetime) AS updatetime FROM nso_app_version")
-		row = await cur.fetchone()
-		await self.sqlBroker.commit(cur)
-
-		if row:
-			return {'version': row[0], 'updatetime': row[1]}
-
-		return None
-
-	async def updateAppVersion(self):
-		oldInfo = await self.getAppVersion()
-		if oldInfo != None:
-			age = time.time() - oldInfo['updatetime']
-			if age < 3600:
-				print("Skipping NSO version check -- cached data is recent")
-				return
-
-		scraper = AppStoreScraper()
-		nsogp = scraper.get_app_details(1234806557, country='us') #iOS App ID
-
-		newVersion = nsogp['version']
-		if newVersion == None:
-			print(f"Couldn't retrieve NSO app version?")
-			return
-
-		cur = await self.sqlBroker.connect()
-
-		if (oldInfo == None) or (oldInfo['version'] != newVersion):
-			# Version was updated
-			await cur.execute("DELETE FROM nso_app_version")
-			await cur.execute("INSERT INTO nso_app_version (version, updatetime) VALUES (%s, NOW())", (newVersion,))
-			print(f"Updated NSO version: {oldInfo['version'] if oldInfo else '(none)'} -> {newVersion}")
-		else:
-			# No version change, so just bump the timestamp
-			await cur.execute("UPDATE nso_app_version SET updatetime = NOW()")
-
-		await self.sqlBroker.commit(cur)
-		return
-
-	async def deleteTokens(self, interaction):
-		cur = await self.sqlBroker.connect()
-		print("Deleting token and nso client")
-		stmt = "DELETE FROM nso_client_keys WHERE (clientid = %s)"
-		instmt = (interaction.user.id,)
-		await cur.execute(stmt, instmt)
-		if cur.lastrowid != None:
-			await self.sqlBroker.commit(cur)
-			#Delete the nso object, as we destroyed tokens
-			del self.nso_clients[interaction.user.id]
-			return True
-		else:
-			await self.sqlBroker.rollback(cur)
-			return False
-			
+		del self.nso_clients[userid]
+		return True
