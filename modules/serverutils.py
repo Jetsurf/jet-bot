@@ -261,7 +261,7 @@ class serverUtils():
 
 	async def trim_db_from_leave(self, serverid):
 		cur = await self.sqlBroker.connect()
-		stmt = "DELETE FROM storedms WHERE serverid = %s"
+		stmt = "DELETE FROM s2_storedms WHERE serverid = %s"
 		input = (serverid,)
 		await cur.execute(stmt, input)
 
