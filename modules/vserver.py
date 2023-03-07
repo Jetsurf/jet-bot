@@ -333,7 +333,6 @@ class voiceServer():
 			except Exception as e:
 				print(f"ERROR: Failure on song {x[numToPlay - 1][0]} {str(e)}")
 				traceback.print_exception(*sys.exc_info())
-				sys.stdout.flush()
 				continue
 
 			self.ytQueue.put(tempPlayer)
