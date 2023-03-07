@@ -849,8 +849,6 @@ async def on_ready():
 		print('Finished reconnect')
 	doneStartup = True
 
-	sys.stdout.flush()
-
 @client.event
 async def on_member_remove(member):
 	global serverUtils, doneStartup
@@ -889,8 +887,6 @@ async def on_guild_join(server):
 
 	await setNickname(server)
 
-	sys.stdout.flush()
-
 @client.event
 async def on_guild_remove(server):
 	global client, serverVoices, head, dev, owners
@@ -913,7 +909,6 @@ async def on_guild_remove(server):
 
 	print(f"Trimming DB for serverid: {str(server.id)}")
 	await serverUtils.trim_db_from_leave(server.id)
-	sys.stdout.flush()
 
 @client.event
 async def on_voice_state_update(mem, before, after):
@@ -941,7 +936,6 @@ async def on_voice_state_update(mem, before, after):
 			print("Issue in voice disconnect?? Recreating anyway")
 
 		serverVoices[server] = vserver.voiceServer(client, mysqlHandler, server, configData['soundsdir'])
-		sys.stdout.flush()
 
 @client.event
 async def on_message(message):
@@ -994,13 +988,13 @@ async def on_message(message):
 		elif cmd == 'nsoinfo':
 			await ownerCmds.cmdNsoInfo(context, nsoTokens)
 
-	sys.stdout.flush()
-	sys.stderr.flush()
-
 #Setup
 if configData.get('output_to_log'):
 	os.makedirs(f"{dirname}/logs", exist_ok=True)
+
 	sys.stdout = open(f"{dirname}/logs/discordbot.log", 'a+')
+	sys.stdout.reconfigure(line_buffering = True)  # Flush stdout at every newline
+
 	sys.stderr = open(f"{dirname}/logs/discordbot.err", 'a+')
 
 ensureEncryptionKey()
@@ -1008,7 +1002,7 @@ ensureEncryptionKey()
 if dev:
 	client.add_application_command(owner)	
 
-print('**********NEW SESSION**********')
+print(f"--- Starting up at {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())} ---")
 print('Logging into discord')
 
 client.add_application_command(voice)
@@ -1025,9 +1019,9 @@ else:
 	client.add_application_command(s3StoreCmds)
 client.add_application_command(acnhCmds)
 
-sys.stdout.flush()
-sys.stderr.flush()
 token = configData['token']
 configData['token'] = ""
 
 client.run(token)
+
+print(f"--- Shutting down at {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())} ---")
