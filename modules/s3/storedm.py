@@ -123,7 +123,7 @@ class S3StoreHandler():
 
 				if self.checkToDM(item, criteria):
 					print(f"  Messaging {user.name}")
-					asyncio.ensure_future(self.handleDM(user, item))
+					await self.handleDM(user, item)
 
 	async def doStoreDailyDropDM(self):
 		items = self.storecache['pickupBrand']['brandGears']
