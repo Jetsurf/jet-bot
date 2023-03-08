@@ -1,6 +1,6 @@
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import re
-import requests
+import aiohttp
 import asyncio
 import cairosvg
 
@@ -28,6 +28,7 @@ class S3ImageExtractor():
 		self.nsotoken     = nsotoken
 		self.cachemanager = cachemanager
 		self.caches       = {}
+		self.http_client  = None
 
 		self.scheduler = AsyncIOScheduler()
 		self.scheduler.add_job(self.extract, 'interval', hours = 24)
@@ -36,6 +37,10 @@ class S3ImageExtractor():
 		self.create_caches()
 
 		asyncio.create_task(self.extract())
+
+	def __del__(self):
+		if self.http_client:
+			asyncio.create_task(self.http_client.close())
 
 	def create_caches(self):
 		for rec in IMAGES:
@@ -72,14 +77,18 @@ class S3ImageExtractor():
 	async def extract_svg_image(self, rec, link):
 		print(f"S3ImageExtractor(): Grabbing SVG image: {link['url']}")
 
+		# Create HTTP client if needed
+		if self.http_client is None:
+			self.http_client = aiohttp.ClientSession()
+
 		# Grab the file
-		res = requests.get(link['url'])
+		res = await self.http_client.get(link['url'])
 		if not res.ok:
-			print(f"  Request failed: {res.status_code} {res.reason}")
+			print(f"  Request failed: {res.status} {res.reason}")
 			return
 
 		# Convert to PNG
-		bytes = cairosvg.svg2png(bytestring = res.content, output_width = rec['size'][0], output_height = rec['size'][1])
+		bytes = cairosvg.svg2png(bytestring = await res.read(), output_width = rec['size'][0], output_height = rec['size'][1])
 
 		# Save to cache
 		self.caches[rec['cache']].add_bytes(rec['key'], bytes)
