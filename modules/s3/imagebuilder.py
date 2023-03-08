@@ -640,23 +640,26 @@ class S3ImageBuilder():
 		gear = { 'weapon' : statsjson['data']['currentPlayer']['weapon'], 'head' : statsjson['data']['currentPlayer']['headGear'],
 				'clothes' : statsjson['data']['currentPlayer']['clothingGear'], 'shoes' : statsjson['data']['currentPlayer']['shoesGear'] }
 		s2FontSmall = fonts.truetype("s2.otf", size=24)
-		MAXW, MAXH = 880, 314
 		TEXTBUF = 24
 		GHW = 220
+		MARGIN = 5
 		TEXTCOLOR = (0, 150, 150, 255)
+		MAXW = (GHW + MARGIN * 2) * 4
+		MAXH = 314 + (MARGIN * 2)
 		retImage = Image.new("RGBA", (MAXW, MAXH), (0, 0, 0, 0))
 		retDraw = ImageDraw.Draw(retImage)
 		i = 0
 		for k, v in gear.items():
+			nameFont = fonts.truetype_for_width("s2.otf", 24, GHW, v['name'])
+			cls.drawShadowedText(retDraw, (i * (GHW + MARGIN * 2) + MARGIN + int(GHW / 2), 3), v['name'], TEXTCOLOR, font = nameFont, anchor = 'mt')
+
 			if k == 'weapon':
-				retDraw.text((i * GHW + int(GHW / 2), 3), f"{v['name']}", TEXTCOLOR, font=s2FontSmall, anchor='mt')
 				weaponCard = cls.createWeaponCard(v)
-				retImage.paste(weaponCard, (0, TEXTBUF), weaponCard)
+				retImage.paste(weaponCard, (MARGIN, TEXTBUF), weaponCard)
 			else:
-				retDraw.text((i * GHW + int(GHW / 2), 3), f"{v['name']}", TEXTCOLOR, font=s2FontSmall, anchor='mt')
 				gearCard = cls.createGearCard(v)
-				retImage.paste(gearCard, ((i * GHW), TEXTBUF), gearCard)
-				retDraw.line([(i * GHW, 0), (i * GHW, MAXH)], fill="black", width=3)
+				retImage.paste(gearCard, ((i * (GHW + MARGIN * 2)) + MARGIN, TEXTBUF), gearCard)
+				retDraw.line([(i * (GHW + MARGIN * 2), 0), (i * (GHW + MARGIN * 2), MAXH)], fill="black", width=3)
 			i += 1
 
 		retDraw.rectangle((0, 0, MAXW - 1, MAXH - 1), outline="black", width=3)
