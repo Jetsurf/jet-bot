@@ -15,7 +15,7 @@ from discord.ui import InputText, Modal
 from discord.ext import commands
 
 #DBL Posting
-import urllib, urllib.request, requests, pymysql
+import urllib, urllib.request, requests, aiohttp, pymysql
 
 #Our Classes
 import nsotoken, commandparser, serverconfig, ownercmds, messagecontext
@@ -57,29 +57,14 @@ friendCodes = None
 doneStartup = False
 owners = []
 dev = True
-head = {}
+topGgHead = None
 keyPath = f"{dirname}/config/db-secret-key.hex"
 
 def loadConfig():
-	global configData, mysqlHandler, dev, head
+	global configData
 	try:
 		with open(f"{dirname}/config/discordbot.json", 'r') as json_config:
 			configData = json.load(json_config)
-
-		try:
-			head = { 'Authorization': configData['discordbottok'] }
-			configData['discordbottok'] = ""
-			dev = False
-		except:
-			print('No ID/Token for top.gg, skipping')
-
-		mysqlHandler = mysqlhandler.mysqlHandler(configData['mysql_host'], configData['mysql_user'], configData['mysql_pw'], configData['mysql_db'])
-
-		#Get the secrets the F out!
-		configData['mysql_host'] = ""
-		configData['mysql_user'] = ""
-		configData['mysql_pw'] = ""
-		configData['mysql_db'] = ""
 
 		print('Config Loaded')
 	except Exception as e:
@@ -95,7 +80,80 @@ def ensureEncryptionKey():
 		print("Creating new secret key file...")
 		stringCrypt.writeSecretKeyFile(keyPath)
 
-loadConfig()
+def startUpLogging():
+	if configData.get('output_to_log'):
+		os.makedirs(f"{dirname}/logs", exist_ok=True)
+
+		sys.stdout = open(f"{dirname}/logs/discordbot.log", 'a+')
+		sys.stdout.reconfigure(line_buffering = True)  # Flush stdout at every newline
+
+		sys.stderr = open(f"{dirname}/logs/discordbot.err", 'a+')
+
+def startUpDB():
+	global configData, mysqlHandler, client
+
+	mysqlHandler = mysqlhandler.mysqlHandler(configData['mysql_host'], configData['mysql_user'], configData['mysql_pw'], configData['mysql_db'])
+
+	# Get the secrets the F out!
+	configData['mysql_host'] = None
+	configData['mysql_user'] = None
+	configData['mysql_pw'] = None
+	configData['mysql_db'] = None
+
+	client.loop.create_task(startUpDBAsync())
+
+async def startUpDBAsync():
+	global mysqlHandler
+
+	await mysqlHandler.startUp()
+
+	mysqlSchema = mysqlschema.MysqlSchema(mysqlHandler)
+	await mysqlSchema.update()
+
+def startUpTopGg():
+	global configData, topGgHead, dev
+
+	if not 'discordbottok' in configData:
+		print("[top.gg] No token for top.gg, so I won't send updates there")
+		return
+
+	print("[top.gg] I have a token for top.gg, so I'll update the number of servers I am in")
+	topGgHead = { 'Authorization': configData['discordbottok'] }
+	dev = False
+
+	# Remove secrets from configData
+	configData['discordbottok'] = None
+
+def updateTopGg():
+	global topGgHead
+
+	if topGgHead is None:
+		return  # We aren't updating top.gg
+
+	# NOTE: We use create_task here because there is no reason for the rest of the bot to wait for completion
+	client.loop.create_task(updateTopGgAsync())
+
+async def updateTopGgAsync():
+	async with aiohttp.ClientSession() as http_client:
+		server_count = len(client.guilds)
+		url = f"https://top.gg/api/bots/{str(client.user.id)}/stats"
+		body = { 'server_count' : server_count }
+		response = await http_client.post(url, headers = topGgHead, json = body)
+		print("[top.gg] Posted server count {server_count}, response: {response.status}")
+
+def startUp():
+	# Vital stuff
+	ensureEncryptionKey()
+	loadConfig()
+	startUpLogging()
+	startUpDB()
+
+	print(f"--- Starting up at {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())} ---")
+
+	# Less-important stuff
+	startUpTopGg()
+
+startUp()
 
 # S2
 s2Cmds = SlashCommandGroup('s2', 'Splatoon 2')
@@ -800,7 +858,7 @@ async def retrieveOwners():
 @client.event
 async def on_ready():
 	global client, mysqlHandler, serverUtils, serverVoices, splat2info, configData, ownerCmds
-	global s2Handler, nsoTokens, head, dev, owners, commandParser, doneStartup, acHandler, stringCrypt
+	global s2Handler, nsoTokens, dev, owners, commandParser, doneStartup, acHandler, stringCrypt
 	global friendCodes, s3Handler
 
 	if not doneStartup:
@@ -810,12 +868,8 @@ async def on_ready():
 	else:
 		print('RECONNECT TO DISCORD')
 
-	if not dev:
-		print(f"I am in {str(len(client.guilds))} servers, posting to top.gg")
-		body = { 'server_count' : len(client.guilds) }
-		requests.post(f"https://top.gg/api/bots/{str(client.user.id)}/stats", headers=head, json=body)
-	else:
-		print(f"I am in {str(len(client.guilds))} servers")
+	print(f"I am in {str(len(client.guilds))} servers")
+	updateTopGg()
 
 	if not doneStartup:
 		print("Doing Startup...")
@@ -832,9 +886,6 @@ async def on_ready():
 		s2Handler = s2handler.S2Handler(client, mysqlHandler, nsoTokens, splat2info, configData)
 		s3Handler = s3handler.S3Handler(client, mysqlHandler, nsoTokens, splat3info, configData, fonts, cachemanager)
 		acHandler = achandler.acHandler(client, mysqlHandler, nsoTokens, configData)
-		await mysqlHandler.startUp()
-		mysqlSchema = mysqlschema.MysqlSchema(mysqlHandler)
-		await mysqlSchema.update()
 
 		groups.Groups.setFriendObjects(client, mysqlHandler, friendCodes)
 		await groups.Groups.startup()
@@ -870,17 +921,13 @@ async def on_member_remove(member):
 
 @client.event
 async def on_guild_join(server):
-	global client, serverVoices, head, url, dev, owners, mysqlHandler, configData
+	global client, serverVoices, url, dev, owners, mysqlHandler, configData
 	
 	print(f"I joined server: {server.name}")
 	serverVoices[server.id] = vserver.voiceServer(client, mysqlHandler, server.id, configData['soundsdir'])
 
-	if not dev:
-		print(f"I am now in {str(len(client.guilds))} servers, posting to top.gg")
-		body = { 'server_count' : len(client.guilds) }
-		r = requests.post(f"https://top.gg/api/bots/{str(client.user.id)}/stats", headers=head, json=body)
-	else:
-		print(f"I am now in {str(len(client.guilds))} servers")
+	print(f"I am now in {str(len(client.guilds))} servers")
+	updateTopGg()
 
 	for mem in owners:
 		await mem.send(f"I joined server: {server.name} - I am now in {str(len(client.guilds))} servers")
@@ -889,7 +936,7 @@ async def on_guild_join(server):
 
 @client.event
 async def on_guild_remove(server):
-	global client, serverVoices, head, dev, owners
+	global client, serverVoices, dev, owners
 
 	if server == None:
 		return
@@ -897,12 +944,8 @@ async def on_guild_remove(server):
 	print("I left server: " + server.name)
 	serverVoices[server.id] = None
 
-	if not dev:
-		print(f"I am now in {str(len(client.guilds))} servers, posting to top.gg")
-		body = { 'server_count' : len(client.guilds) }
-		r = requests.post(f"https://top.gg/api/bots/{str(client.user.id)}/stats", headers=head, json=body)
-	else:
-		print(f"I am now in {str(len(client.guilds))} servers")
+	print(f"I am now in {str(len(client.guilds))} servers")
+	updateTopGg()
 
 	for mem in owners:
 		await mem.send(f"I left server: {server.name} ID: {str(server.id)} - I am now in {str(len(client.guilds))} servers")
@@ -988,21 +1031,9 @@ async def on_message(message):
 		elif cmd == 'nsoinfo':
 			await ownerCmds.cmdNsoInfo(context, nsoTokens)
 
-#Setup
-if configData.get('output_to_log'):
-	os.makedirs(f"{dirname}/logs", exist_ok=True)
-
-	sys.stdout = open(f"{dirname}/logs/discordbot.log", 'a+')
-	sys.stdout.reconfigure(line_buffering = True)  # Flush stdout at every newline
-
-	sys.stderr = open(f"{dirname}/logs/discordbot.err", 'a+')
-
-ensureEncryptionKey()
-
 if dev:
-	client.add_application_command(owner)	
+	client.add_application_command(owner)
 
-print(f"--- Starting up at {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())} ---")
 print('Logging into discord')
 
 client.add_application_command(voice)
