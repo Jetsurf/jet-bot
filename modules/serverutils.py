@@ -78,59 +78,6 @@ class serverUtils():
 		self.scheduler.add_job(self.changeStatus, 'cron', minute='*/5', timezone='UTC') 
 		self.scheduler.start()
 
-	async def deleteFeed(self, ctx, isS3=False):
-		cur = await self.sqlBroker.connect()
-		if isS3:
-			stmt = "SELECT * FROM s3feeds WHERE serverid = %s AND channelid = %s"
-		else:
-			stmt = "SELECT * FROM s2_feeds WHERE serverid = %s AND channelid = %s"
-			
-		await cur.execute(stmt, (ctx.guild.id, ctx.channel.id,))
-		chan = await cur.fetchone()
-
-		#TODO: Need to improve this w/ confirmation to delete
-		if chan != None:
-			if isS3:
-				stmt = "DELETE FROM s3feeds WHERE serverid = %s AND channelid = %s"
-			else:
-				stmt = "DELETE FROM s2_feeds WHERE serverid = %s AND channelid = %s"
-				
-			await cur.execute(stmt, (ctx.guild.id, ctx.channel.id,))
-			if cur.lastrowid != None:
-				await self.sqlBroker.commit(cur)
-				await ctx.respond("Ok, deleted feed.")
-				return True
-			else:
-				await self.sqlBroker.rollback(cur)
-				await ctx.respond("Error in deleting feed.")
-				return False
-		else:
-			await ctx.respond("No feed setup for this channel.")
-			return False
-
-	async def createFeed(self, ctx, args=None):
-		cur = await self.sqlBroker.connect()
-
-		mapflag = args[0]
-		srflag = args[1]
-		gearflag = args[2]
-		isS3 = args[3]
-
-		if isS3:
-			stmt = "REPLACE INTO s3feeds (serverid, channelid, maps, sr, gear) VALUES(%s, %s, %s, %s, %s)"
-		else:
-			stmt = "REPLACE INTO s2_feeds (serverid, channelid, maps, sr, gear) VALUES(%s, %s, %s, %s, %s)"
-
-		feed = (str(ctx.guild.id), str(ctx.channel.id), int(mapflag == True), int(srflag == True), int(gearflag == True),)
-
-		await cur.execute(stmt, feed)
-		if cur.lastrowid != None:
-			await self.sqlBroker.commit(cur)
-			await ctx.respond("Feed created! Feed will start when the next rotation happens.")
-		else:
-			await self.sqlBroker.rollback(cur)
-			await ctx.respond("Feed failed to create.")
-
 	async def changeStatus(self):
 		status = [ "Check /help for cmd info.",
 					"{} guilds",

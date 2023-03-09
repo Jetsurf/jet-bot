@@ -184,3 +184,26 @@ class S3FeedHandler():
 		await self.sqlBroker.commit(cur)
 		return
 
+	async def getFeed(self, serverid, channelid):
+		async with self.sqlBroker.context() as sql:
+			row = await sql.query_first("SELECT * FROM s3feeds WHERE (serverid = %s) AND (channelid = %s)", (serverid, channelid))
+			if row is None:
+				return None
+
+			feed = {'serverid': row['serverid'], 'channelid': row['channelid'], 'flags': {'maps': bool(row['maps']), 'sr': bool(row['sr']), 'gear': bool(row['gear'])}}
+			return feed
+
+	async def createFeed(self, serverid, channelid, flags):
+		async with self.sqlBroker.context() as sql:
+			await sql.query("REPLACE INTO s3feeds (serverid, channelid, maps, sr, gear) VALUES (%s, %s, %s, %s, %s)", (serverid, channelid, int(flags['maps']), int(flags['sr']), int(flags['gear'])))
+		return
+
+	async def deleteFeed(self, serverid, channelid):
+		async with self.sqlBroker.context() as sql:
+			await sql.query("DELETE FROM s3feeds WHERE (serverid = %s) AND (channelid = %s)", (serverid, channelid))
+		return
+
+	async def removeServer(self, serverid):
+		async with self.sqlBroker.context() as sql:
+			await sql.query("DELETE FROM s3feeds WHERE (serverid = %s)", (serverid,))
+		return
