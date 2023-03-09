@@ -323,28 +323,25 @@ async def cmdAdminS2FeedDelete(ctx):
 
 @adminS3feedCmds.command(name='create', description='Sets up a Splatoon 3 rotation feed for a channel')
 async def cmdAdminS3Feed(ctx, maps: Option(bool, "Include maps in the feed?", required=True), sr: Option(bool, "Include Salmon Run in the feed?", required=True), gear: Option(bool, "Enable gear in the feed?", required=True)):
-	if ctx.guild == None:
+	if ctx.guild is None:
 		await ctx.respond("Can't DM me with this command.")
 		return
-
-	if await checkIfAdmin(ctx):
-		if not maps and not sr and not gear:
-			await ctx.respond("Not going to create an empty feed.")
-		else:
-			await serverUtils.createFeed(ctx, args=[ maps, sr, gear, True ])
-	else:
+	elif not await checkIfAdmin(ctx):
 		await ctx.respond("You aren't a guild administrator", ephemeral=True)
+		return
 
-@adminS3feedCmds.command(name='delete', description="Deletes a feed from a channel")
+	await s3Handler.cmdAdminS3FeedCreate(ctx, {"maps": maps, "sr": sr, "gear": gear})
+
+@adminS3feedCmds.command(name='delete', description="Deletes a Splatoon 3 feed from a channel")
 async def cmdS3AdminDeleteFeed(ctx):
-	if ctx.guild == None:
+	if ctx.guild is None:
 		await ctx.respond("Can't DM me with this command.")
 		return
-
-	if await checkIfAdmin(ctx):
-		await serverUtils.deleteFeed(ctx, isS3=True)
-	else:
+	elif not await checkIfAdmin(ctx):
 		await ctx.respond("You aren't a guild administrator", ephemeral=True)
+		return
+
+	await s3Handler.cmdAdminS3FeedDelete(ctx)
 
 @adminDmCmds.command(name='remove', description="Removes you from being DM'ed on users leaving")
 async def cmdDMRemove(ctx):
@@ -952,6 +949,7 @@ async def on_guild_remove(server):
 
 	print(f"Trimming DB for serverid: {str(server.id)}")
 	await serverUtils.trim_db_from_leave(server.id)
+	await s3Handler.removeServer(server.id)
 
 @client.event
 async def on_voice_state_update(mem, before, after):
