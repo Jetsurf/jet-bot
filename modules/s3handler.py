@@ -33,6 +33,11 @@ class S3Handler():
 		self.fonts = fonts
 		self.cachemanager = cachemanager
 
+	# Removes S3 data for a specific server
+	async def removeServer(self, serverid):
+		await self.feeds.removeServer(serverid)
+		#TODO: storedm
+
 	async def cmdWeaponInfo(self, ctx, name):
 		match = self.splat3info.weapons.matchItem(name)
 		if not match.isValid():
@@ -453,3 +458,22 @@ class S3Handler():
 		await ctx.respond("This is your gear seed file.", files = [file])
 
 		await ctx.channel.send("After you have downloaded the seed file, you may upload it to: <https://leanny.github.io/splat3seedchecker/#/settings>.")
+
+	async def cmdAdminS3FeedCreate(self, ctx, args):
+		if sum([int(v) for v in args.values()]) == 0:
+			await ctx.respond("I'm not going to create an empty feed. Please select at least one category.")
+			return
+
+		await self.feeds.createFeed(ctx.guild.id, ctx.channel.id, args)
+		await ctx.respond("S3 feed created! Feed will start when the next rotation happens.")
+		return
+
+	async def cmdAdminS3FeedDelete(self, ctx):
+		feed = await self.feeds.getFeed(ctx.guild.id, ctx.channel.id)
+		if feed is None:
+			await ctx.respond("There is no S3 feed set up for this channel.")
+			return
+
+		await self.feeds.deleteFeed(ctx.guild.id, ctx.channel.id)
+		await ctx.respond("Okay, S3 feed deleted for this channel.")
+		return
