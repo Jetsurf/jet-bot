@@ -50,6 +50,22 @@ class S3FeedHandler():
 
 		return channel
 
+	async def sendFeedMessage(self, serverid, channelid, file = None, embed = None):
+		channel = self.getFeedChannel(serverid, channelid)
+		if channel is None:
+			print(f"Can't retrieve channel - Deleting feeds for serverid {serverid} channelid {channelid}.")
+			async with self.sqlBroker.context() as sql:
+				await sql.query("DELETE FROM s3feeds WHERE (serverid = %s) AND (channelid = %s)", (serverid, channelid))
+			return
+
+		try:
+			await channel.send(file = file, embed = embed)
+		except discord.Forbidden:
+			print(f"403 - Deleting feeds for serverid {serverid} channelid {channelid}")
+			async with self.sqlBroker.context() as sql:
+				await sql.query("DELETE FROM s3feeds WHERE (serverid = %s) AND (channelid = %s)", (serverid, channelid))
+			return
+
 	async def doMapFeed(self):
 		# Pull each schedule for the current time
 		now = time.time()
@@ -80,10 +96,9 @@ class S3FeedHandler():
 		embed = discord.Embed(colour=0x0004FF)
 		embed.title = "Current Splatoon 3 multiplayer map rotation"
 
-		cur = await self.sqlBroker.connect()
-		await cur.execute("SELECT * from s3feeds WHERE (maps = 1)")
-		map_feeds = await cur.fetchall()
-		
+		async with self.sqlBroker.context() as sql:
+			map_feeds = await sql.query("SELECT * from s3feeds WHERE (maps = 1)")
+
 		print(f"Doing {len(map_feeds)} S3 map feeds")
 
 		for feed in map_feeds:
@@ -91,19 +106,7 @@ class S3FeedHandler():
 			embed.set_image(url = "attachment://maps-feed.png")
 			image_io.seek(0)
 
-			channel = self.getFeedChannel(feed[0], feed[1])
-			if channel is None:
-				print(f"Deleting feeds for channelid {feed[1]}.")
-				await cur.execute("DELETE FROM s3feeds WHERE (channelid = %s)", (feed[1],))
-				continue
-
-			try:
-				await channel.send(file = img, embed = embed)
-			except discord.Forbidden:
-				print(f"403 - Deleting feeds for channelid {feed[1]}")
-				await cur.execute("DELETE FROM s3feeds WHERE (channelid = %s)", (feed[1],))
-
-		await self.sqlBroker.commit(cur)
+			await self.sendFeedMessage(feed['serverid'], feed['channelid'], file = img, embed = embed)
 
 	async def doSRFeed(self):
 		await self.scheduleSRFeed() # Setup next run
@@ -113,10 +116,8 @@ class S3FeedHandler():
 		embed = discord.Embed(colour=0x0004FF)
 		embed.title = "Current Splatoon 3 Salmon Run rotation"
 
-
-		cur = await self.sqlBroker.connect()
-		await cur.execute("SELECT * from s3feeds WHERE sr = 1")
-		sr_feeds = await cur.fetchall()
+		async with self.sqlBroker.context() as sql:
+			sr_feeds = await sql.query("SELECT * from s3feeds WHERE (sr = 1)")
 
 		print(f"Doing {len(sr_feeds)} S3 Salmon Run feeds")
 
@@ -125,19 +126,7 @@ class S3FeedHandler():
 			embed.set_image(url = "attachment://sr-feed.png")
 			image_io.seek(0)
 
-			channel = self.getFeedChannel(feed[0], feed[1])
-			if channel is None:
-				print(f"Deleting feeds for channelid {feed[1]}.")
-				await cur.execute("DELETE FROM s3feeds WHERE (channelid = %s)", (feed[1],))
-				continue
-
-			try:
-				await channel.send(file = img, embed = embed)
-			except discord.Forbidden:
-				print(f"403 - Deleting feed for channel {feed[1]}")
-				await cur.execute("DELETE FROM s3feeds WHERE channelid = %s", (feed[1],))
-
-		await self.sqlBroker.commit(cur)
+			await self.sendFeedMessage(feed['serverid'], feed['channelid'], file = img, embed = embed)
 
 	async def doGearFeed(self):
 		embed = discord.Embed(colour=0x0004FF)
@@ -157,10 +146,9 @@ class S3FeedHandler():
 
 		embed = discord.Embed(colour=0x0004FF)
 		embed.title = "New gear in Splatoon 3 Splatnet store"
-		
-		cur = await self.sqlBroker.connect()
-		await cur.execute("SELECT * FROM s3feeds WHERE gear = 1")
-		gear_feeds = await cur.fetchall()
+
+		async with self.sqlBroker.context() as sql:
+			gear_feeds = await sql.query("SELECT * from s3feeds WHERE (gear = 1)")
 
 		print(f"Doing {len(gear_feeds)} S3 gear feeds")
 
@@ -169,20 +157,7 @@ class S3FeedHandler():
 			embed.set_image(url = "attachment://gear-feed.png")			
 			image_io.seek(0)
 
-			channel = self.getFeedChannel(feed[0], feed[1])
-			if channel is None:
-				print(f"Deleting feeds for channelid {feed[1]}.")
-				await cur.execute("DELETE FROM s3feeds WHERE (channelid = %s)", (feed[1],))
-				continue
-
-			try:
-				await channel.send(file = img, embed = embed)
-			except discord.Forbidden:
-				print(f"403 - Deleting feed for channel {feed[1]}")
-				await cur.execute("DELETE FROM s3feeds WHERE channelid = %s", (feed[1],))
-
-		await self.sqlBroker.commit(cur)
-		return
+			await self.sendFeedMessage(feed['serverid'], feed['channelid'], file = img, embed = embed)
 
 	async def getFeed(self, serverid, channelid):
 		async with self.sqlBroker.context() as sql:
