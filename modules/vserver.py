@@ -7,6 +7,8 @@ import json, re, os
 from bs4 import BeautifulSoup
 from random import randint
 from subprocess import call
+from discord.ui import *
+from discord.enums import ComponentType, InputTextStyle
 
 youtube_dl.utils.bug_reports_message = lambda: ''
 
@@ -28,6 +30,116 @@ ffmpeg_options = {
 }
 
 ytdl = youtube_dl.YoutubeDL(ytdl_format_options)
+
+class ListView(discord.ui.View):
+
+	def __init__(self, ctx, sql):
+		super().__init__()
+		self.ctx = ctx
+		self.sqlBroker = sql
+		self.page = 1
+
+		cancel = discord.ui.Button(label="Cancel")
+		cancel.callback = self.cancelCallback
+		self.add_item(cancel)
+
+		delete = discord.ui.Button(label="Delete video", style=discord.ButtonStyle.red)
+		delete.callback = self.deleteCallback
+		self.add_item(delete)
+
+		submit = discord.ui.Button(label="Submit video")
+		submit.callback = self.urlCallback
+		self.add_item(submit)
+
+	async def init(self):
+		#await self.ctx.defer(ephemeral=True)
+		async with self.sqlBroker.context() as sql:
+			self.urls = await sql.query("SELECT url FROM playlist WHERE (serverid = %s)", self.ctx.guild.id)
+
+	async def cancelCallback(self, interaction: discord.Interaction):
+		await interaction.response.edit_message(content='Done!', embed=None, view=None)
+		self.stop()
+
+	async def urlCallback(self, interaction: discord.Interaction):
+		modal = urlInputHandler(self.sqlBroker, title="Add a URL to playlist")
+		await interaction.response.send_modal(modal=modal)
+		await modal.wait()
+		await interaction.response.edit_message(embed=await self.generateEmbed(), view=self)
+
+	async def deleteCallback(self, interaction: discord.Interaction):
+		modal = deleteInputHandler(self.sqlBroker, self, title="Delete item from playlist")
+		await interaction.response.send_modal(modal=modal)
+		await modal.wait()
+		await interaction.response.edit_message(embed=await self.generateEmbed(), view=self)
+
+	def getUrlIndex(self, index):
+		return self.urls[index * page - 1]
+
+	async def generateEmbed(self):
+		page = self.page
+		embed = discord.Embed(colour=0x3FFF33)
+		embed.title = "Playlist Management"
+		embed.add_field(name="Instructions", value="Hit numbered buttons to delete from playlist. Add to add a video to the playlist.", inline=False)
+		rowcnt = 1
+		urllen = len(self.urls)
+
+		urlstring = ""
+		for i, url in enumerate(self.urls[((page - 1) * 10):(max(urllen, page * 10))], 1):
+			url = url['url']
+			#data = ytdl.extract_info(url, download=False)
+			urlstring += f"{i} - {url}\n"#{data.get('title')} - {data.get('duration')}\n"
+
+		embed.add_field(name=f"Video List (Page {page}/{-(urllen // -10)})", value=urlstring, inline=False)
+
+		return embed
+
+class urlInputHandler(Modal):
+	def __init__(self, sqlBroker, *args, **kwargs):
+		self.sqlBroker = sqlBroker
+		super().__init__(*args, **kwargs)
+		self.add_item(InputText(label="URL to add to the playlist", style=discord.InputTextStyle.long, placeholder="https://"))
+
+	async def listCheck(self, interaction, url):
+		async with self.sqlBroker.context() as sql:
+			chk = await sql.query("SELECT COUNT(*) FROM playlist WHERE serverid = %s AND url = %s", (interaction.guild.id, url,))
+
+			if chk[0] == 0:
+				return False
+			else:
+				return True		
+
+	async def addUrl(self, interaction, url):
+		async with self.sqlBroker.context() as sql:
+			chk = await sql.query("DELETE FROM playlist WHERE (serverid = %s) AND (url = %s)", (interaction.guild.id, url,))
+
+	async def callback(self, interaction: discord.Interaction):
+		if await self.listCheck(interaction, self.children[0]): 
+			try:
+				data = ytdl.extract_info(self.children[0], download=False)
+				await interaction.response.send_message(f"Added {data.get['title']}", ephemeral=True)
+				#self.stop()
+			except:
+				await interaction.response.send_message(f"Failed to get video from <{self.children[0]}>", ephemeral=True)
+				#self.stop()
+		else:
+			await interaction.response.send_message("False!", ephemeral=True)
+			#self.stop()
+
+class deleteInputHandler(Modal):
+	def __init__(self, sqlBroker, parent, *args, **kwargs):
+		self.sqlBroker = sqlBroker
+		self.parent = parent
+		super().__init__(*args, **kwargs)
+		self.add_item(InputText(label="Video number to delete (1-10) URL(?)", style=discord.InputTextStyle.short, placeholder="1-10 OR https://(?)"))
+
+	async def callback(self, interaction: discord.Interaction):
+		num = self.children[0].value
+
+		if int(num) >= 10 or int(num) < 0:
+			await interaction.response.send_message("Num needs to be between 1 and 10", ephemeral=True)
+			return
+
+		await interaction.response.send_message("Not working yet...")
 
 class YTDLSource(discord.PCMVolumeTransformer):
     def __init__(self, source, *, data, volume=0.07):

@@ -773,6 +773,15 @@ async def cmdVoicePlaySound(ctx, sound: Option(str, "Sound clip to play, get wit
 		await ctx.respond(f"Attempting to play: {sound}", ephemeral=True)
 		await serverVoices[ctx.guild.id].playSound(sound)
 
+@adminCmds.command(name="playistview", description="Manages the play random playlist for the server")
+async def cmdPlaylistView(ctx):
+	global mysqlHandler
+	view = vserver.ListView(ctx, mysqlHandler)
+	await view.init()
+
+	embed = await view.generateEmbed()
+	await ctx.respond(embed=embed, view=view, ephemeral=True)
+
 @adminCmds.command(name='playlist', description="Adds a URL or the current video to my playlist for /voice play random")
 async def cmdPlaylistAdd(ctx, url: Option(str, "URL to add to my playlist", required=True)):
 	if ctx.guild == None:
