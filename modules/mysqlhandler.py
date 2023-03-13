@@ -2,6 +2,7 @@ import asyncio
 import aiomysql
 import traceback
 import pdb
+import re
 
 class mysqlHandler():
 	def __init__(self, host, user, pw, db):
@@ -28,6 +29,15 @@ class mysqlHandler():
 
 	def context(self, *args):
 		return MysqlContext(self, *args)
+
+	def getDatabaseName(self):
+		return self.__db
+
+	def escapeTableName(self, name):
+		if not re.fullmatch(r'^[a-z_][a-z0-9_]*$', name, re.IGNORECASE):
+			raise Exception("Invalid characters in table name")
+
+		return f"`{name}`"
 
 	async def connect(self, *args):
 		con = await self.pool.acquire()
