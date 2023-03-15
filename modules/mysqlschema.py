@@ -9,23 +9,35 @@ class MysqlSchema():
 
 		cur = await self.sqlBroker.connect()
 
+		# Convert any latin1 tables to UTF-8
+		try:
+			await cur.execute("SELECT TABLE_NAME, TABLE_COLLATION FROM INFORMATION_SCHEMA.TABLES WHERE (TABLE_COLLATION LIKE 'latin1%%') AND (TABLE_SCHEMA = %s)", self.sqlBroker.getDatabaseName())
+			rows = await cur.fetchall()
+			for r in rows:
+				print(f"[MysqlSchema] Converting DB table '{r[0]}' to UTF-8...")
+				await cur.execute(f"ALTER TABLE {self.sqlBroker.escapeTableName(r[0])} CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci")
+		except Exception as e:
+			print(f"  Something went wrong during conversion: {e}")
+		finally:
+			await self.sqlBroker.c_commit(cur)
+
 		if await self.sqlBroker.hasTable(cur, 'feeds') and not await self.sqlBroker.hasTable(cur, 's2_feeds'):
-			print("Renaming table 'feeds' to 's2_feeds'...")
+			print("[MysqlSchema] Renaming table 'feeds' to 's2_feeds'...")
 			await cur.execute("RENAME TABLE feeds TO s2_feeds")
 			await self.sqlBroker.c_commit(cur)
 
 		if await self.sqlBroker.hasTable(cur, 'storedms') and not await self.sqlBroker.hasTable(cur, 's2_storedms'):
-			print("Renaming table 'storedms' to 's2_storedms'...")
+			print("[MysqlSchema] Renaming table 'storedms' to 's2_storedms'...")
 			await cur.execute("RENAME TABLE storedms TO s2_storedms")
 			await self.sqlBroker.c_commit(cur)
 
 		if await self.sqlBroker.hasTable(cur, 'nso_app_version'):
-			print("Removing table 'nso_app_version'...")
+			print("[MysqlSchema] Removing table 'nso_app_version'...")
 			await cur.execute("DROP TABLE nso_app_version")
 			await self.sqlBroker.c_commit(cur)
 
 		if not await self.sqlBroker.hasTable(cur, 'playlist'):
-			print("Creating table 'playlist'...")
+			print("[MysqlSchema] Creating table 'playlist'...")
 			await cur.execute(
 			"""
 			CREATE TABLE `playlist` (
@@ -38,7 +50,7 @@ class MysqlSchema():
 			await self.sqlBroker.c_commit(cur)
 
 		if not await self.sqlBroker.hasTable(cur, 'dms'):
-			print("Creating table 'dms'...")
+			print("[MysqlSchema] Creating table 'dms'...")
 			await cur.execute(
 			"""
 			CREATE TABLE `dms` (
@@ -51,7 +63,7 @@ class MysqlSchema():
 			await self.sqlBroker.c_commit(cur)
 
 		if not await self.sqlBroker.hasTable(cur, 's2_feeds'):
-			print("Creating table 's2_feeds'...")
+			print("[MysqlSchema] Creating table 's2_feeds'...")
 			await cur.execute(
 			"""
 			CREATE TABLE `s2_feeds` (
@@ -67,7 +79,7 @@ class MysqlSchema():
 			await self.sqlBroker.c_commit(cur)
 
 		if not await self.sqlBroker.hasTable(cur, 's3feeds'):
-			print("Creating table 's3feeds'...")
+			print("[MysqlSchema] Creating table 's3feeds'...")
 			await cur.execute(
 			"""
 			CREATE TABLE `s3feeds` (
@@ -83,13 +95,13 @@ class MysqlSchema():
 			await self.sqlBroker.c_commit(cur)
 
 		if not await self.sqlBroker.hasKey(cur, 's2_feeds', 'serverid') or not await self.sqlBroker.hasKey(cur, 's2_feeds', 'channelid'):
-			print("Updating keys on table 'feeds'...")
+			print("[MysqlSchema] Updating keys on table 'feeds'...")
 			await cur.execute("ALTER TABLE feeds MODIFY serverid BIGINT unsigned NOT NULL, MODIFY channelid BIGINT unsigned NOT NULL")
 			await cur.execute("ALTER TABLE feeds ADD PRIMARY KEY (`serverid`, `channelid`)")
 			await self.sqlBroker.c_commit(cur)
 
 		if not await self.sqlBroker.hasTable(cur, 's2_storedms'):
-			print("Creating table 's2_storedms'...")
+			print("[MysqlSchema] Creating table 's2_storedms'...")
 			await cur.execute(
 			"""
 			CREATE TABLE `s2_storedms` (
@@ -106,7 +118,7 @@ class MysqlSchema():
 			await self.sqlBroker.c_commit(cur)
 
 		if not await self.sqlBroker.hasTable(cur, 'commandcounts'):
-			print("Creating table 'commandcounts'...")
+			print("[MysqlSchema] Creating table 'commandcounts'...")
 			await cur.execute(
 			"""
 			CREATE TABLE commandcounts
@@ -121,7 +133,7 @@ class MysqlSchema():
 			await self.sqlBroker.c_commit(cur)
 
 		if not await self.sqlBroker.hasTable(cur, 'server_config'):
-			print("Creating table 'server_config'...")
+			print("[MysqlSchema] Creating table 'server_config'...")
 			await cur.execute(
 			"""
 			CREATE TABLE server_config
@@ -135,7 +147,7 @@ class MysqlSchema():
 			await self.sqlBroker.c_commit(cur)
 
 		if not await self.sqlBroker.hasTable(cur, 'nso_client_keys'):
-			print("Creating table 'nso_client_keys'...")
+			print("[MysqlSchema] Creating table 'nso_client_keys'...")
 			await cur.execute(
 			"""
 			CREATE TABLE nso_client_keys (
@@ -149,7 +161,7 @@ class MysqlSchema():
 			await self.sqlBroker.c_commit(cur)
 
 		if not await self.sqlBroker.hasTable(cur, 'nso_global_data'):
-			print("Creating table 'nso_global_data'...")
+			print("[MysqlSchema] Creating table 'nso_global_data'...")
 			await cur.execute(
 			"""
 			CREATE TABLE nso_global_data
@@ -162,7 +174,7 @@ class MysqlSchema():
 			await self.sqlBroker.c_commit(cur)
 
 		if not await self.sqlBroker.hasTable(cur, 'emotes'):
-			print("Creating table 'emotes'...")
+			print("[MysqlSchema] Creating table 'emotes'...")
 			await cur.execute(
 			"""
 			CREATE TABLE emotes (
@@ -181,7 +193,7 @@ class MysqlSchema():
 			await self.sqlBroker.c_commit(cur)
 
 		if not await self.sqlBroker.hasTable(cur, 'friend_codes'):
-			print("Creating table 'friend_codes'...")
+			print("[MysqlSchema] Creating table 'friend_codes'...")
 			await cur.execute(
 			"""
 			CREATE TABLE friend_codes (
@@ -195,7 +207,7 @@ class MysqlSchema():
 			await self.sqlBroker.c_commit(cur)
 
 		if not await self.sqlBroker.hasTable(cur, 'group_channels'):
-			print("Creating table 'group_channels'...")
+			print("[MysqlSchema] Creating table 'group_channels'...")
 			await cur.execute(
 			"""
 			CREATE TABLE group_channels (
@@ -208,7 +220,7 @@ class MysqlSchema():
 			await self.sqlBroker.c_commit(cur)
 
 		if not await self.sqlBroker.hasTable(cur, 'group_games'):
-			print("Creating table 'group_games'...")
+			print("[MysqlSchema] Creating table 'group_games'...")
 			await cur.execute(
 			"""
 			CREATE TABLE group_games (
@@ -228,7 +240,7 @@ class MysqlSchema():
 			await self.sqlBroker.c_commit(cur)
 
 		if not await self.sqlBroker.hasTable(cur, 's3storedms'):
-			print("Creating table 's3storedms'...")
+			print("[MysqlSchema] Creating table 's3storedms'...")
 			await cur.execute(
 			"""
 			CREATE TABLE s3storedms
@@ -243,7 +255,7 @@ class MysqlSchema():
 			await self.sqlBroker.c_commit(cur)
 
 		if not await self.sqlBroker.hasTable(cur, 's3_schedule_update'):
-			print("Creating table 's3_schedule_update'...")
+			print("[MysqlSchema] Creating table 's3_schedule_update'...")
 			await cur.execute(
 			"""
 			CREATE TABLE s3_schedule_update
@@ -255,7 +267,7 @@ class MysqlSchema():
 			await self.sqlBroker.c_commit(cur)
 
 		if not await self.sqlBroker.hasTable(cur, 's3_schedule_periods'):
-			print("Creating table 's3_schedule_periods'...")
+			print("[MysqlSchema] Creating table 's3_schedule_periods'...")
 			await cur.execute(
 			"""
 			CREATE TABLE s3_schedule_periods
