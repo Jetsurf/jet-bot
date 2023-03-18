@@ -4,6 +4,7 @@ import requests, urllib, urllib.request, copy
 import youtube_dl, traceback
 import mysqlhandler
 import json, re, os
+import youtube
 from bs4 import BeautifulSoup
 from random import randint
 from subprocess import call
@@ -246,6 +247,7 @@ class voiceServer():
 		self.ytQueue = queue.Queue()
 		self.source = None
 		self.soundsDir = soundsDir
+		self.youtube = youtube.Youtube()
 		self.sqlBroker = mysqlhandler
 
 	async def joinVoiceChannel(self, ctx, args):
@@ -356,37 +358,6 @@ class voiceServer():
 			self.vclient.play(source, after=self.playNext)
 			self.source = source
 
-	def decode_vidlist(self, vidlist):
-		vids = []
-		for e in vidlist:
-			if not e.get('itemSectionRenderer'):
-				continue  # Section does not contain videos
-			contents = e['itemSectionRenderer']['contents']
-			for result in contents:
-				r = result.get('videoRenderer')
-				if r:
-					if r.get('upcomingEventData'):
-						continue  # Scheduled upcoming video
-					vid = {}
-					vid['title'] = ' '.join(list(map(lambda e: e.get("text"), r['title']['runs'])))
-					vid['videoId'] = r['videoId']
-					if r.get('lengthText'):
-						vid['length'] = r['lengthText']['simpleText']
-					vids.append(vid)
-		return vids
-
-	def get_yt_json(self, soup):
-		scripts = soup.find_all("script")
-		for s in scripts:
-			text = s.string
-			if text == None:
-				continue
-			if (re.search(r'var ytInitialData =', text)):
-				text = re.sub(r'^\s*var ytInitialData\s*=\s*', '', text)  # Slice off leading JS
-				text = re.sub(r';\s*$', '', text)  # Slice off trailing semicolon
-				return text
-		return None
-
 	def playNext(self, e):
 		if self.ytQueue.empty():
 			self.source = None
@@ -417,23 +388,8 @@ class voiceServer():
 		else:
 			try:
 				if 'youtube' in args[0]:
-					query = urllib.request.pathname2url(' '.join(args[1:]))
-					url = f"https://youtube.com/results?search_query={query}".replace('%20', '+')
-
-					source = requests.get(url).text
-					soup = BeautifulSoup(source,'html5lib')
-					theJson = self.get_yt_json(soup)
-					data = json.loads(theJson)
-					vidlist = data['contents']['twoColumnSearchResultsRenderer']['primaryContents']['sectionListRenderer']['contents']
-
-					try:
-						vids = self.decode_vidlist(vidlist)
-					except Exception as e:
-						print("--- Exception decoding Youtube vidlist ---")
-						print(traceback.format_exc())
-						print(f"Vidlist was: {vidlist}")
-						print(f"Search was: {query}")
-						raise
+					query = ' '.join(args[1:])
+					vids = await self.youtube.search(query)
 
 					if len(vids) == 0:
 						await ctx.respond("No videos found")
