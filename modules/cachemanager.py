@@ -137,7 +137,7 @@ class Cache():
 	# Takes an aiohttp.ClientResponse object.
 	async def add_http_response_async(self, key, response):
 		if not response.ok:
-			print(f"Tried to cache unsuccessful HTTP response: {response.status_code} {response.reason} url '{response.url}'")
+			print(f"Tried to cache unsuccessful HTTP response: {response.status} {response.reason} url '{response.url}'")
 			return
 
 		path = self.key_path(key)

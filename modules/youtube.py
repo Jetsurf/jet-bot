@@ -88,7 +88,7 @@ class Youtube():
 		client = self.get_client()
 		response = await client.get(url)
 		if not response.ok:
-			print(f"[Youtube] Search for '{urlquery}' gave an error: {response.status_code} {response.reason} url '{response.url}'")
+			print(f"[Youtube] Search for '{urlquery}' gave an error: {response.status} {response.reason} url '{response.url}'")
 			return None
 
 		source = await response.text()
@@ -123,7 +123,7 @@ class Youtube():
 		client = self.get_client()
 		response = await client.get(url)
 		if not response.ok:
-			print(f"[Youtube] Get details from '{url}' gave an error: {response.status_code} {response.reason} url '{response.url}'")
+			print(f"[Youtube] Get details from '{url}' gave an error: {response.status} {response.reason} url '{response.url}'")
 			return None
 
 		source = await response.text()
