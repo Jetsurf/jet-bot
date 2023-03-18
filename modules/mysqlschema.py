@@ -41,9 +41,12 @@ class MysqlSchema():
 			await cur.execute(
 			"""
 			CREATE TABLE `playlist` (
-  			`serverid` bigint unsigned NOT NULL,
-  			`url` varchar(200) NOT NULL,
-  			PRIMARY KEY (`serverid`)
+			entryid INT PRIMARY KEY AUTO_INCREMENT NOT NULL,
+			serverid BIGINT UNSIGNED NOT NULL,
+			url VARCHAR(200) NOT NULL,
+			duration INT NULL,
+			title VARCHAR(96) NULL,
+			INDEX (serverid, entryid)
 			) ENGINE=InnoDB
 			"""
 			)
@@ -280,6 +283,11 @@ class MysqlSchema():
 			) ENGINE = InnoDB
 			"""
 			)
+			await self.sqlBroker.c_commit(cur)
+
+		if not await self.sqlBroker.hasColumn(cur, 'playlist', 'entryid'):
+			print("[MysqlSchema] Upgrading table 'playlist'...")
+			await cur.execute("ALTER TABLE playlist DROP KEY serverid, ADD COLUMN entryid INT AUTO_INCREMENT PRIMARY KEY NOT NULL FIRST, ADD COLUMN duration INT NULL AFTER url, ADD COLUMN title VARCHAR(96) NULL AFTER duration, ADD INDEX (serverid, entryid)")
 			await self.sqlBroker.c_commit(cur)
 
 		await self.sqlBroker.close(cur)
