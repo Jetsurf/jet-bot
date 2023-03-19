@@ -38,6 +38,7 @@ class PlayList():
 		self.page      = 1
 		self.ctx       = ctx
 		self.shown     = False
+		self.yt = youtube.Youtube()
 
 	async def generateEmbed(self):
 		embed = discord.Embed(colour=0x3FFF33)
@@ -54,7 +55,30 @@ class PlayList():
 		liststring = ""
 		for i, entry in enumerate(self.list[((self.page - 1) * 10):(min(listlen, self.page * 10))], 1):
 			url = entry['url']
-			liststring += f"{i + ((self.page - 1) * 10)} - {url}\n"  
+			duration = entry['duration']
+			title = entry['title']
+			if "playlist?" in url:
+				pl = True
+			else:
+				pl = False
+
+			if duration == None or title == None:
+				if pl:
+					liststring += f"**{i + ((self.page - 1) * 10)} - {url}**\n"
+				else:
+					liststring += f"{i + ((self.page - 1) * 10)} - {url}\n"
+			else:
+				h = int(duration / 3600)
+				rem = duration % 3600
+				m = int(rem / 60)
+				rem = rem % 60
+				s = int(rem)
+				time = f"{h}:{m}:{s}" if h > 0 else f"{m}:{s}"
+
+				if pl:
+					liststring += f"**{i + ((self.page - 1) * 10)} - [{title}]({url}) - {time}**\n"
+				else:
+					liststring += f"{i + ((self.page - 1) * 10)} - [{title}]({url}) - {time}\n"
 
 		embed.add_field(name=f"Video List (Page {self.page}/{-(listlen // -10)})", value = liststring, inline=False)
 
@@ -75,28 +99,44 @@ class PlayList():
 			await self.ctx.interaction.delete_original_response()
 
 	async def hasUrl(self, url):
+		ytlink = self.yt.url_info(url)
+
 		async with self.sqlBroker.context() as sql:
-			row = await sql.query_first("SELECT * FROM playlist WHERE serverid = %s AND url = %s", (self.ctx.guild.id, url))
+			if ytlink['type'] == youtube.UrlType.UNKNOWN:
+				row = await sql.query_first("SELECT * FROM playlist WHERE serverid = %s AND url = %s", (self.ctx.guild.id, url))
+			else:
+				row = await sql.query_first("SELECT * FROM playlist WHERE serverid = %s AND url = %s", (self.ctx.guild.id, ytlink['url']))
+
 		return (not row is None)
 
 	async def getEntries(self):
 		async with self.sqlBroker.context() as sql:
-			return await sql.query("SELECT url FROM playlist WHERE (serverid = %s)", self.ctx.guild.id)
+			return await sql.query("SELECT url, title, duration FROM playlist WHERE (serverid = %s)", self.ctx.guild.id)
 
-	async def addEntry(self, url, title = None, duration = None):
-		
-		try:
-			data = ytdl.extract_info(url, download=False)
-			print(f"{data}\n")
+	async def addEntry(self, url):
+		link = self.yt.url_info(url)
 
-			async with self.sqlBroker.context() as sql:
-				await sql.query("INSERT INTO playlist (serverid, url) VALUES (%s, %s)", (self.ctx.guild.id, url))
+		if link['type'] == youtube.UrlType.PLAYLIST:
+			print(f"Adding playlist URL: {url}")
+			#Not implemented yet
+			link = await self.yt.get_playlist_details(url)
+		elif link['type'] == youtube.UrlType.VIDEO:
+			url = link['url']
+			print(f"Adding video URL: {url}")
+			link = await self.yt.get_video_details(url)
+		else:
+			try:
+				link = await YTDLSource.from_url(url).data
+			except:
+				print(f"Failed to add video {url} to playlist")
+				return False
 
-			await self.show()
-			return True
-		except:
-			print(f"Failed to add video {url} to playlist")
-			return False
+		async with self.sqlBroker.context() as sql:
+			await sql.query("INSERT INTO playlist (serverid, url, duration, title) VALUES (%s, %s, %s, %s)", (self.ctx.guild.id, link['url'], link['duration'], link['title'], ))
+
+		self.list.append(link['url'])
+		await self.show()
+		return True
 
 	async def deleteEntryByIndex(self, i):
 		if (i < 0) or (i > len(self.list)):
@@ -106,13 +146,25 @@ class PlayList():
 		async with self.sqlBroker.context() as sql:
 			await sql.query("DELETE FROM playlist WHERE (serverid = %s) AND (url = %s)", (self.ctx.guild.id, entry['url']))
 
+		await self.checkPageAfterDelete()
 		await self.show()
 
 	async def deleteEntryByUrl(self, url):
-		async with self.sqlBroker.context() as sql:
-			await sql.query("DELETE FROM playlist WHERE (serverid = %s) AND (url = %s)", (self.ctx.guild.id, url))
+		ytlink = self.yt.url_info(url)
 
+		async with self.sqlBroker.context() as sql:
+			if ytlink['type'] == youtube.UrlType.UNKNOWN:
+				await sql.query("DELETE FROM playlist WHERE (serverid = %s) AND (url = %s)", (self.ctx.guild.id, url))
+			else:
+				await sql.query("DELETE FROM playlist WHERE (serverid = %s) AND (url = %s)", (self.ctx.guild.id, ytlink['url']))
+
+		await self.checkPageAfterDelete()
 		await self.show()
+
+	async def checkPageAfterDelete(self):
+		#Decrement page if we deleted videos
+		if self.page * 10 >= len(await self.getEntries()) + 10:
+			self.page-=1
 
 	async def advancePage(self):
 		self.page+=1
@@ -121,7 +173,6 @@ class PlayList():
 	async def retreatPage(self):
 		self.page-=1
 		await self.show()
-
 
 class PlayListView(discord.ui.View):
 	def __init__(self, playlist, index, numUrls):
@@ -167,7 +218,7 @@ class PlayListAddModal(Modal):
 		super().__init__(*args, **kwargs)
 		self.playlist = playlist
 
-		url_input = InputText(label="URL to add to the playlist", style=discord.InputTextStyle.long, placeholder="https://")
+		url_input = InputText(label="URL to add to the playlist", style=discord.InputTextStyle.short, placeholder="https://")
 
 		self.add_item(url_input)
 
@@ -202,7 +253,7 @@ class PlayListDeleteModal(Modal):
 
 	async def callback(self, interaction: discord.Interaction):
 		if 'https://' in self.children[0].value:
-			if self.playlist.hasUrl(self.children[0].value):
+			if await self.playlist.hasUrl(self.children[0].value):
 				await self.playlist.deleteEntryByUrl(self.children[0].value)
 				await interaction.response.send_message(f"Removed url <{self.children[0].value}> from the playlist.", ephemeral = True, delete_after = 5)
 				return
@@ -211,7 +262,7 @@ class PlayListDeleteModal(Modal):
 				return
 
 		num = int(self.children[0].value)
-		if (num >= len(self.playlist.list)) or (num <= 0):
+		if (num > len(self.playlist.list)) or (num <= 0):
 			await interaction.response.send_message(f"Num needs to be between 1 and {len(self.playlist.list)}", ephemeral=True)
 			return
 
