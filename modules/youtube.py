@@ -1,8 +1,17 @@
 import json
 import re
+import asyncio
 import aiohttp
 import urllib
+import urllib.parse
 import bs4
+
+from enum import Enum
+
+class UrlType(Enum):
+	UNKNOWN = 0
+	VIDEO = 1
+	PLAYLIST = 2
 
 class Youtube():
 	def __init__(self):
@@ -17,6 +26,30 @@ class Youtube():
 			self.http_client = aiohttp.ClientSession()
 
 		return self.http_client
+
+	def url_info(self, url):
+		parsed = urllib.parse.urlparse(url)
+		if not parsed.hostname is None:
+			if parsed.hostname == 'youtu.be':
+				if match := re.match(r'/([-_A-Z0-9]{11})', parsed.path, re.IGNORECASE):
+					return {'type': UrlType.VIDEO, 'videoId': match[1], 'url': f"https://youtu.be/{match[1]}"}
+				return None
+			elif re.match(r'^(?:[^.]+\.)?youtube(?:kids)?[.]com', parsed.hostname, re.IGNORECASE):
+				args = urllib.parse.parse_qs(parsed.query)
+				if (parsed.path == '/watch') and ('v' in args):
+					return {'type': UrlType.VIDEO, 'videoId': args['v'][0], 'url': f"https://youtu.be/{args['v'][0]}"}
+				elif (parsed.path == '/playlist') and ('list' in args):
+					return {'type': UrlType.PLAYLIST, 'listId': args['list'][0], 'url': f"https://youtube.com/playlist?list={args['list'][0]}"}
+
+		# Fallbacks in case of invalid URL syntax
+		if match := re.search(r'youtu\.be/([-_A-Z0-9]{11})', url, re.IGNORECASE):
+			return {'type': UrlType.VIDEO, 'videoId': match[1], 'url': f"https://youtu.be/{match[1]}"}
+		elif match := re.search(r'youtube(?:kids)?\.com/watch\?v=([-_A-Z0-9]{11})', url, re.IGNORECASE):
+			return {'type': UrlType.VIDEO, 'videoId': match[1], 'url': f"https://youtu.be/{match[1]}"}
+		elif match := re.search(r'youtube(?:kids)?\.com/playlist\?list=([-_A-Z0-9]{13,})', url, re.IGNORECASE):
+			return {'type': UrlType.PLAYLIST, 'listId': match[1], 'url': f"https://youtube.com/playlist?list={match[1]}"}
+
+		return None  # Not a known Youtube URL
 
 	def get_yt_meta(self, soup):
 		details = {}
@@ -116,12 +149,15 @@ class Youtube():
 
 		return vids
 
-	async def get_details(self, url):
-		if not re.match(r'^https?://(?:www[.])?youtube[.]com/', url):
-			return None
+	async def get_video_details(self, url):
+		url_info = self.url_info(url)
+		if url_info is None:
+			return None  # Couldn't understand URL
+		elif url_info['type'] != UrlType.VIDEO:
+			return None  # Not a video
 
 		client = self.get_client()
-		response = await client.get(url)
+		response = await client.get(url_info['url'])
 		if not response.ok:
 			print(f"[Youtube] Get details from '{url}' gave an error: {response.status} {response.reason} url '{response.url}'")
 			return None
@@ -130,4 +166,5 @@ class Youtube():
 		soup = bs4.BeautifulSoup(source,'html5lib')
 
 		details = self.get_yt_meta(soup)
+		details['url'] = url_info['url']  # Add canonicalized URL to details
 		return details
