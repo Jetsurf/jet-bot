@@ -51,7 +51,7 @@ class Youtube():
 
 		return None  # Not a known Youtube URL
 
-	def get_yt_meta(self, soup):
+	def get_video_meta(self, soup):
 		details = {}
 
 		meta = soup.find_all("meta")
@@ -63,6 +63,17 @@ class Youtube():
 					details['duration'] = self.decode_duration(m.attrs['content'])
 				elif m.attrs['itemprop'] == "videoId":
 					details['videoId'] = m.attrs['content']
+		return details
+
+	def get_playlist_meta(self, soup):
+		details = {}
+
+		meta = soup.find_all("meta")
+		for m in meta:
+			if "name" in m.attrs:
+				if m.attrs['name'] == "title":
+					details['title'] = m.attrs['content']
+
 		return details
 
 	def get_yt_json(self, soup):
@@ -159,12 +170,68 @@ class Youtube():
 		client = self.get_client()
 		response = await client.get(url_info['url'])
 		if not response.ok:
-			print(f"[Youtube] Get details from '{url}' gave an error: {response.status} {response.reason} url '{response.url}'")
+			print(f"[Youtube] Get video details from '{url}' gave an error: {response.status} {response.reason} url '{response.url}'")
 			return None
 
 		source = await response.text()
 		soup = bs4.BeautifulSoup(source,'html5lib')
 
-		details = self.get_yt_meta(soup)
+		details = self.get_video_meta(soup)
 		details['url'] = url_info['url']  # Add canonicalized URL to details
+		return details
+
+	# Tries to grab playlist details from Youtube.
+	# Note that Youtube only returns the first 100 videos in the inital
+	#  response. If there are more videos than this, you'll only get
+	#  the first 100.
+	async def get_playlist_details(self, url):
+		url_info = self.url_info(url)
+		if url_info is None:
+			return None  # Couldn't understand URL
+		elif url_info['type'] != UrlType.PLAYLIST:
+			return None  # Not a playlist
+
+		client = self.get_client()
+		response = await client.get(url_info['url'])
+		if not response.ok:
+			print(f"[Youtube] Get playlist details from '{url}' gave an error: {response.status} {response.reason} url '{response.url}'")
+			return None
+
+		source = await response.text()
+		soup = bs4.BeautifulSoup(source,'html5lib')
+
+		#details = self.get_playlist_meta(soup)
+		response_json = self.get_yt_json(soup)
+		if not response_json:
+			print(f"[Youtube] Could not find response JSON for query '{urlquery}'")
+			return None
+
+		data = json.loads(response_json)
+
+		details = {}
+		details['url']        = url_info['url']
+		details['listId']     = url_info['listId']
+		details['title']      = data['header']['playlistHeaderRenderer']['title']['simpleText']
+		details['videoCount'] = int(data['header']['playlistHeaderRenderer']['numVideosText']['runs'][0]['text'])
+
+		try:
+			contents = data['contents']['twoColumnBrowseResultsRenderer']['tabs'][0]['tabRenderer']['content']['sectionListRenderer']['contents'][0]['itemSectionRenderer']['contents'][0]['playlistVideoListRenderer']['contents']
+		except KeyError:
+                        print(f"[Youtube] Could not find playlist contents in JSON")
+                        return None
+
+		videos = []
+		for c in contents:
+			if not "playlistVideoRenderer" in c:
+				continue  # Not a video?
+			elif not c['playlistVideoRenderer']['isPlayable']:
+				continue  # Unplayable
+
+			video = {}
+			video['title']    = ' '.join(list(map(lambda e: e.get("text"), c['playlistVideoRenderer']['title']['runs'])))
+			video['duration'] = int(c['playlistVideoRenderer']['lengthSeconds'])
+			video['videoId']  = c['playlistVideoRenderer']['videoId']
+			videos.append(video)
+
+		details['videos'] = videos
 		return details
