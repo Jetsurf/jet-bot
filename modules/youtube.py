@@ -204,7 +204,9 @@ class Youtube():
 		#print(f"DATA: {repr(data)}")
 
 		details['playable'] = (data['playabilityStatus']['status'] == "OK") or (data['playabilityStatus']['status'] == "CONTENT_CHECK_REQUIRED")
-		if not details['playable'] and ("reason" in data['playabilityStatus']):
+		if data['playabilityStatus']['status'] == "LOGIN_REQUIRED":
+			details['error'] = "Private video"
+		elif not details['playable'] and ("reason" in data['playabilityStatus']):
 			details['error'] = data['playabilityStatus']['reason']
 
 		return details

@@ -330,7 +330,7 @@ class voiceServer():
 				async with sqlBroker.context() as sql:
 					await sql.query("UPDATE playlist SET url = %s, title = %s, duration = %s WHERE (entryid = %s)", (details['url'], details['title'], details['duration'], r['entryid']))
 			else:
-				print(f"  Removing unplayable video: {details['error']}")
+				print(f"  Removing unplayable video: {details.get('error', 'Unknown error')}")
 				async with sqlBroker.context() as sql:
 					await sql.query("DELETE FROM playlist WHERE (entryid = %s)", (r['entryid'], ))
 
