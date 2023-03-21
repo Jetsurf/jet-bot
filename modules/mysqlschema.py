@@ -45,7 +45,7 @@ class MysqlSchema():
 			serverid BIGINT UNSIGNED NOT NULL,
 			url VARCHAR(200) NOT NULL,
 			duration INT NULL,
-			title VARCHAR(96) NULL,
+			title VARCHAR(100) NULL,
 			INDEX (serverid, entryid)
 			) ENGINE=InnoDB
 			"""
