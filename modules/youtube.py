@@ -76,17 +76,35 @@ class Youtube():
 
 		return details
 
-	def get_yt_json(self, soup):
+	def get_yt_json(self, soup, var = "ytInitialData"):
 		scripts = soup.find_all("script")
 		for s in scripts:
 			text = s.string
 			if text is None:
 				continue
-			if (re.search(r'var ytInitialData =', text)):
-				text = re.sub(r'^\s*var ytInitialData\s*=\s*', '', text)  # Slice off leading JS
+
+			pattern = re.compile('^\s*(?:let|var)\s+' + re.escape(var) + '\s*=\s*')
+			if pattern.search(text):
+				text = pattern.sub('', text)  # Slice off leading JS
 				text = re.sub(r';\s*$', '', text)  # Slice off trailing semicolon
 				return text
 		return None
+
+	def get_yt_json_data(self, soup, var):
+		json_string = self.get_yt_json(soup, var)
+		if json_string is None:
+			print(f"[Youtube] Could not extract JSON string")
+			return None
+
+		decoder = json.JSONDecoder()
+		try:
+			(data, index) = decoder.raw_decode(json_string)  # NOTE: raw_decode allows us to ignore extra trailing data
+		except json.decoder.JSONDecodeError as e:
+			print(f"[Youtube] Exception during JSON decode")
+			print(traceback.format_exc())
+			return None
+
+		return data
 
 	# Given a duration string like "PT4M49S", returns integer seconds.
 	# https://en.wikipedia.org/wiki/ISO_8601#Durations
@@ -137,12 +155,11 @@ class Youtube():
 
 		source = await response.text()
 		soup = bs4.BeautifulSoup(source,'html5lib')
-		response_json = self.get_yt_json(soup)
-		if not response_json:
-			print(f"[Youtube] Could not find response JSON for query '{urlquery}'")
+		data = self.get_yt_json_data(soup)
+		if data is None:
+			print(f"[Youtube] Could not extract response JSON for query '{urlquery}'")
 			return None
 
-		data = json.loads(response_json)
 		try:
 			vidlist = data['contents']['twoColumnSearchResultsRenderer']['primaryContents']['sectionListRenderer']['contents']
 		except KeyError:
@@ -178,6 +195,18 @@ class Youtube():
 
 		details = self.get_video_meta(soup)
 		details['url'] = url_info['url']  # Add canonicalized URL to details
+
+		data = self.get_yt_json_data(soup, 'ytInitialPlayerResponse')
+		if data is None:
+			print(f"[Youtube] Could not extract JSON for '{response.url}'")
+			return None
+
+		#print(f"DATA: {repr(data)}")
+
+		details['playable'] = (data['playabilityStatus']['status'] == "OK") or (data['playabilityStatus']['status'] == "CONTENT_CHECK_REQUIRED")
+		if not details['playable'] and ("reason" in data['playabilityStatus']):
+			details['error'] = data['playabilityStatus']['reason']
+
 		return details
 
 	# Tries to grab playlist details from Youtube.
@@ -201,12 +230,10 @@ class Youtube():
 		soup = bs4.BeautifulSoup(source,'html5lib')
 
 		#details = self.get_playlist_meta(soup)
-		response_json = self.get_yt_json(soup)
-		if not response_json:
-			print(f"[Youtube] Could not find response JSON for query '{urlquery}'")
+		data = self.get_yt_json_data(soup)
+		if data is None:
+			print(f"[Youtube] Could not extract JSON for '{response.url}'")
 			return None
-
-		data = json.loads(response_json)
 
 		details = {}
 		details['url']        = url_info['url']

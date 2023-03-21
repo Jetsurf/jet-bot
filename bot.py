@@ -894,6 +894,8 @@ async def on_ready():
 		await s2Handler.updateS2JSON()
 		await s3Handler.storedm.cacheS3JSON()
 
+		client.loop.create_task(vserver.voiceServer.updatePlaylists(mysqlHandler))  # NOTE: Uses create_task because no need to wait for completion
+
 		client.before_invoke(serverUtils.contextIncrementCmd)
 		print('Done\n------')
 		await client.change_presence(status=discord.Status.online, activity=discord.Game("Check /help for cmd info."))

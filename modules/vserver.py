@@ -301,6 +301,39 @@ class voiceServer():
 		self.youtube = youtube.Youtube()
 		self.sqlBroker = mysqlhandler
 
+	@classmethod
+	async def updatePlaylists(cls, sqlBroker):
+		yt = youtube.Youtube()
+
+		async with sqlBroker.context() as sql:
+			rows = await sql.query("SELECT * FROM playlist WHERE (title IS NULL)")
+
+		for r in rows:
+			print(f"updatePlaylists(): entryid {r['entryid']} url '{r['url']}'")
+			info = yt.url_info(r['url'])
+			if info is None:
+				print("  Skipping bad URL")
+				continue
+			elif info['type'] == youtube.UrlType.PLAYLIST:
+				print("  Skipping playlist")
+				continue
+
+			await asyncio.sleep(15)  # Slow down so we don't hit Youtube too hard
+			details = await yt.get_video_details(info['url'])
+			if details is None:
+				print("  Couldn't get video details")
+				continue
+
+			#print(f"  repr {repr(details)}")
+			if details['playable']:
+				print(f"  Setting video details: url '{details['url']}' title '{details['title']}' duration {details['duration']}")
+				async with sqlBroker.context() as sql:
+					await sql.query("UPDATE playlist SET url = %s, title = %s, duration = %s WHERE (entryid = %s)", (details['url'], details['title'], details['duration'], r['entryid']))
+			else:
+				print(f"  Removing unplayable video: {details['error']}")
+				async with sqlBroker.context() as sql:
+					await sql.query("DELETE FROM playlist WHERE (entryid = %s)", (r['entryid'], ))
+
 	async def joinVClient(self, ctx, channel):
 		if self.vclient != None:
 			tmpvclient = self.vclient
@@ -311,6 +344,10 @@ class voiceServer():
 		if check != None:
 			print("DEBUG: Got vclient as none and server voice client present... disconnecting")
 			await check.disconnect()
+
+	async def joinVoiceChannel(self, ctx, args):
+		id = 0
+		channel = None
 
 	async def joinVoiceChannel(self, ctx, channel):
 
