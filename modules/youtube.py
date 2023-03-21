@@ -36,7 +36,7 @@ class Youtube():
 				return None
 			elif re.match(r'^(?:[^.]+\.)?youtube(?:kids)?[.]com', parsed.hostname, re.IGNORECASE):
 				args = urllib.parse.parse_qs(parsed.query)
-				if (parsed.path == '/watch') and ('v' in args):
+				if (parsed.path == '/watch') and ('v' in args) and (len(args['v']) == 11):
 					return {'type': UrlType.VIDEO, 'videoId': args['v'][0], 'url': f"https://youtu.be/{args['v'][0]}"}
 				elif (parsed.path == '/playlist') and ('list' in args):
 					return {'type': UrlType.PLAYLIST, 'listId': args['list'][0], 'url': f"https://youtube.com/playlist?list={args['list'][0]}"}
