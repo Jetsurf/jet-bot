@@ -128,10 +128,10 @@ class MysqlContext():
 	async def __aexit__(self, exc_type, exc_value, exc_tb):
 		if exc_type is None:
 			if self.valid:
-				print(f"Leaving SQL context normally {repr(self)}")
+				#print(f"Leaving SQL context normally {repr(self)}")
 				await self.broker.commit(self.cur)
 			else:
-				print(f"Leaving SQL context after rollback {repr(self)}")
+				#print(f"Leaving SQL context after rollback {repr(self)}")
 				await self.broker.close(self.cur)
 		else:
 			print(f"Leaving SQL context due to exception {repr(self)}")
