@@ -43,7 +43,7 @@ class PlayList():
 	async def generateEmbed(self):
 		embed = discord.Embed(colour=0x3FFF33)
 		embed.title = "Playlist Management"
-		embed.add_field(name="Instructions", value="Playlists are for /voice play random #.\nAdd to add a video to the playlist.\nRemove to delete from playlist.\n Next/Prev to change pages.", inline=False)
+		embed.add_field(name="Instructions", value="Playlists are for /voice play random #.\nAdd to add a video to the playlist.\nRemove to delete from playlist.\n Next/Prev to change pages.\nBold denotes youtube playlist.", inline=False)
 
 		self.list = await self.getEntries()
 		listlen = len(self.list)
@@ -68,7 +68,9 @@ class PlayList():
 				else:
 					liststring += f"{i + ((self.page - 1) * 10)} - {url}\n"
 			else:
-				if not duration == None:
+				if pl:
+					liststring += f"**{i + ((self.page - 1) * 10)} - [{title}]({url})**\n"
+				else:
 					h = int(duration / 3600)
 					rem = duration % 3600
 					m = int(rem / 60)
@@ -76,9 +78,6 @@ class PlayList():
 					s = int(rem)
 					time = f"{h}:{m}:{s}" if h > 0 else f"{m}:{s}"
 
-				if pl:
-					liststring += f"**{i + ((self.page - 1) * 10)} - [{title}]({url})**\n"
-				else:
 					liststring += f"{i + ((self.page - 1) * 10)} - [{title}]({url}) - {time}\n"
 
 		embed.add_field(name=f"Video List (Page {self.page}/{-(listlen // -10)})", value = liststring, inline=False)
@@ -133,7 +132,7 @@ class PlayList():
 				return False
 
 		async with self.sqlBroker.context() as sql:
-			await sql.query("INSERT INTO playlist (serverid, url, duration, title) VALUES (%s, %s, %s, %s)", (self.ctx.guild.id, link['url'], link['duration'] if 'duration' in link else None, link['title'], ))
+			await sql.query("INSERT INTO playlist (serverid, url, duration, title) VALUES (%s, %s, %s, %s)", (self.ctx.guild.id, link['url'], link.get('duration'), link['title'], ))
 
 		self.list.append(link['url'])
 		await self.show()
