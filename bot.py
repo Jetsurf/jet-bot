@@ -614,10 +614,7 @@ async def cmdVoiceJoin(ctx, channel: Option(discord.VoiceChannel, "Voice Channel
 		await ctx.respond("Can't DM me with this command.")
 		return
 
-	if channel == None:
-		await serverVoices[ctx.guild.id].joinVoiceChannel(ctx, [])
-	else:
-		await serverVoices[ctx.guild.id].joinVoiceChannel(ctx, channel)
+	await serverVoices[ctx.guild.id].joinVoiceChannel(ctx, channel)
 
 @voice.command(name='leave', description="Disconnects the bot from voice")
 async def cmdVoiceLeave(ctx):

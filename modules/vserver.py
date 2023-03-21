@@ -62,21 +62,22 @@ class PlayList():
 			else:
 				pl = False
 
-			if duration == None or title == None:
+			if title == None:
 				if pl:
 					liststring += f"**{i + ((self.page - 1) * 10)} - {url}**\n"
 				else:
 					liststring += f"{i + ((self.page - 1) * 10)} - {url}\n"
 			else:
-				h = int(duration / 3600)
-				rem = duration % 3600
-				m = int(rem / 60)
-				rem = rem % 60
-				s = int(rem)
-				time = f"{h}:{m}:{s}" if h > 0 else f"{m}:{s}"
+				if not duration == None:
+					h = int(duration / 3600)
+					rem = duration % 3600
+					m = int(rem / 60)
+					rem = rem % 60
+					s = int(rem)
+					time = f"{h}:{m}:{s}" if h > 0 else f"{m}:{s}"
 
 				if pl:
-					liststring += f"**{i + ((self.page - 1) * 10)} - [{title}]({url}) - {time}**\n"
+					liststring += f"**{i + ((self.page - 1) * 10)} - [{title}]({url})**\n"
 				else:
 					liststring += f"{i + ((self.page - 1) * 10)} - [{title}]({url}) - {time}\n"
 
@@ -132,7 +133,7 @@ class PlayList():
 				return False
 
 		async with self.sqlBroker.context() as sql:
-			await sql.query("INSERT INTO playlist (serverid, url, duration, title) VALUES (%s, %s, %s, %s)", (self.ctx.guild.id, link['url'], link['duration'], link['title'], ))
+			await sql.query("INSERT INTO playlist (serverid, url, duration, title) VALUES (%s, %s, %s, %s)", (self.ctx.guild.id, link['url'], link['duration'] if 'duration' in link else None, link['title'], ))
 
 		self.list.append(link['url'])
 		await self.show()
@@ -301,56 +302,39 @@ class voiceServer():
 		self.youtube = youtube.Youtube()
 		self.sqlBroker = mysqlhandler
 
-	async def joinVoiceChannel(self, ctx, args):
-		id = 0
-		channel = None
+	async def joinVClient(self, ctx, channel):
+		if self.vclient != None:
+			tmpvclient = self.vclient
+			self.vclient = None
+			await tmpvclient.disconnect()
+				
+		check = discord.utils.get(self.client.bot.voice_clients, guild=ctx.guild)
+		if check != None:
+			print("DEBUG: Got vclient as none and server voice client present... disconnecting")
+			await check.disconnect()
 
-		if ctx.user.voice != None:
+	async def joinVoiceChannel(self, ctx, channel):
+
+		if channel is None and ctx.user.voice is None:
+			await ctx.respond("I need a channel if you're not in a voice chat!", ephemeral = True)
+			return
+
+		#Channel was not given to us but user is in channel
+		if channel is None:
 			channel = ctx.user.voice.channel
 
-		if isinstance(args, (discord.VoiceChannel, tuple)) or len(args) > 0:
-			if not isinstance(args, (discord.VoiceChannel, tuple)):
-				channelName = str(' '.join(args[0:]))
-				server = ctx.guild
-				for channel in server.voice_channels:
-					if channel.name == channelName:
-						id = channel.id
-						break
-			else:
-				id = args.id
-				channel = args
-
-			if id != 0:
-				if self.vclient != None:
-					#Make sure on_voice_state_update doesn't interfere
-					tmpvclient = self.vclient
-					self.vclient = None
-					await tmpvclient.disconnect()
-
-				#Lets *ACTUALLY* check to see if we're connected
-				temp = discord.utils.get(ctx.bot.voice_clients, guild=ctx.guild)
-				if temp != None:
-					print(f"VSERVER: Caught trying to connect to voice channel in guild {str(ctx.guild.id)}... disconnecting first....")
-					await temp.disconnect()
-
-				self.vclient = await channel.connect()
-				await ctx.respond(f"Joined voice channel: {channel.name}")
-			else:
-				await ctx.respond(f"I could not join channel {str(channelName)}")
-		elif channel != None:
-			if self.vclient != None:
-				tmpvclient = self.vclient
-				self.vclient = None
-				await tmpvclient.disconnect()
+		#Check if we are connected
+		if self.vclient != None:
+			await self.vclient.disconnect()
+			self.vclient = None
 				
-			if ctx.guild.voice_client != None:
-				print("DEBUG: Got vclient as none and server voice client present... disconnecting")
-				await ctx.guild.voice_client.disconnect()
+		#REALLY Check if we are disconnected - This bug may still be present...
+		if ctx.guild.voice_client != None:
+			print("DEBUG: Got vclient as none and server voice client present... disconnecting")
+			await ctx.guild.voice_client.disconnect()
 
-			self.vclient = await channel.connect()
-			await ctx.respond(f"Joined voice channel {channel.name}")
-		else:
-			await ctx.respond("Cannot join a channel, either be in a channel or specify which channel to join")
+		self.vclient = await channel.connect()
+		await ctx.respond(f"Joined voice channel {channel.name}")				
 
 	async def playSound(self, command):
 		command = command.replace("../", "")
