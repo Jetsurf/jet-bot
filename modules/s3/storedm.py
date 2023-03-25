@@ -109,7 +109,7 @@ class S3StoreHandler():
 
 	async def doStoreDM(self, items):
 		async with self.sqlBroker.context() as sql:
-			triggers = await sql.query("SELECT * from s3storedms")
+			triggers = await sql.query("SELECT * from s3_storedms")
 
 		for item in items:
 			print(f"S3 doStoreDM(): new gear: name '{item['gear']['name']}' brand '{item['gear']['brand']['name']}' ability '{item['gear']['primaryGearPower']['name']}'")
@@ -165,13 +165,13 @@ class S3StoreHandler():
 
 	async def addS3StoreDm(self, ctx, trigger):
 		cur = await self.sqlBroker.connect()
-		await cur.execute("SELECT COUNT(*) FROM s3storedms WHERE clientid = %s", (ctx.user.id,))
+		await cur.execute("SELECT COUNT(*) FROM s3_storedms WHERE clientid = %s", (ctx.user.id,))
 		count = await cur.fetchall()
 		count = count[0][0]
 		term = None
 
 		if count > 0:
-			await cur.execute("SELECT dmtriggers FROM s3storedms WHERE clientid = %s AND serverid = %s", (ctx.user.id, ctx.guild.id,))
+			await cur.execute("SELECT dmtriggers FROM s3_storedms WHERE clientid = %s AND serverid = %s", (ctx.user.id, ctx.guild.id,))
 			theTriggers = await cur.fetchall()
 			theTriggers = json.loads(theTriggers[0][0])
 		else:
@@ -227,7 +227,7 @@ class S3StoreHandler():
 					await ctx.respond("I am unable to DM you, please check to ensure you can receive DM's from me before attempting again.", ephemeral=True)
 					return
 
-			await cur.execute("REPLACE INTO s3storedms (clientid, serverid, dmtriggers) VALUES (%s, %s, %s)", (ctx.user.id, ctx.guild.id, json.dumps(theTriggers)))
+			await cur.execute("REPLACE INTO s3_storedms (clientid, serverid, dmtriggers) VALUES (%s, %s, %s)", (ctx.user.id, ctx.guild.id, json.dumps(theTriggers)))
 			await self.sqlBroker.commit(cur)
 
 			await ctx.respond(f"Added you to recieve a DM when gear with/by/named {term} appears in the Splatnet 3 store!")
@@ -251,14 +251,14 @@ class S3StoreHandler():
 
 	async def removeS3StoreDm(self, ctx, trigger):
 		cur = await self.sqlBroker.connect()
-		await cur.execute("SELECT COUNT(*) FROM s3storedms WHERE clientid = %s", (ctx.user.id,))
+		await cur.execute("SELECT COUNT(*) FROM s3_storedms WHERE clientid = %s", (ctx.user.id,))
 		count = await cur.fetchall()
 		count = count[0][0]
 		if count == 0:
 			await ctx.respond("You aren't set to recieve any DM's!")
 			return
 
-		await cur.execute("SELECT dmtriggers FROM s3storedms WHERE clientid = %s AND serverid = %s", (ctx.user.id, ctx.guild.id,))
+		await cur.execute("SELECT dmtriggers FROM s3_storedms WHERE clientid = %s AND serverid = %s", (ctx.user.id, ctx.guild.id,))
 		theTriggers = await cur.fetchall()
 		theTriggers = json.loads(theTriggers[0][0])
 
@@ -300,7 +300,7 @@ class S3StoreHandler():
 					return
 
 		if flag == True:
-			await cur.execute("REPLACE INTO s3storedms (clientid, serverid, dmtriggers) VALUES (%s, %s, %s)", (ctx.user.id, ctx.guild.id, json.dumps(theTriggers)))
+			await cur.execute("REPLACE INTO s3_storedms (clientid, serverid, dmtriggers) VALUES (%s, %s, %s)", (ctx.user.id, ctx.guild.id, json.dumps(theTriggers)))
 			await self.sqlBroker.commit(cur)
 
 			await ctx.respond(f"Removed you from recieving a DM when gear with/by/named {trigger} appears in the Splatnet 3 store!")
@@ -324,7 +324,7 @@ class S3StoreHandler():
 
 	async def listS3StoreDm(self, ctx):
 		async with self.sqlBroker.context() as sql:
-			rec = await sql.query_first("SELECT * from s3storedms WHERE (clientid = %s)", (ctx.user.id,))
+			rec = await sql.query_first("SELECT * from s3_storedms WHERE (clientid = %s)", (ctx.user.id,))
 
 		if rec is None:
 			await ctx.respond("You don't have any Splatoon 3 gear notifications set up. You can add one with `/s3 storedm add`")

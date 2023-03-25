@@ -55,7 +55,7 @@ class S3FeedHandler():
 		if channel is None:
 			print(f"Can't retrieve channel - Deleting feeds for serverid {serverid} channelid {channelid}.")
 			async with self.sqlBroker.context() as sql:
-				await sql.query("DELETE FROM s3feeds WHERE (serverid = %s) AND (channelid = %s)", (serverid, channelid))
+				await sql.query("DELETE FROM s3_feeds WHERE (serverid = %s) AND (channelid = %s)", (serverid, channelid))
 			return
 
 		try:
@@ -63,7 +63,7 @@ class S3FeedHandler():
 		except discord.Forbidden:
 			print(f"403 - Deleting feeds for serverid {serverid} channelid {channelid}")
 			async with self.sqlBroker.context() as sql:
-				await sql.query("DELETE FROM s3feeds WHERE (serverid = %s) AND (channelid = %s)", (serverid, channelid))
+				await sql.query("DELETE FROM s3_feeds WHERE (serverid = %s) AND (channelid = %s)", (serverid, channelid))
 			return
 
 	async def doMapFeed(self):
@@ -97,7 +97,7 @@ class S3FeedHandler():
 		embed.title = "Current Splatoon 3 multiplayer map rotation"
 
 		async with self.sqlBroker.context() as sql:
-			map_feeds = await sql.query("SELECT * from s3feeds WHERE (maps = 1)")
+			map_feeds = await sql.query("SELECT * from s3_feeds WHERE (maps = 1)")
 
 		print(f"Doing {len(map_feeds)} S3 map feeds")
 
@@ -117,7 +117,7 @@ class S3FeedHandler():
 		embed.title = "Current Splatoon 3 Salmon Run rotation"
 
 		async with self.sqlBroker.context() as sql:
-			sr_feeds = await sql.query("SELECT * from s3feeds WHERE (sr = 1)")
+			sr_feeds = await sql.query("SELECT * from s3_feeds WHERE (sr = 1)")
 
 		print(f"Doing {len(sr_feeds)} S3 Salmon Run feeds")
 
@@ -148,7 +148,7 @@ class S3FeedHandler():
 		embed.title = "New gear in Splatoon 3 Splatnet store"
 
 		async with self.sqlBroker.context() as sql:
-			gear_feeds = await sql.query("SELECT * from s3feeds WHERE (gear = 1)")
+			gear_feeds = await sql.query("SELECT * from s3_feeds WHERE (gear = 1)")
 
 		print(f"Doing {len(gear_feeds)} S3 gear feeds")
 
@@ -161,7 +161,7 @@ class S3FeedHandler():
 
 	async def getFeed(self, serverid, channelid):
 		async with self.sqlBroker.context() as sql:
-			row = await sql.query_first("SELECT * FROM s3feeds WHERE (serverid = %s) AND (channelid = %s)", (serverid, channelid))
+			row = await sql.query_first("SELECT * FROM s3_feeds WHERE (serverid = %s) AND (channelid = %s)", (serverid, channelid))
 			if row is None:
 				return None
 
@@ -170,15 +170,15 @@ class S3FeedHandler():
 
 	async def createFeed(self, serverid, channelid, flags):
 		async with self.sqlBroker.context() as sql:
-			await sql.query("REPLACE INTO s3feeds (serverid, channelid, maps, sr, gear) VALUES (%s, %s, %s, %s, %s)", (serverid, channelid, int(flags['maps']), int(flags['sr']), int(flags['gear'])))
+			await sql.query("REPLACE INTO s3_feeds (serverid, channelid, maps, sr, gear) VALUES (%s, %s, %s, %s, %s)", (serverid, channelid, int(flags['maps']), int(flags['sr']), int(flags['gear'])))
 		return
 
 	async def deleteFeed(self, serverid, channelid):
 		async with self.sqlBroker.context() as sql:
-			await sql.query("DELETE FROM s3feeds WHERE (serverid = %s) AND (channelid = %s)", (serverid, channelid))
+			await sql.query("DELETE FROM s3_feeds WHERE (serverid = %s) AND (channelid = %s)", (serverid, channelid))
 		return
 
 	async def removeServer(self, serverid):
 		async with self.sqlBroker.context() as sql:
-			await sql.query("DELETE FROM s3feeds WHERE (serverid = %s)", (serverid,))
+			await sql.query("DELETE FROM s3_feeds WHERE (serverid = %s)", (serverid,))
 		return
