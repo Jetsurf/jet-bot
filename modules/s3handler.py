@@ -4,6 +4,7 @@ import json, sys, re, time, requests, random, hashlib, os, io
 import sys
 import traceback
 import s3.storedm
+import s3.store
 import s3.schedule
 import s3.imageextractor
 
@@ -28,6 +29,7 @@ class S3Handler():
 		self.webDir = configData.get('web_dir')
 		self.schedule = s3.schedule.S3Schedule(nsotoken, mysqlHandler, cachemanager)
 		self.storedm = s3.storedm.S3StoreHandler(client, nsotoken, splat3info, mysqlHandler, configData, cachemanager)
+		self.store = s3.store.S3Store(nsotoken, splat3info, mysqlHandler)
 		self.feeds = s3.feedhandler.S3FeedHandler(client, splat3info, mysqlHandler, self.schedule, cachemanager, fonts, self.storedm)
 		self.imageextractor = s3.imageextractor.S3ImageExtractor(nsotoken, cachemanager)
 		self.fonts = fonts

@@ -252,6 +252,23 @@ class MysqlSchema():
 			)
 			await self.sqlBroker.c_commit(cur)
 
+		if not await self.sqlBroker.hasTable(cur, 's3_store_items'):
+			print("[MysqlSchema] Creating table 's3_store_items'...")
+			await cur.execute(
+			"""
+			CREATE TABLE s3_store_items
+			(
+			saleid    VARCHAR(36) PRIMARY KEY NOT NULL,
+			name      VARCHAR(64) NOT NULL,
+			dailydrop ENUM('Y', 'N') NOT NULL,
+			brandid   INT NOT NULL,
+			price     INT NOT NULL,
+			endtime   DATETIME NOT NULL,
+			jsondata  TEXT NOT NULL
+			) ENGINE=InnoDB
+			"""
+			)
+
 		if not await self.sqlBroker.hasTable(cur, 's3_storedms'):
 			print("[MysqlSchema] Creating table 's3_storedms'...")
 			await cur.execute(
