@@ -47,52 +47,22 @@ class S3OrderView(discord.ui.View):
 			await interaction.response.send_message("Something went wrong.")
 
 class S3StoreHandler():
-	def __init__(self, client, nsoToken, splat3info, mysqlHandler, configData, cachemanager):
+	def __init__(self, client, nsoToken, splat3info, mysqlHandler, cachemanager, store):
 		self.client = client
 		self.sqlBroker = mysqlHandler
 		self.nsoToken = nsoToken
 		self.splat3info = splat3info
 		self.scheduler = AsyncIOScheduler()
-		self.configData = configData
 		self.cachemanager = cachemanager
-		if 'storedm_debug' in configData and configData['storedm_debug']:
-			self.scheduler.add_job(self.doStoreRegularDM, 'cron', second = "0", timezone = 'UTC') 
-			self.scheduler.add_job(self.doStoreDailyDropDM, 'cron', second = '0', timezone = 'UTC')
-		else:
-			self.scheduler.add_job(self.doStoreRegularDM, 'cron', hour="*/4", minute='1', timezone = 'UTC') 
-			self.scheduler.add_job(self.doStoreDailyDropDM, 'cron', hour="0", minute='1', timezone='UTC')
+		self.store = store
 
-		self.scheduler.add_job(self.cacheS3JSON, 'cron', hour="*/4", minute='0', second='15', timezone='UTC')
-		self.storecache = None
-		self.cacheState = False
-		self.scheduler.start()
+		store.onUpdate(self.onStoreUpdate)
 
-	async def cacheS3JSON(self):
-		print("Updating cached S3 json...")
-		nso = await self.nsoToken.get_bot_nso_client()
-		if not nso:
-			return  # No bot account configured
-		elif not nso.is_logged_in():
-			print("S3StoreHandler.cacheS3JSON(): Time to refresh store cache, but the bot account is not logged in")
-			return
-
-		storejson = nso.s3.get_store_items()
-		if storejson is None:
-			print("Failure on store cache refresh. Trying again...")
-			time.sleep(3) #Give it a bit to try again...
-			storejson = nso.s3.get_store_items() #Done 2nd time for 9403 errors w/ token generation
-			if storejson is None:
-				print("Failed to update store cache for rotation")
-				self.cacheState = False
-				return
-
-		print("Got store cache for this rotation")
-		self.storecache = storejson['data']['gesotown']
-		self.cacheState = True
+	def onStoreUpdate(self, items):
+		asyncio.create_task(self.doStoreDM([i['data'] for i in items]))
 
 	##Trigger Keys: gearname brand mability
 	#{ 'gearnames' : ['Gear One', "Two" ], 'brands': ['Toni-Kensa', 'Forge'], 'mabilities' : ['Ink Saver (Main)'] }
-
 	def checkToDM(self, gear, criteria):
 		brand = gear['gear']['brand']['name']
 		mability = gear['gear']['primaryGearPower']['name']
@@ -124,22 +94,6 @@ class S3StoreHandler():
 				if self.checkToDM(item, criteria):
 					print(f"  Messaging {user.name}")
 					await self.handleDM(user, item)
-
-	async def doStoreDailyDropDM(self):
-		items = self.storecache['pickupBrand']['brandGears']
-		print(f"Doing S3 daily drop store DMs.")
-		await self.doStoreDM(items)
-		return
-
-	async def doStoreRegularDM(self):
-		if not self.cacheState:
-			print("Cache was not updated... skipping this daily drop...")
-			return
-
-		items = [ self.storecache['limitedGears'][5] ]
-		print(f"Doing S3 regular store DMs.")
-		await self.doStoreDM(items)
-		return
 
 	async def handleDM(self, user, gear):
 		# Get an NSO client for this user

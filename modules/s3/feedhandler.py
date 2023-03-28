@@ -9,19 +9,23 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from datetime import datetime, timezone, timedelta
 
 class S3FeedHandler():
-	def __init__(self, client, splat3info, mysqlHandler, schedule, cachemanager, fonts, storedm):
+	def __init__(self, client, splat3info, mysqlHandler, schedule, cachemanager, fonts, store):
 		self.client = client
 		self.sqlBroker = mysqlHandler
 		self.schedule = schedule
-		self.storedm = storedm
 		self.cachemanager = cachemanager
 		self.splat3info = splat3info
 		self.fonts = fonts
+		self.store = store
 		self.initialized = False
 		self.scheduler = AsyncIOScheduler(timezone='UTC')
 		self.scheduler.add_job(self.doMapFeed, 'cron', hour="*/2", minute='0', second='25', timezone='UTC')
-		self.scheduler.add_job(self.doGearFeed, 'cron', hour="*/4", minute='0', second='25', timezone='UTC')
 		asyncio.create_task(self.scheduleSRFeed())
+
+		store.onUpdate(self.onStoreUpdate)
+
+	def onStoreUpdate(self, items):
+		asyncio.create_task(self.doGearFeed([i['data'] for i in items]))
 
 	async def scheduleSRFeed(self):
 		while self.schedule.get_schedule('SR') == []:
@@ -30,7 +34,7 @@ class S3FeedHandler():
 		sched = self.schedule.get_schedule('SR')
 		#(datetime.now() + timedelta(minutes=1)).timestamp())
 		runtime = datetime.fromtimestamp(int(sched[0]['endtime']) + 20)
-		print(f"Scheduling SR feed run at {runtime}")
+		print(f"[S3FeedHandler] Scheduling SR feed run at {runtime}")
 		self.scheduler.add_job(self.doSRFeed, 'date', next_run_time=runtime)
 
 		if not self.initialized:
@@ -40,12 +44,12 @@ class S3FeedHandler():
 	def getFeedChannel(self, serverid, channelid):
 		guild = self.client.get_guild(int(serverid))
 		if guild is None:
-			print(f"getFeedChannel(): Can't find server for serverid {serverid}")
+			print(f"[S3FeedHandler] getFeedChannel(): Can't find server for serverid {serverid}")
 			return None
 
 		channel = guild.get_channel_or_thread(int(channelid))
 		if channel is None:
-			print(f"getFeedChannel(): Can't find channel for serverid {serverid} channelid {channelid}")
+			print(f"[S3FeedHandler] getFeedChannel(): Can't find channel for serverid {serverid} channelid {channelid}")
 			return None
 
 		return channel
@@ -53,7 +57,7 @@ class S3FeedHandler():
 	async def sendFeedMessage(self, serverid, channelid, file = None, embed = None):
 		channel = self.getFeedChannel(serverid, channelid)
 		if channel is None:
-			print(f"Can't retrieve channel - Deleting feeds for serverid {serverid} channelid {channelid}.")
+			print(f"[S3FeedHandler] Can't retrieve channel - Deleting feeds for serverid {serverid} channelid {channelid}.")
 			async with self.sqlBroker.context() as sql:
 				await sql.query("DELETE FROM s3_feeds WHERE (serverid = %s) AND (channelid = %s)", (serverid, channelid))
 			return
@@ -61,7 +65,7 @@ class S3FeedHandler():
 		try:
 			await channel.send(file = file, embed = embed)
 		except discord.Forbidden:
-			print(f"403 - Deleting feeds for serverid {serverid} channelid {channelid}")
+			print(f"[S3FeedHandler] 403 - Deleting feeds for serverid {serverid} channelid {channelid}")
 			async with self.sqlBroker.context() as sql:
 				await sql.query("DELETE FROM s3_feeds WHERE (serverid = %s) AND (channelid = %s)", (serverid, channelid))
 			return
@@ -85,7 +89,7 @@ class S3FeedHandler():
 		timewindows = timewindows[0:1]
 
 		if len(timewindows) == 0:
-			print("Missed map rotation")
+			print("[S3FeedHandler] Missed map rotation")
 			return
 
 		# Filter the schedules to those matching the time window(s)
@@ -99,7 +103,7 @@ class S3FeedHandler():
 		async with self.sqlBroker.context() as sql:
 			map_feeds = await sql.query("SELECT * from s3_feeds WHERE (maps = 1)")
 
-		print(f"Doing {len(map_feeds)} S3 map feeds")
+		print(f"[S3FeedHandler] Doing {len(map_feeds)} S3 map feeds")
 
 		for feed in map_feeds:
 			img = discord.File(image_io, filename = "maps-feed.png", description = "Current S3 multiplayer schedule")
@@ -119,7 +123,7 @@ class S3FeedHandler():
 		async with self.sqlBroker.context() as sql:
 			sr_feeds = await sql.query("SELECT * from s3_feeds WHERE (sr = 1)")
 
-		print(f"Doing {len(sr_feeds)} S3 Salmon Run feeds")
+		print(f"[S3FeedHandler] Doing {len(sr_feeds)} S3 Salmon Run feeds")
 
 		for feed in sr_feeds:
 			img = discord.File(image_io, filename = "sr-feed.png", description = "Current S3 Salmon Run schedule")
@@ -128,21 +132,11 @@ class S3FeedHandler():
 
 			await self.sendFeedMessage(feed['serverid'], feed['channelid'], file = img, embed = embed)
 
-	async def doGearFeed(self):
+	async def doGearFeed(self, items):
 		embed = discord.Embed(colour=0x0004FF)
 		embed.title = "New gear in the Splatoon 3 Splatnet store"
 
-		if self.storedm.storecache == None:
-			print("Storecache is none...")
-			return
-
-		if datetime.now(timezone.utc).hour == 0:
-			items = self.storedm.storecache['pickupBrand']['brandGears'] 
-			items.append(self.storedm.storecache['limitedGears'][5])
-			image_io = S3ImageBuilder.createFeedGearCard(items, self.fonts)
-		else:
-			items = [ self.storedm.storecache['limitedGears'][5] ]
-			image_io = S3ImageBuilder.createFeedGearCard(items, self.fonts)
+		image_io = S3ImageBuilder.createFeedGearCard(items, self.fonts)
 
 		embed = discord.Embed(colour=0x0004FF)
 		embed.title = "New gear in Splatoon 3 Splatnet store"
@@ -150,11 +144,11 @@ class S3FeedHandler():
 		async with self.sqlBroker.context() as sql:
 			gear_feeds = await sql.query("SELECT * from s3_feeds WHERE (gear = 1)")
 
-		print(f"Doing {len(gear_feeds)} S3 gear feeds")
+		print(f"[S3FeedHandler] Doing {len(gear_feeds)} gear feeds")
 
 		for feed in gear_feeds:
 			img = discord.File(image_io, filename = "gear-feed.png", description = "New gear posted to Splatoon 3 Splatnet")
-			embed.set_image(url = "attachment://gear-feed.png")			
+			embed.set_image(url = "attachment://gear-feed.png")
 			image_io.seek(0)
 
 			await self.sendFeedMessage(feed['serverid'], feed['channelid'], file = img, embed = embed)

@@ -17,6 +17,7 @@ class S3Store():
 		self.splat3info = splat3info
 
 		self.items = []
+		self.callbacks = {'update': []}
 
 		self.scheduler = AsyncIOScheduler()
 		self.scheduler.add_job(self.checkStoreItems, 'cron', hour="*/1", minute='0', second='15', timezone='UTC')
@@ -25,6 +26,13 @@ class S3Store():
 
 		# Do async startup
 		asyncio.create_task(self.loadStoreItems())
+
+	def onUpdate(self, callback):
+		self.callbacks['update'].append(callback)
+
+	def notifyUpdate(self, items):
+		for c in self.callbacks['update']:
+			c(items)
 
 	async def loadStoreItems(self):
 		async with self.sqlBroker.context() as sql:
@@ -131,12 +139,16 @@ class S3Store():
 
 		# Remove old items
 		for item in changes['old']:
-			print(f"[S3Store] Removing old item '{item['name']}'")
+			#print(f"[S3Store] Removing old item '{item['name']}'")
 			await self.removeStoreItem(item)
 
 		# Add new items
 		for item in changes['new']:
 			print(f"[S3Store] Adding new item '{item['name']}'")
 			await self.addStoreItem(item)
+
+		# Run callbacks if there are new items
+		if len(changes['new']) > 0:
+			self.notifyUpdate(changes['new'])
 
 		return

@@ -892,7 +892,6 @@ async def on_ready():
 		await groups.Groups.startup()
 
 		await s2Handler.updateS2JSON()
-		await s3Handler.storedm.cacheS3JSON()
 
 		client.loop.create_task(vserver.voiceServer.updatePlaylists(mysqlHandler))  # NOTE: Uses create_task because no need to wait for completion
 
