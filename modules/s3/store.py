@@ -54,6 +54,9 @@ class S3Store():
 		#print(f"loaded: {repr(items)}")
 		self.items = items
 
+		# Clean out any items that have already expired
+		await self.expireItems()
+
 	async def addStoreItem(self, item):
 		# Add to DB
 		sqlendtime = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(item['endtime']))
@@ -70,6 +73,26 @@ class S3Store():
 
 		# Remove from list
 		self.items = [i for i in self.items if i['saleid'] != item['saleid']]
+
+	async def expireItems(self):
+		now = int(time.time())
+		expired = [i for i in self.items if i['endtime'] < now]
+		for item in expired:
+			print(f"[S3Store] Removing expired item '{item['name']}' with endtime {item['endtime']}")
+			await self.removeStoreItem(item)
+		return
+
+	def hasItems(self):
+		return len(self.items) > 0
+
+	def getItems(self):
+		return self.items
+
+	def getDailyDropItems(self):
+		return [i for i in self.items if i['dailydrop']]
+
+	def getNormalItems(self):
+		return [i for i in self.items if not i['dailydrop']]
 
 	# Given a base64-encoded brand id string, returns the brand number.
 	def decodeBrandId(self, encoded):
@@ -106,6 +129,8 @@ class S3Store():
 		return results
 
 	async def checkStoreItems(self):
+		await self.expireItems()
+
 		nso = await self.nsoToken.get_bot_nso_client()
 		if not nso:
 			return  # No bot account configured

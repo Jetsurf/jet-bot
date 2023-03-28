@@ -316,17 +316,17 @@ class S3Handler():
 	async def cmdStoreList(self, ctx):
 		await ctx.defer()
 
-		if self.storedm.cacheState:
-			embed = discord.Embed(colour=0xF9FC5F)
-			embed.title = "Splatoon 3 Splatnet Store Gear"
-			img = S3ImageBuilder.createStoreCanvas(self.storedm.storecache, self.fonts)
-			img = discord.File(img, filename = "store.png", description = "Current store for Splatoon 3 Splatnet")
-			embed.set_image(url="attachment://store.png")
-			embed.set_footer(text="To order gear, run /s3 order GEARNAME")
-			await ctx.respond(embed = embed, file = img)
-		else:
-			#TODO...
+		if not self.store.hasItems():
 			await ctx.respond("I can't fetch the current store listing, please try again later")
+			return
+
+		embed = discord.Embed(colour=0xF9FC5F)
+		embed.title = "Splatoon 3 Splatnet Store Gear"
+		img = S3ImageBuilder.createStoreCanvas(self.store, self.fonts)
+		img = discord.File(img, filename = "store.png", description = "Current store for Splatoon 3 Splatnet")
+		embed.set_image(url="attachment://store.png")
+		embed.set_footer(text="To order gear, run /s3 order GEARNAME")
+		await ctx.respond(embed = embed, file = img)
 
 	async def cmdS3StoreOrder(self, ctx, item, override):
 		await ctx.defer()
