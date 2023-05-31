@@ -1662,7 +1662,7 @@
       },
       "price": 3800,
       "rarity": 1,
-      "season": 5
+      "season": 6
     },
     {
       "ability": "Special Saver",
@@ -1915,6 +1915,31 @@
       "season": 1
     },
     {
+      "ability": "Ink Saver (Sub)",
+      "brand": "B10",
+      "id": 1068,
+      "internalName": "TES068",
+      "names": {
+        "de-DE": "Wei\u00dfes Re-Issue-Shirt",
+        "en-GB": "White Retro Tee",
+        "en-US": "White Retro Tee",
+        "es-ES": "Camiseta reditada blanca",
+        "es-MX": "Camiseta reditada blanca",
+        "fr-CA": "T-shirt blanc r\u00e9tro",
+        "fr-FR": "T-shirt blanc r\u00e9tro",
+        "it-IT": "T-shirt bianca r\u00e9tro",
+        "ja-JP": "\u30ea\u30a4\u30b7\u30e5\u30fcT \u30db\u30ef\u30a4\u30c8",
+        "ko-KR": "\ud654\uc774\ud2b8 \ub9ac\uc774\uc288 T",
+        "nl-NL": "Wit retro-T-shirt",
+        "ru-RU": "\u0411\u0435\u043b\u0430\u044f \u0440\u0435\u0442\u0440\u043e-\u043c\u0430\u0439\u043a\u0430",
+        "zh-CN": "\u518d\u7248T\u6064 \u767d\u8272",
+        "zh-TW": "\u518d\u7248T\u6064 \u767d\u8272"
+      },
+      "price": 770,
+      "rarity": 0,
+      "season": 4
+    },
+    {
       "ability": "Special Saver",
       "brand": "B10",
       "id": 1069,
@@ -2140,6 +2165,31 @@
       "season": 0
     },
     {
+      "ability": "Swim Speed Up",
+      "brand": "B11",
+      "id": 1081,
+      "internalName": "TES081",
+      "names": {
+        "de-DE": "Kalamati-Duo-Shirt",
+        "en-GB": "Takoroka Tandem",
+        "en-US": "Takoroka Tandem",
+        "es-ES": "Camiseta Sepioca t\u00e1ndem",
+        "es-MX": "Camiseta Pulpioka t\u00e1ndem",
+        "fr-CA": "Tandem Cubic",
+        "fr-FR": "Tandem Cubic",
+        "it-IT": "T-shirt bivalve Sepia",
+        "ja-JP": "\u30e4\u30b3T \u30b4\u30d6\u30b4\u30d6",
+        "ko-KR": "\ub77c\uc774\uc988 \ubc18\ubc18 T",
+        "nl-NL": "Combi-Takoroka-shirt",
+        "ru-RU": "\u041c\u0430\u0439\u043a\u0430-\u0434\u0443\u043e \u043e\u0442 \u00ab\u0420\u044b\u0431\u043e\u043a\u00bb",
+        "zh-CN": "\u6687\u53e4T\u6064 \u4e94\u5206\u8896",
+        "zh-TW": "\u6687\u53e4T\u6064 \u4e94\u5206\u8896"
+      },
+      "price": 1200,
+      "rarity": 0,
+      "season": 4
+    },
+    {
       "ability": "Ink Recovery Up",
       "brand": "B01",
       "id": 1082,
@@ -2238,6 +2288,31 @@
       "price": 880,
       "rarity": 0,
       "season": 0
+    },
+    {
+      "ability": "Ink Resistance Up",
+      "brand": "B07",
+      "id": 1086,
+      "internalName": "TES086",
+      "names": {
+        "de-DE": "Papri-K-Style-Shirt",
+        "en-GB": "Lyco-P Streetstyle Tee",
+        "en-US": "Lyco-P Streetstyle Tee",
+        "es-ES": "Camiseta de dise\u00f1o tomate",
+        "es-MX": "Camiseta tomate",
+        "fr-CA": "T-shirt branch\u00e9 papri-K",
+        "fr-FR": "T-shirt branch\u00e9 papri-K",
+        "it-IT": "T-shirt street rossa",
+        "ja-JP": "\u30d3\u30d0\u30ec\u30c3\u30b8T \u30ea\u30b3\u30d4\u30f3",
+        "ko-KR": "\ub9ac\ucf54\ud39c \ubca0\ubc84\ub9ac\uc9c0 T",
+        "nl-NL": "Rood streetstyle-T-shirt",
+        "ru-RU": "\u041c\u043e\u0434\u043d\u0430\u044f \u043c\u0430\u0439\u043a\u0430 \u00ab\u041f\u0430\u043f\u0440\u0438\u043a\u0430\u00bb",
+        "zh-CN": "\u996e\u6599T\u6064 \u756a\u8304\u7ea2\u7d20",
+        "zh-TW": "\u98f2\u6599T\u6064 \u756a\u8304\u7d05\u7d20"
+      },
+      "price": 500,
+      "rarity": 0,
+      "season": 4
     },
     {
       "ability": "Intensify Action",
@@ -2731,7 +2806,7 @@
         "ja-JP": "\u30ab\u30e9\u30de\u30ea\u30d5\u30c3\u30af \u30d6\u30e9\u30c3\u30af",
         "ko-KR": "\ube14\ub799 \uce7c\ub77c\ub9c8\ub9ac \ud6c4\ud06c",
         "nl-NL": "Zwarte haaktrui",
-        "ru-RU": "\u0427\u0435\u0440\u043d\u044b\u0439 \u043f\u043b\u0435\u0442\u0435\u043d\u044b\u0439 \u0442\u043e\u043f",
+        "ru-RU": "\u0427\u0435\u0440\u043d\u044b\u0439 \u043f\u0440\u0438\u043d\u0442-\u0434\u0436\u0435\u043c\u043f\u0435\u0440",
         "zh-CN": "\u7f20\u7ed5\u94a9\u722aT\u6064 \u9ed1\u8272",
         "zh-TW": "\u7e8f\u7e5e\u9264\u722aT\u6064 \u9ed1\u8272"
       },
@@ -3940,6 +4015,31 @@
       "season": 0
     },
     {
+      "ability": "Special Saver",
+      "brand": "B15",
+      "id": 5053,
+      "internalName": "JKT053",
+      "names": {
+        "de-DE": "Annaki-Ankersakko",
+        "en-GB": "Annaki Anchored Coat",
+        "en-US": "Annaki Anchored Coat",
+        "es-ES": "Chaqueta doble Annak",
+        "es-MX": "Chaqueta doble Annak",
+        "fr-CA": "Veste \u00e0 ancre Aroz",
+        "fr-FR": "Veste \u00e0 ancre Aroz",
+        "it-IT": "Doppiopetto Annak",
+        "ja-JP": "\u30a2\u30ca\u30a2\u30ad\u30c0\u30d6\u30eb\u30b8\u30e3\u30b1\u30c3\u30c8",
+        "ko-KR": "\uc544\ub098\ud0a4 \ub354\ube14 \uc7ac\ud0b7",
+        "nl-NL": "Annaki-ankerjas",
+        "ru-RU": "\u0414\u0432\u0443\u0431\u043e\u0440\u0442\u043d\u0438\u043a \u0441 \u044f\u043a\u043e\u0440\u0435\u043c",
+        "zh-CN": "\u65e0\u6cd5\u65e0\u5929\u53cc\u6392\u6263\u5916\u5957",
+        "zh-TW": "\u7121\u6cd5\u7121\u5929\u96d9\u6392\u91e6\u5916\u5957"
+      },
+      "price": 12000,
+      "rarity": 2,
+      "season": 4
+    },
+    {
       "ability": "Intensify Action",
       "brand": "B09",
       "id": 5054,
@@ -4041,6 +4141,31 @@
     },
     {
       "ability": "Quick Super Jump",
+      "brand": "B20",
+      "id": 5059,
+      "internalName": "JKT059",
+      "names": {
+        "de-DE": "Bossblauer Haori",
+        "en-GB": "Indigo Boss Haori",
+        "en-US": "Indigo Boss Haori",
+        "es-ES": "Chaqueta haori regia",
+        "es-MX": "Chaqueta haori regia",
+        "fr-CA": "Haori pro indigo",
+        "fr-FR": "Haori pro indigo",
+        "it-IT": "Vestaglia indaco",
+        "ja-JP": "\u30a4\u30c1\u30cb\u30f3\u30d0\u30aa\u30ea",
+        "ko-KR": "\uc778\ub514\uace0 \ubcf4\uc2a4 \uc544\uc6b0\ud130",
+        "nl-NL": "Blauwe meesterhaori",
+        "ru-RU": "\u0421\u0438\u043d\u0435\u0435 \u0445\u0430\u043e\u0440\u0438 \u00ab\u0411\u043e\u0441\u0441\u00bb",
+        "zh-CN": "\u4e3b\u516c\u7fbd\u7ec7",
+        "zh-TW": "\u4e3b\u516c\u7fbd\u7e54"
+      },
+      "price": 10500,
+      "rarity": 2,
+      "season": 4
+    },
+    {
+      "ability": "Quick Super Jump",
       "brand": "B09",
       "id": 5060,
       "internalName": "JKT060",
@@ -4063,6 +4188,31 @@
       "price": 3370,
       "rarity": 1,
       "season": 2
+    },
+    {
+      "ability": "Ink Resistance Up",
+      "brand": "B11",
+      "id": 5061,
+      "internalName": "JKT061",
+      "names": {
+        "de-DE": "Kalamati-Retro-Breaker",
+        "en-GB": "Takoroka Nineties Nylon",
+        "en-US": "Takoroka Nineties Nylon",
+        "es-ES": "Ch\u00e1ndal cl\u00e1sico Sepioca",
+        "es-MX": "Rompevientos cl\u00e1sico Pulpioka",
+        "fr-CA": "Coupe-vent n\u00e9on Pionic",
+        "fr-FR": "Coupe-vent old school Cubic",
+        "it-IT": "Giacca a vento Sepia",
+        "ja-JP": "\u30e4\u30b3\u30ca\u30a4\u30ed\u30f3 \u30ce\u30b9\u30bf\u30eb\u30b8\u30a2",
+        "ko-KR": "\ub77c\uc774\uc988 \ub098\uc77c\ub860 \ub178\uc2a4\ud0e4\uc9c0\uc5b4",
+        "nl-NL": "Takoroka-neonjack",
+        "ru-RU": "\u0412\u0435\u0442\u0440\u043e\u0432\u043a\u0430 \u043e\u0442 \u00ab\u0420\u044b\u0431\u043e\u043a\u00bb",
+        "zh-CN": "\u6687\u53e4\u5c3c\u9f99\u62c9\u94fe\u4e0a\u8863 \u4e61\u6101",
+        "zh-TW": "\u6687\u53e4\u5c3c\u9f8d\u62c9\u934a\u4e0a\u8863 \u9109\u6101"
+      },
+      "price": 9900,
+      "rarity": 2,
+      "season": 4
     },
     {
       "ability": "Special Saver",
@@ -4137,7 +4287,32 @@
       },
       "price": 600,
       "rarity": 0,
-      "season": 5
+      "season": 6
+    },
+    {
+      "ability": "Run Speed Up",
+      "brand": "B11",
+      "id": 6007,
+      "internalName": "TNK007",
+      "names": {
+        "de-DE": "Umibozu-Ausw\u00e4rtstrikot",
+        "en-GB": "Umibozu Road Jersey",
+        "en-US": "Umibozu Road Jersey",
+        "es-ES": "Umibozu visitante",
+        "es-MX": "Umibozu visitante",
+        "fr-CA": "Maillot des Umibozu (ext.)",
+        "fr-FR": "Maillot des Umibozu (ext.)",
+        "it-IT": "Canotta Umibozu",
+        "ja-JP": "\u30a6\u30df\u30dc\u30fc\u30ba \u30a2\u30a6\u30a7\u30a4",
+        "ko-KR": "\uc6b0\ubbf8\ubcf4\uc988(\uc5b4\uc6e8\uc774)",
+        "nl-NL": "Umibozu-jersey (uit)",
+        "ru-RU": "\u00ab\u0423\u043c\u0438\u0431\u043e\u0434\u0437\u0443\u00bb (\u0437\u0430\u043f\u0430\u0441\u043d\u043e\u0439)",
+        "zh-CN": "\u6d77\u574a\u4e3b\u5766\u514b\u80cc\u5fc3 \u5ba2\u573a",
+        "zh-TW": "\u6d77\u574a\u4e3b\u5766\u514b\u80cc\u5fc3 \u5ba2\u5834"
+      },
+      "price": 8900,
+      "rarity": 2,
+      "season": 4
     },
     {
       "ability": "Haunt",
@@ -5290,6 +5465,31 @@
       "season": 0
     },
     {
+      "ability": "Special Power Up",
+      "brand": "B08",
+      "id": 8037,
+      "internalName": "SHT037",
+      "names": {
+        "de-DE": "Gestreiftes Stehkragen-Hemd",
+        "en-GB": "Hype Stripe Button Up",
+        "en-US": "Hype Stripe Button Up",
+        "es-ES": "Camisa cuello de banda rayas",
+        "es-MX": "Camisa botones blanca y gris",
+        "fr-CA": "Chemise ray\u00e9e",
+        "fr-FR": "Chemise ray\u00e9e",
+        "it-IT": "Camicia senza colletto a righe",
+        "ja-JP": "\u30d0\u30f3\u30c9\u30ab\u30e9\u30fc \u30b9\u30c8\u30e9\u30a4\u30d7",
+        "ko-KR": "\uc2a4\ud2b8\ub77c\uc774\ud504 \ubc34\ub4dc \uce7c\ub77c",
+        "nl-NL": "Streephemd met hoge kraag",
+        "ru-RU": "\u041f\u043e\u043b\u043e\u0441\u0430\u0442\u0430\u044f \u0440\u0443\u0431\u0430\u0448\u043a\u0430",
+        "zh-CN": "\u7acb\u9886\u886c\u886b \u6761\u7eb9",
+        "zh-TW": "\u7acb\u9818\u896f\u886b \u689d\u7d0b"
+      },
+      "price": 9999,
+      "rarity": 2,
+      "season": 4
+    },
+    {
       "ability": "Thermal Ink",
       "brand": "B08",
       "id": 8038,
@@ -5615,6 +5815,31 @@
       "season": 1
     },
     {
+      "ability": "Special Charge Up",
+      "brand": "B09",
+      "id": 9014,
+      "internalName": "VST014",
+      "names": {
+        "de-DE": "Schwarze Ranger-Kombo",
+        "en-GB": "Black Ranger Vest",
+        "en-US": "Black Ranger Vest",
+        "es-ES": "Chaleco bolsillos negro",
+        "es-MX": "Chaleco bolsillos negro",
+        "fr-CA": "Veste foresti\u00e8re noire",
+        "fr-FR": "Gilet forestier noir",
+        "it-IT": "Gilet militare nero",
+        "ja-JP": "\u30cf\u30f3\u30c6\u30a3\u30f3\u30b0\u30d9\u30b9\u30c8BK",
+        "ko-KR": "\ube14\ub799 \ud5cc\ud305 \ubca0\uc2a4\ud2b8",
+        "nl-NL": "Zwart boswachteroverhemd",
+        "ru-RU": "\u041f\u043e\u043b\u0435\u0432\u043e\u0439 \u0436\u0438\u043b\u0435\u0442 \u00ab\u041d\u0443\u0430\u0440\u00bb",
+        "zh-CN": "\u72e9\u730e\u80cc\u5fc3BK",
+        "zh-TW": "\u72e9\u7375\u80cc\u5fc3BK"
+      },
+      "price": 6000,
+      "rarity": 1,
+      "season": 4
+    },
+    {
       "ability": "Quick Respawn",
       "brand": "B06",
       "id": 10000,
@@ -5938,6 +6163,31 @@
       "price": 0,
       "rarity": 2,
       "season": 3
+    },
+    {
+      "ability": "Quick Respawn",
+      "brand": "B97",
+      "id": 21013,
+      "internalName": "COP113",
+      "names": {
+        "de-DE": "Retrofutur-Anzug",
+        "en-GB": "Retro Future Suit",
+        "en-US": "Retro Future Suit",
+        "es-ES": "Traje retrofuturista",
+        "es-MX": "Traje retrofuturista",
+        "fr-CA": "Combi r\u00e9trofuturiste",
+        "fr-FR": "Combi r\u00e9trofuturiste",
+        "it-IT": "Tuta retrofuturistica",
+        "ja-JP": "\u30cf\u30a4\u30d1\u30fc\u30df\u30e9\u30a4\u30b9\u30fc\u30c4",
+        "ko-KR": "\ud558\uc774\ud37c \ubbf8\ub798 \uc288\ud2b8",
+        "nl-NL": "Retrofuturistisch pak",
+        "ru-RU": "\u041a\u0438\u0431\u0435\u0440\u043a\u043e\u0441\u0442\u044e\u043c",
+        "zh-CN": "\u8d85\u672a\u6765\u88c5",
+        "zh-TW": "\u8d85\u672a\u4f86\u88dd"
+      },
+      "price": 0,
+      "rarity": 2,
+      "season": 4
     },
     {
       "ability": "Ink Recovery Up",
@@ -7029,6 +7279,31 @@
       "season": 2
     },
     {
+      "ability": "Intensify Action",
+      "brand": "B07",
+      "id": 1026,
+      "internalName": "CAP026",
+      "names": {
+        "de-DE": "Durag-Kappe und Brille",
+        "en-GB": "Do-Rag, Cap & Glasses",
+        "en-US": "Do-Rag, Cap & Glasses",
+        "es-ES": "Gorra doble con gafas",
+        "es-MX": "Gorra doble con gafas",
+        "fr-CA": "Trio estival",
+        "fr-FR": "Trio estival",
+        "it-IT": "Cappello, bandana e occhiali",
+        "ja-JP": "\u30c9\u30a5\u30fc\u30e9\u30b0\u30ad\u30e3\u30c3\u30d7\u30ac\u30b5\u30cd",
+        "ko-KR": "\ub450\uac74, \ucea1&\uc120\uae00\ub77c\uc2a4",
+        "nl-NL": "Doo-rag, pet en bril",
+        "ru-RU": "\u041a\u043e\u043c\u043f\u043b\u0435\u043a\u0442 \u00ab\u0413\u0430\u043d\u0433\u0441\u0442\u0430-\u0420\u0430\u043a\u00bb",
+        "zh-CN": "\u563b\u54c8\u5934\u5dfe\u914d\u5e3d\u5b50",
+        "zh-TW": "\u563b\u54c8\u982d\u5dfe\u914d\u5e3d\u5b50"
+      },
+      "price": 9500,
+      "rarity": 2,
+      "season": 4
+    },
+    {
       "ability": "Special Power Up",
       "brand": "B19",
       "id": 1028,
@@ -7052,6 +7327,31 @@
       "price": 11200,
       "rarity": 2,
       "season": 0
+    },
+    {
+      "ability": "Quick Respawn",
+      "brand": "B08",
+      "id": 1031,
+      "internalName": "CAP031",
+      "names": {
+        "de-DE": "Marinem\u00fctze",
+        "en-GB": "Cap'n Cap",
+        "en-US": "Cap'n Cap",
+        "es-ES": "Gorra naval",
+        "es-MX": "Gorra naval",
+        "fr-CA": "Casquette de l'amiral",
+        "fr-FR": "Casquette de l'amiral",
+        "it-IT": "Cappello da nostromo",
+        "ja-JP": "\u30de\u30ea\u30f3\u30ad\u30e3\u30c3\u30d7",
+        "ko-KR": "\ub9c8\ub9b0 \ucea1",
+        "nl-NL": "Kapiteinspet",
+        "ru-RU": "\u041c\u0430\u0442\u0440\u043e\u0441\u0441\u043a\u0430\u044f \u0444\u0443\u0440\u0430\u0436\u043a\u0430",
+        "zh-CN": "\u6d77\u519b\u98ce\u5e3d",
+        "zh-TW": "\u6d77\u8ecd\u98a8\u5e3d"
+      },
+      "price": 10500,
+      "rarity": 2,
+      "season": 4
     },
     {
       "ability": "Run Speed Up",
@@ -7954,6 +8254,31 @@
       "season": 0
     },
     {
+      "ability": "Special Saver",
+      "brand": "B08",
+      "id": 3028,
+      "internalName": "EYE028",
+      "names": {
+        "de-DE": "Klappenbrille",
+        "en-GB": "Glam Clam Specs",
+        "en-US": "Glam Clam Specs",
+        "es-ES": "Gafas almejas",
+        "es-MX": "Gafas almejas",
+        "fr-CA": "Lunettes palourdes",
+        "fr-FR": "Lunettes palourdes",
+        "it-IT": "Occhiali vongolosi",
+        "ja-JP": "\u30af\u30e9\u30e0\u30b0\u30e9\u30b9",
+        "ko-KR": "\ud074\ub7a8 \uae00\ub77c\uc2a4",
+        "nl-NL": "Kokkelklepbril",
+        "ru-RU": "\u041e\u0442\u043a\u0438\u0434\u043d\u044b\u0435 \u043e\u0447\u043a\u0438",
+        "zh-CN": "\u86e4\u870a\u58a8\u955c",
+        "zh-TW": "\u86e4\u870a\u58a8\u93e1"
+      },
+      "price": 10000,
+      "rarity": 2,
+      "season": 4
+    },
+    {
       "ability": "Intensify Action",
       "brand": "B20",
       "id": 3029,
@@ -8279,6 +8604,31 @@
       "season": 2
     },
     {
+      "ability": "Quick Respawn",
+      "brand": "B09",
+      "id": 4012,
+      "internalName": "HAT012",
+      "names": {
+        "de-DE": "Muschel-Bambushut",
+        "en-GB": "Seashell Bamboo Hat",
+        "en-US": "Seashell Bamboo Hat",
+        "es-ES": "Sombrero c\u00f3nico ostras",
+        "es-MX": "Sombrero c\u00f3nico ostras",
+        "fr-CA": "Chapeau zen coquilles",
+        "fr-FR": "Chapeau zen coquilles",
+        "it-IT": "Cappello a cono",
+        "ja-JP": "\u30ab\u30a4\u30ac\u30e9\u30b9\u30b2",
+        "ko-KR": "\uc870\uac1c\uaecd\ub370\uae30 \uc0bf\uac13",
+        "nl-NL": "Schelpenbamboehoed",
+        "ru-RU": "\u0423\u0441\u0442\u0440\u0438\u0447\u043d\u0430\u044f \u0432\u044c\u0435\u0442\u043d\u0430\u043c\u043a\u0430",
+        "zh-CN": "\u8d1d\u7eb9\u6597\u7b20",
+        "zh-TW": "\u8c9d\u7d0b\u6597\u7b20"
+      },
+      "price": 3200,
+      "rarity": 1,
+      "season": 4
+    },
+    {
       "ability": "Run Speed Up",
       "brand": "B08",
       "id": 4015,
@@ -8477,6 +8827,31 @@
       "price": 2500,
       "rarity": 1,
       "season": 0
+    },
+    {
+      "ability": "Quick Respawn",
+      "brand": "B05",
+      "id": 5002,
+      "internalName": "HDP002",
+      "names": {
+        "de-DE": "Geh\u00f6rschutz",
+        "en-GB": "Noise Cancelers",
+        "en-US": "Noise Cancelers",
+        "es-ES": "Cascos antirruido",
+        "es-MX": "Auriculares antirruido",
+        "fr-CA": "Casque DJ",
+        "fr-FR": "Casque DJ",
+        "it-IT": "Cuffie antirumore",
+        "ja-JP": "\u30a4\u30e4\u30fc\u30de\u30d5",
+        "ko-KR": "\uc774\uc5b4 \uba38\ud504",
+        "nl-NL": "Oorbeschermers",
+        "ru-RU": "\u0411\u0435\u0441\u0448\u0443\u043c\u043d\u044b\u0435 \u043d\u0430\u0443\u0448\u043d\u0438\u043a\u0438",
+        "zh-CN": "\u6297\u566a\u8033\u673a",
+        "zh-TW": "\u6297\u566a\u8033\u6a5f"
+      },
+      "price": 9200,
+      "rarity": 2,
+      "season": 4
     },
     {
       "ability": "Ink Recovery Up",
@@ -8754,6 +9129,31 @@
       "season": 0
     },
     {
+      "ability": "Quick Super Jump",
+      "brand": "B00",
+      "id": 6005,
+      "internalName": "VIS005",
+      "names": {
+        "de-DE": "Shrimpschirm",
+        "en-GB": "Crust Bucket Visor",
+        "en-US": "Crust Bucket Visor",
+        "es-ES": "Visera Adolfrito",
+        "es-MX": "Visera Adolfrito",
+        "fr-CA": "Visi\u00e8re Crustassiette",
+        "fr-FR": "Visi\u00e8re Crustassiette",
+        "it-IT": "Visiera Fritto e Rifritto",
+        "ja-JP": "\u30ed\u30d6\u30ba\u30fb10\u30fb\u30d0\u30a4\u30b6\u30fc",
+        "ko-KR": "\ub86d\uc2a4 \ubc14\uc774\uc800",
+        "nl-NL": "Octobus-zonneklep",
+        "ru-RU": "\u041a\u043e\u0437\u044b\u0440\u0435\u043a \u00ab\u041c\u0430\u043a-\u0434\u0430-\u0440\u0430\u043a\u00bb",
+        "zh-CN": "\u9f9910\u4e2d\u7a7a\u906e\u9633\u5e3d",
+        "zh-TW": "\u9f8d10\u4e2d\u7a7a\u906e\u967d\u5e3d"
+      },
+      "price": 1200,
+      "rarity": 0,
+      "season": 4
+    },
+    {
       "ability": "Ink Recovery Up",
       "brand": "B07",
       "id": 7000,
@@ -9027,6 +9427,31 @@
       "price": 8500,
       "rarity": 2,
       "season": 2
+    },
+    {
+      "ability": "Run Speed Up",
+      "brand": "B05",
+      "id": 7018,
+      "internalName": "MET018",
+      "names": {
+        "de-DE": "Schnablers-Heimspielhelm",
+        "en-GB": "Barrelfish Home Helmet",
+        "en-US": "Barrelfish Home Helmet",
+        "es-ES": "Casco b\u00e9isbol Ishidai local",
+        "es-MX": "Casco b\u00e9isbol Ishidai local",
+        "fr-CA": "Casque de batteur Ishidai",
+        "fr-FR": "Casque de batteur Ishidai",
+        "it-IT": "Casco Tuttepinne (casa)",
+        "ja-JP": "\u30a4\u30b7\u30c0\u30a4ST\u30e1\u30c3\u30c8 \u30db\u30fc\u30e0",
+        "ko-KR": "\ub3cc\ub3d4 ST \ud5ec\uba67(\ud648)",
+        "nl-NL": "Strepers-helm",
+        "ru-RU": "\u0425\u043e\u0443\u043c-\u0448\u043b\u0435\u043c \u0411\u041a \u00ab\u041e\u043a\u0443\u043d\u0438\u00bb",
+        "zh-CN": "\u6761\u77f3\u9cb7ST\u5b89\u5168\u5e3d \u4e3b\u573a",
+        "zh-TW": "\u689d\u77f3\u9bdbST\u5b89\u5168\u5e3d \u4e3b\u5834"
+      },
+      "price": 3500,
+      "rarity": 1,
+      "season": 4
     },
     {
       "ability": "Last-Ditch Effort",
@@ -9377,6 +9802,31 @@
       "price": 4000,
       "rarity": 1,
       "season": 0
+    },
+    {
+      "ability": "Ink Saver (Sub)",
+      "brand": "B17",
+      "id": 8018,
+      "internalName": "MSK018",
+      "names": {
+        "de-DE": "Airflow-Schild RGB0",
+        "en-GB": "Stealth Squidbeak Shield",
+        "en-US": "Stealth Squidbeak Shield",
+        "es-ES": "Protector de mand\u00edbula N",
+        "es-MX": "Protector de mand\u00edbula N",
+        "fr-CA": "\u00c9cran facialmar furtif",
+        "fr-FR": "\u00c9cran facialamar furtif",
+        "it-IT": "Paramento nero",
+        "ja-JP": "\u30c8\u30f3\u30d3\u30b7\u30fc\u30eb\u30c9RGB0",
+        "ko-KR": "\uc624\uc9d5\uc5b4\uc785 \uc2e4\ub4dc RGB0",
+        "nl-NL": "Kraakcamouflageschild",
+        "ru-RU": "\u0427\u0435\u0440\u043d\u044b\u0439 \u044d\u043a\u0440\u0430\u043d \u00ab\u0421\u043f\u0440\u0443\u0442\u00bb",
+        "zh-CN": "\u9ed1\u9e22\u9632\u62a4\u9762\u7f69RGB0",
+        "zh-TW": "\u9ed1\u9cf6\u9632\u8b77\u9762\u7f69RGB0"
+      },
+      "price": 4400,
+      "rarity": 1,
+      "season": 4
     },
     {
       "ability": "Opening Gambit",
@@ -9827,6 +10277,56 @@
       "price": 0,
       "rarity": 2,
       "season": 3
+    },
+    {
+      "ability": "Quick Respawn",
+      "brand": "B97",
+      "id": 21018,
+      "internalName": "COP118",
+      "names": {
+        "de-DE": "Monovisor",
+        "en-GB": "See-an-Enemy HUD",
+        "en-US": "See-an-Enemy HUD",
+        "es-ES": "Visor de rastreo",
+        "es-MX": "Visor de rastreo",
+        "fr-CA": "Viseur de combat",
+        "fr-FR": "Viseur de combat",
+        "it-IT": "Visore HUD",
+        "ja-JP": "\u30de\u30eb\u30df\u30a8\u30fc\u30ebUD",
+        "ko-KR": "DABOYEO RK",
+        "nl-NL": "Verkenningsvizier",
+        "ru-RU": "\u041c\u043e\u043d\u043e\u0432\u0438\u0437\u043e\u0440 \u0441 \u0418\u041b\u0421",
+        "zh-CN": "\u89c6\u9b44UD",
+        "zh-TW": "\u8996\u9b44UD"
+      },
+      "price": 0,
+      "rarity": 2,
+      "season": 4
+    },
+    {
+      "ability": "Quick Respawn",
+      "brand": "B97",
+      "id": 21019,
+      "internalName": "COP119",
+      "names": {
+        "de-DE": "Retrofutur-Helm",
+        "en-GB": "Retro Future Helmet",
+        "en-US": "Retro Future Helmet",
+        "es-ES": "Casco retrofuturista",
+        "es-MX": "Casco retrofuturista",
+        "fr-CA": "Casque r\u00e9trofuturiste",
+        "fr-FR": "Casque r\u00e9trofuturiste",
+        "it-IT": "Casco retrofuturistico",
+        "ja-JP": "\u30cf\u30a4\u30d1\u30fc\u30df\u30e9\u30a4\u30d8\u30c3\u30c9",
+        "ko-KR": "\ud558\uc774\ud37c \ubbf8\ub798 \ud5e4\ub4dc",
+        "nl-NL": "Retrofuturistische helm",
+        "ru-RU": "\u041a\u0438\u0431\u0435\u0440\u0448\u043b\u0435\u043c",
+        "zh-CN": "\u8d85\u672a\u6765\u5934\u76d4",
+        "zh-TW": "\u8d85\u672a\u4f86\u982d\u76d4"
+      },
+      "price": 0,
+      "rarity": 2,
+      "season": 4
     },
     {
       "ability": "Swim Speed Up",
@@ -11298,7 +11798,7 @@
       },
       "price": 1200,
       "rarity": 0,
-      "season": 5
+      "season": 6
     },
     {
       "ability": "Drop Roller",
@@ -11452,6 +11952,31 @@
     },
     {
       "ability": "Special Saver",
+      "brand": "B10",
+      "id": 2044,
+      "internalName": "SHI044",
+      "names": {
+        "de-DE": "Lila Tenya8",
+        "en-GB": "Tenya OctoPurps",
+        "en-US": "Tenya OctoPurps",
+        "es-ES": "Octodeportiva morada",
+        "es-MX": "Octotenis morados",
+        "fr-CA": "Octadrilles lilas",
+        "fr-FR": "Octaskets lilas",
+        "it-IT": "Octosneaker viola",
+        "ja-JP": "\u30c6\u30f3\u30e48 \u30d1\u30fc\u30d7\u30eb",
+        "ko-KR": "\ud37c\ud50c \ud150\uc57c 8",
+        "nl-NL": "Paarse basketbalschoenen",
+        "ru-RU": "\u041e\u0441\u044c\u043c\u043e\u043a\u0440\u043e\u0441\u0441\u044b \u00ab\u0410\u043c\u0435\u0442\u0438\u0441\u0442\u00bb",
+        "zh-CN": "\u5929\u4e9a8\u7bee\u7403\u978b \u7d2b\u8272",
+        "zh-TW": "\u5929\u4e9e8\u7c43\u7403\u978b \u7d2b\u8272"
+      },
+      "price": 7980,
+      "rarity": 2,
+      "season": 4
+    },
+    {
+      "ability": "Special Saver",
       "brand": "B17",
       "id": 2045,
       "internalName": "SHI045",
@@ -11549,6 +12074,31 @@
       "price": 9500,
       "rarity": 2,
       "season": 3
+    },
+    {
+      "ability": "Sub Power Up",
+      "brand": "B19",
+      "id": 2049,
+      "internalName": "SHI049",
+      "names": {
+        "de-DE": "Wei\u00dfe Mega-Tops",
+        "en-GB": "White Lo-Vert Hi-Tops",
+        "en-US": "White Lo-Vert Hi-Tops",
+        "es-ES": "Bamba alta blanca",
+        "es-MX": "Tenis perca blancos",
+        "fr-CA": "Espadrilles \u00e0 scratch",
+        "fr-FR": "Tennis montantes \u00e0 scratch",
+        "it-IT": "Sneaker alte bianche",
+        "ja-JP": "\u30d1\u30fc\u30c1Hi \u30db\u30ef\u30a4\u30c8",
+        "ko-KR": "\ud654\uc774\ud2b8 \ud37c\uce58 Hi",
+        "nl-NL": "Witte Mega-Tops",
+        "ru-RU": "\u0411\u0435\u043b\u044b\u0435 \u043a\u0440\u043e\u0441\u0441\u044b \u043d\u0430 \u0448\u043d\u0443\u0440\u043a\u0430\u0445",
+        "zh-CN": "\u6cb3\u9c88\u9ad8\u7b52\u978b \u767d\u8272",
+        "zh-TW": "\u6cb3\u9c78\u9ad8\u7b52\u978b \u767d\u8272"
+      },
+      "price": 10200,
+      "rarity": 2,
+      "season": 4
     },
     {
       "ability": "Special Charge Up",
@@ -11848,7 +12398,7 @@
       },
       "price": 1300,
       "rarity": 0,
-      "season": 5
+      "season": 6
     },
     {
       "ability": "Drop Roller",
@@ -11899,6 +12449,31 @@
       "price": 2200,
       "rarity": 1,
       "season": 0
+    },
+    {
+      "ability": "Run Speed Up",
+      "brand": "B10",
+      "id": 3021,
+      "internalName": "SHT021",
+      "names": {
+        "de-DE": "Hyper-Guppys",
+        "en-GB": "Hyper Guppies",
+        "en-US": "Hyper Guppies",
+        "es-ES": "Zapatilla hipertramada",
+        "es-MX": "Tenis olomina",
+        "fr-CA": "Espadrilles corail",
+        "fr-FR": "Baskets corail",
+        "it-IT": "Sneaker corallo",
+        "ja-JP": "\u30b0\u30c3\u30d4\u30fc\u30d5\u30e9\u30df\u30f3\u30b4",
+        "ko-KR": "\uac70\ud53c \ud50c\ub77c\ubc0d\uace0",
+        "nl-NL": "Funky vlechtwerksneakers",
+        "ru-RU": "\u00ab\u0413\u0438\u043f\u0435\u0440\u0433\u0443\u043f\u043f\u0435\u0448\u043a\u0438\u00bb",
+        "zh-CN": "\u4f5b\u6717\u660e\u54e5\u5b54\u96c0\u9c7c\u8fd0\u52a8\u978b",
+        "zh-TW": "\u4f5b\u6717\u660e\u54e5\u5b54\u96c0\u9b5a\u904b\u52d5\u978b"
+      },
+      "price": 1300,
+      "rarity": 0,
+      "season": 4
     },
     {
       "ability": "Sub Power Up",
@@ -12376,6 +12951,56 @@
       "season": 0
     },
     {
+      "ability": "Swim Speed Up",
+      "brand": "B11",
+      "id": 4018,
+      "internalName": "SDL014",
+      "names": {
+        "de-DE": "Lila Pfeilsandalen",
+        "en-GB": "Arrow Toesies Purp",
+        "en-US": "Arrow Toesies Purp",
+        "es-ES": "Sandalia flechas morada",
+        "es-MX": "Sandalias flechas moradas",
+        "fr-CA": "Fl\u00e8ches ouvertes lilas",
+        "fr-FR": "Fl\u00e8ches ouvertes lilas",
+        "it-IT": "Open toe viola",
+        "ja-JP": "\u30a2\u30ed\u30fc\u30ba\u30b5\u30f3\u30c0\u30eb \u30e0\u30e9\u30ad",
+        "ko-KR": "\ud37c\ud50c&\uc610\ub85c \uc560\ub85c \uc0cc\ub4e4",
+        "nl-NL": "Paarse pijlsandalen",
+        "ru-RU": "\u041b\u0438\u043b\u043e\u0432\u044b\u0435 \u00ab\u0421\u0442\u0440\u0435\u043b\u044b-\u043b\u0430\u0439\u0442\u00bb",
+        "zh-CN": "\u7bad\u6807\u62d6\u978b \u7d2b\u9ec4\u8272",
+        "zh-TW": "\u7bad\u6a19\u62d6\u978b \u7d2b\u9ec3\u8272"
+      },
+      "price": 3180,
+      "rarity": 1,
+      "season": 4
+    },
+    {
+      "ability": "Object Shredder",
+      "brand": "B15",
+      "id": 4019,
+      "internalName": "SDL015",
+      "names": {
+        "de-DE": "Annaki-Anschnaller",
+        "en-GB": "Annaki Strappy Sandals",
+        "en-US": "Annaki Strappy Sandals",
+        "es-ES": "Sandalia de cuero Annak",
+        "es-MX": "Sandalias de cuero Annak",
+        "fr-CA": "Spartiates cuir Aroz",
+        "fr-FR": "Spartiates cuir Aroz",
+        "it-IT": "Sandali Annak",
+        "ja-JP": "\u30a2\u30ca\u30a2\u30ad\u30b9\u30c8\u30e9\u30c3\u30d7 \u30ec\u30b6\u30fc",
+        "ko-KR": "\uc544\ub098\ud0a4 \ub808\ub354 \uc2a4\ud2b8\ub7a9",
+        "nl-NL": "Annaki-gespsandalen",
+        "ru-RU": "\u0421\u0430\u043d\u0434\u0430\u043b\u0438\u0438 \u0441 \u0437\u0430\u0441\u0442\u0435\u0436\u043a\u0430\u043c\u0438",
+        "zh-CN": "\u65e0\u6cd5\u65e0\u5929\u8fd0\u52a8\u51c9\u978b \u76ae\u9769",
+        "zh-TW": "\u7121\u6cd5\u7121\u5929\u904b\u52d5\u6dbc\u978b \u76ae\u9769"
+      },
+      "price": 890,
+      "rarity": 0,
+      "season": 4
+    },
+    {
       "ability": "Intensify Action",
       "brand": "B01",
       "id": 4021,
@@ -12574,6 +13199,31 @@
       "price": 3000,
       "rarity": 1,
       "season": 0
+    },
+    {
+      "ability": "Ink Resistance Up",
+      "brand": "B09",
+      "id": 5002,
+      "internalName": "TRS002",
+      "names": {
+        "de-DE": "Profi-Wanderstiefel",
+        "en-GB": "Pro Trail Boots",
+        "en-US": "Pro Trail Boots",
+        "es-ES": "Bota monta\u00f1a pro",
+        "es-MX": "Botas de monta\u00f1a pro",
+        "fr-CA": "Bottes de rando pro",
+        "fr-FR": "Chaussures rando pro",
+        "it-IT": "Trekking pro",
+        "ja-JP": "\u30c8\u30ec\u30c3\u30ad\u30f3\u30b0\u30d7\u30ed",
+        "ko-KR": "\ud504\ub85c \ud558\uc774\ud0b9 \ubd80\uce20",
+        "nl-NL": "Professionele wandelschoenen",
+        "ru-RU": "\u0413\u043e\u0440\u043d\u044b\u0435 \u0431\u043e\u0442\u0438\u043d\u043a\u0438 \u041f\u0420\u041e",
+        "zh-CN": "\u767b\u5c71\u978b \u4e13\u4e1a",
+        "zh-TW": "\u767b\u5c71\u978b \u5c08\u696d"
+      },
+      "price": 9800,
+      "rarity": 2,
+      "season": 4
     },
     {
       "ability": "Quick Respawn",
@@ -12851,6 +13501,31 @@
       "season": 2
     },
     {
+      "ability": "Stealth Jump",
+      "brand": "B10",
+      "id": 6011,
+      "internalName": "BOT011",
+      "names": {
+        "de-DE": "Blaue Tarn-Daunenstiefel",
+        "en-GB": "Icy Down Boots",
+        "en-US": "Icy Down Boots",
+        "es-ES": "Bota de hielo",
+        "es-MX": "Botas ant\u00e1rticas",
+        "fr-CA": "Apr\u00e8s-skis glacier",
+        "fr-FR": "Apr\u00e8s-skis glacier",
+        "it-IT": "Stivali da ghiaccio",
+        "ja-JP": "\u30a2\u30a4\u30b9\u30c0\u30a6\u30f3\u30d6\u30fc\u30c4",
+        "ko-KR": "\uc544\uc774\uc2a4 \ud328\ub529 \ubd80\uce20",
+        "nl-NL": "Camouflagelaarzen",
+        "ru-RU": "\u0413\u043e\u0440\u043d\u044b\u0435 \u043f\u0443\u0445\u043e\u0432\u044b\u0435 \u0441\u0430\u043f\u043e\u0433\u0438",
+        "zh-CN": "\u7fbd\u7ed2\u9774 \u51b0\u539f",
+        "zh-TW": "\u7fbd\u7d68\u9774 \u51b0\u539f"
+      },
+      "price": 8200,
+      "rarity": 2,
+      "season": 4
+    },
+    {
       "ability": "Sub Resistance Up",
       "brand": "B08",
       "id": 6012,
@@ -12999,6 +13674,31 @@
       "price": 10999,
       "rarity": 2,
       "season": 1
+    },
+    {
+      "ability": "Drop Roller",
+      "brand": "B15",
+      "id": 6024,
+      "internalName": "BOT024",
+      "names": {
+        "de-DE": "Fleck-Hammerhai-Stiefel",
+        "en-GB": "Dappled Hammertreads",
+        "en-US": "Dappled Hammertreads",
+        "es-ES": "Bota pez martillo moteada",
+        "es-MX": "Botas martillo moteados",
+        "fr-CA": "Bottes requin truit\u00e9",
+        "fr-FR": "Bottes requin truit\u00e9",
+        "it-IT": "Stivali squalo martello blu",
+        "ja-JP": "\u30ab\u30bb\u30d6\u30ab\u30d6\u30fc\u30c4 \u30c0\u30c3\u30d7\u30eb",
+        "ko-KR": "\ub300\ud50c \uadc0\uc0c1\uc5b4 \ubd80\uce20",
+        "nl-NL": "Gevlekte hamerhaailaarzen",
+        "ru-RU": "\u041f\u0435\u0441\u0442\u0440\u044b\u0435 \u00ab\u041c\u043e\u043b\u043e\u0442\u043e\u0433\u043e\u043b\u043e\u0432\u044b\u00bb",
+        "zh-CN": "\u53cc\u9afb\u9ca8\u9774 \u6591\u7eb9",
+        "zh-TW": "\u96d9\u9afb\u9bca\u9774 \u6591\u7d0b"
+      },
+      "price": 9500,
+      "rarity": 2,
+      "season": 4
     },
     {
       "ability": "Ink Recovery Up",
@@ -15132,7 +15832,7 @@
       },
       "price": 16800,
       "special": "Triple Inkstrike",
-      "specialPoints": 200,
+      "specialPoints": 210,
       "sub": "Suction Bomb",
       "type": "Shooter"
     },
@@ -15444,7 +16144,7 @@
       },
       "price": 16200,
       "special": "Kraken Royale",
-      "specialPoints": 200,
+      "specialPoints": 210,
       "sub": "Splash Wall",
       "type": "Shooter"
     },
@@ -15524,6 +16224,32 @@
       "special": "Killer Wail 5.1",
       "specialPoints": 190,
       "sub": "Point Sensor",
+      "type": "Shooter"
+    },
+    {
+      "id": 101,
+      "internalName": "Shooter_QuickLong_01",
+      "level": 12,
+      "names": {
+        "de-DE": "Annaki-Kosmo-Kleckser",
+        "en-GB": "Annaki Splattershot Nova",
+        "en-US": "Annaki Splattershot Nova",
+        "es-ES": "Lanzatintas espacial B",
+        "es-MX": "Rociador espacial Annak",
+        "fr-CA": "Lanceur spatial Aroz",
+        "fr-FR": "Lanceur spatial Aroz",
+        "it-IT": "Splasher Nova Annak",
+        "ja-JP": "\u30b9\u30da\u30fc\u30b9\u30b7\u30e5\u30fc\u30bf\u30fc\u30b3\u30e9\u30dc",
+        "ko-KR": "\uc2a4\ud398\uc774\uc2a4 \uc288\ud130 \uceec\ub798\ubc84",
+        "nl-NL": "Annaki Superspetter Nova",
+        "ru-RU": "\u041a\u0430\u043f\u043b\u0435\u0441\u0442\u0440\u0435\u043b \u041d\u041e\u0412\u0410-\u041f\u0410\u041d\u041a",
+        "zh-CN": "\u592a\u7a7a\u5c04\u51fb\u67aa \u8054\u540d",
+        "zh-TW": "\u592a\u7a7a\u5c04\u64ca\u69cd \u806f\u540d"
+      },
+      "price": 7100,
+      "special": "Inkjet",
+      "specialPoints": 200,
+      "sub": "Ink Mine",
       "type": "Shooter"
     },
     {
@@ -15730,7 +16456,7 @@
       },
       "price": 11500,
       "special": "Inkjet",
-      "specialPoints": 200,
+      "specialPoints": 210,
       "sub": "Torpedo",
       "type": "Blaster"
     },
@@ -15758,6 +16484,58 @@
       "special": "Ink Vac",
       "specialPoints": 180,
       "sub": "Toxic Mist",
+      "type": "Blaster"
+    },
+    {
+      "id": 251,
+      "internalName": "Blaster_LightLong_01",
+      "level": 29,
+      "names": {
+        "de-DE": "Turbo-Blaster Plus Deko",
+        "en-GB": "Rapid Blaster Pro Deco",
+        "en-US": "Rapid Blaster Pro Deco",
+        "es-ES": "Superdevastador DX",
+        "es-MX": "Turbolanzamotas Pro chic",
+        "fr-CA": "Turboblasteur pro chic",
+        "fr-FR": "Turboblaster pro chic",
+        "it-IT": "Blaster \u00e9lite DX",
+        "ja-JP": "R\u30d6\u30e9\u30b9\u30bf\u30fc\u30a8\u30ea\u30fc\u30c8\u30c7\u30b3",
+        "ko-KR": "R \ube14\ub798\uc2a4\ud130 \uc5d8\ub9ac\ud2b8 \ub370\ucf54",
+        "nl-NL": "Flitsblaster Pro Deco",
+        "ru-RU": "\u0411\u043b\u0430\u0441\u0442\u0435\u0440\u043c\u0430\u0442 \u041f\u0420\u041e \u00ab\u0414\u0435\u043a\u043e\u00bb",
+        "zh-CN": "\u5feb\u901f\u7206\u7834\u67aa \u7cbe\u82f1\u88c5\u9970",
+        "zh-TW": "\u5feb\u901f\u7206\u7834\u69cd \u7cbe\u82f1\u88dd\u98fe"
+      },
+      "price": 14000,
+      "special": "Killer Wail 5.1",
+      "specialPoints": 180,
+      "sub": "Angle Shooter",
+      "type": "Blaster"
+    },
+    {
+      "id": 260,
+      "internalName": "Blaster_Precision_00",
+      "level": 20,
+      "names": {
+        "de-DE": "S-BLAST92",
+        "en-GB": "S-BLAST '92",
+        "en-US": "S-BLAST '92",
+        "es-ES": "D-VAST 92",
+        "es-MX": "L-MOT 92",
+        "fr-CA": "S-Blasteur '92",
+        "fr-FR": "S-Blaster '92",
+        "it-IT": "S-BLAST92",
+        "ja-JP": "S-BLAST92",
+        "ko-KR": "S-BLAST92",
+        "nl-NL": "S-BLAST '92",
+        "ru-RU": "S-BLAST 92",
+        "zh-CN": "S-BLAST92",
+        "zh-TW": "S-BLAST92"
+      },
+      "price": 9800,
+      "special": "Reefslider",
+      "specialPoints": 180,
+      "sub": "Sprinkler",
       "type": "Blaster"
     },
     {
@@ -15839,6 +16617,32 @@
       "type": "Shooter"
     },
     {
+      "id": 311,
+      "internalName": "Shooter_TripleMiddle_01",
+      "level": 27,
+      "names": {
+        "de-DE": "S3 Tintenwerfer D",
+        "en-GB": "H-3 Nozzlenose D",
+        "en-US": "H-3 Nozzlenose D",
+        "es-ES": "Tintambor pesado D",
+        "es-MX": "Manguera pesada D",
+        "fr-CA": "Arroseur lourd requin",
+        "fr-FR": "Arroseur lourd C\u00e9tac\u00e9",
+        "it-IT": "Triplete D",
+        "ja-JP": "H3\u30ea\u30fc\u30eb\u30ac\u30f3D",
+        "ko-KR": "H3 \ub9b4 \uac74 D",
+        "nl-NL": "H-3 Langsnuit D",
+        "ru-RU": "\u0422\u044f\u0436\u0435\u043b\u044b\u0439 \u043a\u0430\u043f\u043b\u0435\u0442\u0440\u043e\u043d 2.0",
+        "zh-CN": "H3\u5377\u7ba1\u67aaD",
+        "zh-TW": "H3\u6372\u7ba1\u69cdD"
+      },
+      "price": 18400,
+      "special": "Big Bubbler",
+      "specialPoints": 200,
+      "sub": "Splash Wall",
+      "type": "Shooter"
+    },
+    {
       "id": 400,
       "internalName": "Shooter_Flash_00",
       "level": 19,
@@ -15912,7 +16716,7 @@
       },
       "price": 8500,
       "special": "Trizooka",
-      "specialPoints": 200,
+      "specialPoints": 190,
       "sub": "Burst Bomb",
       "type": "Roller"
     },
@@ -16047,6 +16851,32 @@
       "type": "Roller"
     },
     {
+      "id": 1041,
+      "internalName": "Roller_Wide_01",
+      "level": 18,
+      "names": {
+        "de-DE": "Breitroller Express",
+        "en-GB": "Big Swig Roller Express",
+        "en-US": "Big Swig Roller Express",
+        "es-ES": "Rodillo m\u00e1gnum B",
+        "es-MX": "Rodillo m\u00e1gnum expr\u00e9s",
+        "fr-CA": "Rouleau large Xpress",
+        "fr-FR": "Rouleau large Xpress",
+        "it-IT": "Ampiorullo Express",
+        "ja-JP": "\u30ef\u30a4\u30c9\u30ed\u30fc\u30e9\u30fc\u30b3\u30e9\u30dc",
+        "ko-KR": "\uc640\uc774\ub4dc \ub864\ub7ec \uceec\ub798\ubc84",
+        "nl-NL": "Breedroller Impuls",
+        "ru-RU": "\u041c\u0430\u043a\u0441\u0438-\u0432\u0430\u043b\u0438\u043a \u00ab\u042d\u043a\u0441\u043f\u0440\u0435\u0441\u0441\u00bb",
+        "zh-CN": "\u5bbd\u6eda\u7b52 \u8054\u540d",
+        "zh-TW": "\u5bec\u6efe\u7b52 \u806f\u540d"
+      },
+      "price": 6200,
+      "special": "Ink Storm",
+      "specialPoints": 200,
+      "sub": "Angle Shooter",
+      "type": "Roller"
+    },
+    {
       "id": 1100,
       "internalName": "Brush_Mini_00",
       "level": 7,
@@ -16122,6 +16952,32 @@
       "special": "Zipcaster",
       "specialPoints": 200,
       "sub": "Suction Bomb",
+      "type": "Brush"
+    },
+    {
+      "id": 1120,
+      "internalName": "Brush_Heavy_00",
+      "level": 14,
+      "names": {
+        "de-DE": "F\u00e4cherf\u00e4rber",
+        "en-GB": "Painbrush",
+        "en-US": "Painbrush",
+        "es-ES": "Brocha abanico",
+        "es-MX": "Pincel abanico",
+        "fr-CA": "\u00c9pinceau \u00e9ca\u00efe",
+        "fr-FR": "\u00c9pinceau \u00e9ca\u00efe",
+        "it-IT": "Tonnoretto",
+        "ja-JP": "\u30d5\u30a3\u30f3\u30bb\u30f3\u30c8",
+        "ko-KR": "\ube48\uc13c\ud2b8",
+        "nl-NL": "Kwistkwast",
+        "ru-RU": "\u0412\u0435\u0435\u0440\u043e\u043a\u0438\u0441\u0442\u044c \u00ab\u041f\u043b\u044e\u0445\u0430\u0441\u0441\u043e\u00bb",
+        "zh-CN": "\u6587\u68ee",
+        "zh-TW": "\u6587\u68ee"
+      },
+      "price": 5000,
+      "special": "Wave Breaker",
+      "specialPoints": 200,
+      "sub": "Curling Bomb",
       "type": "Brush"
     },
     {
@@ -16645,6 +17501,32 @@
       "type": "Spinner"
     },
     {
+      "id": 4011,
+      "internalName": "Spinner_Standard_01",
+      "level": 15,
+      "names": {
+        "de-DE": "Splatling Deko",
+        "en-GB": "Heavy Splatling Deco",
+        "en-US": "Heavy Splatling Deco",
+        "es-ES": "Tintralladora DX",
+        "es-MX": "Garabateador Pro chic",
+        "fr-CA": "Badigeonneur chic",
+        "fr-FR": "Badigeonneur chic",
+        "it-IT": "Splatling a tanica DX",
+        "ja-JP": "\u30d0\u30ec\u30eb\u30b9\u30d4\u30ca\u30fc\u30c7\u30b3",
+        "ko-KR": "\ubc30\ub7f4 \uc2a4\ud53c\ub108 \ub370\ucf54",
+        "nl-NL": "Spetling Deco",
+        "ru-RU": "\u0411\u0440\u044b\u0437\u0433\u043e\u043c\u0435\u0442 XL \u00ab\u0414\u0435\u043a\u043e\u00bb",
+        "zh-CN": "\u6876\u88c5\u65cb\u8f6c\u67aa \u88c5\u9970",
+        "zh-TW": "\u6876\u88dd\u65cb\u8f49\u69cd \u88dd\u98fe"
+      },
+      "price": 9600,
+      "special": "Kraken Royale",
+      "specialPoints": 200,
+      "sub": "Point Sensor",
+      "type": "Spinner"
+    },
+    {
       "id": 4020,
       "internalName": "Spinner_Hyper_00",
       "level": 20,
@@ -16692,7 +17574,7 @@
       },
       "price": 11600,
       "special": "Inkjet",
-      "specialPoints": 190,
+      "specialPoints": 200,
       "sub": "Fizzy Bomb",
       "type": "Spinner"
     },
@@ -16853,6 +17735,32 @@
       "type": "Maneuver"
     },
     {
+      "id": 5031,
+      "internalName": "Maneuver_Dual_01",
+      "level": 16,
+      "names": {
+        "de-DE": "Dual-Platscher SE",
+        "en-GB": "Custom Dualie Squelchers",
+        "en-US": "Custom Dualie Squelchers",
+        "es-ES": "Barredora dual SP",
+        "es-MX": "Soplador dual adaptado",
+        "fr-CA": "Double nettoyeur modifi\u00e9",
+        "fr-FR": "Double nettoyeur modifi\u00e9",
+        "it-IT": "Sweeper duplo CM",
+        "ja-JP": "\u30c7\u30e5\u30a2\u30eb\u30b9\u30a4\u30fc\u30d1\u30fc\u30ab\u30b9\u30bf\u30e0",
+        "ko-KR": "\ucee4\uc2a4\ud140 \ub4c0\uc5bc \uc2a4\uc704\ud37c",
+        "nl-NL": "Gemodde Dubbelplonzers",
+        "ru-RU": "\u0421\u043f\u0443\u0440\u0442-\u043f\u043b\u0435\u0441\u043a\u0430\u0440\u0438 \u00ab\u041f\u043e\u043d\u0442\u00bb",
+        "zh-CN": "\u53cc\u91cd\u6e05\u6d01\u67aa \u6539\u88c5",
+        "zh-TW": "\u96d9\u91cd\u6e05\u6f54\u69cd \u6539\u88dd"
+      },
+      "price": 12900,
+      "special": "Super Chump",
+      "specialPoints": 200,
+      "sub": "Squid Beakon",
+      "type": "Maneuver"
+    },
+    {
       "id": 5040,
       "internalName": "Maneuver_Stepper_00",
       "level": 17,
@@ -16876,6 +17784,32 @@
       "special": "Reefslider",
       "specialPoints": 200,
       "sub": "Autobomb",
+      "type": "Maneuver"
+    },
+    {
+      "id": 5041,
+      "internalName": "Maneuver_Stepper_01",
+      "level": 24,
+      "names": {
+        "de-DE": "Quadhopper Blanc",
+        "en-GB": "Light Tetra Dualies",
+        "en-US": "Light Tetra Dualies",
+        "es-ES": "Motatr\u00f3nic dual blanco",
+        "es-MX": "Tetra dual blanco",
+        "fr-CA": "Double voltigeur blanc",
+        "fr-FR": "Double voltigeur blanc",
+        "it-IT": "Moscarpino duplo bianco",
+        "ja-JP": "\u30af\u30a2\u30c3\u30c9\u30db\u30c3\u30d1\u30fc\u30db\u30ef\u30a4\u30c8",
+        "ko-KR": "\ud654\uc774\ud2b8 \ucffc\ub4dc \ud638\ud37c",
+        "nl-NL": "Quadhoppers Wit",
+        "ru-RU": "\u0411\u0435\u043b\u044b\u0435 \u0441\u043f\u0443\u0440\u0442\u043e\u043a\u0440\u043e\u0441\u0441\u044b",
+        "zh-CN": "\u56db\u91cd\u5f39\u8df3\u624b\u67aa \u767d",
+        "zh-TW": "\u56db\u91cd\u5f48\u8df3\u624b\u69cd \u767d"
+      },
+      "price": 13300,
+      "special": "Zipcaster",
+      "specialPoints": 190,
+      "sub": "Sprinkler",
       "type": "Maneuver"
     },
     {
@@ -16928,6 +17862,32 @@
       "special": "Ink Vac",
       "specialPoints": 190,
       "sub": "Squid Beakon",
+      "type": "Shelter"
+    },
+    {
+      "id": 6011,
+      "internalName": "Shelter_Wide_01",
+      "level": 22,
+      "names": {
+        "de-DE": "Sorella-Camp-Pluviator",
+        "en-GB": "Tenta Sorella Brella",
+        "en-US": "Tenta Sorella Brella",
+        "es-ES": "Paratintas maxi B",
+        "es-MX": "Paratintas forestal Sorella",
+        "fr-CA": "M\u00e9ga para-encre Sorella",
+        "fr-FR": "Para-encre XL Sorella",
+        "it-IT": "Sparatenda Solerra",
+        "ja-JP": "\u30ad\u30e3\u30f3\u30d4\u30f3\u30b0\u30b7\u30a7\u30eb\u30bf\u30fc\u30bd\u30ec\u30fc\u30e9",
+        "ko-KR": "\ucea0\ud551 \uc178\ud130 \uc18c\ub810\ub77c",
+        "nl-NL": "Sorella Kampeerplenzer",
+        "ru-RU": "\u0417\u043e\u043d\u0442\u0435\u043d\u0442 \u00ab\u0420\u043e\u0434\u0438\u0447\u0447\u0438\u00bb",
+        "zh-CN": "\u9732\u8425\u9632\u7a7a\u4f1e \u59d0\u59b9",
+        "zh-TW": "\u9732\u71df\u9632\u7a7a\u5098 \u59d0\u59b9"
+      },
+      "price": 18600,
+      "special": "Trizooka",
+      "specialPoints": 200,
+      "sub": "Ink Mine",
       "type": "Shelter"
     },
     {
@@ -17058,6 +18018,32 @@
       "special": "Ultra Stamp",
       "specialPoints": 190,
       "sub": "Torpedo",
+      "type": "Saber"
+    },
+    {
+      "id": 8011,
+      "internalName": "Saber_Lite_01",
+      "level": 10,
+      "names": {
+        "de-DE": "Wischer-Splatana Deko",
+        "en-GB": "Splatana Wiper Deco",
+        "en-US": "Splatana Wiper Deco",
+        "es-ES": "Azotintador brisa DX",
+        "es-MX": "Azotintador brisa chic",
+        "fr-CA": "\u00c9clatana Doto chic",
+        "fr-FR": "\u00c9clatana Doto chic",
+        "it-IT": "Tergilama DX",
+        "ja-JP": "\u30c9\u30e9\u30a4\u30d6\u30ef\u30a4\u30d1\u30fc\u30c7\u30b3",
+        "ko-KR": "\ub4dc\ub77c\uc774\ube0c \uc640\uc774\ud37c \ub370\ucf54",
+        "nl-NL": "Wisserbladzwieper Deco",
+        "ru-RU": "C\u043f\u043b\u0430\u0442-\u0434\u0432\u043e\u0440\u043d\u0438\u043a \u00ab\u0414\u0435\u043a\u043e\u00bb",
+        "zh-CN": "\u96e8\u5237\u522e\u6c34\u5200 \u88c5\u9970",
+        "zh-TW": "\u96e8\u5237\u522e\u6c34\u5200 \u88dd\u98fe"
+      },
+      "price": 1000,
+      "special": "Tenta Missiles",
+      "specialPoints": 190,
+      "sub": "Squid Beakon",
       "type": "Saber"
     }
   ]
