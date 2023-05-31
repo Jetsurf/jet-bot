@@ -36,7 +36,7 @@ class S3Store():
 
 	async def loadStoreItems(self):
 		async with self.sqlBroker.context() as sql:
-			rows = await sql.query("SELECT * FROM s3_store_items")
+			rows = await sql.query("SELECT * FROM s3_store_items ORDER BY endtime")
 
 		items = []
 		for row in rows:
@@ -78,7 +78,7 @@ class S3Store():
 		now = int(time.time())
 		expired = [i for i in self.items if i['endtime'] < now]
 		for item in expired:
-			print(f"[S3Store] Removing expired item '{item['name']}' with endtime {item['endtime']}")
+			print(f"[S3Store] Removing expired item '{item['name']}' with endtime '{time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(item['endtime']))}'")
 			await self.removeStoreItem(item)
 		return
 
