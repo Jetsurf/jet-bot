@@ -131,6 +131,9 @@ class PlayList():
 				print(f"Failed to add video {url} to playlist")
 				return False
 
+		if link is None:
+			return False
+
 		async with self.sqlBroker.context() as sql:
 			await sql.query("INSERT INTO playlist (serverid, url, duration, title) VALUES (%s, %s, %s, %s)", (self.ctx.guild.id, link['url'], link.get('duration'), link['title'], ))
 
@@ -490,31 +493,6 @@ class voiceServer():
 				print(traceback.format_exc())
 				await ctx.respond(f"Sorry, I can't play that, you can report the following in my support discord: {str(e)}")
 
-	async def listCheck(self, theURL):
-		cur = await self.sqlBroker.connect()
-
-		stmt = f"SELECT COUNT(*) FROM playlist WHERE serverid = %s AND url = %s"
-		await cur.execute(stmt, (self.server, theURL,))
-		count = await cur.fetchone()
-		await self.sqlBroker.commit(cur)
-		if count[0] > 0:
-			return True
-		else:
-			return False
-
-	async def listAdd(self, ctx, toAdd):
-		cur = await self.sqlBroker.connect()
-
-		stmt = f"INSERT INTO playlist (serverid, url) VALUES(%s, %s)"
-		input = (self.server, toAdd,)
-		await cur.execute(stmt, input)
-		if cur.lastrowid != None:
-			await self.sqlBroker.commit(cur)
-			return True
-		else:
-			await self.sqlBroker.rollback(cur)
-			return False
-
 	async def playRandom(self, ctx, numToQueue):
 		cur = await self.sqlBroker.connect()
 		toPlay = []
@@ -561,26 +539,6 @@ class voiceServer():
 			response = response + f"Added {str(numToQueue - 1)} more song(s) to the queue from my playlist"
 
 		await ctx.respond(response)
-
-	async def addGuildList(self, ctx, args):
-		if len(set(args)) == 0:
-			if self.source.yturl != None and await self.listCheck(self.source.yturl):
-				if await self.listAdd(ctx, args[0]):
-					await ctx.respond(f"Added URL: {self.source.yturl} to the playlist")
-				else:
-					await ctx.respond(f"Error adding to the playlist")
-			else:
-				await ctx.respond("I'm not playing anything")
-		else:
-			if 'https' in args[0] and not await self.listCheck(args[0]):
-				if await self.listAdd(ctx, args[0]):
-					await ctx.respond(f"Added URL: {args[0]} to the playlist")
-				else:
-					await ctx.respond(f"Error adding to the playlist")
-			elif 'https' not in args[0]:
-				await ctx.respond("I need a proper url to add")
-			else:
-				await ctx.respond(f"URL: {args[0]} is already in my playlist")
 
 	def createSoundsEmbed(self):
 		global configData

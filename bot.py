@@ -770,23 +770,12 @@ async def cmdVoicePlaySound(ctx, sound: Option(str, "Sound clip to play, get wit
 		await ctx.respond(f"Attempting to play: {sound}", ephemeral=True)
 		await serverVoices[ctx.guild.id].playSound(sound)
 
-@adminCmds.command(name="playlistview", description="Manages the play random playlist for the server")
+@adminCmds.command(name="playlist", description="Manages the play random playlist for the server")
 async def cmdPlaylistView(ctx):
 	global mysqlHandler
 
 	playlist = vserver.PlayList(ctx, mysqlHandler)
 	await playlist.show()
-
-@adminCmds.command(name='playlist', description="Adds a URL or the current video to my playlist for /voice play random")
-async def cmdPlaylistAdd(ctx, url: Option(str, "URL to add to my playlist", required=True)):
-	if ctx.guild == None:
-		await ctx.respond("Can't DM me with this command.")
-		return
-
-	if await checkIfAdmin(ctx):
-		await serverVoices[ctx.guild.id].addGuildList(ctx, [ url ])
-	else:
-		await ctx.respond("You aren't a guild administrator", ephemeral=True)
 
 @groupCmds.command(name = 'create', description = 'Create a group')
 async def cmdGroupCreate(ctx):

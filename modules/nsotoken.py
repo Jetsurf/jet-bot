@@ -83,7 +83,7 @@ class Nsotoken():
 		self.sqlBroker = mysqlhandler
 		self.stringCrypt = stringCrypt
 		self.friendCodes = friendCodes
-		self.f_provider = IMink("Jet-bot/1.0.0 (discord=jetsurf#8514)")  # TODO: Figure out bot owner automatically
+		self.f_provider = IMink("Jet-bot/1.0.0 (discord=jetsurf#8514)", "https://nxapi-znca-api.fancy.org.uk/api/znca/f")  # TODO: Figure out bot owner automatically
 		self.nso_clients = {}
 		self.init_complete = False
 

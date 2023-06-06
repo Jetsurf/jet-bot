@@ -232,7 +232,8 @@ class Youtube():
 		soup = bs4.BeautifulSoup(source,'html5lib')
 
 		#details = self.get_playlist_meta(soup)
-		data = self.get_yt_json_data(soup)
+		#'ytInitialPlayerResponse' here is temporary
+		data = self.get_yt_json_data(soup, 'ytInitialPlayerResponse')
 		if data is None:
 			print(f"[Youtube] Could not extract JSON for '{response.url}'")
 			return None
