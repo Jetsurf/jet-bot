@@ -25,6 +25,7 @@ class S3Schedule():
 		'SF': 'Splatfest',
 		'AO': 'Anarchy Open',
 		'AS': 'Anarchy Series',
+		'CH': 'Challenge',
 		'SR': 'Salmon Run',
 		'XB': 'X Battles',
 	}
@@ -118,14 +119,19 @@ class S3Schedule():
 		rec['maps'] = self.parse_maps(settings['vsStages'])
 
 	def parse_schedule_anarchy_open(self, settings, rec):
-		settings = [ s for s in settings if s['mode'] == 'OPEN' ][0]
+		settings = [ s for s in settings if s['bankaraMode'] == 'OPEN' ][0]
 		rec['mode'] = settings['vsRule']['rule']
 		rec['maps'] = self.parse_maps(settings['vsStages'])
 
 	def parse_schedule_anarchy_series(self, settings, rec):
-		settings = [ s for s in settings if s['mode'] == 'CHALLENGE' ][0]
+		settings = [ s for s in settings if s['bankaraMode'] == 'CHALLENGE' ][0]
 		rec['mode'] = settings['vsRule']['rule']
 		rec['maps'] = self.parse_maps(settings['vsStages'])
+
+	def parse_schedule_challenge(self, settings, rec):
+		rec['mode'] = settings['vsRule']['rule']
+		rec['maps'] = self.parse_maps(settings['vsStages'])
+		rec['event'] = settings['leagueMatchEvent']
 
 	def parse_schedule_x_battles(self, settings, rec):
 		rec['mode'] = settings['vsRule']['rule']
@@ -148,6 +154,31 @@ class S3Schedule():
 			rec['endtime']   = dateutil.parser.isoparse(node['endTime']).timestamp()
 			sub(node[key], rec)
 			recs.append(rec)
+
+		return recs
+
+	# These event ("challenge") records need a special parser because records can have multiple timeslots
+	def parse_event_schedule(self, data):
+		if not data or not data.get('nodes'):
+			return []  # Empty
+
+		nodes = data.get('nodes')
+
+		recs = []
+		for node in nodes:
+			settings = node["leagueMatchSetting"]
+
+			info = {}
+			info['type'] = 'VERSUS'
+			info['mode'] = settings['vsRule']['rule']
+			info['desc'] = settings['leagueMatchEvent']['desc']
+			info['maps'] = self.parse_maps(settings['vsStages'])
+
+			for t in node['timePeriods']:
+				rec = info.copy()
+				rec['starttime'] = dateutil.parser.isoparse(t['startTime']).timestamp()
+				rec['endtime']   = dateutil.parser.isoparse(t['endTime']).timestamp()
+				recs.append(rec)
 
 		return recs
 
@@ -193,10 +224,12 @@ class S3Schedule():
 			return
 
 		self.schedules['TW'] = self.parse_versus_schedule(data['data'].get('regularSchedules'), 'regularMatchSetting', self.parse_schedule_turf)
-		self.schedules['SF'] = self.parse_versus_schedule(data['data'].get('festSchedules'), 'festMatchSetting', self.parse_schedule_fest)
+		self.schedules['SF'] = self.parse_versus_schedule(data['data'].get('festSchedules'), 'festMatchSettings', self.parse_schedule_fest)
 		self.schedules['AO'] = self.parse_versus_schedule(data['data'].get('bankaraSchedules'), 'bankaraMatchSettings', self.parse_schedule_anarchy_open)
 		self.schedules['AS'] = self.parse_versus_schedule(data['data'].get('bankaraSchedules'), 'bankaraMatchSettings', self.parse_schedule_anarchy_series)
 		self.schedules['XB'] = self.parse_versus_schedule(data['data'].get('xSchedules'), 'xMatchSetting', self.parse_schedule_x_battles)
+
+		self.schedules['CH'] = self.parse_event_schedule(data['data'].get('eventSchedules'))
 
 		self.schedules['SR'] = self.parse_salmon_schedule(data['data'].get('coopGroupingSchedule', {}).get('regularSchedules'))
 
@@ -241,7 +274,7 @@ class S3Schedule():
 
 	async def cache_images(self):
 		# PvP
-		for k in ['TW', 'SF', 'AO', 'AS', 'XB']:
+		for k in ['TW', 'SF', 'AO', 'AS', 'CH', 'XB']:
 			for rec in self.schedules[k]:
 				for map in rec['maps']:
 					if (not map['stageid']) or (not map['image']):
