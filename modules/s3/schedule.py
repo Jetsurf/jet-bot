@@ -284,7 +284,7 @@ class S3Schedule():
 
 	async def cache_images(self):
 		# PvP
-		for k in ['TW', 'SF', 'AO', 'AS', 'CH', 'XB']:
+		for k in ['TW', 'SO', 'SP', 'AO', 'AS', 'CH', 'XB']:
 			for rec in self.schedules[k]:
 				for map in rec['maps']:
 					if (not map['stageid']) or (not map['image']):

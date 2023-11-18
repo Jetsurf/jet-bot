@@ -280,12 +280,12 @@ class S3Handler():
 		# Pull each schedule for the current time
 		now = time.time()
 		schedules = {}
-		for t in ['TW', 'SF', 'AO', 'AS', 'XB']:
+		for t in ['TW', 'SO', 'SP', 'AO', 'AS', 'XB']:
 			schedules[t] = self.schedule.get_schedule(t, checktime = now, count = 2)
 
 		# Gather all the known time windows
 		timewindows = {}
-		for t in ['TW', 'SF', 'AO', 'AS', 'XB']:
+		for t in ['TW', 'SO', 'SP', 'AO', 'AS', 'XB']:
 			for r in schedules[t]:
 				timewindows[r['starttime']] = {'starttime': r['starttime'], 'endtime': r['endtime']}
 
@@ -299,7 +299,7 @@ class S3Handler():
 			return
 
 		# Filter the schedules to those matching the two earliest time windows
-		for t in ['TW', 'SF', 'AO', 'AS', 'XB']:
+		for t in ['TW', 'SO', 'SP', 'AO', 'AS', 'XB']:
 			schedules[t] = [s for s in schedules[t] if (s['starttime'] in [w['starttime'] for w in timewindows])]
 
 		image_io = S3ImageBuilder.createScheduleImage(timewindows, schedules, self.fonts, self.cachemanager, self.splat3info)
