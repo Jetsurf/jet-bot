@@ -139,7 +139,7 @@ async def updateTopGgAsync():
 		url = f"https://top.gg/api/bots/{str(client.user.id)}/stats"
 		body = { 'server_count' : server_count }
 		response = await http_client.post(url, headers = topGgHead, json = body)
-		print("[top.gg] Posted server count {server_count}, response: {response.status}")
+		print(f"[top.gg] Posted server count {server_count}, response: {response.status}")
 
 def startUp():
 	# Vital stuff

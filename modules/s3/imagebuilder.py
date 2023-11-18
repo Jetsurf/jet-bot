@@ -232,26 +232,30 @@ class S3ImageBuilder():
 		# Game type icon mappings
 		game_type_icons = {
 			'TW': 'regular',
-			'SF': 'regular',
+			'SO': 'regular',
+			'SP': 'regular',
 			'AO': 'bankara',
 			'AS': 'bankara',
+			'CH': 'challenge',
 			'XB': 'x',
 		}
 
 		# Game type name mappings
 		game_type_names = {
 			'TW': 'Turf War',
-			'SF': 'Splatfest',
+			'SO': 'Splatfest Open',
+			'SP': 'Splatfest Pro',
 			'AO': 'Anarchy Open',
 			'AS': 'Anarchy Series',
+			'CH': 'Challenge',
 			'XB': 'X Battle',
 		}
 
 		# Count the number of columns needed
 		column_count = 0
 		active_types = []
-		for t in ['TW', 'SF', 'AO', 'AS', 'XB']:
-			if len(schedules[t]) == 0:
+		for t in ['TW', 'SO', 'SP', 'AO', 'AS', 'XB', 'CH']:
+			if (not(t in schedules)) or (len(schedules[t]) == 0):
 				continue
 			column_count += 1
 			active_types.append(t)

@@ -13,16 +13,19 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 class S3Schedule():
 	schedule_choices = [
 		discord.OptionChoice('Turf War', 'TW'),
-		discord.OptionChoice('Splatfest', 'SF'),
+		discord.OptionChoice('Splatfest Open', 'SO'),
+		discord.OptionChoice('Splatfest Pro', 'SP'),
 		discord.OptionChoice('Anarchy Open', 'AO'),
 		discord.OptionChoice('Anarchy Series', 'AS'),
+		discord.OptionChoice('Challenge', 'CH'),
 		discord.OptionChoice('X Battles', 'XB'),
 		discord.OptionChoice('Salmon Run', 'SR'),
 	]
 
 	schedule_names = {
 		'TW': 'Turf War',
-		'SF': 'Splatfest',
+		'SO': 'Splatfest Open',
+		'SP': 'Splatfest Pro',
 		'AO': 'Anarchy Open',
 		'AS': 'Anarchy Series',
 		'CH': 'Challenge',
@@ -114,7 +117,13 @@ class S3Schedule():
 		rec['mode'] = settings['vsRule']['rule']
 		rec['maps'] = self.parse_maps(settings['vsStages'])
 
-	def parse_schedule_fest(self, settings, rec):
+	def parse_schedule_fest_open(self, settings, rec):
+		settings = [ s for s in settings if s['festMode'] == 'REGULAR' ][0]
+		rec['mode'] = settings['vsRule']['rule']
+		rec['maps'] = self.parse_maps(settings['vsStages'])
+
+	def parse_schedule_fest_pro(self, settings, rec):
+		settings = [ s for s in settings if s['festMode'] == 'CHALLENGE' ][0]
 		rec['mode'] = settings['vsRule']['rule']
 		rec['maps'] = self.parse_maps(settings['vsStages'])
 
@@ -145,7 +154,7 @@ class S3Schedule():
 
 		recs = []
 		for node in nodes:
-			if node[key] is None:
+			if node.get(key) is None:
 				continue  # Nothing scheduled in this timeslot
 
 			rec = {}
@@ -224,7 +233,8 @@ class S3Schedule():
 			return
 
 		self.schedules['TW'] = self.parse_versus_schedule(data['data'].get('regularSchedules'), 'regularMatchSetting', self.parse_schedule_turf)
-		self.schedules['SF'] = self.parse_versus_schedule(data['data'].get('festSchedules'), 'festMatchSettings', self.parse_schedule_fest)
+		self.schedules['SO'] = self.parse_versus_schedule(data['data'].get('festSchedules'), 'festMatchSettings', self.parse_schedule_fest_open)
+		self.schedules['SP'] = self.parse_versus_schedule(data['data'].get('festSchedules'), 'festMatchSettings', self.parse_schedule_fest_pro)
 		self.schedules['AO'] = self.parse_versus_schedule(data['data'].get('bankaraSchedules'), 'bankaraMatchSettings', self.parse_schedule_anarchy_open)
 		self.schedules['AS'] = self.parse_versus_schedule(data['data'].get('bankaraSchedules'), 'bankaraMatchSettings', self.parse_schedule_anarchy_series)
 		self.schedules['XB'] = self.parse_versus_schedule(data['data'].get('xSchedules'), 'xMatchSetting', self.parse_schedule_x_battles)
