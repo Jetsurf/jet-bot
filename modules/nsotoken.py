@@ -78,6 +78,7 @@ class tokenHandler(Modal):
 
 class Nsotoken():
 	def __init__(self, client, config, mysqlhandler, stringCrypt, friendCodes):
+		print(f"Nsotoken: Using NSO-API version {NSO_API.get_version()}")
 		self.client = client
 		self.config = config
 		self.sqlBroker = mysqlhandler
