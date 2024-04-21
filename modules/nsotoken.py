@@ -83,7 +83,7 @@ class Nsotoken():
 		self.sqlBroker = mysqlhandler
 		self.stringCrypt = stringCrypt
 		self.friendCodes = friendCodes
-		self.f_provider = IMink("Jet-bot/1.0.0 (discord=jetsurf#8514)", "https://nxapi-znca-api.fancy.org.uk/api/znca/f")  # TODO: Figure out bot owner automatically
+		self.f_provider = IMink("Jet-bot/1.0.0 (discord=jetsurf#8514)")  # TODO: Figure out bot owner automatically
 		self.nso_clients = {}
 		self.init_complete = False
 
@@ -142,7 +142,7 @@ class Nsotoken():
 
 		# Construct a new one for this user
 		nso = NSO_API(self.f_provider, userid)
-
+		
 		# If we have keys, load them into the client
 		keys = await self.nso_client_load_keys(userid)
 		if keys:
@@ -155,6 +155,7 @@ class Nsotoken():
 		nso.on_global_data_update(self.nso_global_data_updated)
 
 		self.nso_clients[userid] = nso
+		print(f"NSO App ver: {nso.app.get_version()}")
 		return nso
 
 	async def remove_nso_client(self, userid):

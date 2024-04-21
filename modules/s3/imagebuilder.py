@@ -195,7 +195,7 @@ class S3ImageBuilder():
 			weapon_key = base64.b64decode(weapon['id']).decode("utf-8") + ".png"
 			if thumbnail_io := weapon_thumbnail_cache.get_io(weapon_key):
 				thumbnail_image = Image.open(thumbnail_io).convert("RGBA")
-				thumbnail_image.thumbnail((thumbnail_size, thumbnail_size), Image.ANTIALIAS)
+				thumbnail_image.thumbnail((thumbnail_size, thumbnail_size), Image.LANCZOS)
 				draw.ellipse([margin * 2 + thumbnail_size, yposition, margin * 2 + thumbnail_size * 2, yposition + thumbnail_size], fill = (0,0,0))
 				image.paste(thumbnail_image, (margin * 2 + thumbnail_size, yposition), thumbnail_image)
 
@@ -282,7 +282,7 @@ class S3ImageBuilder():
 		for t in active_types:
 			if game_type_icon_io := game_types_cache.get_io(f"{game_type_icons[t]}.png"):
 				game_type_icon = Image.open(game_type_icon_io).convert("RGBA")
-				game_type_icon.thumbnail((game_type_icon_size, game_type_icon_size), Image.ANTIALIAS)
+				game_type_icon.thumbnail((game_type_icon_size, game_type_icon_size), Image.LANCZOS)
 				image.paste(game_type_icon, (int(xposition + (column_width / 2) - (game_type_icon_size / 2)), 0), game_type_icon)
 
 			cls.drawShadowedText(draw, (int(xposition + (column_width / 2)), game_type_icon_size), game_type_names.get(t, '?'), (255, 255, 255), font = s2FontMed, anchor = 'mt')
@@ -312,7 +312,7 @@ class S3ImageBuilder():
 			mode = splat3info.getModeByInternalName(rot['mode'])
 			if (not mode is None) and (mode_icon_io := modes_cache.get_io(f"{mode.abbrev().upper()}.png")):
 				mode_icon = Image.open(mode_icon_io).convert("RGBA")
-				mode_icon.thumbnail((mode_icon_size, mode_icon_size), Image.ANTIALIAS)
+				mode_icon.thumbnail((mode_icon_size, mode_icon_size), Image.LANCZOS)
 				image.paste(mode_icon, (int(xposition + (column_width / 2) - (mode_icon.width / 2)), yposition), mode_icon)
 			yposition += mode_icon_size
 
@@ -326,7 +326,7 @@ class S3ImageBuilder():
 				map = rot['maps'][i]
 				if map_thumbnail_io := maps_cache.get_io(f"{map['stageid']}.png"):
 					map_thumbnail = Image.open(map_thumbnail_io).convert("RGBA")
-					map_thumbnail.thumbnail((map_thumbnail_width, map_thumbnail_height), Image.ANTIALIAS)
+					map_thumbnail.thumbnail((map_thumbnail_width, map_thumbnail_height), Image.LANCZOS)
 					image.paste(map_thumbnail, (xposition + map_thumbnail_offset, yposition + map_thumbnail_height * i), map_thumbnail)
 			yposition += map_thumbnail_height * 2
 
@@ -362,7 +362,7 @@ class S3ImageBuilder():
 				mode = splat3info.getModeByInternalName(rot['mode'])
 				if (not mode is None) and (mode_icon_io := modes_cache.get_io(f"{mode.abbrev().upper()}.png")):
 					mode_icon = Image.open(mode_icon_io).convert("RGBA")
-					mode_icon.thumbnail((mode_icon_size, mode_icon_size), Image.ANTIALIAS)
+					mode_icon.thumbnail((mode_icon_size, mode_icon_size), Image.LANCZOS)
 					image.paste(mode_icon, (int(xposition + (column_width / 2) - (mode_icon.width / 2)), yposition), mode_icon)
 				yposition += mode_icon_size
 
@@ -416,14 +416,14 @@ class S3ImageBuilder():
 			map_key = f"{s['maps'][0]['stageid']}.png"
 			if map_image_io := maps_cache.get_io(map_key):
 				map_image = Image.open(map_image_io).convert("RGBA")
-				map_image.thumbnail((640, 480), Image.ANTIALIAS)
+				map_image.thumbnail((640, 480), Image.LANCZOS)
 				image.paste(map_image, (0, yposition), map_image)
 
 			# If it's a Big Run, add Big Run icon
 			if s['mode'] == 'CoopBigRunSetting':
 				if mode_icon_io := gametype_cache.get_io('big_run.png'):
 					mode_icon_image = Image.open(mode_icon_io).convert("RGBA")
-					mode_icon_image.thumbnail((256, 256), Image.ANTIALIAS)
+					mode_icon_image.thumbnail((256, 256), Image.LANCZOS)
 					image.paste(mode_icon_image, (int((image.width / 2) - (mode_icon_image.width / 2)), int(yposition + (height_each / 2) - 128)), mode_icon_image)
 
 			# Add title
@@ -442,7 +442,7 @@ class S3ImageBuilder():
 				weapon_key = f"weapon-{hashlib.sha1(weapon['name'].encode('utf-8')).hexdigest()}.png"
 				if weapon_image_io := weapons_cache.get_io(weapon_key):
 					weapon_image = Image.open(weapon_image_io).convert("RGBA")
-					weapon_image.thumbnail((weapon_width, weapon_height), Image.ANTIALIAS)
+					weapon_image.thumbnail((weapon_width, weapon_height), Image.LANCZOS)
 					xposition = int(i * int(width / 4) + (width / 8) - (weapon_width / 2))
 					bbox = [(xposition, yposition + height_each - 96), (xposition + weapon_width, yposition + height_each - 92 + weapon_height)]
 					draw.ellipse(bbox, fill = (0, 0, 0))
@@ -476,7 +476,7 @@ class S3ImageBuilder():
 			else:
 				badgeRes = requests.get(badge['image']['url'])
 				badgeImg = Image.open(BytesIO(badgeRes.content)).convert("RGBA")
-				badgeImg.thumbnail(size, Image.ANTIALIAS)
+				badgeImg.thumbnail(size, Image.LANCZOS)
 				npImage.paste(badgeImg, (MAXW-(i*size[0]), MAXH-size[1]), badgeImg)
 				i-=1
 
@@ -568,19 +568,19 @@ class S3ImageBuilder():
 
 		gearReq = requests.get(gear['image']['url'])
 		gearImg = Image.open(BytesIO(gearReq.content)).convert("RGBA")
-		gearImg = gearImg.resize((IMGW, IMGW), Image.ANTIALIAS)
+		gearImg = gearImg.resize((IMGW, IMGW), Image.LANCZOS)
 		img.paste(gearImg, (0, 0), gearImg)
 
 		maReq = requests.get(gear["primaryGearPower"]['image']['url'])
 		maImg = Image.open(BytesIO(maReq.content)).convert("RGBA")
-		maImg = maImg.resize((MAHW - BUF, MAHW - BUF), Image.ANTIALIAS)
+		maImg = maImg.resize((MAHW - BUF, MAHW - BUF), Image.LANCZOS)
 		maImg = cls.addCircleToImage(maImg, MAHW, BUF)
 		img.paste(maImg, (0, IMGW), maImg)
 
 		for i, ability in enumerate(gear['additionalGearPowers']):
 			abilReq = requests.get(ability['image']['url'])
 			abilImg = Image.open(BytesIO(abilReq.content)).convert("RGBA")
-			abilImg = abilImg.resize((SUBHW - BUF, SUBHW - BUF), Image.ANTIALIAS)
+			abilImg = abilImg.resize((SUBHW - BUF, SUBHW - BUF), Image.LANCZOS)
 			abilImg = cls.addCircleToImage(abilImg, SUBHW, BUF)
 			img.paste(abilImg, (MAHW + (i * SUBHW), IMGH - SUBHW), abilImg)
 
@@ -612,15 +612,15 @@ class S3ImageBuilder():
 
 		weapReq = requests.get(weaponUrl)
 		weapImg = Image.open(BytesIO(weapReq.content)).convert("RGBA")
-		weapImg = weapImg.resize((IMGW, IMGW), Image.ANTIALIAS)
+		weapImg = weapImg.resize((IMGW, IMGW), Image.LANCZOS)
 		img.paste(weapImg, (10, 0), weapImg)
 
 		reqSub = requests.get(weapon['subWeapon']['image']['url'])
 		reqSpec = requests.get(weapon['specialWeapon']['image']['url'])
 		subImg = Image.open(BytesIO(reqSub.content)).convert("RGBA")
 		specImg = Image.open(BytesIO(reqSpec.content)).convert("RGBA")
-		subImg = subImg.resize((SHW - BUF, SHW - BUF), Image.ANTIALIAS)
-		specImg = specImg.resize((SHW - BUF, SHW - BUF), Image.ANTIALIAS)
+		subImg = subImg.resize((SHW - BUF, SHW - BUF), Image.LANCZOS)
+		specImg = specImg.resize((SHW - BUF, SHW - BUF), Image.LANCZOS)
 		subImg = cls.addCircleToImage(subImg, SHW, BUF)
 		specImg = cls.addCircleToImage(specImg, SHW, BUF)
 		img.paste(subImg, (int(IMGW/2) - SHW, IMGW), subImg)
