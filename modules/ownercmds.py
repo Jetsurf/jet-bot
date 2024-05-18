@@ -118,6 +118,9 @@ class ownerCmds:
 	async def cmdNsoInfo(self, ctx, nsotoken):
 		info = f"NSO-API version `{NSO_API.get_version()}`\n"
 
+		if nsotoken.nso_app_version_override is not None:
+			info += f"NSO app version override `{nsotoken.nso_app_version_override}`"
+
 		app_version = NSO_API.get_global_data_value("app_version")
 		if app_version:
 			info += f"NSO app version `{app_version['data']['version']}` retrieved <t:{app_version['retrievetime']}>\n"
@@ -129,3 +132,21 @@ class ownerCmds:
 		info += f"Active NSO clients: {len(nsotoken.nso_clients)}\n"
 
 		await ctx.respond(info)
+
+	async def cmdNsoVersion(self, ctx, args, nsotoken):
+		if len(args) > 1:
+			await ctx.respond("Huh?")
+			return
+		elif len(args) == 0:
+			nsotoken.nso_app_version_override = None
+			await ctx.respond("Removed NSO app version override")
+			return
+		elif len(args) == 1:
+			nsotoken.nso_app_version_override = args[0]
+			await ctx.respond(f"Set NSO app version override to: {args[0]}")
+			return
+
+	async def cmdNsoFlush(self, ctx, nsotoken):
+		await nsotoken.nso_client_flush()
+		await ctx.respond("Okay!")
+		return

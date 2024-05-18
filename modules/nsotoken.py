@@ -86,6 +86,7 @@ class Nsotoken():
 		self.friendCodes = friendCodes
 		self.f_provider = IMink("Jet-bot/1.0.0 (discord=jetsurf#8514)")  # TODO: Figure out bot owner automatically
 		self.nso_clients = {}
+		self.nso_app_version_override = None
 		self.init_complete = False
 
 		# Set up scheduled tasks
@@ -143,7 +144,11 @@ class Nsotoken():
 
 		# Construct a new one for this user
 		nso = NSO_API(self.f_provider, userid)
-		
+
+		# If we have an app version override, use it
+		if self.nso_app_version_override is not None:
+			nso.override_app_version(self.nso_app_version_override)
+
 		# If we have keys, load them into the client
 		keys = await self.nso_client_load_keys(userid)
 		if keys:
@@ -179,6 +184,12 @@ class Nsotoken():
 			if idle_seconds > (4 * 3600):
 				print(f"NSO client for {userid} not used for {int(idle_seconds)} seconds. Deleting.")
 				await self.remove_nso_client(userid)
+
+	async def nso_client_flush(self):
+		print("nso_client_flush()")
+		for userid in list(self.nso_clients):
+			print(f"Deleting NSO client for {userid}")
+			await self.remove_nso_client(userid)
 
 	# This is a callback which is called by nso-api when a client object's
 	#  keys change.

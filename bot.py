@@ -1036,6 +1036,10 @@ async def on_message(message):
 			await message.channel.send("Om nom nom, ate a MySQL connection...")
 		elif cmd == 'nsoinfo':
 			await ownerCmds.cmdNsoInfo(context, nsoTokens)
+		elif cmd == 'nsoversion':
+			await ownerCmds.cmdNsoVersion(context, args, nsoTokens)
+		elif cmd == 'nsoflush':
+			await ownerCmds.cmdNsoFlush(context, nsoTokens)
 
 if dev:
 	client.add_application_command(owner)
