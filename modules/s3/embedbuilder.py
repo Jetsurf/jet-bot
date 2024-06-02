@@ -48,7 +48,6 @@ class S3EmbedBuilder():
 
 		return embed
 
-
 	@classmethod
 	def createSalmonRunResultsEmbed(cls, results):
 		embed = discord.Embed(colour=0x0004FF)
@@ -132,5 +131,25 @@ class S3EmbedBuilder():
 		embed.add_field(name = "Sub Slots", value = len(gear['gear']['additionalGearPowers']), inline = True)
 		embed.add_field(name = "Common Ability", value = brand.commonAbility().name(), inline = True)
 		embed.add_field(name = "Price", value = gear['price'], inline = True)
+
+		return embed
+
+	@classmethod
+	def createReplayEmbed(self, replay):
+		embed = discord.Embed(colour=0xC202E0)
+
+		playerName = replay['historyDetail']['player']['name']
+		vsMode = replay['historyDetail']['vsMode']['name']
+		vsRule = replay['historyDetail']['vsRule']['name']
+		vsStage = replay['historyDetail']['vsStage']['name']
+		awards = []
+		
+		for award in replay['historyDetail']['awards']:
+			awards.append(award['name'])
+
+		embed.title = f"{playerName} - {vsMode}\n{vsRule} - {vsStage}"
+		embed.add_field(name = "Awards", value = "\n".join(awards), inline = False)
+		code = '-'.join(replay['replayCode'][i:i+4] for i in range(0, len(replay['replayCode']), 4))
+		embed.add_field(name = "Replay Code", value=code, inline = False)
 
 		return embed

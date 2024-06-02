@@ -495,9 +495,9 @@ class S3Handler():
 			await ctx.respond("I'm already watching for replays for you...")
 			return
 		else:
-			self.replayHandlers[ctx.user.id] = S3ReplayHandler(ctx, nso, self.replayHandlers)
+			self.replayHandlers[ctx.user.id] = S3ReplayHandler(ctx, self.nsotoken, self.replayHandlers, self.cachemanager, self.fonts)
 			await self.replayHandlers[ctx.user.id].GetInitialReplays(ctx)
-			await ctx.respond(f'Started watching replays, will stop at {self.replayHandlers[ctx.user.id].endtime.strftime("%b %d %H:%M")}')
+			await ctx.respond(f'Started watching replays, will stop at <t:{int(self.replayHandlers[ctx.user.id].endtime.timestamp())}>')
 
 
 
