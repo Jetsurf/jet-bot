@@ -11,6 +11,7 @@ import s3.imageextractor
 from s3.imagebuilder import S3ImageBuilder
 from s3.embedbuilder import S3EmbedBuilder
 from s3.feedhandler import S3FeedHandler
+from s3.replayhandler import S3ReplayHandler
 
 from io import BytesIO
 from os.path import exists
@@ -25,6 +26,7 @@ class S3Handler():
 		self.nsotoken = nsotoken
 		self.splat3info = splat3info
 		self.configData = configData
+		self.replayHandlers = {}
 		self.hostedUrl = configData.get('hosted_url')
 		self.webDir = configData.get('web_dir')
 		self.schedule = s3.schedule.S3Schedule(nsotoken, mysqlHandler, cachemanager)
@@ -479,3 +481,23 @@ class S3Handler():
 		await self.feeds.deleteFeed(ctx.guild.id, ctx.channel.id)
 		await ctx.respond("Okay, S3 feed deleted for this channel.")
 		return
+
+	async def cmdReplayPoster(self, ctx):
+		await ctx.defer()
+
+		nso = await self.nsotoken.get_nso_client(ctx.user.id)
+		if not nso.is_logged_in():
+			await ctx.respond("You don't have an NSO token set up! You must run /token first.")
+			return
+
+		if ctx.user.id in self.replayHandlers:
+			#make this let you "reup" the time?
+			await ctx.respond("I'm already watching for replays for you...")
+			return
+		else:
+			self.replayHandlers[ctx.user.id] = S3ReplayHandler(ctx, nso, self.replayHandlers)
+			await self.replayHandlers[ctx.user.id].GetInitialReplays(ctx)
+			await ctx.respond(f'Started watching replays, will stop at {self.replayHandlers[ctx.user.id].endtime.strftime("%b %d %H:%M")}')
+
+
+

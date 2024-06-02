@@ -170,12 +170,14 @@ if not configData.get('s3_top_level', False):
 	s3StatsCmds = s3Cmds.create_subgroup('stats', 'Commands related to Splatoon 3 gameplay stats')
 	s3StoreDmCmds = s3Cmds.create_subgroup('storedm', 'Splatoon 3 Store gear DMs')
 	s3StoreCmds = s3Cmds.create_subgroup('store', 'Splatoon 3 store cmds')
+	s3ReplayCmds = s3Cmds.create_subgroup("replays", "Splatoon 3 Replay cmds")
 else:
 	s3Cmds = client
 	s3WeaponCmds = SlashCommandGroup('weapon', 'Commands related to weapons in Splatoon 3')
 	s3StatsCmds = SlashCommandGroup('stats', 'Commands related to Splatoon 3 gameplay stats')
 	s3StoreDmCmds = SlashCommandGroup('storedm', 'Splatoon 3 Store gear DMs')
 	s3StoreCmds = SlashCommandGroup('store', 'Splatoon 3 store cmds')
+	s3ReplayCmds = SlashCommandGroup("replays", "Splatoon 3 Replay cmds")
 
 # ACNH
 acnhCmds = SlashCommandGroup('acnh', "Commands related to Animal Crossing New Horizons")
@@ -590,6 +592,11 @@ async def cmdS3Fit(ctx):
 @s3Cmds.command(name = 'gearseed', description = 'Export gear seed checker file')
 async def cmdS3Gearseed(ctx):
 	await s3Handler.cmdGearseed(ctx)
+
+@s3ReplayCmds.command(name = 'watch', description = 'Watches for and posts replays posted to your account')
+async def cmdS3ReplayWatch(ctx):
+	await s3Handler.cmdReplayPoster(ctx)
+
 
 # --- Owner Commands ---
 
