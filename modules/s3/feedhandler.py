@@ -75,7 +75,7 @@ class S3FeedHandler():
 		now = time.time()
 		schedules = {}
 		for t in ['TW', 'SO', 'SP', 'AO', 'AS', 'XB']:
-			schedules[t] = self.schedule.get_schedule(t)
+			schedules[t] = self.schedule.get_schedule(t, count = 2)
 
 		# Gather all the known time windows
 		timewindows = {}
@@ -83,14 +83,20 @@ class S3FeedHandler():
 			for r in schedules[t]:
 				timewindows[r['starttime']] = {'starttime': r['starttime'], 'endtime': r['endtime']}
 
-		# Pick the earliest time window
+		# Order the time windows
 		timewindows = list(timewindows.values())
 		timewindows.sort(key = lambda w: w['starttime'])
-		timewindows = timewindows[0:1]
-
 		if len(timewindows) == 0:
 			print("[S3FeedHandler] Missed map rotation")
 			return
+
+		# Find the start of the following time window
+		nexttime = None
+		if len(timewindows) > 1:
+			nexttime = timewindows[1]['starttime']
+
+		# Pick the earliest time window to report on
+		timewindows = timewindows[0:1]
 
 		# Filter the schedules to those matching the time window(s)
 		for t in ['TW', 'SO', 'SP', 'AO', 'AS', 'XB']:
@@ -99,6 +105,10 @@ class S3FeedHandler():
 		image_io = S3ImageBuilder.createScheduleImage(timewindows, schedules, self.fonts, self.cachemanager, self.splat3info)
 		embed = discord.Embed(colour=0x0004FF)
 		embed.title = "Current Splatoon 3 multiplayer map rotation"
+
+		embed.description = f"Started <t:{int(timewindows[0]['starttime'])}:t>."
+		if nexttime:
+			embed.description += f" Next <t:{int(nexttime)}:R>.\n"
 
 		async with self.sqlBroker.context() as sql:
 			map_feeds = await sql.query("SELECT * from s3_feeds WHERE (maps = 1)")
@@ -119,6 +129,9 @@ class S3FeedHandler():
 		image_io = S3ImageBuilder.createSRScheduleImage(sched, self.fonts, self.cachemanager)
 		embed = discord.Embed(colour=0x0004FF)
 		embed.title = "Current Splatoon 3 Salmon Run rotation"
+
+		if len(sched) > 1:
+			embed.set_footer(text = f"Next rotation <t:{int(sched[1]['starttime'])}:R>")
 
 		async with self.sqlBroker.context() as sql:
 			sr_feeds = await sql.query("SELECT * from s3_feeds WHERE (sr = 1)")
