@@ -142,12 +142,19 @@ class S3EmbedBuilder():
 		vsMode = replay['historyDetail']['vsMode']['name']
 		vsRule = replay['historyDetail']['vsRule']['name']
 		vsStage = replay['historyDetail']['vsStage']['name']
+		result = replay['historyDetail']['judgement']
+		knockout = replay['historyDetail']['knockout']
+
+		result = "Victory" if result == "WIN" else "Defeat"
 		awards = []
 		
 		for award in replay['historyDetail']['awards']:
 			awards.append(award['name'])
 
-		embed.title = f"{playerName} - {vsMode}\n{vsRule} - {vsStage}"
+		embed.title = f"{playerName} - {vsMode}\n{vsRule} - {vsStage}\n{result}"
+		if knockout != "NEITHER":
+			embed.title += ' - Knockout'
+
 		embed.add_field(name = "Awards", value = "\n".join(awards), inline = False)
 		code = '-'.join(replay['replayCode'][i:i+4] for i in range(0, len(replay['replayCode']), 4))
 		embed.add_field(name = "Replay Code", value=code, inline = False)

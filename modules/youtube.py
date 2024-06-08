@@ -233,10 +233,18 @@ class Youtube():
 
 		#details = self.get_playlist_meta(soup)
 		#'ytInitialPlayerResponse' here is temporary
-		data = self.get_yt_json_data(soup, 'ytInitialPlayerResponse')
+		data = self.get_yt_json_data(soup, 'ytInitialData')
+		print('')
 		if data is None:
 			print(f"[Youtube] Could not extract JSON for '{response.url}'")
 			return None
+
+		if alerts := data.get('alerts'):
+			for a in alerts:
+				if ar := a.get('alertRenderer'):
+					if ar.get('type') == 'ERROR':
+						print(f"[Youtube] Noticed an alert retrieving playlist: {ar['text']['runs'][0]['text']}")
+						return None
 
 		details = {}
 		details['url']        = url_info['url']

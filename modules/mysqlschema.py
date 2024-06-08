@@ -56,6 +56,7 @@ class MysqlSchema():
 			url VARCHAR(200) NOT NULL,
 			duration INT NULL,
 			title VARCHAR(100) NULL,
+			videocount INT NULL,
 			INDEX (serverid, entryid)
 			) ENGINE=InnoDB
 			"""
@@ -314,7 +315,12 @@ class MysqlSchema():
 
 		if not await self.sqlBroker.hasColumn(cur, 'playlist', 'entryid'):
 			print("[MysqlSchema] Upgrading table 'playlist'...")
-			await cur.execute("ALTER TABLE playlist DROP KEY serverid, ADD COLUMN entryid INT AUTO_INCREMENT PRIMARY KEY NOT NULL FIRST, ADD COLUMN duration INT NULL AFTER url, ADD COLUMN title VARCHAR(96) NULL AFTER duration, ADD INDEX (serverid, entryid)")
+			await cur.execute("ALTER TABLE playlist DROP KEY serverid, ADD COLUMN entryid INT AUTO_INCREMENT PRIMARY KEY NOT NULL FIRST, ADD COLUMN duration INT NULL AFTER url, ADD COLUMN title VARCHAR(125) NULL AFTER duration, ADD INDEX (serverid, entryid)")
+			await self.sqlBroker.c_commit(cur)
+
+		if not await self.sqlBroker.hasColumn(cur, 'playlist', 'videocount'):
+			print("[MysqlSchema] Updating playlist with videocount...")
+			await cur.execute("ALTER TABLE playlist ADD COLUMN videocount INT NULL AFTER title")
 			await self.sqlBroker.c_commit(cur)
 
 		await self.sqlBroker.close(cur)
