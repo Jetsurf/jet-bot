@@ -9,7 +9,7 @@ has evolved into its primary purpose of fetching info from Nintendo Switch Onlin
 
 If you don't care about self-hosting the bot, you can use the following link:
 
-[![Discord Bots](https://top.gg/api/widget/542488723128844312.svg)](https://top.gg/bot/542488723128844312)
+[Discord App Page](https://discord.com/application-directory/542488723128844312)
 
 For self-hosting:
 [See Here](https://github.com/Jetsurf/jet-bot/wiki)
@@ -23,7 +23,7 @@ For self-hosting:
 
 ## NOTE
 
-Running /token and giving it the link it requests pulls your account sesion token from Nintendo to grant it access to game specific data. It is identical to logging into the NSO App on your phone.
+Running /token and giving it the link it requests pulls your account session token from Nintendo to grant it access to game specific data. It is identical to logging into the NSO App on your phone.
 The game specific tokens are ONLY used to access your Splatoon 2 stats and ACNH passports to post within Discord and order gear for you. The account session token is used to refresh game tokens if they expire. They are used for nothing else.
 Feel free to look over [modules/nsotoken.py](https://github.com/Jetsurf/jet-bot/blob/master/modules/nsotoken.py) to audit the handling of keys yourself.
 
@@ -31,7 +31,7 @@ Feel free to look over [modules/nsotoken.py](https://github.com/Jetsurf/jet-bot/
 
 There are a few admin commands to configure the bot. To run these commands, you need the administrator permission in your discord server. Can't DM the bot with any of these commands
 
- - `/admin playlist URL`: Add the given URL to the `/voice play random` playlist
+ - `/admin playlist`: Brings up a view to manage the `/voice play random` playlist
  - `/admin dm add`: Subscribe to DMs on users leaving the server
  - `/admin dm remove`: Unsubscribe from DMs on users leaving the server
  - `/admin announcement set CHANNEL` : Sets a chat channel for announcements about restarts/new features from the devs
@@ -63,6 +63,7 @@ Commands to get info from SplatNet 3 - These commands are largely beta. Feedback
  - `/s3 storedm add TRIGGER` : Sends a DM when gear with TRIGGER arrives. TRIGGER is Name of gear/brand of gear/main ability on gear
  - `/s3 storedm remove TRIGGER` : Removes you from getting a DM with TRIGGER (see above for TRIGGER)
  - `/s3 storedm list` : Shows your current triggers for getting a DM on items arriving in the store
+ - `/s3 replays watch` : Watches for new replays to post in a channel for 2 hours. Rerun to refresh the timer.
 
 ### Music Commands
 

@@ -17,3 +17,4 @@
 `/s3 storedm add TRIGGER` : Sends a DM when gear with TRIGGER arrives. TRIGGER is Name of gear/brand of gear/main ability on gear
 `/s3 storedm remove TRIGGER` : Removes you from getting a DM with TRIGGER (see above for TRIGGER)
 `/s3 storedm list` : Shows your current triggers for getting a DM on items arriving in the store
+`/s3 replays watch` : Watches for new replays to post in a channel for 2 hours. Rerun to refresh the timer.
