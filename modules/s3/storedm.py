@@ -205,7 +205,7 @@ class S3StoreHandler():
 
 	async def removeServerStoreDm(self, serverid):
 		async with self.sqlBroker.context() as sql:
-			await sql.query('DELETE FROM s3_feeds WHERE serverid = %s', (serverid, ))
+			await sql.query('DELETE FROM s3_storedms WHERE serverid = %s', (serverid, ))
 
 	async def removeS3StoreDm(self, ctx, trigger):
 		cur = await self.sqlBroker.connect()
