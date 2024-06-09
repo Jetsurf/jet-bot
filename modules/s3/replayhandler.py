@@ -15,7 +15,6 @@ class replayView(discord.ui.View):
 		self.add_item(discord.ui.Button(label="NSO App Link", url=url + self.formattedCode))
 		dlButton = discord.ui.Button(label="Download to NSO")
 		dlButton.callback = self.dlButton
-		self.timeout = 14300.0
 		self.add_item(dlButton)
 
 	async def dlButton(self, interaction: discord.Interaction):
@@ -38,7 +37,7 @@ class S3ReplayHandler():
 		self.nsoToken = nsoToken
 		self.cacheManager = cacheManager
 		self.fonts = fonts
-		self.endtime = (datetime.now() + timedelta(minutes=30))
+		self.endtime = (datetime.now() + timedelta(minutes=120))
 		self.user = None
 		self.initialized = False
 		self.seenReplays = []
@@ -52,15 +51,11 @@ class S3ReplayHandler():
 		replays = nso.s3.get_replay_list()
 
 		for replay in replays['data']['replays']['nodes']:
-			#This is for testing only, will be removed
-			if replay['id'] == "UmVwbGF5LXUtYXBvd2gzM3Q0a2o2a2gyYTNubW06UkdTMVlHMjlDSE1QVlAzVQ==":
-				continue
-			else:
-				print(f"Found replay ID for {ctx.user.id} : {replay['id']} {replay['historyDetail']['playedTime']}")
-				self.seenReplays.append(replay['id'])
+			print(f"Found replay ID for {ctx.user.id} : {replay['id']} {replay['historyDetail']['playedTime']}")
+			self.seenReplays.append(replay['id'])
 
 		#1 minute here only for testing
-		self.scheduler.add_job(self.GetFeedUpdates, next_run_time=(datetime.now() + timedelta(minutes=1)))
+		self.scheduler.add_job(self.GetFeedUpdates, next_run_time=(datetime.now() + timedelta(minutes=5)))
 
 		print(f"Starting S3 Replay Watch for user {self.ctx.user.id}")
 		self.scheduler.start()

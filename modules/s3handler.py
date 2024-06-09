@@ -29,7 +29,7 @@ class ReupReplayTimerView(discord.ui.View):
 		self.add_item(reup)
 
 	async def doneCallback(self, interaction: discord.Interaction):
-		self.replayHandler.endtime = (datetime.datetime.now() + datetime.timedelta(minutes=30))
+		self.replayHandler.endtime = (datetime.datetime.now() + datetime.timedelta(minutes=120))
 		await interaction.response.send_message(f"Watching replays for {interaction.user.display_name} until <t:{int(self.replayHandler.endtime.timestamp())}>")
 		await self.ctx.interaction.delete_original_response()
 		self.stop()

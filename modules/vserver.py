@@ -58,7 +58,7 @@ class PlayList():
 			duration = entry['duration']
 			videocount = entry['videocount']
 			title = entry['title']
-			print(f"{title} {videocount}")
+
 			if videocount is not None:
 				pl = True
 			else:
@@ -245,7 +245,7 @@ class PlayListAddModal(Modal):
 
 		print(f"URL is: {url}")
 		if await self.playlist.hasUrl(url):
-			await interaction.response.send_message(content = "That URL is already on the playlist.", allowed_mentions = discord.AllowedMentions.none(), ephemeral = True, delete_after = 10)
+			await interaction.response.send_message(content = "That URL is already on the playlist.", allowed_mentions = discord.AllowedMentions.none(), ephemeral = True, delete_after = 5)
 			return
 
 		if await self.playlist.addEntry(url):
