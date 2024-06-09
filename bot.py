@@ -200,18 +200,7 @@ play = voice.create_subgroup(name='play', description='Commands related to playi
 async def cmdToken(ctx):
 	view = nsotoken.tokenMenuView(nsoTokens, configData['hosted_url'])
 	await view.init(ctx)
-
-	if view.isDupe:
-		embed = discord.Embed(colour=0x3FFF33)
-		embed.title = "Token Management"
-		embed.add_field(name="Token is already setup", value="Press cancel to close or 'Delete Token' to delete your tokens")
-	else:
-		embed = discord.Embed(colour=0x3FFF33)
-		embed.title = "Instructions"
-		embed.add_field(name="Sign In", value="1) Click the \"Sign In Link\" button\n2) Sign into your nintendo account\n3) Right click the \"Select this person\" button and copy the link address\n3) Hit \"Submit URL\" and paste in the link to complete setup.", inline=False)
-		embed.set_image(url=f"{configData['hosted_url']}/images/nsohowto.png")
-
-	await ctx.respond(embed=embed, view=view, ephemeral=True)
+	await ctx.respond(embed=view.makeEmbed(), view=view, ephemeral=True)
 
 @fcCmds.command(name = "get", description = "Shares your Nintendo Switch friend code")
 async def cmdFcGet(ctx):

@@ -43,7 +43,7 @@ class PlayList():
 	async def generateEmbed(self):
 		embed = discord.Embed(colour=0x3FFF33)
 		embed.title = "Playlist Management"
-		embed.add_field(name="Instructions", value="Playlists are for /voice play random #.\nAdd to add a video to the playlist.\nRemove to delete from playlist.\n Next/Prev to change pages.\nBold denotes youtube playlist.", inline=False)
+		embed.add_field(name="Instructions", value="Playlists are for /voice play random #.\nAdd to add a video to the playlist.\nRemove to delete from playlist.\n Next/Prev to change pages.\nBold denotes youtube playlist\n  - Number at end is # of videos in list", inline=False)
 
 		self.list = await self.getEntries()
 		listlen = len(self.list)
@@ -78,7 +78,7 @@ class PlayList():
 					m = int(rem / 60)
 					rem = rem % 60
 					s = int(rem)
-					time = f"{h}:{m}:{s}" if h > 0 else f"{m}:{s}"
+					time = f"{h}:{m:02}:{s:02}" if h > 0 else f"{m}:{s:02}"
 
 					liststring += f"{i + ((self.page - 1) * 10)} - [{title}]({url}) - {time}\n"
 
@@ -101,11 +101,14 @@ class PlayList():
 			await self.ctx.interaction.delete_original_response()
 
 	async def hasUrl(self, url):
+		row = None
 		ytlink = self.yt.url_info(url)
 
 		async with self.sqlBroker.context() as sql:
-			if ytlink['type'] == youtube.UrlType.UNKNOWN:
-				row = await sql.query_first("SELECT * FROM playlist WHERE serverid = %s AND url = %s", (self.ctx.guild.id, url))
+			if ytlink is None:
+				data = await YTDLSource.get_info(url)
+				if data is not None:
+					row = await sql.query_first("SELECT * FROM playlist WHERE serverid = %s AND url = %s", (self.ctx.guild.id, url))
 			else:
 				row = await sql.query_first("SELECT * FROM playlist WHERE serverid = %s AND url = %s", (self.ctx.guild.id, ytlink['url']))
 
@@ -118,16 +121,16 @@ class PlayList():
 	async def addEntry(self, url):
 		link = self.yt.url_info(url)
 
-		if link['type'] == youtube.UrlType.PLAYLIST:
+		if link is not None and link['type'] == youtube.UrlType.PLAYLIST:
 			print(f"Adding playlist URL: {url}")
 			link = await self.yt.get_playlist_details(url)
-		elif link['type'] == youtube.UrlType.VIDEO:
+		elif link is not None and link['type'] == youtube.UrlType.VIDEO:
 			url = link['url']
 			print(f"Adding video URL: {url}")
 			link = await self.yt.get_video_details(url)
 		else:
 			try:
-				link = await YTDLSource.from_url(url).data
+				link = await YTDLSource.get_info(url)
 			except Exception as e:
 				print(f"Exception: {e}")
 				print(f"Failed to add video {url} to playlist")
