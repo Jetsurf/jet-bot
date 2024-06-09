@@ -203,6 +203,10 @@ class S3StoreHandler():
 
 			await ctx.respond(embed=embed)
 
+	async def removeServerStoreDm(self, serverid):
+		async with self.sqlBroker.context() as sql:
+			await sql.query('DELETE FROM s3_feeds WHERE serverid = %s', (serverid, ))
+
 	async def removeS3StoreDm(self, ctx, trigger):
 		cur = await self.sqlBroker.connect()
 		await cur.execute("SELECT COUNT(*) FROM s3_storedms WHERE clientid = %s", (ctx.user.id,))

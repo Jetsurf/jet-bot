@@ -30,7 +30,7 @@ class ReupReplayTimerView(discord.ui.View):
 
 	async def doneCallback(self, interaction: discord.Interaction):
 		self.replayHandler.endtime = (datetime.datetime.now() + datetime.timedelta(minutes=120))
-		await interaction.response.send_message(f"Watching replays for {interaction.user.display_name} until <t:{int(self.replayHandler.endtime.timestamp())}>")
+		await interaction.response.send_message(f"Continuing to watch replays for {interaction.user.display_name} until <t:{int(self.replayHandler.endtime.timestamp())}>")
 		await self.ctx.interaction.delete_original_response()
 		self.stop()
 
@@ -55,7 +55,7 @@ class S3Handler():
 	# Removes S3 data for a specific server
 	async def removeServer(self, serverid):
 		await self.feeds.removeServer(serverid)
-		#TODO: storedm
+		await self.storedm.removeServerStoreDm(serverid)
 
 	async def cmdWeaponInfo(self, ctx, name):
 		match = self.splat3info.weapons.matchItem(name)
