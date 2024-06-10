@@ -380,17 +380,6 @@ class voiceServer():
 				async with sqlBroker.context() as sql:
 					await sql.query("DELETE FROM playlist WHERE (entryid = %s)", (r['entryid'], ))
 
-	async def joinVClient(self, ctx, channel):
-		if self.vclient != None:
-			tmpvclient = self.vclient
-			self.vclient = None
-			await tmpvclient.disconnect()
-				
-		check = discord.utils.get(self.client.bot.voice_clients, guild=ctx.guild)
-		if check != None:
-			print("DEBUG: Got vclient as none and server voice client present... disconnecting")
-			await check.disconnect()
-
 	async def joinVoiceChannel(self, ctx, args):
 		id = 0
 		channel = None
