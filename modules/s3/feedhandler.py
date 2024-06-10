@@ -5,7 +5,6 @@ import json, time
 from .imagebuilder import S3ImageBuilder
 from .schedule import S3Schedule
 
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from datetime import datetime, timezone, timedelta
 
 class S3FeedHandler():
@@ -18,28 +17,20 @@ class S3FeedHandler():
 		self.fonts = fonts
 		self.store = store
 		self.initialized = False
-		self.scheduler = AsyncIOScheduler(timezone='UTC')
-		self.scheduler.add_job(self.doMapFeed, 'cron', hour="*/2", minute='0', second='25', timezone='UTC')
-		asyncio.create_task(self.scheduleSRFeed())
 
 		store.onUpdate(self.onStoreUpdate)
 
+		schedule.on_versus_update(self.onVersusMapUpdate)
+		schedule.on_coop_update(self.onCoopMapUpdate)
+
 	def onStoreUpdate(self, items):
-		asyncio.create_task(self.doGearFeed([i['data'] for i in items]))
+		self.client.loop.create_task(self.doGearFeed([i['data'] for i in items]))
 
-	async def scheduleSRFeed(self):
-		while self.schedule.get_schedule('SR') == []:
-			await asyncio.sleep(1)
+	def onVersusMapUpdate(self):
+		self.client.loop.create_task(self.doMapFeed())
 
-		sched = self.schedule.get_schedule('SR')
-		#(datetime.now() + timedelta(minutes=1)).timestamp())
-		runtime = datetime.fromtimestamp(int(sched[0]['endtime']) + 20)
-		print(f"[S3FeedHandler] Scheduling SR feed run at {runtime}")
-		self.scheduler.add_job(self.doSRFeed, 'date', next_run_time=runtime)
-
-		if not self.initialized:
-			self.scheduler.start()
-			self.initialized = True
+	def onCoopMapUpdate(self):
+		self.client.loop.create_task(self.doSRFeed())
 
 	def getFeedChannel(self, serverid, channelid):
 		guild = self.client.get_guild(int(serverid))
@@ -123,15 +114,14 @@ class S3FeedHandler():
 			await self.sendFeedMessage(feed['serverid'], feed['channelid'], file = img, embed = embed)
 
 	async def doSRFeed(self):
-		await self.scheduleSRFeed() # Setup next run
-
 		sched = self.schedule.get_schedule('SR', count = 2)
 		image_io = S3ImageBuilder.createSRScheduleImage(sched, self.fonts, self.cachemanager)
 		embed = discord.Embed(colour=0x0004FF)
 		embed.title = "Current Splatoon 3 Salmon Run rotation"
 
+		embed.description = f"Started <t:{int(sched[0]['starttime'])}:t>."
 		if len(sched) > 1:
-			embed.set_footer(text = f"Next rotation <t:{int(sched[1]['starttime'])}:R>")
+			embed.description += f" Next <t:{int(sched[1]['starttime'])}:R>."
 
 		async with self.sqlBroker.context() as sql:
 			sr_feeds = await sql.query("SELECT * from s3_feeds WHERE (sr = 1)")

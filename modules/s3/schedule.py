@@ -33,6 +33,17 @@ class S3Schedule():
 		'XB': 'X Battles',
 	}
 
+	schedule_types = {
+		'TW': 'VERSUS',
+		'SO': 'VERSUS',
+		'SP': 'VERSUS',
+		'AO': 'VERSUS',
+		'AS': 'VERSUS',
+		'CH': 'VERSUS',
+		'XB': 'VERSUS',
+		'SR': 'COOP',
+	}
+
 	def __init__(self, nsotoken, sqlBroker, cachemanager):
 		self.nsotoken = nsotoken
 		self.sqlBroker = sqlBroker
@@ -46,9 +57,15 @@ class S3Schedule():
 		for k in self.schedule_names.keys():
 			self.schedules[k] = []
 
-		# Schedule updates every hour
+		self.rotations = {}
+
+		self.callbacks = {'COOP': [], 'VERSUS': []}
+
+		# Schedule jobs
 		self.scheduler = AsyncIOScheduler()
 		self.scheduler.add_job(self.update, 'interval', minutes = 60)
+		self.scheduler.add_job(self.check_rotations, 'cron', hour="*/1", minute='0', second='10', timezone='UTC')
+		#self.scheduler.add_job(self.check_rotations, 'cron', hour="*/1", minute='*/1', second='10', timezone='UTC')
 		self.scheduler.start()
 
 		# Do async startup
@@ -58,6 +75,17 @@ class S3Schedule():
 		await self.sqlBroker.wait_for_startup()
 		await self.load()
 		await self.update()
+
+	def on_versus_update(self, callback):
+		self.callbacks['VERSUS'].append(callback)
+
+	def on_coop_update(self, callback):
+		self.callbacks['COOP'].append(callback)
+
+	def run_callbacks(self, type):
+		print(f"[S3Schedule] Running schedule rotation callbacks for: {type}")
+		for cb in self.callbacks[type]:
+			cb()
 
 	def is_update_needed(self):
 		if self.updatetime is None:
@@ -84,6 +112,51 @@ class S3Schedule():
 			return []  # None found
 
 		return schedule[index:index + count]
+
+	# Sets the current rotations. Call once on startup.
+	def set_initial_rotations(self, settime = None):
+		if settime == None:
+			settime = time.time()
+
+		for k in self.schedules.keys():
+			schedule = self.schedules[k]
+			for i in range(len(schedule)):
+				if (schedule[i]['starttime'] <= settime) and (schedule[i]['endtime'] >= settime):
+					self.rotations[k] = schedule[i]['starttime']
+					break
+
+		print(f"[S3Schedule] set_initial_rotations(): initial rotations {self.rotations}")
+
+	# Updates our notion of the current rotation and runs callbacks.
+	def check_rotations(self, checktime = None):
+		if checktime == None:
+			checktime = time.time()
+
+		# Check for rotation updates
+		updates = []
+		for k in self.schedules.keys():
+			schedule = self.schedules[k]
+			for i in range(len(schedule)):
+				if (schedule[i]['starttime'] <= checktime) and (schedule[i]['endtime'] >= checktime):
+					rotation = schedule[i]
+					if (not k in self.rotations) or (rotation['starttime'] != self.rotations[k]):
+						updates.append(k)
+						self.rotations[k] = rotation['starttime']
+
+		if len(updates) == 0:
+			return
+
+		print(f"[S3Schedule] check_rotations(): New rotations: {updates}")
+
+		# Figure to rotation types to trigger callbacks for
+		types = set()
+		for u in updates:
+			if u in self.schedule_types:
+				types.add(self.schedule_types[u])
+
+		# Run callbacks
+		for t in types:
+			self.run_callbacks(t)
 
 	# Given 'vsStages' object, returns a list of maps
 	def parse_maps(self, data):
@@ -223,13 +296,13 @@ class S3Schedule():
 		if not nso:
 			return  # No bot account configured
 		elif not nso.is_logged_in():
-			print("S3Schedule.update(): Time to update but the bot account is not logged in")
+			print("[S3Schedule] update(): Time to update but the bot account is not logged in")
 			return
 
-		print("S3Schedule.update(): Updating schedule")
+		print("[S3Schedule] update(): Updating schedule")
 		data = nso.s3.get_stage_schedule()
 		if data is None:
-			print("S3Schedule.update(): Failed to retrieve schedule")
+			print("[S3Schedule] update(): Failed to retrieve schedule")
 			return
 
 		self.schedules['TW'] = self.parse_versus_schedule(data['data'].get('regularSchedules'), 'regularMatchSetting', self.parse_schedule_turf)
@@ -282,6 +355,8 @@ class S3Schedule():
 			self.schedules = schedules
 			self.updatetime = updaterow['updatetime'] if updaterow else None
 
+			self.set_initial_rotations()
+
 	async def cache_images(self):
 		# PvP
 		for k in ['TW', 'SO', 'SP', 'AO', 'AS', 'CH', 'XB']:
@@ -294,9 +369,8 @@ class S3Schedule():
 					if self.image_cache_small.is_fresh(key):
 						continue  # Already fresh
 
-					print(f"Caching map image stageid {map['stageid']} name '{map['name']}' image-url {map['image']}")
+					print(f"[S3Schedule] Caching map image stageid {map['stageid']} name '{map['name']}' image-url {map['image']}")
 					await self.image_cache_small.add_url(key, map['image'])
-
 
 		# Salmon run
 		for k in ['SR']:
@@ -309,7 +383,7 @@ class S3Schedule():
 					if self.image_cache_sr_maps.is_fresh(key):
 						continue  # Already fresh
 
-					print(f"Caching SR map image stageid {map['stageid']} name '{map['name']}' image-url {map['image']}")
+					print(f"[S3Schedule] Caching SR map image stageid {map['stageid']} name '{map['name']}' image-url {map['image']}")
 					await self.image_cache_sr_maps.add_url(key, map['image'])
 
 				for weapon in rec['weapons']:
@@ -320,5 +394,5 @@ class S3Schedule():
 					if self.image_cache_sr_weapons.is_fresh(key):
 						continue  # Already fresh
 
-					print(f"Caching SR weapon name '{weapon['name']}' key '{key}' image-url {weapon['image']}")
+					print(f"[S3Schedule] Caching SR weapon name '{weapon['name']}' key '{key}' image-url {weapon['image']}")
 					await self.image_cache_sr_weapons.add_url(key, weapon['image'])
