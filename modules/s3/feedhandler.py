@@ -48,29 +48,17 @@ class S3FeedHandler():
 	async def sendFeedMessage(self, serverid, channelid, file = None, embed = None):
 		channel = self.getFeedChannel(serverid, channelid)
 		if channel is None:
-<<<<<<< HEAD
 			print(f"[S3FeedHandler] Can't retrieve channel - Deleting feeds for serverid {serverid} channelid {channelid}.")
 			async with self.sqlBroker.context() as sql:
 				await sql.query("DELETE FROM s3_feeds WHERE (serverid = %s) AND (channelid = %s)", (serverid, channelid))
-=======
-			print(f"Can't retrieve channel - Deleting feeds for serverid {serverid} channelid {channelid}.")
-			async with self.sqlBroker.context() as sql:
-				await sql.query("DELETE FROM s3feeds WHERE (serverid = %s) AND (channelid = %s)", (serverid, channelid))
->>>>>>> master
 			return
 
 		try:
 			await channel.send(file = file, embed = embed)
 		except discord.Forbidden:
-<<<<<<< HEAD
 			print(f"[S3FeedHandler] 403 - Deleting feeds for serverid {serverid} channelid {channelid}")
 			async with self.sqlBroker.context() as sql:
 				await sql.query("DELETE FROM s3_feeds WHERE (serverid = %s) AND (channelid = %s)", (serverid, channelid))
-=======
-			print(f"403 - Deleting feeds for serverid {serverid} channelid {channelid}")
-			async with self.sqlBroker.context() as sql:
-				await sql.query("DELETE FROM s3feeds WHERE (serverid = %s) AND (channelid = %s)", (serverid, channelid))
->>>>>>> master
 			return
 
 	async def doMapFeed(self):
@@ -109,7 +97,6 @@ class S3FeedHandler():
 		embed = discord.Embed(colour=0x0004FF)
 		embed.title = "Current Splatoon 3 multiplayer map rotation"
 
-<<<<<<< HEAD
 		embed.description = f"Started <t:{int(timewindows[0]['starttime'])}:t>."
 		if nexttime:
 			embed.description += f" Next <t:{int(nexttime)}:R>.\n"
@@ -118,12 +105,6 @@ class S3FeedHandler():
 			map_feeds = await sql.query("SELECT * from s3_feeds WHERE (maps = 1)")
 
 		print(f"[S3FeedHandler] Doing {len(map_feeds)} S3 map feeds")
-=======
-		async with self.sqlBroker.context() as sql:
-			map_feeds = await sql.query("SELECT * from s3feeds WHERE (maps = 1)")
-
-		print(f"Doing {len(map_feeds)} S3 map feeds")
->>>>>>> master
 
 		for feed in map_feeds:
 			img = discord.File(image_io, filename = "maps-feed.png", description = "Current S3 multiplayer schedule")
