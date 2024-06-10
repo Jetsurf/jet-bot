@@ -94,25 +94,6 @@ class S3StoreHandler():
 				if self.checkToDM(item, criteria):
 					print(f"  Messaging {user.name}")
 					await self.handleDM(user, item)
-<<<<<<< HEAD
-=======
-
-	async def doStoreDailyDropDM(self):
-		items = self.storecache['pickupBrand']['brandGears']
-		print(f"Doing S3 daily drop store DMs.")
-		await self.doStoreDM(items)
-		return
-
-	async def doStoreRegularDM(self):
-		if not self.cacheState:
-			print("Cache was not updated... skipping this daily drop...")
-			return
-
-		items = [ self.storecache['limitedGears'][5] ]
-		print(f"Doing S3 regular store DMs.")
-		await self.doStoreDM(items)
-		return
->>>>>>> master
 
 	async def handleDM(self, user, gear):
 		# Get an NSO client for this user
