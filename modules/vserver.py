@@ -295,7 +295,6 @@ class YTDLSource(discord.PCMVolumeTransformer):
 		loop = loop or asyncio.get_event_loop()
 		data = await loop.run_in_executor(None, lambda: ytdl.extract_info(url, download=not stream))
 
-		print(f"{data}")
 		if data['extractor'] == 'generic' or data['extractor'] == 'youtube:search':
 			return None
 
