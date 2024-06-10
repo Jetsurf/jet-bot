@@ -295,6 +295,9 @@ class YTDLSource(discord.PCMVolumeTransformer):
 		loop = loop or asyncio.get_event_loop()
 		data = await loop.run_in_executor(None, lambda: ytdl.extract_info(url, download=not stream))
 
+		if data['extractor'] == 'generic' or 'ytsearch:' in data['extractor']:
+			return None
+
 		##THIS ASSUMES VIDEO LINKS ONLY
 		retData = { 'title' : data.get('title'),
 					'url' : data.get('webpage_url'),
@@ -347,7 +350,9 @@ class voiceServer():
 					await asyncio.sleep(15)
 					continue
 				else:
-					print("  Skipping bad URL")
+					print(f"  Removing bad URL: {r['url']}")
+					async with sqlBroker.context() as sql:
+						await sql.query("DELETE FROM playlist WHERE entryid = %s", (r['entryid'],))
 					continue
 
 			await asyncio.sleep(15)  # Slow down so we don't hit Youtube too hard
