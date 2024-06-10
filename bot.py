@@ -250,6 +250,21 @@ async def cmdHelp(ctx):
 
 # --- Admin commands ---
 
+@adminCmds.command(name='playlist', description="Menu to manage the playlist for /voice play random")
+async def cmdPlaylistAdd(ctx):
+	global mysqlHandler
+
+	if ctx.guild == None:
+		await ctx.respond("Can't DM me with this command.")
+		return
+
+	if await checkIfAdmin(ctx):
+		playlist = vserver.PlayList(ctx, mysqlHandler)
+		await playlist.show()
+	else:
+
+		await ctx.respond("You aren't a guild administrator", ephemeral=True)
+
 @adminAnnounceCmds.command(name='set', description="Sets a chat channel to receive announcements from my developers")
 async def cmdAnnounceAdd(ctx, channel: Option(discord.TextChannel, "Channel to set to receive announcements", required=True)):
 	if ctx.guild == None:
@@ -586,7 +601,6 @@ async def cmdS3Gearseed(ctx):
 async def cmdS3ReplayWatch(ctx):
 	await s3Handler.cmdReplayPoster(ctx)
 
-
 # --- Owner Commands ---
 
 @owner.command(name='eval', description="Eval a code block (Owners only)", default_permission=False)
@@ -769,22 +783,7 @@ async def cmdVoicePlaySound(ctx, sound: Option(str, "Sound clip to play, get wit
 		await ctx.respond(f"Attempting to play: {sound}", ephemeral=True)
 		await serverVoices[ctx.guild.id].playSound(sound)
 
-
-
-@adminCmds.command(name='playlist', description="Adds a URL or the current video to my playlist for /voice play random")
-async def cmdPlaylistAdd(ctx):
-	global mysqlHandler
-
-	if ctx.guild == None:
-		await ctx.respond("Can't DM me with this command.")
-		return
-
-	if await checkIfAdmin(ctx):
-		playlist = vserver.PlayList(ctx, mysqlHandler)
-		await playlist.show()
-	else:
-
-		await ctx.respond("You aren't a guild administrator", ephemeral=True)
+## Group Commands
 
 @groupCmds.command(name = 'create', description = 'Create a group')
 async def cmdGroupCreate(ctx):
