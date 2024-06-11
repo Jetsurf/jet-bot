@@ -90,7 +90,7 @@ class Youtube():
 				return text
 		return None
 
-	def get_yt_json_data(self, soup, var):
+	def get_yt_json_data(self, soup, var = "ytInitialData"):
 		json_string = self.get_yt_json(soup, var)
 		if json_string is None:
 			print(f"[Youtube] Could not extract JSON string")
