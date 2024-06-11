@@ -21,6 +21,16 @@ class MysqlSchema():
 		finally:
 			await self.sqlBroker.c_commit(cur)
 
+		if await self.sqlBroker.hasTable(cur, 's3storedms') and not await self.sqlBroker.hasTable(cur, 's3_storedms'):
+			print("[MysqlSchema] Renaming table 's3storedms' to 's3_storedms'...")
+			await cur.execute("RENAME TABLE s3storedms TO s3_storedms")
+			await self.sqlBroker.c_commit(cur)
+
+		if await self.sqlBroker.hasTable(cur, 's3feeds') and not await self.sqlBroker.hasTable(cur, 's3_feeds'):
+			print("[MysqlSchema] Renaming table 's3feeds' to 's3_feeds'...")
+			await cur.execute("RENAME TABLE s3feeds TO s3_feeds")
+			await self.sqlBroker.c_commit(cur)
+
 		if await self.sqlBroker.hasTable(cur, 'feeds') and not await self.sqlBroker.hasTable(cur, 's2_feeds'):
 			print("[MysqlSchema] Renaming table 'feeds' to 's2_feeds'...")
 			await cur.execute("RENAME TABLE feeds TO s2_feeds")
@@ -41,9 +51,13 @@ class MysqlSchema():
 			await cur.execute(
 			"""
 			CREATE TABLE `playlist` (
-  			`serverid` bigint unsigned NOT NULL,
-  			`url` varchar(200) NOT NULL,
-  			PRIMARY KEY (`serverid`)
+			entryid INT PRIMARY KEY AUTO_INCREMENT NOT NULL,
+			serverid BIGINT UNSIGNED NOT NULL,
+			url VARCHAR(200) NOT NULL,
+			duration INT NULL,
+			title VARCHAR(100) NULL,
+			videocount INT NULL,
+			INDEX (serverid, entryid)
 			) ENGINE=InnoDB
 			"""
 			)
@@ -78,11 +92,11 @@ class MysqlSchema():
 			)
 			await self.sqlBroker.c_commit(cur)
 
-		if not await self.sqlBroker.hasTable(cur, 's3feeds'):
-			print("[MysqlSchema] Creating table 's3feeds'...")
+		if not await self.sqlBroker.hasTable(cur, 's3_feeds'):
+			print("[MysqlSchema] Creating table 's3_feeds'...")
 			await cur.execute(
 			"""
-			CREATE TABLE `s3feeds` (
+			CREATE TABLE `s3_feeds` (
 			`serverid` bigint unsigned NOT NULL,
 			`channelid` bigint unsigned NOT NULL,
 			`maps` TINYINT NOT NULL,
@@ -239,11 +253,28 @@ class MysqlSchema():
 			)
 			await self.sqlBroker.c_commit(cur)
 
-		if not await self.sqlBroker.hasTable(cur, 's3storedms'):
-			print("[MysqlSchema] Creating table 's3storedms'...")
+		if not await self.sqlBroker.hasTable(cur, 's3_store_items'):
+			print("[MysqlSchema] Creating table 's3_store_items'...")
 			await cur.execute(
 			"""
-			CREATE TABLE s3storedms
+			CREATE TABLE s3_store_items
+			(
+			saleid    VARCHAR(36) PRIMARY KEY NOT NULL,
+			name      VARCHAR(64) NOT NULL,
+			dailydrop ENUM('Y', 'N') NOT NULL,
+			brandid   INT NOT NULL,
+			price     INT NOT NULL,
+			endtime   DATETIME NOT NULL,
+			jsondata  TEXT NOT NULL
+			) ENGINE=InnoDB
+			"""
+			)
+
+		if not await self.sqlBroker.hasTable(cur, 's3_storedms'):
+			print("[MysqlSchema] Creating table 's3_storedms'...")
+			await cur.execute(
+			"""
+			CREATE TABLE s3_storedms
 			(
 			serverid BIGINT unsigned NOT NULL,
 			clientid BIGINT unsigned NOT NULL,
@@ -280,6 +311,16 @@ class MysqlSchema():
 			) ENGINE = InnoDB
 			"""
 			)
+			await self.sqlBroker.c_commit(cur)
+
+		if not await self.sqlBroker.hasColumn(cur, 'playlist', 'entryid'):
+			print("[MysqlSchema] Upgrading table 'playlist'...")
+			await cur.execute("ALTER TABLE playlist DROP KEY serverid, ADD COLUMN entryid INT AUTO_INCREMENT PRIMARY KEY NOT NULL FIRST, ADD COLUMN duration INT NULL AFTER url, ADD COLUMN title VARCHAR(125) NULL AFTER duration, ADD INDEX (serverid, entryid)")
+			await self.sqlBroker.c_commit(cur)
+
+		if not await self.sqlBroker.hasColumn(cur, 'playlist', 'videocount'):
+			print("[MysqlSchema] Updating playlist with videocount...")
+			await cur.execute("ALTER TABLE playlist ADD COLUMN videocount INT NULL AFTER title")
 			await self.sqlBroker.c_commit(cur)
 
 		await self.sqlBroker.close(cur)

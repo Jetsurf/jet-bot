@@ -232,26 +232,30 @@ class S3ImageBuilder():
 		# Game type icon mappings
 		game_type_icons = {
 			'TW': 'regular',
-			'SF': 'regular',
+			'SO': 'regular',
+			'SP': 'regular',
 			'AO': 'bankara',
 			'AS': 'bankara',
+			'CH': 'challenge',
 			'XB': 'x',
 		}
 
 		# Game type name mappings
 		game_type_names = {
 			'TW': 'Turf War',
-			'SF': 'Splatfest',
+			'SO': 'Splatfest Open',
+			'SP': 'Splatfest Pro',
 			'AO': 'Anarchy Open',
 			'AS': 'Anarchy Series',
+			'CH': 'Challenge',
 			'XB': 'X Battle',
 		}
 
 		# Count the number of columns needed
 		column_count = 0
 		active_types = []
-		for t in ['TW', 'SF', 'AO', 'AS', 'XB']:
-			if len(schedules[t]) == 0:
+		for t in ['TW', 'SO', 'SP', 'AO', 'AS', 'XB', 'CH']:
+			if (not(t in schedules)) or (len(schedules[t]) == 0):
 				continue
 			column_count += 1
 			active_types.append(t)
@@ -671,33 +675,43 @@ class S3ImageBuilder():
 		return img
 
 	@classmethod
-	def createStoreCanvas(self, gearJson, fonts):
+	def createStoreCanvas(self, store, fonts):
 		MAXW, MAXH = 660, 1062
 		CARDW, CARDH = 220, 290
 		TEXTH = 24
 		TEXTCOLOR = (0, 150, 150, 255)
+		COLCOUNT = 3
 		s2FontSmall = fonts.truetype("s2.otf", size=TEXTH)
 		img = Image.new("RGBA", (MAXW, MAXH), (0, 0, 0, 0))
 		draw = ImageDraw.Draw(img)
 
-		#Daily Drops
-		draw.text((int(MAXW/2), 0), f"The Daily Drop: {gearJson['pickupBrand']['brand']['name']}", TEXTCOLOR, font=s2FontSmall, anchor="mt")
-		for i, gear in enumerate(gearJson['pickupBrand']['brandGears']):
-			nameFont = fonts.truetype_for_width("s2.otf", TEXTH, CARDW, gear['gear']['name'])
-			draw.text((i * CARDW + int(CARDW/2), TEXTH), gear['gear']['name'], TEXTCOLOR, font=nameFont, anchor='mt')
-			draw.text((i * CARDW + int(CARDW/2), TEXTH * 2), f"Price: {gear['price']}", TEXTCOLOR, font=s2FontSmall, anchor="mt")
-			gearImg = self.createGearCard(gear['gear'])
-			img.paste(gearImg, (i * CARDW, TEXTH*3), gearImg)
-
-		#Normal gear rotation
-		draw.text((int(MAXW/2), CARDH + (TEXTH*3)), "Normal gear on sale", TEXTCOLOR, font=s2FontSmall, anchor="mt")
-		for i, gears in enumerate([gearJson['limitedGears'][i * 3:(i + 1) * 3] for i in range((len(gearJson['limitedGears']) + 3 - 1) // 3 )]):
-			for j, gear in enumerate(gears):
+		# Daily Drops
+		items = [i['data'] for i in store.getDailyDropItems()]
+		if len(items):
+			draw.text((int(MAXW/2), 0), f"The Daily Drop: {items[0]['gear']['brand']['name']}", TEXTCOLOR, font=s2FontSmall, anchor="mt")
+			for i, gear in enumerate(items):
 				nameFont = fonts.truetype_for_width("s2.otf", TEXTH, CARDW, gear['gear']['name'])
-				draw.text((j * CARDW + int(CARDW/2), (i+1) * CARDH + ((4+i) * TEXTH + i * TEXTH)), gear['gear']['name'], TEXTCOLOR, font=nameFont, anchor="mt")
-				draw.text((j * CARDW + int(CARDW/2), (i+1) * CARDH + ((5+i) * TEXTH + i * TEXTH)), f"Price: {gear['price']}", TEXTCOLOR, font=s2FontSmall, anchor="mt")
+				draw.text((i * CARDW + int(CARDW/2), TEXTH), gear['gear']['name'], TEXTCOLOR, font=nameFont, anchor='mt')
+				draw.text((i * CARDW + int(CARDW/2), TEXTH * 2), f"Price: {gear['price']}", TEXTCOLOR, font=s2FontSmall, anchor="mt")
 				gearImg = self.createGearCard(gear['gear'])
-				img.paste(gearImg, (j * CARDW, (i+1) * CARDH + ((6+i) * TEXTH)), gearImg)
+				img.paste(gearImg, (i * CARDW, TEXTH*3), gearImg)
+
+		# Normal gear
+		items = [i['data'] for i in store.getNormalItems()]
+		row_count = (len(items) + COLCOUNT - 1) // COLCOUNT
+		draw.text((int(MAXW/2), CARDH + (TEXTH*3)), "Normal gear on sale", TEXTCOLOR, font=s2FontSmall, anchor="mt")
+		for r in range(row_count):
+			for c in range(COLCOUNT):
+				i = r * COLCOUNT + c
+				if i > len(items):
+					break
+
+				gear = items[r * COLCOUNT + c]
+				nameFont = fonts.truetype_for_width("s2.otf", TEXTH, CARDW, gear['gear']['name'])
+				draw.text((c * CARDW + int(CARDW/2), (r+1) * CARDH + ((4+r) * TEXTH + r * TEXTH)), gear['gear']['name'], TEXTCOLOR, font=nameFont, anchor="mt")
+				draw.text((c * CARDW + int(CARDW/2), (r+1) * CARDH + ((5+r) * TEXTH + r * TEXTH)), f"Price: {gear['price']}", TEXTCOLOR, font=s2FontSmall, anchor="mt")
+				gearImg = self.createGearCard(gear['gear'])
+				img.paste(gearImg, (c * CARDW, (r+1) * CARDH + ((6+r) * TEXTH)), gearImg)
 
 		retImg = io.BytesIO()
 		img.save(retImg, 'PNG')

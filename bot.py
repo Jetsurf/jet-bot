@@ -139,7 +139,7 @@ async def updateTopGgAsync():
 		url = f"https://top.gg/api/bots/{str(client.user.id)}/stats"
 		body = { 'server_count' : server_count }
 		response = await http_client.post(url, headers = topGgHead, json = body)
-		print("[top.gg] Posted server count {server_count}, response: {response.status}")
+		print(f"[top.gg] Posted server count {server_count}, response: {response.status}")
 
 def startUp():
 	# Vital stuff
@@ -170,12 +170,14 @@ if not configData.get('s3_top_level', False):
 	s3StatsCmds = s3Cmds.create_subgroup('stats', 'Commands related to Splatoon 3 gameplay stats')
 	s3StoreDmCmds = s3Cmds.create_subgroup('storedm', 'Splatoon 3 Store gear DMs')
 	s3StoreCmds = s3Cmds.create_subgroup('store', 'Splatoon 3 store cmds')
+	s3ReplayCmds = s3Cmds.create_subgroup("replays", "Splatoon 3 Replay cmds")
 else:
 	s3Cmds = client
 	s3WeaponCmds = SlashCommandGroup('weapon', 'Commands related to weapons in Splatoon 3')
 	s3StatsCmds = SlashCommandGroup('stats', 'Commands related to Splatoon 3 gameplay stats')
 	s3StoreDmCmds = SlashCommandGroup('storedm', 'Splatoon 3 Store gear DMs')
 	s3StoreCmds = SlashCommandGroup('store', 'Splatoon 3 store cmds')
+	s3ReplayCmds = SlashCommandGroup("replays", "Splatoon 3 Replay cmds")
 
 # ACNH
 acnhCmds = SlashCommandGroup('acnh', "Commands related to Animal Crossing New Horizons")
@@ -198,18 +200,7 @@ play = voice.create_subgroup(name='play', description='Commands related to playi
 async def cmdToken(ctx):
 	view = nsotoken.tokenMenuView(nsoTokens, configData['hosted_url'])
 	await view.init(ctx)
-
-	if view.isDupe:
-		embed = discord.Embed(colour=0x3FFF33)
-		embed.title = "Token Management"
-		embed.add_field(name="Token is already setup", value="Press cancel to close or 'Delete Token' to delete your tokens")
-	else:
-		embed = discord.Embed(colour=0x3FFF33)
-		embed.title = "Instructions"
-		embed.add_field(name="Sign In", value="1) Click the \"Sign In Link\" button\n2) Sign into your nintendo account\n3) Right click the \"Select this person\" button and copy the link address\n3) Hit \"Submit URL\" and paste in the link to complete setup.", inline=False)
-		embed.set_image(url=f"{configData['hosted_url']}/images/nsohowto.png")
-
-	await ctx.respond(embed=embed, view=view, ephemeral=True)
+	await ctx.respond(embed=view.makeEmbed(), view=view, ephemeral=True)
 
 @fcCmds.command(name = "get", description = "Shares your Nintendo Switch friend code")
 async def cmdFcGet(ctx):
@@ -258,6 +249,21 @@ async def cmdHelp(ctx):
 	await ctx.respond("Help Menu:", view=serverutils.HelpMenuView(f"{dirname}/help"))
 
 # --- Admin commands ---
+
+@adminCmds.command(name='playlist', description="Menu to manage the playlist for /voice play random")
+async def cmdPlaylistAdd(ctx):
+	global mysqlHandler
+
+	if ctx.guild == None:
+		await ctx.respond("Can't DM me with this command.")
+		return
+
+	if await checkIfAdmin(ctx):
+		playlist = vserver.PlayList(ctx, mysqlHandler)
+		await playlist.show()
+	else:
+
+		await ctx.respond("You aren't a guild administrator", ephemeral=True)
 
 @adminAnnounceCmds.command(name='set', description="Sets a chat channel to receive announcements from my developers")
 async def cmdAnnounceAdd(ctx, channel: Option(discord.TextChannel, "Channel to set to receive announcements", required=True)):
@@ -591,6 +597,10 @@ async def cmdS3Fit(ctx):
 async def cmdS3Gearseed(ctx):
 	await s3Handler.cmdGearseed(ctx)
 
+@s3ReplayCmds.command(name = 'watch', description = 'Watches for and posts replays posted to your account')
+async def cmdS3ReplayWatch(ctx):
+	await s3Handler.cmdReplayPoster(ctx)
+
 # --- Owner Commands ---
 
 @owner.command(name='eval', description="Eval a code block (Owners only)", default_permission=False)
@@ -773,16 +783,7 @@ async def cmdVoicePlaySound(ctx, sound: Option(str, "Sound clip to play, get wit
 		await ctx.respond(f"Attempting to play: {sound}", ephemeral=True)
 		await serverVoices[ctx.guild.id].playSound(sound)
 
-@adminCmds.command(name='playlist', description="Adds a URL or the current video to my playlist for /voice play random")
-async def cmdPlaylistAdd(ctx, url: Option(str, "URL to add to my playlist", required=True)):
-	if ctx.guild == None:
-		await ctx.respond("Can't DM me with this command.")
-		return
-
-	if await checkIfAdmin(ctx):
-		await serverVoices[ctx.guild.id].addGuildList(ctx, [ url ])
-	else:
-		await ctx.respond("You aren't a guild administrator", ephemeral=True)
+## Group Commands
 
 @groupCmds.command(name = 'create', description = 'Create a group')
 async def cmdGroupCreate(ctx):
@@ -888,7 +889,9 @@ async def on_ready():
 		await groups.Groups.startup()
 
 		await s2Handler.updateS2JSON()
-		await s3Handler.storedm.cacheS3JSON()
+
+		#Commented out for now...
+		client.loop.create_task(vserver.voiceServer.updatePlaylists(mysqlHandler))  # NOTE: Uses create_task because no need to wait for completion
 
 		client.before_invoke(serverUtils.contextIncrementCmd)
 		print('Done\n------')
@@ -1028,6 +1031,10 @@ async def on_message(message):
 			await message.channel.send("Om nom nom, ate a MySQL connection...")
 		elif cmd == 'nsoinfo':
 			await ownerCmds.cmdNsoInfo(context, nsoTokens)
+		elif cmd == 'nsoversion':
+			await ownerCmds.cmdNsoVersion(context, args, nsoTokens)
+		elif cmd == 'nsoflush':
+			await ownerCmds.cmdNsoFlush(context, nsoTokens)
 
 if dev:
 	client.add_application_command(owner)

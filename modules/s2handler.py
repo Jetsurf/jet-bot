@@ -431,13 +431,12 @@ class S2Handler():
 			asyncio.ensure_future(self.handleDM(theMem, theGear))
 
 	async def weaponParser(self, ctx, weapid):
-		await ctx.defer()
-
 		nso = await self.nsotoken.get_nso_client(ctx.user.id)
 		if not nso.is_logged_in():
-			await ctx.respond("You don't have a NSO token setup! Run /token to get started.")
+			await ctx.respond("You don't have a NSO token setup! Run /token to get started.", ephemeral=True)
 			return
 
+		await ctx.defer()
 		data = nso.s2.get_weapon_stats(weapid)
 		if data == None:
 			print(f"NSOHANDLER: weaponParser call returned None: userid {ctx.user.id}")
@@ -474,17 +473,16 @@ class S2Handler():
 		await ctx.respond(embed=embed)
 
 	async def mapParser(self, ctx, mapid):
-		await ctx.defer()
-
 		nso = await self.nsotoken.get_nso_client(ctx.user.id)
 		if not nso.is_logged_in():
-			await ctx.respond("You don't have a NSO token setup! Run /token to get started.")
+			await ctx.respond("You don't have a NSO token setup! Run /token to get started.", ephemeral=True)
 			return
 
+		await ctx.defer()
 		data = nso.s2.get_map_stats(mapid)
 		if data == None:
 			print(f"NSOHANDLER: mapParser call returned None: userid {ctx.user.id}")
-			await ctx.respond("Something went wrong! As this is new, please report this to my support guild.")
+			await ctx.respond("Something went wrong! Please report this to my support guild.")
 			return			
 
 		embed = discord.Embed(colour=0x0004FF)
@@ -498,13 +496,12 @@ class S2Handler():
 		await ctx.respond(embed=embed)
 
 	async def getStats(self, ctx):
-		await ctx.defer()
-
 		nso = await self.nsotoken.get_nso_client(ctx.user.id)
 		if not nso.is_logged_in():
-			await ctx.respond("You don't have a NSO token setup! Run /token to get started.")
+			await ctx.respond("You don't have a NSO token setup! Run /token to get started.", ephemeral=True)
 			return
 
+		await ctx.defer()
 		playerData = nso.s2.get_player_stats()
 		if playerData == None:
 			print(f"NSOHANDLER: getStats call returned None: userid {ctx.user.id}")
@@ -523,13 +520,12 @@ class S2Handler():
 		await ctx.respond(embed=embed)
 
 	async def getSRStats(self, ctx):
-		await ctx.defer()
-
 		nso = await self.nsotoken.get_nso_client(ctx.user.id)
 		if not nso.is_logged_in():
-			await ctx.respond("You don't have a NSO token setup! Run /token to get started.")
+			await ctx.respond("You don't have a NSO token setup! Run /token to get started.", ephemeral=True)
 			return
 
+		await ctx.defer()
 		srdata = nso.s2.get_sr_stats()
 		if srdata == None:
 			print(f"NSOHANDLER: getSRStats call returned None: userid {ctx.user.id}")
@@ -552,13 +548,12 @@ class S2Handler():
 		await ctx.respond(embed=embed)
 
 	async def getRanks(self, ctx):
-		await ctx.defer()
-
 		nso = await self.nsotoken.get_nso_client(ctx.user.id)
 		if not nso.is_logged_in():
-			await ctx.respond("You don't have a NSO token setup! Run /token to get started.")
+			await ctx.respond("You don't have a NSO token setup! Run /token to get started.", ephemeral=True)
 			return
 
+		await ctx.defer()
 		ranks = nso.s2.get_ranks()
 		if ranks == None:
 			print(f"NSOHANDLER: getRanks call returned None: userid {ctx.user.id}")
@@ -954,7 +949,6 @@ class S2Handler():
 		await ctx.respond(embed=embed)
 
 	async def cmdMaps(self, ctx, args):
-		#TODO: This can be made better, lets split this up into functions?
 		subcommand = args[0].lower()
 		if subcommand == "list":
 			embed = discord.Embed(colour=0xF9FC5F)
@@ -1009,7 +1003,6 @@ class S2Handler():
 			await ctx.respond("Unknown subcommand. Try 'maps help'")
 
 	async def cmdWeaps(self, ctx, args):
-		#TODO: This can be made better, lets split this up into functions?
 		subcommand = args[0].lower()
 		if subcommand == "info":
 			if len(args) > 1:

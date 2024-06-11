@@ -47,52 +47,22 @@ class S3OrderView(discord.ui.View):
 			await interaction.response.send_message("Something went wrong.")
 
 class S3StoreHandler():
-	def __init__(self, client, nsoToken, splat3info, mysqlHandler, configData, cachemanager):
+	def __init__(self, client, nsoToken, splat3info, mysqlHandler, cachemanager, store):
 		self.client = client
 		self.sqlBroker = mysqlHandler
 		self.nsoToken = nsoToken
 		self.splat3info = splat3info
 		self.scheduler = AsyncIOScheduler()
-		self.configData = configData
 		self.cachemanager = cachemanager
-		if 'storedm_debug' in configData and configData['storedm_debug']:
-			self.scheduler.add_job(self.doStoreRegularDM, 'cron', second = "0", timezone = 'UTC') 
-			self.scheduler.add_job(self.doStoreDailyDropDM, 'cron', second = '0', timezone = 'UTC')
-		else:
-			self.scheduler.add_job(self.doStoreRegularDM, 'cron', hour="*/4", minute='1', timezone = 'UTC') 
-			self.scheduler.add_job(self.doStoreDailyDropDM, 'cron', hour="0", minute='1', timezone='UTC')
+		self.store = store
 
-		self.scheduler.add_job(self.cacheS3JSON, 'cron', hour="*/4", minute='0', second='15', timezone='UTC')
-		self.storecache = None
-		self.cacheState = False
-		self.scheduler.start()
+		store.onUpdate(self.onStoreUpdate)
 
-	async def cacheS3JSON(self):
-		print("Updating cached S3 json...")
-		nso = await self.nsoToken.get_bot_nso_client()
-		if not nso:
-			return  # No bot account configured
-		elif not nso.is_logged_in():
-			print("S3StoreHandler.cacheS3JSON(): Time to refresh store cache, but the bot account is not logged in")
-			return
-
-		storejson = nso.s3.get_store_items()
-		if storejson is None:
-			print("Failure on store cache refresh. Trying again...")
-			time.sleep(3) #Give it a bit to try again...
-			storejson = nso.s3.get_store_items() #Done 2nd time for 9403 errors w/ token generation
-			if storejson is None:
-				print("Failed to update store cache for rotation")
-				self.cacheState = False
-				return
-
-		print("Got store cache for this rotation")
-		self.storecache = storejson['data']['gesotown']
-		self.cacheState = True
+	def onStoreUpdate(self, items):
+		asyncio.create_task(self.doStoreDM([i['data'] for i in items]))
 
 	##Trigger Keys: gearname brand mability
 	#{ 'gearnames' : ['Gear One', "Two" ], 'brands': ['Toni-Kensa', 'Forge'], 'mabilities' : ['Ink Saver (Main)'] }
-
 	def checkToDM(self, gear, criteria):
 		brand = gear['gear']['brand']['name']
 		mability = gear['gear']['primaryGearPower']['name']
@@ -109,7 +79,7 @@ class S3StoreHandler():
 
 	async def doStoreDM(self, items):
 		async with self.sqlBroker.context() as sql:
-			triggers = await sql.query("SELECT * from s3storedms")
+			triggers = await sql.query("SELECT * from s3_storedms")
 
 		for item in items:
 			print(f"S3 doStoreDM(): new gear: name '{item['gear']['name']}' brand '{item['gear']['brand']['name']}' ability '{item['gear']['primaryGearPower']['name']}'")
@@ -124,22 +94,6 @@ class S3StoreHandler():
 				if self.checkToDM(item, criteria):
 					print(f"  Messaging {user.name}")
 					await self.handleDM(user, item)
-
-	async def doStoreDailyDropDM(self):
-		items = self.storecache['pickupBrand']['brandGears']
-		print(f"Doing S3 daily drop store DMs.")
-		await self.doStoreDM(items)
-		return
-
-	async def doStoreRegularDM(self):
-		if not self.cacheState:
-			print("Cache was not updated... skipping this daily drop...")
-			return
-
-		items = [ self.storecache['limitedGears'][5] ]
-		print(f"Doing S3 regular store DMs.")
-		await self.doStoreDM(items)
-		return
 
 	async def handleDM(self, user, gear):
 		# Get an NSO client for this user
@@ -165,13 +119,13 @@ class S3StoreHandler():
 
 	async def addS3StoreDm(self, ctx, trigger):
 		cur = await self.sqlBroker.connect()
-		await cur.execute("SELECT COUNT(*) FROM s3storedms WHERE clientid = %s", (ctx.user.id,))
+		await cur.execute("SELECT COUNT(*) FROM s3_storedms WHERE clientid = %s", (ctx.user.id,))
 		count = await cur.fetchall()
 		count = count[0][0]
 		term = None
 
 		if count > 0:
-			await cur.execute("SELECT dmtriggers FROM s3storedms WHERE clientid = %s AND serverid = %s", (ctx.user.id, ctx.guild.id,))
+			await cur.execute("SELECT dmtriggers FROM s3_storedms WHERE clientid = %s AND serverid = %s", (ctx.user.id, ctx.guild.id,))
 			theTriggers = await cur.fetchall()
 			theTriggers = json.loads(theTriggers[0][0])
 		else:
@@ -227,7 +181,7 @@ class S3StoreHandler():
 					await ctx.respond("I am unable to DM you, please check to ensure you can receive DM's from me before attempting again.", ephemeral=True)
 					return
 
-			await cur.execute("REPLACE INTO s3storedms (clientid, serverid, dmtriggers) VALUES (%s, %s, %s)", (ctx.user.id, ctx.guild.id, json.dumps(theTriggers)))
+			await cur.execute("REPLACE INTO s3_storedms (clientid, serverid, dmtriggers) VALUES (%s, %s, %s)", (ctx.user.id, ctx.guild.id, json.dumps(theTriggers)))
 			await self.sqlBroker.commit(cur)
 
 			await ctx.respond(f"Added you to recieve a DM when gear with/by/named {term} appears in the Splatnet 3 store!")
@@ -249,16 +203,20 @@ class S3StoreHandler():
 
 			await ctx.respond(embed=embed)
 
+	async def removeServerStoreDm(self, serverid):
+		async with self.sqlBroker.context() as sql:
+			await sql.query('DELETE FROM s3_storedms WHERE serverid = %s', (serverid, ))
+
 	async def removeS3StoreDm(self, ctx, trigger):
 		cur = await self.sqlBroker.connect()
-		await cur.execute("SELECT COUNT(*) FROM s3storedms WHERE clientid = %s", (ctx.user.id,))
+		await cur.execute("SELECT COUNT(*) FROM s3_storedms WHERE clientid = %s", (ctx.user.id,))
 		count = await cur.fetchall()
 		count = count[0][0]
 		if count == 0:
 			await ctx.respond("You aren't set to recieve any DM's!")
 			return
 
-		await cur.execute("SELECT dmtriggers FROM s3storedms WHERE clientid = %s AND serverid = %s", (ctx.user.id, ctx.guild.id,))
+		await cur.execute("SELECT dmtriggers FROM s3_storedms WHERE clientid = %s AND serverid = %s", (ctx.user.id, ctx.guild.id,))
 		theTriggers = await cur.fetchall()
 		theTriggers = json.loads(theTriggers[0][0])
 
@@ -300,7 +258,7 @@ class S3StoreHandler():
 					return
 
 		if flag == True:
-			await cur.execute("REPLACE INTO s3storedms (clientid, serverid, dmtriggers) VALUES (%s, %s, %s)", (ctx.user.id, ctx.guild.id, json.dumps(theTriggers)))
+			await cur.execute("REPLACE INTO s3_storedms (clientid, serverid, dmtriggers) VALUES (%s, %s, %s)", (ctx.user.id, ctx.guild.id, json.dumps(theTriggers)))
 			await self.sqlBroker.commit(cur)
 
 			await ctx.respond(f"Removed you from recieving a DM when gear with/by/named {trigger} appears in the Splatnet 3 store!")
@@ -324,7 +282,7 @@ class S3StoreHandler():
 
 	async def listS3StoreDm(self, ctx):
 		async with self.sqlBroker.context() as sql:
-			rec = await sql.query_first("SELECT * from s3storedms WHERE (clientid = %s)", (ctx.user.id,))
+			rec = await sql.query_first("SELECT * from s3_storedms WHERE (clientid = %s)", (ctx.user.id,))
 
 		if rec is None:
 			await ctx.respond("You don't have any Splatoon 3 gear notifications set up. You can add one with `/s3 storedm add`")

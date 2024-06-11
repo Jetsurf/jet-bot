@@ -18,15 +18,20 @@ from itunes_app_scraper.scraper import AppStoreScraper
 from typing import Optional
 
 class tokenMenuView(discord.ui.View):
-	def __init__(self, nsotoken, hostedurl):
+	def __init__(self, nsotoken, hostedUrl):
 		super().__init__()
 		self.nsotoken = nsotoken
-		self.hostedurl = hostedurl
+		self.hostedUrl = hostedUrl
+		self.initialized = False
 
 	async def init(self, ctx):
 		self.ctx = ctx
 		self.nso = await self.nsotoken.get_nso_client(ctx.user.id)
 		self.isDupe = self.nso.is_logged_in()
+
+		if self.initialized:
+			self.clear_items()
+
 		cancel = discord.ui.Button(label="Close", style=discord.ButtonStyle.red)
 		cancel.callback = self.cancelButton
 		self.add_item(cancel)
@@ -42,15 +47,20 @@ class tokenMenuView(discord.ui.View):
 			delbut.callback = self.deleteTokens
 			self.add_item(delbut)
 
+		self.initialized = True
+
 	async def deleteTokens(self, interaction: discord.Interaction):
 		if await self.nsotoken.deleteTokens(interaction.user.id):
-			await interaction.response.edit_message(content='Tokens Deleted. To set them up again, run /token again.', embed=None, view=None)
+			await interaction.response.send_message(content='Tokens Deleted. To set them up again, run /token again.', embed=None, view=None, ephemeral=True, delete_after=10)
 		else:
-			await interaction.response.edit_message(content='Tokens failed to delete, try again shortly or join my support guild.')
-		self.stop()
+			await interaction.response.send_message(content='Tokens failed to delete, try again shortly or join my support guild.', ephemeral=True, delete_after=10)
+		
+		await self.init(self.ctx)
+		await self.ctx.interaction.edit_original_response(embed=self.makeEmbed(self.ctx), view=self)
 
 	async def cancelButton(self, interaction: discord.Interaction):
-		await interaction.response.edit_message(content="Closing", embed=None, view=None)
+		await interaction.response.edit_message(content="Closing", embed=None, view=None, delete_after = 1)
+		await self.ctx.interaction.delete_original_response()
 		self.stop()
 
 	async def sendModal(self, interaction: discord.Interaction):
@@ -58,8 +68,22 @@ class tokenMenuView(discord.ui.View):
 		modal = tokenHandler(self.nso, title="Nintendo NSO Token Setup")
 		await interaction.response.send_modal(modal=modal)
 		await modal.wait()
-		self.clear_items()
-		self.stop()
+		await self.init(self.ctx)
+		await self.ctx.interaction.edit_original_response(embed=self.makeEmbed(self.ctx), view=self)
+
+	def makeEmbed(self):
+		if self.isDupe:
+			embed = discord.Embed(colour=0x3FFF33)
+			embed.title = "Token Management"
+			embed.add_field(name="Token is already setup", value="Press cancel to close or 'Delete Token' to delete your tokens")
+		else:
+			embed = discord.Embed(colour=0x3FFF33)
+			embed.title = "Instructions"
+			embed.add_field(name="Sign In", value="1) Click the \"Sign In Link\" button\n2) Sign into your Nintendo account\n3) Right click the \"Select this person\" button and copy the link address\n3) Hit \"Submit URL\" and paste in the link to complete setup.", inline=False)
+			##TODO: Needs to convert to uploading image instead of hard url
+			embed.set_image(url=f"{self.hostedUrl}/images/nsohowto.png")
+
+		return embed
 
 class tokenHandler(Modal):
 	def __init__(self, nso, *args, **kwargs):
@@ -70,21 +94,23 @@ class tokenHandler(Modal):
 		
 	async def callback(self, interaction: discord.Interaction):
 		if self.nso.complete_login_challenge(self.children[0].value):
-			await interaction.response.send_message("Token Added, run /token again to remove them from me. You can dismiss the first message now.", ephemeral=True)
+			await interaction.response.send_message("Token Added, run /token again to remove them from me.", ephemeral=True, delete_after=10)
 			self.stop()
 		else:
-			await interaction.response.send_message("Token Failed to Add. Rerun /token again, and you can dismiss the first message now.", ephemeral=True)
+			await interaction.response.send_message("Token Failed to Add. Rerun /token again.", ephemeral=True, delete_after=10)
 			self.stop()
 
 class Nsotoken():
 	def __init__(self, client, config, mysqlhandler, stringCrypt, friendCodes):
+		print(f"Nsotoken: Using NSO-API version {NSO_API.get_version()}")
 		self.client = client
 		self.config = config
 		self.sqlBroker = mysqlhandler
 		self.stringCrypt = stringCrypt
 		self.friendCodes = friendCodes
-		self.f_provider = IMink("Jet-bot/1.0.0 (discord=jetsurf#8514)")  # TODO: Figure out bot owner automatically
+		self.f_provider = IMink("Jet-bot/1.0.0 (discord=jetsurf)")  # TODO: Figure out bot owner automatically
 		self.nso_clients = {}
+		self.nso_app_version_override = None
 		self.init_complete = False
 
 		# Set up scheduled tasks
@@ -143,6 +169,10 @@ class Nsotoken():
 		# Construct a new one for this user
 		nso = NSO_API(self.f_provider, userid)
 
+		# If we have an app version override, use it
+		if self.nso_app_version_override is not None:
+			nso.override_app_version(self.nso_app_version_override)
+
 		# If we have keys, load them into the client
 		keys = await self.nso_client_load_keys(userid)
 		if keys:
@@ -155,6 +185,7 @@ class Nsotoken():
 		nso.on_global_data_update(self.nso_global_data_updated)
 
 		self.nso_clients[userid] = nso
+		print(f"NSO App ver: {nso.app.get_version()}")
 		return nso
 
 	async def remove_nso_client(self, userid):
@@ -177,6 +208,12 @@ class Nsotoken():
 			if idle_seconds > (4 * 3600):
 				print(f"NSO client for {userid} not used for {int(idle_seconds)} seconds. Deleting.")
 				await self.remove_nso_client(userid)
+
+	async def nso_client_flush(self):
+		print("nso_client_flush()")
+		for userid in list(self.nso_clients):
+			print(f"Deleting NSO client for {userid}")
+			await self.remove_nso_client(userid)
 
 	# This is a callback which is called by nso-api when a client object's
 	#  keys change.

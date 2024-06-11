@@ -1,6 +1,6 @@
 *Admin commands
 **Commands to conigure the bot for your guild. Requires guild admin. Can't DM me with these commands
-`/admin playlist URL`: Add the given URL to the `/voice play random` playlist
+`/admin playlist`: Brings up a view to manage the `/voice play random` playlist
 `/admin dm add`: Subscribe to DMs on users leaving the server
 `/admin dm remove`: Unsubscribe from DMs on users leaving the server
 `/admin announcement set CHANNEL` : Sets a chat channel for announcements about restarts/new features from the devs

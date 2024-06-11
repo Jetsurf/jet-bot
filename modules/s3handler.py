@@ -4,18 +4,35 @@ import json, sys, re, time, requests, random, hashlib, os, io
 import sys
 import traceback
 import s3.storedm
+import s3.store
 import s3.schedule
 import s3.imageextractor
 
 from s3.imagebuilder import S3ImageBuilder
 from s3.embedbuilder import S3EmbedBuilder
 from s3.feedhandler import S3FeedHandler
+from s3.replayhandler import S3ReplayHandler
 
 from io import BytesIO
 from os.path import exists
 import base64
 import datetime
 import dateutil.parser
+
+class ReupReplayTimerView(discord.ui.View):
+	def __init__(self, replayHandler, ctx):
+		super().__init__()
+		self.ctx = ctx
+		self.replayHandler = replayHandler
+		reup = discord.ui.Button(label="Reset to 2H", style=discord.ButtonStyle.green)
+		reup.callback = self.doneCallback
+		self.add_item(reup)
+
+	async def doneCallback(self, interaction: discord.Interaction):
+		self.replayHandler.endtime = (datetime.datetime.now() + datetime.timedelta(minutes=120))
+		await interaction.response.send_message(f"Continuing to watch replays for {interaction.user.display_name} until <t:{int(self.replayHandler.endtime.timestamp())}>")
+		await self.ctx.interaction.delete_original_response()
+		self.stop()
 
 class S3Handler():
 	def __init__(self, client, mysqlHandler, nsotoken, splat3info, configData, fonts, cachemanager):
@@ -24,11 +41,13 @@ class S3Handler():
 		self.nsotoken = nsotoken
 		self.splat3info = splat3info
 		self.configData = configData
+		self.replayHandlers = {}
 		self.hostedUrl = configData.get('hosted_url')
 		self.webDir = configData.get('web_dir')
 		self.schedule = s3.schedule.S3Schedule(nsotoken, mysqlHandler, cachemanager)
-		self.storedm = s3.storedm.S3StoreHandler(client, nsotoken, splat3info, mysqlHandler, configData, cachemanager)
-		self.feeds = s3.feedhandler.S3FeedHandler(client, splat3info, mysqlHandler, self.schedule, cachemanager, fonts, self.storedm)
+		self.store = s3.store.S3Store(nsotoken, splat3info, mysqlHandler)
+		self.storedm = s3.storedm.S3StoreHandler(client, nsotoken, splat3info, mysqlHandler, cachemanager, self.store)
+		self.feeds = s3.feedhandler.S3FeedHandler(client, splat3info, mysqlHandler, self.schedule, cachemanager, fonts, self.store)
 		self.imageextractor = s3.imageextractor.S3ImageExtractor(nsotoken, cachemanager)
 		self.fonts = fonts
 		self.cachemanager = cachemanager
@@ -36,7 +55,7 @@ class S3Handler():
 	# Removes S3 data for a specific server
 	async def removeServer(self, serverid):
 		await self.feeds.removeServer(serverid)
-		#TODO: storedm
+		await self.storedm.removeServerStoreDm(serverid)
 
 	async def cmdWeaponInfo(self, ctx, name):
 		match = self.splat3info.weapons.matchItem(name)
@@ -231,14 +250,14 @@ class S3Handler():
 		await ctx.respond(embed = embed)
 
 	async def cmdSchedule(self, ctx, which):
-		await ctx.defer()
-
 		name = self.schedule.schedule_names[which]
 
 		sched = self.schedule.get_schedule(which, count = 6)
 		if len(sched) == 0:
 			await ctx.respond(f"That schedule is empty.", ephemeral = True)
 			return
+
+		await ctx.defer()
 
 		now = time.time()
 
@@ -276,12 +295,12 @@ class S3Handler():
 		# Pull each schedule for the current time
 		now = time.time()
 		schedules = {}
-		for t in ['TW', 'SF', 'AO', 'AS', 'XB']:
+		for t in ['TW', 'SO', 'SP', 'AO', 'AS', 'XB']:
 			schedules[t] = self.schedule.get_schedule(t, checktime = now, count = 2)
 
 		# Gather all the known time windows
 		timewindows = {}
-		for t in ['TW', 'SF', 'AO', 'AS', 'XB']:
+		for t in ['TW', 'SO', 'SP', 'AO', 'AS', 'XB']:
 			for r in schedules[t]:
 				timewindows[r['starttime']] = {'starttime': r['starttime'], 'endtime': r['endtime']}
 
@@ -295,18 +314,18 @@ class S3Handler():
 			return
 
 		# Filter the schedules to those matching the two earliest time windows
-		for t in ['TW', 'SF', 'AO', 'AS', 'XB']:
+		for t in ['TW', 'SO', 'SP', 'AO', 'AS', 'XB']:
 			schedules[t] = [s for s in schedules[t] if (s['starttime'] in [w['starttime'] for w in timewindows])]
 
 		image_io = S3ImageBuilder.createScheduleImage(timewindows, schedules, self.fonts, self.cachemanager, self.splat3info)
 		await ctx.respond(file = discord.File(image_io, filename = "map-schedule.png", description = "Map schedule"))
 
 	async def cmdSRMaps(self, ctx):
-		await ctx.defer()
-
 		sched = self.schedule.get_schedule('SR', count = 2)
 		if len(sched) == 0:
 			await ctx.respond(f"That schedule is empty.", ephemeral = True)
+
+		await ctx.defer()
 
 		image_io = S3ImageBuilder.createSRScheduleImage(sched, self.fonts, self.cachemanager)
 		await ctx.respond(file = discord.File(image_io, filename = "sr-schedule.png", description = "Salmon Run schedule"))
@@ -314,25 +333,25 @@ class S3Handler():
 	async def cmdStoreList(self, ctx):
 		await ctx.defer()
 
-		if self.storedm.cacheState:
-			embed = discord.Embed(colour=0xF9FC5F)
-			embed.title = "Splatoon 3 Splatnet Store Gear"
-			img = S3ImageBuilder.createStoreCanvas(self.storedm.storecache, self.fonts)
-			img = discord.File(img, filename = "store.png", description = "Current store for Splatoon 3 Splatnet")
-			embed.set_image(url="attachment://store.png")
-			embed.set_footer(text="To order gear, run /s3 order GEARNAME")
-			await ctx.respond(embed = embed, file = img)
-		else:
-			#TODO...
+		if not self.store.hasItems():
 			await ctx.respond("I can't fetch the current store listing, please try again later")
+			return
+
+		embed = discord.Embed(colour=0xF9FC5F)
+		embed.title = "Splatoon 3 Splatnet Store Gear"
+		img = S3ImageBuilder.createStoreCanvas(self.store, self.fonts)
+		img = discord.File(img, filename = "store.png", description = "Current store for Splatoon 3 Splatnet")
+		embed.set_image(url="attachment://store.png")
+		embed.set_footer(text="To order gear, run /s3 order GEARNAME")
+		await ctx.respond(embed = embed, file = img)
 
 	async def cmdS3StoreOrder(self, ctx, item, override):
-		await ctx.defer()
-
 		nso = await self.nsotoken.get_nso_client(ctx.user.id)
 		if not nso.is_logged_in():
-			await ctx.respond("You don't have a NSO token setup! Run /token to get started.")
+			await ctx.respond("You don't have a NSO token setup! Run /token to get started.", ephemeral=True)
 			return
+
+		await ctx.defer()
 
 		match = self.splat3info.gear.matchItem(item)
 		if match.isValid():
@@ -380,8 +399,6 @@ class S3Handler():
 				return
 
 	async def cmdWeaponStats(self, ctx, weapon):
-		await ctx.defer()
-
 		nso = await self.nsotoken.get_nso_client(ctx.user.id)
 		if not nso.is_logged_in():
 			await ctx.respond("You don't have an NSO token set up! Run /token to get started.", ephemeral = True)
@@ -398,6 +415,8 @@ class S3Handler():
 				embed.add_field(name="Weapon", value=", ".join(map(lambda item: item.name(), match.items)), inline=False)
 				await ctx.respond(embed = embed, ephemeral = True)
 				return
+
+		await ctx.defer()
 
 		weapons = nso.s3.get_weapon_stats()
 		if weapons == None:
@@ -431,12 +450,11 @@ class S3Handler():
 			await ctx.respond(file = file, embed = embed)
 
 	async def cmdGearseed(self, ctx):
-		await ctx.defer()
-
 		if not ctx.guild is None:
 			await ctx.respond("Please send me this command as a private message.", ephemeral = True)
 			return
 
+		await ctx.defer()
 		nso = await self.nsotoken.get_nso_client(ctx.user.id)
 		if not nso.is_logged_in():
 			await ctx.respond("You don't have an NSO token set up! You must run /token first.")
@@ -477,3 +495,18 @@ class S3Handler():
 		await self.feeds.deleteFeed(ctx.guild.id, ctx.channel.id)
 		await ctx.respond("Okay, S3 feed deleted for this channel.")
 		return
+
+	async def cmdReplayPoster(self, ctx):
+		nso = await self.nsotoken.get_nso_client(ctx.user.id)
+		if not nso.is_logged_in():
+			await ctx.respond("You don't have an NSO token set up! You must run /token first.", ephemeral=True)
+			return
+
+		if ctx.user.id in self.replayHandlers:
+			#Clamp the "valid" timer on this to before the end time(?)
+			await ctx.respond("I'm already watching for replays for you. Reset timer?", view=ReupReplayTimerView(self.replayHandlers[ctx.user.id], ctx), ephemeral=True)
+			return
+		else:
+			self.replayHandlers[ctx.user.id] = S3ReplayHandler(ctx, self.nsotoken, self.replayHandlers, self.cachemanager, self.fonts)
+			await self.replayHandlers[ctx.user.id].GetInitialReplays(ctx)
+			await ctx.respond(f'Started watching replays, will stop at <t:{int(self.replayHandlers[ctx.user.id].endtime.timestamp())}>')

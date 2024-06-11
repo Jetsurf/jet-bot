@@ -120,7 +120,7 @@ class MysqlContext():
 		self.cur    = None
 
 	async def __aenter__(self):
-		print(f"Entering SQL context {repr(self)}")
+		#print(f"Entering SQL context {repr(self)}")
 		self.cur = await self.broker.connect(*self.args)
 		self.valid = True
 		return self
@@ -128,7 +128,7 @@ class MysqlContext():
 	async def __aexit__(self, exc_type, exc_value, exc_tb):
 		if exc_type is None:
 			if self.valid:
-				print(f"Leaving SQL context normally {repr(self)}")
+				#print(f"Leaving SQL context normally {repr(self)}")
 				await self.broker.commit(self.cur)
 			else:
 				print(f"Leaving SQL context after rollback {repr(self)}")
