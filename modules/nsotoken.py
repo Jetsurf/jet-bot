@@ -51,12 +51,12 @@ class tokenMenuView(discord.ui.View):
 
 	async def deleteTokens(self, interaction: discord.Interaction):
 		if await self.nsotoken.deleteTokens(interaction.user.id):
-			await interaction.response.send_message(content='Tokens Deleted. To set them up again, run /token again.', embed=None, view=None, ephemeral=True, delete_after=10)
+			await interaction.response.send_message(content='Tokens Deleted.', embed=None, view=None, ephemeral=True, delete_after=10)
 		else:
 			await interaction.response.send_message(content='Tokens failed to delete, try again shortly or join my support guild.', ephemeral=True, delete_after=10)
 		
 		await self.init(self.ctx)
-		await self.ctx.interaction.edit_original_response(embed=self.makeEmbed(self.ctx), view=self)
+		await self.ctx.interaction.edit_original_response(embed=self.makeEmbed(), view=self)
 
 	async def cancelButton(self, interaction: discord.Interaction):
 		await interaction.response.edit_message(content="Closing", embed=None, view=None, delete_after = 1)
@@ -69,7 +69,7 @@ class tokenMenuView(discord.ui.View):
 		await interaction.response.send_modal(modal=modal)
 		await modal.wait()
 		await self.init(self.ctx)
-		await self.ctx.interaction.edit_original_response(embed=self.makeEmbed(self.ctx), view=self)
+		await self.ctx.interaction.edit_original_response(embed=self.makeEmbed(), view=self)
 
 	def makeEmbed(self):
 		if self.isDupe:
@@ -79,7 +79,7 @@ class tokenMenuView(discord.ui.View):
 		else:
 			embed = discord.Embed(colour=0x3FFF33)
 			embed.title = "Instructions"
-			embed.add_field(name="Sign In", value="1) Click the \"Sign In Link\" button\n2) Sign into your Nintendo account\n3) Right click the \"Select this person\" button and copy the link address\n3) Hit \"Submit URL\" and paste in the link to complete setup.", inline=False)
+			embed.add_field(name="Sign In", value="1) Click the \"Sign In Link\" button\n2) Sign into your Nintendo account\n3) Right click the \"Select this person\" button and copy the link address\n3) Hit \"Submit URL\" and paste in the link to complete setup.\nBe aware that your id_token is sent to a 3rd party service to complete the setup.", inline=False)
 			##TODO: Needs to convert to uploading image instead of hard url
 			embed.set_image(url=f"{self.hostedUrl}/images/nsohowto.png")
 
@@ -94,10 +94,10 @@ class tokenHandler(Modal):
 		
 	async def callback(self, interaction: discord.Interaction):
 		if self.nso.complete_login_challenge(self.children[0].value):
-			await interaction.response.send_message("Token Added, run /token again to remove them from me.", ephemeral=True, delete_after=10)
+			await interaction.response.send_message("Token Added.", ephemeral=True, delete_after=10)
 			self.stop()
 		else:
-			await interaction.response.send_message("Token Failed to Add. Rerun /token again.", ephemeral=True, delete_after=10)
+			await interaction.response.send_message("Token Failed to Add. Rerun /token again or join my support guild.", ephemeral=True, delete_after=10)
 			self.stop()
 
 class Nsotoken():
@@ -108,7 +108,11 @@ class Nsotoken():
 		self.sqlBroker = mysqlhandler
 		self.stringCrypt = stringCrypt
 		self.friendCodes = friendCodes
-		self.f_provider = IMink("Jet-bot/1.0.0 (discord=jetsurf)")  # TODO: Figure out bot owner automatically
+		if config['f_override'] is None:
+			self.f_provider = IMink("Jet-bot/1.0.0 (discord=jetsurf)")  # TODO: Figure out bot owner automatically
+		else:
+			self.f_provider = IMink("Jet-bot/1.0.0 (discord=jetsurf)", config['f_override'])
+
 		self.nso_clients = {}
 		self.nso_app_version_override = None
 		self.init_complete = False
