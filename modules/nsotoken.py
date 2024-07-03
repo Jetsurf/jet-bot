@@ -5,6 +5,7 @@ import asyncio
 import nso_api
 from nso_api.nso_api import NSO_API
 from nso_api.imink import IMink
+from nso_api.nxapi import NXApi
 from nso_api.nso_api_s2 import NSO_API_S2
 
 import mysqlhandler, discord
@@ -79,7 +80,7 @@ class tokenMenuView(discord.ui.View):
 		else:
 			embed = discord.Embed(colour=0x3FFF33)
 			embed.title = "Instructions"
-			embed.add_field(name="Sign In", value="1) Click the \"Sign In Link\" button\n2) Sign into your Nintendo account\n3) Right click the \"Select this person\" button and copy the link address\n3) Hit \"Submit URL\" and paste in the link to complete setup.\nBe aware that your id_token is sent to a 3rd party service to complete the setup.", inline=False)
+			embed.add_field(name="Sign In", value=f"1) Click the \"Sign In Link\" button\n2) Sign into your Nintendo account\n3) Right click the \"Select this person\" button and copy the link address\n3) Hit \"Submit URL\" and paste in the link to complete setup.\nBe aware that your id_token is sent to a [3rd party]({self.nsotoken.f_provider.PROJECT_URL}) service when game specific tokens need to be updated.", inline=False)
 			##TODO: Needs to convert to uploading image instead of hard url
 			embed.set_image(url=f"{self.hostedUrl}/images/nsohowto.png")
 
@@ -108,10 +109,10 @@ class Nsotoken():
 		self.sqlBroker = mysqlhandler
 		self.stringCrypt = stringCrypt
 		self.friendCodes = friendCodes
-		if config['f_override'] is None:
+		if not config['use_nxapi']:
 			self.f_provider = IMink("Jet-bot/1.0.0 (discord=jetsurf)")  # TODO: Figure out bot owner automatically
 		else:
-			self.f_provider = IMink("Jet-bot/1.0.0 (discord=jetsurf)", config['f_override'])
+			self.f_provider = NXApi("Jet-bot/1.0.0 (discord=jetsurf)")
 
 		self.nso_clients = {}
 		self.nso_app_version_override = None
