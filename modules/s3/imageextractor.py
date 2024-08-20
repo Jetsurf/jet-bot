@@ -1,4 +1,5 @@
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
+import apscheduler.triggers.interval
 import re
 import aiohttp
 import asyncio
@@ -32,7 +33,7 @@ class S3ImageExtractor():
 		self.http_client  = None
 
 		self.scheduler = AsyncIOScheduler()
-		self.scheduler.add_job(self.extract, 'interval', hours = 24)
+		self.scheduler.add_job(self.extract, apscheduler.triggers.interval.IntervalTrigger(hours = 24))
 		self.scheduler.start()
 
 		self.create_caches()
