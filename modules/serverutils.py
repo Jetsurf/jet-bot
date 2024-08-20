@@ -4,6 +4,7 @@ import mysqlhandler
 import os
 import code
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
+import apscheduler.triggers.cron
 
 class HelpDropDown(discord.ui.Select):
 
@@ -75,7 +76,7 @@ class serverUtils():
 		self.client = client
 		self.statusnum = 1
 		self.scheduler = AsyncIOScheduler()
-		self.scheduler.add_job(self.changeStatus, 'cron', minute='*/5', timezone='UTC') 
+		self.scheduler.add_job(self.changeStatus, apscheduler.triggers.cron.CronTrigger(minute='*/5', timezone='UTC'))
 		self.scheduler.start()
 
 	async def changeStatus(self):

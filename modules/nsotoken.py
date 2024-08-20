@@ -109,7 +109,7 @@ class Nsotoken():
 		self.sqlBroker = mysqlhandler
 		self.stringCrypt = stringCrypt
 		self.friendCodes = friendCodes
-		if not config['use_nxapi']:
+		if not config.get('use_nxapi'):
 			self.f_provider = IMink("Jet-bot/1.0.0 (discord=jetsurf)")  # TODO: Figure out bot owner automatically
 		else:
 			self.f_provider = NXApi("Jet-bot/1.0.0 (discord=jetsurf)")
