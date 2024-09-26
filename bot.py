@@ -637,6 +637,7 @@ async def cmdVoiceLeave(ctx):
 
 	if serverVoices[ctx.guild.id] != None:
 		await serverVoices[ctx.guild.id].vclient.disconnect()
+		serverVoices[ctx.guild.id].vclient = None
 		await ctx.respond("Disconnected from voice")
 	else:
 		await ctx.respond("Not connected to voice", ephemeral=True)
@@ -873,7 +874,7 @@ async def on_ready():
 		print("Doing Startup...")
 		for server in client.guilds:
 			if server.id not in serverVoices:
-				serverVoices[server.id] = vserver.voiceServer(client, mysqlHandler, server.id, configData['soundsdir'])
+				serverVoices[server.id] = vserver.voiceServer(client, mysqlHandler, server.id, configData['soundsdir'], configData['ffmpeg_dir'])
 
 		serverConfig = serverconfig.ServerConfig(mysqlHandler)
 		commandParser = commandparser.CommandParser(serverConfig, client.user.id)
@@ -979,7 +980,7 @@ async def on_voice_state_update(mem, before, after):
 			print(traceback.format_exc())
 			print("Issue in voice disconnect?? Recreating anyway")
 
-		serverVoices[server] = vserver.voiceServer(client, mysqlHandler, server, configData['soundsdir'])
+		serverVoices[server] = vserver.voiceServer(client, mysqlHandler, server, configData['soundsdir'], configData['ffmpeg_dir'])
 
 @client.event
 async def on_message(message):

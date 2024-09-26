@@ -8,5 +8,6 @@
 	"mysql_db"	: "",
 	"hosted_url"	: "https://db-files.crmea.de",
 	"web_dir"	: "",
-	"nso_userid"    : ""
+	"nso_userid"    : "",
+	"ffmpeg_dir"	: "",
 }

@@ -320,7 +320,7 @@ class YTDLSource(discord.PCMVolumeTransformer):
 		return cls(discord.FFmpegPCMAudio(filename, **ffmpeg_options, before_options='-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5'), data=data)
 
 class voiceServer():
-	def __init__(self, client, mysqlhandler, id, soundsDir):
+	def __init__(self, client, mysqlhandler, id, soundsDir, ffmpegDir):
 		self.client = client
 		self.server = id
 		self.vclient = None
@@ -329,6 +329,9 @@ class voiceServer():
 		self.soundsDir = soundsDir
 		self.youtube = youtube.Youtube()
 		self.sqlBroker = mysqlhandler
+		if ffmpegDir != "" and ffmpegDir is not None:
+			print(f"Using ffmpeg at {ffmpegDir}")
+			ffmpeg_options['executable'] = ffmpegDir
 
 	@classmethod
 	async def updatePlaylists(cls, sqlBroker):
