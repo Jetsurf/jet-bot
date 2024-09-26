@@ -1,19 +1,19 @@
 import os
-import Crypto
-import Crypto.Random
-import Crypto.Cipher
+import Cryptodome
+import Cryptodome.Random
+import Cryptodome.Cipher
 
 class StringCrypt():
 	def __init__(self):
 		self.key = None
-		self.random = Crypto.Random.new()
+		self.random = Cryptodome.Random.new()
 
 	# Reads secret key from the given path.
 	def readSecretKeyFile(self, path):
 		with open(path, 'r') as f:
 			hexbytes = f.read()
 		key = bytes.fromhex(hexbytes)
-		if len(key) != Crypto.Cipher.AES.block_size:
+		if len(key) != Cryptodome.Cipher.AES.block_size:
 			raise Exception(f"Expected key length {Crypto.Cipher.AES.block_size}, but got {len(key)}")
 		self.key = key
 
@@ -35,7 +35,7 @@ class StringCrypt():
 			raise Exception(f"Cipher block size {Crypto.Cipher.AES.block_size} too large for padding method")
 		data = string.encode('utf-8')
 		blklen = len(data) % Crypto.Cipher.AES.block_size
-		needed = Crypto.Cipher.AES.block_size - blklen
+		needed = Cryptodome.Cipher.AES.block_size - blklen
 		data += bytes([needed]) * needed
 		return data
 
@@ -57,9 +57,9 @@ class StringCrypt():
 	def encryptString(self, plaintext):
 		if self.key == None:
 			raise Exception("Attempt to encrypt with no secret key set")
-		cipher = f"AES-{Crypto.Cipher.AES.block_size * 8}"
+		cipher = f"AES-{Cryptodome.Cipher.AES.block_size * 8}"
 		iv = self.random.read(Crypto.Cipher.AES.block_size)
-		aes = Crypto.Cipher.AES.new(self.key, Crypto.Cipher.AES.MODE_CBC, iv)
+		aes = Cryptodome.Cipher.AES.new(self.key, Cryptodome.Cipher.AES.MODE_CBC, iv)
 		ciphertext = aes.encrypt(self.padString(plaintext))
 		return f"cipher={cipher};iv={iv.hex()};ciphertext={ciphertext.hex()}"
 
@@ -67,12 +67,12 @@ class StringCrypt():
 		if self.key == None:
 			raise Exception("Attempt to decrypt with no secret key set")
 		fields = self.unpackFields(encrypted)
-		cipher = f"AES-{Crypto.Cipher.AES.block_size * 8}"
+		cipher = f"AES-{Cryptodome.Cipher.AES.block_size * 8}"
 		if fields['cipher'] != cipher:
 			raise Exception(f"Unexpected cipher {fields['cipher']}")
 		iv = bytes.fromhex(fields['iv'])
 		ciphertext = bytes.fromhex(fields['ciphertext'])
-		aes = Crypto.Cipher.AES.new(self.key, Crypto.Cipher.AES.MODE_CBC, iv)
+		aes = Cryptodome.Cipher.AES.new(self.key, Cryptodome.Cipher.AES.MODE_CBC, iv)
 		data = aes.decrypt(ciphertext)
 		data = self.unpadString(data)
 		return data.decode("utf-8")

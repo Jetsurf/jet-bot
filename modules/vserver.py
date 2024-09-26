@@ -1,17 +1,18 @@
 import discord, asyncio, subprocess
 import queue, sys
 import requests, urllib, urllib.request, copy
-import youtube_dl, traceback
+import traceback
 import mysqlhandler
 import json, re, os
 import youtube
+from yt_dlp import YoutubeDL
 from bs4 import BeautifulSoup
 from random import randint
 from subprocess import call
 from discord.ui import *
 from discord.enums import ComponentType, InputTextStyle
 
-youtube_dl.utils.bug_reports_message = lambda: ''
+#youtube_dl.utils.bug_reports_message = lambda: ''
 
 ytdl_format_options = {
 	'format': 'bestaudio/best',
@@ -24,13 +25,15 @@ ytdl_format_options = {
 	'no_warnings': True,
 	'default_search': 'auto',
 	'source_address': '0.0.0.0',
+	'postprocessors': [{ 'key': 'FFmpegExtractAudio',
+			     'preferredcodec': 'mp3' }]
 }
 
 ffmpeg_options = {
 	'options': '-vn'
 }
 
-ytdl = youtube_dl.YoutubeDL(ytdl_format_options)
+ytdl = YoutubeDL(ytdl_format_options)
 
 class PlayList():
 	def __init__(self, ctx, sqlBroker):
