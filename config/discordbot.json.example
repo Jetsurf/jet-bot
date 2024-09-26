@@ -9,5 +9,5 @@
 	"hosted_url"	: "https://db-files.crmea.de",
 	"web_dir"	: "",
 	"nso_userid"    : "",
-	"ffmpeg_dir"	: "",
+	"ffmpeg_bin"	: "",
 }
