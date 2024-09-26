@@ -874,7 +874,7 @@ async def on_ready():
 		print("Doing Startup...")
 		for server in client.guilds:
 			if server.id not in serverVoices:
-				serverVoices[server.id] = vserver.voiceServer(client, mysqlHandler, server.id, configData['soundsdir'], configData['ffmpeg_dir'])
+				serverVoices[server.id] = vserver.voiceServer(client, mysqlHandler, server.id, configData['soundsdir'], configData['ffmpeg_bin'])
 
 		serverConfig = serverconfig.ServerConfig(mysqlHandler)
 		commandParser = commandparser.CommandParser(serverConfig, client.user.id)
@@ -980,7 +980,7 @@ async def on_voice_state_update(mem, before, after):
 			print(traceback.format_exc())
 			print("Issue in voice disconnect?? Recreating anyway")
 
-		serverVoices[server] = vserver.voiceServer(client, mysqlHandler, server, configData['soundsdir'], configData['ffmpeg_dir'])
+		serverVoices[server] = vserver.voiceServer(client, mysqlHandler, server, configData['soundsdir'], configData['ffmpeg_bin'])
 
 @client.event
 async def on_message(message):
