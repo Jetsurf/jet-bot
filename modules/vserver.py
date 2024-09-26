@@ -1,17 +1,18 @@
 import discord, asyncio, subprocess
 import queue, sys
 import requests, urllib, urllib.request, copy
-import youtube_dl, traceback
+import traceback
 import mysqlhandler
 import json, re, os
 import youtube
+from yt_dlp import YoutubeDL
 from bs4 import BeautifulSoup
 from random import randint
 from subprocess import call
 from discord.ui import *
 from discord.enums import ComponentType, InputTextStyle
 
-youtube_dl.utils.bug_reports_message = lambda: ''
+#youtube_dl.utils.bug_reports_message = lambda: ''
 
 ytdl_format_options = {
 	'format': 'bestaudio/best',
@@ -30,7 +31,7 @@ ffmpeg_options = {
 	'options': '-vn'
 }
 
-ytdl = youtube_dl.YoutubeDL(ytdl_format_options)
+ytdl = YoutubeDL(ytdl_format_options)
 
 class PlayList():
 	def __init__(self, ctx, sqlBroker):
@@ -319,7 +320,7 @@ class YTDLSource(discord.PCMVolumeTransformer):
 		return cls(discord.FFmpegPCMAudio(filename, **ffmpeg_options, before_options='-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5'), data=data)
 
 class voiceServer():
-	def __init__(self, client, mysqlhandler, id, soundsDir):
+	def __init__(self, client, mysqlhandler, id, soundsDir, ffmpegBin):
 		self.client = client
 		self.server = id
 		self.vclient = None
@@ -328,6 +329,8 @@ class voiceServer():
 		self.soundsDir = soundsDir
 		self.youtube = youtube.Youtube()
 		self.sqlBroker = mysqlhandler
+		if ffmpegBin != "" and ffmpegBin is not None:
+			ffmpeg_options['executable'] = ffmpegBin
 
 	@classmethod
 	async def updatePlaylists(cls, sqlBroker):
