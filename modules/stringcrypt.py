@@ -31,7 +31,7 @@ class StringCrypt():
 	# Given a string, returns bytes padded to the cipher's block size.
 	# We use RFC5652 padding: https://datatracker.ietf.org/doc/html/rfc5652#section-6.3
 	def padString(self, string):
-		if Crypto.Cipher.AES.block_size > 255:
+		if Cryptodome.Cipher.AES.block_size > 255:
 			raise Exception(f"Cipher block size {Crypto.Cipher.AES.block_size} too large for padding method")
 		data = string.encode('utf-8')
 		blklen = len(data) % Crypto.Cipher.AES.block_size
@@ -58,7 +58,7 @@ class StringCrypt():
 		if self.key == None:
 			raise Exception("Attempt to encrypt with no secret key set")
 		cipher = f"AES-{Cryptodome.Cipher.AES.block_size * 8}"
-		iv = self.random.read(Crypto.Cipher.AES.block_size)
+		iv = self.random.read(Cryptodome.Cipher.AES.block_size)
 		aes = Cryptodome.Cipher.AES.new(self.key, Cryptodome.Cipher.AES.MODE_CBC, iv)
 		ciphertext = aes.encrypt(self.padString(plaintext))
 		return f"cipher={cipher};iv={iv.hex()};ciphertext={ciphertext.hex()}"

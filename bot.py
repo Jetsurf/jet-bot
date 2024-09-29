@@ -925,7 +925,7 @@ async def on_guild_join(server):
 	global client, serverVoices, url, dev, owners, mysqlHandler, configData
 	
 	print(f"I joined server: {server.name}")
-	serverVoices[server.id] = vserver.voiceServer(client, mysqlHandler, server.id, configData['soundsdir'])
+	serverVoices[server.id] = vserver.voiceServer(client, mysqlHandler, server.id, configData['soundsdir'], configData['ffmpeg_bin'])
 
 	print(f"I am now in {str(len(client.guilds))} servers")
 	updateTopGg()

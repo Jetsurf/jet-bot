@@ -294,7 +294,11 @@ class YTDLSource(discord.PCMVolumeTransformer):
 	@classmethod
 	async def get_info(cls, url, *, loop=None, stream=True):
 		loop = loop or asyncio.get_event_loop()
-		data = await loop.run_in_executor(None, lambda: ytdl.extract_info(url, download=not stream))
+		try:
+			data = await loop.run_in_executor(None, lambda: ytdl.extract_info(url, download=not stream))
+		except Exception as e:
+			print(f"Unsupported URL - failure in yt-dlp setup for URL {url}: {str(e)}")
+			return None
 
 		if data['extractor'] == 'generic' or data['extractor'] == 'youtube:search':
 			return None
