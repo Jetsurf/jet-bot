@@ -507,6 +507,9 @@ class S3Handler():
 			await ctx.respond("I'm already watching for replays for you. Reset timer?", view=ReupReplayTimerView(self.replayHandlers[ctx.user.id], ctx), ephemeral=True)
 			return
 		else:
-			self.replayHandlers[ctx.user.id] = S3ReplayHandler(ctx, self.nsotoken, self.replayHandlers, self.cachemanager, self.fonts)
-			await self.replayHandlers[ctx.user.id].GetInitialReplays(ctx)
+			self.replayHandlers[ctx.user.id] = S3ReplayHandler(ctx, self.nsotoken, self.cachemanager, self.fonts, self.replaysCompleteHandler)
+			await self.replayHandlers[ctx.user.id].getInitialReplays(ctx)
 			await ctx.respond(f'Started watching replays, will stop at <t:{int(self.replayHandlers[ctx.user.id].endtime.timestamp())}>')
+
+	def replaysCompleteHandler(self, userid):
+		del self.replayHandlers[userid]
