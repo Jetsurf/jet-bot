@@ -4,6 +4,8 @@ from .embedbuilder import S3EmbedBuilder
 from datetime import datetime, timezone, timedelta
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
+import apscheduler.triggers.interval
+
 class replayView(discord.ui.View):
 	def __init__(self, nsoToken, replay):
 		super().__init__()
@@ -32,7 +34,7 @@ class replayView(discord.ui.View):
 
 class S3ReplayHandler():
 
-	def __init__(self, ctx, nsoToken, handlers, cacheManager, fonts):
+	def __init__(self, ctx, nsoToken, cacheManager, fonts, onComplete):
 		self.ctx = ctx
 		self.nsoToken = nsoToken
 		self.cacheManager = cacheManager
@@ -41,10 +43,11 @@ class S3ReplayHandler():
 		self.user = None
 		self.initialized = False
 		self.seenReplays = []
-		self.handlers = handlers
 		self.scheduler = AsyncIOScheduler(timezone='UTC')
+		self.job = None
+		self.onComplete = onComplete
 
-	async def GetInitialReplays(self, ctx):
+	async def getInitialReplays(self, ctx):
 		self.user = ctx.author
 		self.channel = ctx.channel
 		nso = await self.nsoToken.get_nso_client(ctx.user.id)
@@ -54,13 +57,12 @@ class S3ReplayHandler():
 			print(f"Found replay ID for {ctx.user.id} : {replay['id']} {replay['historyDetail']['playedTime']}")
 			self.seenReplays.append(replay['id'])
 
-		#1 minute here only for testing
-		self.scheduler.add_job(self.GetFeedUpdates, next_run_time=(datetime.now() + timedelta(minutes=5)))
+		self.job = self.scheduler.add_job(self.getFeedUpdates, apscheduler.triggers.interval.IntervalTrigger(minutes = 5))
 
 		print(f"Starting S3 Replay Watch for user {self.ctx.user.id}")
 		self.scheduler.start()
 
-	async def GetFeedUpdates(self):
+	async def getFeedUpdates(self):
 		print(f"Doing replay run for {self.ctx.user.id}")
 
 		nso = await self.nsoToken.get_nso_client(self.ctx.user.id)
@@ -82,11 +84,7 @@ class S3ReplayHandler():
 
 				await self.ctx.channel.send(embed = embed, file = file, view = replayView(self.nsoToken, replay))
 
-		#Keep at 5?
-		timetorun = (datetime.now() + timedelta(minutes=5))
-
-		if timetorun > self.endtime:
-			print(f"Last replay run for {self.user.id}")
-			self.handlers.pop(self.ctx.user.id, None)
-		else:
-			self.scheduler.add_job(self.GetFeedUpdates, next_run_time=timetorun)
+		if datetime.now() > self.endtime:
+			print(f"Replay run complete for {self.user.id}")
+			self.job.remove()
+			self.onComplete(self.user.id)

@@ -7,6 +7,7 @@ import urllib, urllib.request
 import messagecontext
 import io
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
+import apscheduler.triggers.cron
 
 class orderView(discord.ui.View):
 	def __init__(self, nsohandler, nsotoken, user):
@@ -46,12 +47,12 @@ class S2Handler():
 		self.app_timezone_offset = str(int((time.mktime(time.gmtime()) - time.mktime(time.localtime()))/60))
 		self.scheduler = AsyncIOScheduler()
 		if 'storedm_debug' in configData and configData['storedm_debug']:
-			self.scheduler.add_job(self.doStoreDM,'cron', second = '0', timezone = 'UTC')
+			self.scheduler.add_job(self.doStoreDM, apscheduler.triggers.cron.CronTrigger(second = '0', timezone = 'UTC'))
 		else:
-			self.scheduler.add_job(self.doStoreDM, 'cron', hour="*/2", minute='5', timezone='UTC') 
+			self.scheduler.add_job(self.doStoreDM, apscheduler.triggers.cron.CronTrigger(hour="*/2", minute='5', timezone='UTC'))
 
-		self.scheduler.add_job(self.updateS2JSON, 'cron', hour="*/2", minute='0', second='15', timezone='UTC')
-		self.scheduler.add_job(self.doFeed, 'cron', hour="*/2", minute='0', second='25', timezone='UTC')
+		self.scheduler.add_job(self.updateS2JSON, apscheduler.triggers.cron.CronTrigger(hour="*/2", minute='0', second='15', timezone='UTC'))
+		self.scheduler.add_job(self.doFeed, apscheduler.triggers.cron.CronTrigger(hour="*/2", minute='0', second='25', timezone='UTC'))
 		self.scheduler.start()
 		self.mapJSON = None
 		self.storeJSON = None

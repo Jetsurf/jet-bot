@@ -9,6 +9,7 @@ import base64
 import dateutil.parser
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
+import apscheduler.triggers.cron
 
 class S3Store():
 	def __init__(self, nsoToken, splat3info, mysqlHandler):
@@ -20,8 +21,8 @@ class S3Store():
 		self.callbacks = {'update': []}
 
 		self.scheduler = AsyncIOScheduler()
-		self.scheduler.add_job(self.checkStoreItems, 'cron', hour="*/1", minute='0', second='15', timezone='UTC')
-		#self.scheduler.add_job(self.checkStoreItems, 'cron', hour="*", minute='*/15', second='15', timezone='UTC')
+		self.scheduler.add_job(self.checkStoreItems, apscheduler.triggers.cron.CronTrigger(hour="*/1", minute='0', second='15', timezone='UTC'))
+		#self.scheduler.add_job(self.checkStoreItems, apscheduler.triggers.cron.CronTrigger(hour="*", minute='*/15', second='15', timezone='UTC'))
 		self.scheduler.start()
 
 		# Do async startup

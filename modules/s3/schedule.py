@@ -9,6 +9,8 @@ import hashlib
 import base64, traceback
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
+import apscheduler.triggers.cron
+import apscheduler.triggers.interval
 
 class S3Schedule():
 	schedule_choices = [
@@ -63,9 +65,9 @@ class S3Schedule():
 
 		# Schedule jobs
 		self.scheduler = AsyncIOScheduler()
-		self.scheduler.add_job(self.update, 'interval', minutes = 60)
-		self.scheduler.add_job(self.check_rotations, 'cron', hour="*/1", minute='0', second='10', timezone='UTC')
-		#self.scheduler.add_job(self.check_rotations, 'cron', hour="*/1", minute='*/1', second='10', timezone='UTC')
+		self.scheduler.add_job(self.update, apscheduler.triggers.interval.IntervalTrigger(minutes = 60))
+		self.scheduler.add_job(self.check_rotations, apscheduler.triggers.cron.CronTrigger(hour="*/1", minute='0', second='10', timezone='UTC'))
+		#self.scheduler.add_job(self.check_rotations, apscheduler.triggers.cron.CronTrigger(hour="*/1", minute='*/1', second='10', timezone='UTC'))
 		self.scheduler.start()
 
 		# Do async startup

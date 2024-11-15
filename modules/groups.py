@@ -1,6 +1,7 @@
 import discord, re, sys, time, asyncio, aiomysql, json
 from discord.enums import ComponentType, InputTextStyle
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
+import apscheduler.triggers.cron
 
 serverGroups = {}
 serverChannels = {}
@@ -471,5 +472,5 @@ class GroupCmds:
 		await Groups.setServerChannel(ctx.guild_id, channel)
 		await ctx.respond("Okay, set groups channel to '%s'" % (discord.utils.escape_markdown(channel.name)), ephemeral = True)
 
-scheduler.add_job(Groups.update, 'cron', minute='*', timezone='UTC')
+scheduler.add_job(Groups.update, apscheduler.triggers.cron.CronTrigger(minute='*', timezone='UTC'))
 scheduler.start()

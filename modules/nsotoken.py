@@ -15,6 +15,7 @@ from discord.ui import *
 from discord.enums import ComponentType, InputTextStyle
 from datetime import datetime
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
+import apscheduler.triggers.interval
 from itunes_app_scraper.scraper import AppStoreScraper
 from typing import Optional
 
@@ -109,7 +110,7 @@ class Nsotoken():
 		self.sqlBroker = mysqlhandler
 		self.stringCrypt = stringCrypt
 		self.friendCodes = friendCodes
-		if not config['use_nxapi']:
+		if not config.get('use_nxapi'):
 			self.f_provider = IMink("Jet-bot/1.0.0 (discord=jetsurf)")  # TODO: Figure out bot owner automatically
 		else:
 			self.f_provider = NXApi("Jet-bot/1.0.0 (discord=jetsurf)")
@@ -120,7 +121,7 @@ class Nsotoken():
 
 		# Set up scheduled tasks
 		self.scheduler = AsyncIOScheduler()
-		self.scheduler.add_job(self.nso_client_cleanup, 'interval', minutes = 5)
+		self.scheduler.add_job(self.nso_client_cleanup, apscheduler.triggers.interval.IntervalTrigger(minutes = 5))
 		self.scheduler.start()
 
 		# Do async init

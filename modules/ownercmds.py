@@ -3,6 +3,7 @@ import mysqlhandler
 from discord.ui import *
 from discord.enums import ComponentType, InputTextStyle
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
+import apscheduler.triggers.cron
 
 #Eval
 import traceback, textwrap, io, signal, asyncio
@@ -33,7 +34,7 @@ class ownerCmds:
 		self.owners = owners
 		self.didMysqlAlert = False
 		self.scheduler = AsyncIOScheduler()
-		self.scheduler.add_job(self.checkMysqlCons, 'cron', second='0', timezone='UTC')
+		self.scheduler.add_job(self.checkMysqlCons, apscheduler.triggers.cron.CronTrigger(second='0', timezone='UTC'))
 		self.scheduler.start()
 
 	async def checkMysqlCons(self):
