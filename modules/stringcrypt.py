@@ -14,12 +14,12 @@ class StringCrypt():
 			hexbytes = f.read()
 		key = bytes.fromhex(hexbytes)
 		if len(key) != Cryptodome.Cipher.AES.block_size:
-			raise Exception(f"Expected key length {Crypto.Cipher.AES.block_size}, but got {len(key)}")
+			raise Exception(f"Expected key length {Cryptodome.Cipher.AES.block_size}, but got {len(key)}")
 		self.key = key
 
 	# Writes a new random secret key to the given path.
 	def writeSecretKeyFile(self, path):
-		key = self.random.read(Crypto.Cipher.AES.block_size)
+		key = self.random.read(Cryptodome.Cipher.AES.block_size)
 		# By using os.open() here, we can ensure:
 		# 1. We never clobber an existing file
 		# 2. The new file, at the moment of creation, is never group- or world-readable
@@ -32,9 +32,9 @@ class StringCrypt():
 	# We use RFC5652 padding: https://datatracker.ietf.org/doc/html/rfc5652#section-6.3
 	def padString(self, string):
 		if Cryptodome.Cipher.AES.block_size > 255:
-			raise Exception(f"Cipher block size {Crypto.Cipher.AES.block_size} too large for padding method")
+			raise Exception(f"Cipher block size {Cryptodome.Cipher.AES.block_size} too large for padding method")
 		data = string.encode('utf-8')
-		blklen = len(data) % Crypto.Cipher.AES.block_size
+		blklen = len(data) % Cryptodome.Cipher.AES.block_size
 		needed = Cryptodome.Cipher.AES.block_size - blklen
 		data += bytes([needed]) * needed
 		return data
