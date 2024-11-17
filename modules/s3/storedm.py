@@ -83,10 +83,8 @@ class S3StoreHandler():
 
 		for item in items:
 			print(f"S3 doStoreDM(): new gear: name '{item['gear']['name']}' brand '{item['gear']['brand']['name']}' ability '{item['gear']['primaryGearPower']['name']}'")
-
 			for trigger in triggers:
 				criteria = json.loads(trigger['dmtriggers'])
-
 				user = await self.client.fetch_user(trigger['clientid'])
 				if user is None:
 					continue
@@ -114,7 +112,13 @@ class S3StoreHandler():
 			file = discord.File(fp = gearcard_io, filename = 'gearcard.png', description = 'Gear card')
 			embed.set_thumbnail(url = "attachment://gearcard.png")
 
-		await user.send(file = file, embed = embed, view = view)
+		try:
+			await user.send(file = file, embed = embed, view = view)
+		except discord.Forbidden:
+			print(f"Forbidden from messaging user {user.id} - removing from s3 store dms")
+			async with self.sqlBroker.context() as sql:
+				await sql.query('DELETE FROM s3_storedms WHERE clientid = %s', (user.id, ))
+		
 		return
 
 	async def addS3StoreDm(self, ctx, trigger):
@@ -139,7 +143,7 @@ class S3StoreHandler():
 				flag = True
 				if match1.get().name() in theTriggers['mabilities']:
 					await self.sqlBroker.close(cur)
-					await ctx.respond(f"You're already recieving DM's when gear with {match2.get().name()} appears in the store.")
+					await ctx.respond(f"You're already recieving DM's when gear with {match1.get().name()} appears in the store.")
 					return
 				else:
 					theTriggers['mabilities'].append(match1.get().name())
@@ -165,7 +169,7 @@ class S3StoreHandler():
 				flag = True
 				if match3.get().name() in theTriggers['brands']:
 					await self.sqlBroker.close(cur)
-					await ctx.respond(f"You're already recieving DM's when {match2.get().name()} appears in the store.")
+					await ctx.respond(f"You're already recieving DM's when {match3.get().name()} appears in the store.")
 					return
 				else:
 					theTriggers['gearnames'].append(match3.get().name())
