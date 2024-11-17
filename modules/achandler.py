@@ -1,8 +1,9 @@
 import discord, asyncio
 import mysqlhandler, nsotoken
 import time, requests
-import json, os
+import json, os, io
 import urllib, urllib.request
+from PIL import Image
 import re
 
 class acHandler():
@@ -10,7 +11,6 @@ class acHandler():
 		self.client = client
 		self.sqlBroker = mysqlHandler
 		self.nsotoken = nsotoken
-		self.hostedUrl = configData.get('hosted_url')
 		self.webDir = configData.get('web_dir')
 
 	async def passport(self, ctx):
@@ -32,15 +32,17 @@ class acHandler():
 
 		detaileduser = nso.acnh.get_detailed_user_json()
 		landjson = nso.acnh.get_lands_json()
-		profilepic = requests.get(user['image'])
+		profilepic = Image.open(io.BytesIO(requests.get(user['image']).content))
 		profileid = re.search('(?<=user_profile/).*(?=\?)', user['image']).group()
 
 		embed = discord.Embed(colour=0x0004FF)
 		embed.title = str(user['name']) + "'s Passport - Animal Crossing New Horizons"
 
-		if self.webDir and self.hostedUrl:
-			open(f'{self.webDir}/acprofiles/{str(profileid)}.jpg', 'wb').write(profilepic.content)
-			embed.set_thumbnail(url=f'{self.hostedUrl}/acprofiles/{str(profileid)}.jpg')
+		image_io = io.BytesIO()
+		profilepic.save(image_io, 'JPEG')
+		image_io.seek(0)
+		file = discord.File(fp = image_io, filename = 'profilepic.jpg', description = 'Passport')
+		embed.set_thumbnail(url = "attachment://profilepic.jpg")
 
 		print("PROFILE: " + str(profileid))
 		embed.add_field(name='Title', value=str(detaileduser['mHandleName']), inline=True)
@@ -55,7 +57,7 @@ class acHandler():
 
 		embed.add_field(name="NPC's (Name - Birthday)", value=npcstring, inline=True)
 
-		await ctx.respond(embed=embed)
+		await ctx.respond(embed=embed, file=file)
 		print("Got a passport!")
 
 	async def ac_emote(self, ctx, emote):

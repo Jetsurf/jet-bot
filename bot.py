@@ -180,10 +180,10 @@ else:
 	s3ReplayCmds = SlashCommandGroup("replays", "Splatoon 3 Replay cmds")
 
 # ACNH
-acnhCmds = SlashCommandGroup('acnh', "Commands related to Animal Crossing New Horizons")
+acnhCmds = SlashCommandGroup('acnh', "Commands related to Animal Crossing New Horizons", integration_types={discord.IntegrationType.guild_install, discord.IntegrationType.user_install})
 
 # Admin
-adminCmds = SlashCommandGroup('admin', 'Commands that require guild admin privledges to run')
+adminCmds = SlashCommandGroup('admin', 'Commands that require guild admin privledges to run', integration_types={discord.IntegrationType.guild_install})
 adminS2feedCmds = adminCmds.create_subgroup(name='s2feed', description='Admin commands related to SplatNet 2 rotation feeds')
 adminS3feedCmds = adminCmds.create_subgroup(name="s3feed", description='Admin commands related to SplatNet 3 rotation feeds')
 adminDmCmds = adminCmds.create_subgroup(name='dm', description="Admin commands related to DM's on users leaving")
