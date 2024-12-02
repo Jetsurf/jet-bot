@@ -156,7 +156,7 @@ def startUp():
 startUp()
 
 # S2
-s2Cmds = SlashCommandGroup('s2', 'Splatoon 2')
+s2Cmds = SlashCommandGroup('s2', 'Splatoon 2', integration_types={discord.IntegrationType.guild_install, discord.IntegrationType.user_install})
 s2MapCmds = s2Cmds.create_subgroup('maps', 'Splatoon 2 maps')
 s2WeaponCmds = s2Cmds.create_subgroup('weapons', 'Splatoon 2 Weapons')
 s2StoreCmds = s2Cmds.create_subgroup('store', 'Splatnet 2 store')
@@ -165,7 +165,7 @@ s2StatsCmds = s2Cmds.create_subgroup('stats', 'Gameplay stats')
 
 # S3
 if not configData.get('s3_top_level', False):
-	s3Cmds = SlashCommandGroup('s3', 'Commands related to Splatoon 3')
+	s3Cmds = SlashCommandGroup('s3', 'Commands related to Splatoon 3', integration_types={discord.IntegrationType.guild_install, discord.IntegrationType.user_install})
 	s3WeaponCmds = s3Cmds.create_subgroup('weapon', 'Commands related to weapons in Splatoon 3')
 	s3StatsCmds = s3Cmds.create_subgroup('stats', 'Commands related to Splatoon 3 gameplay stats')
 	s3StoreDmCmds = s3Cmds.create_subgroup('storedm', 'Splatoon 3 Store gear DMs')
@@ -183,20 +183,20 @@ else:
 acnhCmds = SlashCommandGroup('acnh', "Commands related to Animal Crossing New Horizons", integration_types={discord.IntegrationType.guild_install, discord.IntegrationType.user_install})
 
 # Admin
-adminCmds = SlashCommandGroup('admin', 'Commands that require guild admin privledges to run', integration_types={discord.IntegrationType.guild_install})
+adminCmds = SlashCommandGroup('admin', 'Commands that require guild admin privledges to run', integration_types={discord.IntegrationType.guild_install}, default_member_permissions=discord.Permissions(administrator=True))
 adminS2feedCmds = adminCmds.create_subgroup(name='s2feed', description='Admin commands related to SplatNet 2 rotation feeds')
 adminS3feedCmds = adminCmds.create_subgroup(name="s3feed", description='Admin commands related to SplatNet 3 rotation feeds')
 adminDmCmds = adminCmds.create_subgroup(name='dm', description="Admin commands related to DM's on users leaving")
 adminAnnounceCmds = adminCmds.create_subgroup(name='announcements', description='Admin commands related to developer announcements')
 
 # Other
-voice = SlashCommandGroup('voice', 'Commands related to voice functions')
+voice = SlashCommandGroup('voice', 'Commands related to voice functions', integration_types={discord.IntegrationType.guild_install})
 owner = SlashCommandGroup('owner', "Commands that are owner only")
-groupCmds = SlashCommandGroup('group', 'Commands related to finding a group of players')
-fcCmds = SlashCommandGroup('fc', 'Commands for friend codes')
+groupCmds = SlashCommandGroup('group', 'Commands related to finding a group of players', integration_types={discord.IntegrationType.guild_install})
+fcCmds = SlashCommandGroup('fc', 'Commands for friend codes', integration_types={discord.IntegrationType.guild_install, discord.IntegrationType.user_install})
 play = voice.create_subgroup(name='play', description='Commands related to playing audio')
 
-@client.slash_command(name='token', description='Manages your tokens to use NSO commands')
+@client.slash_command(name='token', description='Manages your tokens to use NSO commands', integration_types={discord.IntegrationType.guild_install, discord.IntegrationType.user_install})
 async def cmdToken(ctx):
 	view = nsotoken.tokenMenuView(nsoTokens, configData['hosted_url'])
 	await view.init(ctx)
@@ -216,13 +216,14 @@ async def cmdFcGet(ctx):
 		return
 
 	print(f"No friend code in DB, pulling from NSO for user {ctx.user.id}")
-	user = nso.account.get_user_self()
+	print(nso.ensure_api_login())
+	user = nso.get_cached_friend_code()
+	print(f"User: {user}")
 	if user is None:
 		await ctx.respond("Something went wrong! Please let my owners in my support guild know this broke!", ephemeral = True)
 		print(f"NSO call for friend code failed: userid {ctx.user.id}")
 		return
 
-	fc = user['links']['friendCode']['id']
 	await friendCodes.setFriendCode(ctx.user.id, fc)
 	await ctx.respond(f"Nintendo Switch friend code is: SW-{fc}")
 
@@ -236,15 +237,15 @@ async def cmdFcSet(ctx, friend_code: Option(str, "SW-xxxx-xxxx-xxxx")):
 	await friendCodes.setFriendCode(ctx.user.id, friend_code)
 	await ctx.respond(f"Okay, I'll remember your friend code of SW-{friend_code}", ephemeral = True)
 
-@client.slash_command(name='support', description='Sends a discord invite to my support guild.')
+@client.slash_command(name='support', description='Sends a discord invite to my support guild.', integration_types={discord.IntegrationType.guild_install, discord.IntegrationType.user_install})
 async def cmdSupport(ctx):
 	await ctx.respond('Here is a link to my support server: https://discord.gg/TcZgtP5', ephemeral=True)
 
-@client.slash_command(name='github', description='Sends a link to my github page')
+@client.slash_command(name='github', description='Sends a link to my github page', integration_types={discord.IntegrationType.guild_install, discord.IntegrationType.user_install})
 async def cmdGithub(ctx):
 	await ctx.respond('Here is my github page! : https://github.com/Jetsurf/jet-bot', ephemeral=True)
 
-@client.slash_command(name='help', description='Displays the help menu')
+@client.slash_command(name='help', description='Displays the help menu', integration_types={discord.IntegrationType.guild_install, discord.IntegrationType.user_install})
 async def cmdHelp(ctx):
 	await ctx.respond("Help Menu:", view=serverutils.HelpMenuView(f"{dirname}/help"))
 

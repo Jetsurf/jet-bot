@@ -33,7 +33,6 @@ class acHandler():
 		detaileduser = nso.acnh.get_detailed_user_json()
 		landjson = nso.acnh.get_lands_json()
 		profilepic = Image.open(io.BytesIO(requests.get(user['image']).content))
-		profileid = re.search('(?<=user_profile/).*(?=\?)', user['image']).group()
 
 		embed = discord.Embed(colour=0x0004FF)
 		embed.title = str(user['name']) + "'s Passport - Animal Crossing New Horizons"
@@ -44,7 +43,6 @@ class acHandler():
 		file = discord.File(fp = image_io, filename = 'profilepic.jpg', description = 'Passport')
 		embed.set_thumbnail(url = "attachment://profilepic.jpg")
 
-		print("PROFILE: " + str(profileid))
 		embed.add_field(name='Title', value=str(detaileduser['mHandleName']), inline=True)
 		embed.add_field(name='Comment', value=str(detaileduser['mComment']), inline=True)
 		embed.add_field(name='Registered On', value=f"{str(detaileduser['mTimeStamp']['month'])}/{str(detaileduser['mTimeStamp']['day'])}/{str(detaileduser['mTimeStamp']['year'])}", inline=True)
