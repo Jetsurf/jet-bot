@@ -437,7 +437,7 @@ class S3ImageBuilder():
 			cls.drawShadowedText(draw, (int(width / 2), yposition + 40), cls.formatTimeWindow(s['starttime'], s['endtime']), (255, 255, 255), font = s1FontSmall, anchor = 'mt')
 
 			# Add weapon images
-			for i in range(len(s['weapons'])):
+			for i in range(len(s.get('weapons', []))):
 				weapon = s['weapons'][i]
 				weapon_key = f"weapon-{hashlib.sha1(weapon['name'].encode('utf-8')).hexdigest()}.png"
 				if weapon_image_io := weapons_cache.get_io(weapon_key):

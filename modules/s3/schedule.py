@@ -7,6 +7,7 @@ import requests
 import dateutil.parser
 import hashlib
 import base64, traceback
+import jelonzobot
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import apscheduler.triggers.cron
@@ -294,34 +295,51 @@ class S3Schedule():
 
 		await self.sqlBroker.wait_for_startup()
 
-		nso = await self.nsotoken.get_bot_nso_client()
-		if not nso:
-			return  # No bot account configured
-		elif not nso.is_logged_in():
-			print("[S3Schedule] update(): Time to update but the bot account is not logged in")
-			return
+		#nso = await self.nsotoken.get_bot_nso_client()
+		#if not nso:
+		#	return  # No bot account configured
+		#elif not nso.is_logged_in():
+		#	print("[S3Schedule] update(): Time to update but the bot account is not logged in")
+		#	return
 
 		print("[S3Schedule] update(): Updating schedule")
-		data = nso.s3.get_stage_schedule()
-		if data is None:
-			print("[S3Schedule] update(): Failed to retrieve schedule")
-			return
+		#data = nso.s3.get_stage_schedule()
+		#if data is None:
+		#	print("[S3Schedule] update(): Failed to retrieve schedule")
+		#	return
 
-		self.schedules['TW'] = self.parse_versus_schedule(data['data'].get('regularSchedules'), 'regularMatchSetting', self.parse_schedule_turf)
-		self.schedules['SO'] = self.parse_versus_schedule(data['data'].get('festSchedules'), 'festMatchSettings', self.parse_schedule_fest_open)
-		self.schedules['SP'] = self.parse_versus_schedule(data['data'].get('festSchedules'), 'festMatchSettings', self.parse_schedule_fest_pro)
-		self.schedules['AO'] = self.parse_versus_schedule(data['data'].get('bankaraSchedules'), 'bankaraMatchSettings', self.parse_schedule_anarchy_open)
-		self.schedules['AS'] = self.parse_versus_schedule(data['data'].get('bankaraSchedules'), 'bankaraMatchSettings', self.parse_schedule_anarchy_series)
-		self.schedules['XB'] = self.parse_versus_schedule(data['data'].get('xSchedules'), 'xMatchSetting', self.parse_schedule_x_battles)
+		jbot = jelonzobot.JelonzoBot()
 
-		self.schedules['CH'] = self.parse_event_schedule(data['data'].get('eventSchedules'))
+		coop = await jbot.getCoopPhases()
+		if coop:
+			self.schedules['SR'] = jbot.xlatCoopPhases(coop)
 
-		self.schedules['SR'] = self.parse_salmon_schedule(data['data'].get('coopGroupingSchedule', {}).get('regularSchedules'))
+		versus = await jbot.getVersusPhases()
+		if versus:
+			versus = jbot.xlatVersusPhases(versus)
+			self.schedules['TW'] = versus['TW']
+			self.schedules['SO'] = versus['SO']
+			self.schedules['SP'] = versus['SP']
+			self.schedules['AO'] = versus['AO']
+			self.schedules['AS'] = versus['AS']
+			self.schedules['XB'] = versus['XB']
+			self.schedules['CH'] = versus['CH']
 
-		# If Big Run schedules are included, parse them and insert them into the regular SR schedule
-		if big_run_data := data['data'].get('coopGroupingSchedule', {}).get('bigRunSchedules'):
-			big_run_schedule = self.parse_salmon_schedule(big_run_data)
-			self.schedules['SR'] = sorted([*self.schedules['SR'], *big_run_schedule], key = lambda s: s['starttime'])
+		#self.schedules['TW'] = self.parse_versus_schedule(data['data'].get('regularSchedules'), 'regularMatchSetting', self.parse_schedule_turf)
+		#self.schedules['SO'] = self.parse_versus_schedule(data['data'].get('festSchedules'), 'festMatchSettings', self.parse_schedule_fest_open)
+		#self.schedules['SP'] = self.parse_versus_schedule(data['data'].get('festSchedules'), 'festMatchSettings', self.parse_schedule_fest_pro)
+		#self.schedules['AO'] = self.parse_versus_schedule(data['data'].get('bankaraSchedules'), 'bankaraMatchSettings', self.parse_schedule_anarchy_open)
+		#self.schedules['AS'] = self.parse_versus_schedule(data['data'].get('bankaraSchedules'), 'bankaraMatchSettings', self.parse_schedule_anarchy_series)
+		#self.schedules['XB'] = self.parse_versus_schedule(data['data'].get('xSchedules'), 'xMatchSetting', self.parse_schedule_x_battles)
+
+		#self.schedules['CH'] = self.parse_event_schedule(data['data'].get('eventSchedules'))
+
+		#self.schedules['SR'] = self.parse_salmon_schedule(data['data'].get('coopGroupingSchedule', {}).get('regularSchedules'))
+
+		## If Big Run schedules are included, parse them and insert them into the regular SR schedule
+		#if big_run_data := data['data'].get('coopGroupingSchedule', {}).get('bigRunSchedules'):
+		#	big_run_schedule = self.parse_salmon_schedule(big_run_data)
+		#	self.schedules['SR'] = sorted([*self.schedules['SR'], *big_run_schedule], key = lambda s: s['starttime'])
 
 		self.updatetime = time.time()
 
@@ -365,7 +383,7 @@ class S3Schedule():
 
 			for rec in self.schedules[k]:
 				for map in rec['maps']:
-					if (not map['stageid']) or (not map['image']):
+					if (not map.get('stageid')) or (not map.get('image')):
 						continue  # Missing required fields
 
 					key = f"{map['stageid']}.png"
@@ -379,7 +397,7 @@ class S3Schedule():
 		for k in ['SR']:
 			for rec in self.schedules[k]:
 				for map in rec['maps']:
-					if (not map['stageid']) or (not map['image']):
+					if (not map.get('stageid')) or (not map.get('image')):
 						continue  # Missing required fields
 
 					key = f"{map['stageid']}.png"
@@ -389,7 +407,7 @@ class S3Schedule():
 					print(f"[S3Schedule] Caching SR map image stageid {map['stageid']} name '{map['name']}' image-url {map['image']}")
 					await self.image_cache_sr_maps.add_url(key, map['image'])
 
-				for weapon in rec['weapons']:
+				for weapon in rec.get('weapons', []):
 					if (not weapon['name']) or (not weapon['image']):
 						continue  # Missing required fields
 
